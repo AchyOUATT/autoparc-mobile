@@ -195,9 +195,9 @@ class _FilterChips extends ConsumerWidget {
           FilterChip(
             label: const Text('Neuf'),
             selected: filter.condition == 'new',
-            onSelected: (_) => update((f) => f.copyWith(
-              condition: f.condition == 'new' ? null : 'new',
-            )),
+            onSelected: (_) => update((f) => f.condition == 'new'
+                ? f.copyWith(clearCondition: true)
+                : f.copyWith(condition: 'new')),
           ),
           const SizedBox(width: 8),
           const _VDiv(),

@@ -52,22 +52,26 @@ class VehicleFilter {
     int? locationId,
     bool clearSearch = false,
     bool clearAvailability = false,
+    bool clearCondition = false,
     bool clearVehicleType = false,
     bool clearBodyStyle = false,
+    bool clearYearMin = false,
+    bool clearYearMax = false,
+    bool clearPriceMax = false,
     bool clearCity = false,
     bool clearLocation = false,
   }) =>
       VehicleFilter(
         search:       clearSearch        ? null : (search       ?? this.search),
         availability: clearAvailability  ? null : (availability ?? this.availability),
-        condition:    condition  ?? this.condition,
+        condition:    clearCondition     ? null : (condition    ?? this.condition),
         vehicleType:  clearVehicleType   ? null : (vehicleType  ?? this.vehicleType),
         bodyStyle:    clearBodyStyle     ? null : (bodyStyle    ?? this.bodyStyle),
-        yearMin:      yearMin    ?? this.yearMin,
-        yearMax:      yearMax    ?? this.yearMax,
-        priceMax:     priceMax   ?? this.priceMax,
-        city:         clearCity     ? null : (city       ?? this.city),
-        locationId:   clearLocation ? null : (locationId ?? this.locationId),
+        yearMin:      clearYearMin       ? null : (yearMin      ?? this.yearMin),
+        yearMax:      clearYearMax       ? null : (yearMax      ?? this.yearMax),
+        priceMax:     clearPriceMax      ? null : (priceMax     ?? this.priceMax),
+        city:         clearCity          ? null : (city         ?? this.city),
+        locationId:   clearLocation      ? null : (locationId   ?? this.locationId),
       );
 }
 
