@@ -176,10 +176,16 @@ class ApiClient {
         filePaths.map((p) => MultipartFile.fromFile(p)),
       );
 
-      final formData = FormData.fromMap({
-        field: files,
-        ...extra,
-      });
+      // PHP n'interprète un champ multi-valeurs comme tableau QUE si le nom
+      // se termine par []. Sans les crochets, seul le dernier fichier survit
+      // et Laravel reçoit un scalaire au lieu d'un array → 422.
+      final formData = FormData();
+      for (final file in files) {
+        formData.files.add(MapEntry('$field[]', file));
+      }
+      for (final entry in extra.entries) {
+        formData.fields.add(MapEntry(entry.key, entry.value));
+      }
 
       final res = await _dio.post<Map<String, dynamic>>(
         path,
