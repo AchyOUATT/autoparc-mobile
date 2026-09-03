@@ -339,10 +339,10 @@ class _VehicleGrid extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           sliver: SliverGrid.builder(
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 360,
-              childAspectRatio: 0.78,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
+              maxCrossAxisExtent: 220,
+              childAspectRatio: 0.72,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
             ),
             itemCount: vehicles.length,
             itemBuilder: (_, i) => _VehicleCard(vehicle: vehicles[i]),
