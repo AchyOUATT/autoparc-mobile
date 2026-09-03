@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class AppNotification {
   final int    id;
   final String type;          // new_need | need_status_update | vehicle_match | new_order | tip
@@ -31,14 +33,6 @@ class AppNotification {
 
   // ── Labels et icônes ─────────────────────────────────────────────
 
-  static const _icons = {
-    'new_need':           0xe91d, // Icons.inbox
-    'need_status_update': 0xe875, // Icons.info_outline
-    'vehicle_match':      0xe531, // Icons.directions_car
-    'new_order':          0xe8cc, // Icons.shopping_bag
-    'tip':                0xe90f, // Icons.lightbulb_outline
-  };
-
   static const _colors = {
     'new_need':           0xFF1565C0, // bleu
     'need_status_update': 0xFF2E7D32, // vert
@@ -47,6 +41,15 @@ class AppNotification {
     'tip':                0xFFF9A825, // jaune/ambre
   };
 
-  int get iconCode  => _icons[type]  ?? 0xe88e;  // Icons.notifications
+  // Getter constant : pas de IconData dynamique → compatible tree-shake release
+  IconData get iconData => switch (type) {
+    'new_need'           => Icons.inbox,
+    'need_status_update' => Icons.info_outline,
+    'vehicle_match'      => Icons.directions_car,
+    'new_order'          => Icons.shopping_bag,
+    'tip'                => Icons.lightbulb_outline,
+    _                    => Icons.notifications,
+  };
+
   int get iconColor => _colors[type] ?? 0xFF757575;
 }
