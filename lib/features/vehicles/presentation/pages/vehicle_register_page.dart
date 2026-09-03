@@ -72,6 +72,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   final _salePriceCtrl       = TextEditingController();
   final _rentalDailyCtrl     = TextEditingController();
   final _rentalDepositCtrl   = TextEditingController();
+  final _mileageCtrl         = TextEditingController();
   final _siteCtrl            = TextEditingController();
   LocationRef? _selectedLocation;   // agence / showroom structuré
   final _descriptionCtrl     = TextEditingController();
@@ -104,8 +105,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   void dispose() {
     for (final c in [
       _vinCtrl, _plateCtrl, _yearCtrl, _powerCtrl, _seatsCtrl, _doorsCtrl,
-      _salePriceCtrl, _rentalDailyCtrl, _rentalDepositCtrl, _siteCtrl,
-      _descriptionCtrl,
+      _salePriceCtrl, _rentalDailyCtrl, _rentalDepositCtrl, _mileageCtrl,
+      _siteCtrl, _descriptionCtrl,
     ]) c.dispose();
     super.dispose();
   }
@@ -232,14 +233,18 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   }
 
   Map<String, dynamic> _buildPayload() {
-    final bool forSale = _availability == 'sale' || _availability == 'both';
-    final bool forRent = _availability == 'rent' || _availability == 'both';
+    final bool forSale   = _availability == 'sale' || _availability == 'both';
+    final bool forRent   = _availability == 'rent' || _availability == 'both';
+    final bool hasPlate  = _plateCtrl.text.trim().isNotEmpty;
+    final int? mileage   = _mileageCtrl.text.isNotEmpty
+        ? int.tryParse(_mileageCtrl.text)
+        : null;
 
     return <String, dynamic>{
       'vehicle_type':       _vehicleType,
       if (_bodyStyle != null) 'body_style': _bodyStyle,
       if (_vinCtrl.text.trim().isNotEmpty)   'vin':          _vinCtrl.text.trim(),
-      if (_plateCtrl.text.trim().isNotEmpty) 'plate_number': _plateCtrl.text.trim(),
+      if (hasPlate) 'plate_number': _plateCtrl.text.trim(),
       'brand_id':           _brand!.id,
       'vehicle_model_id':   _model!.id,
       if (_trim != null)       'trim_id':      _trim!.id,
@@ -266,6 +271,13 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       if (_selectedFeatureIds.isNotEmpty) 'features': _selectedFeatureIds.toList(),
       if (_selectedLocation  != null) 'location_id': _selectedLocation!.id,
       if (_selectedPartnerId != null) 'partner_id':  _selectedPartnerId,
+      // Kilométrage → sous-objet selon le statut du véhicule
+      // - avec plaque  : registered → registration.mileage_km
+      // - sans plaque  : import     → import.odometer_at_import_km
+      if (mileage != null && hasPlate)
+        'registration': {'mileage_km': mileage},
+      if (mileage != null && !hasPlate)
+        'import': {'odometer_at_import_km': mileage},
     };
   }
 
@@ -747,9 +759,31 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               (value: 'damaged', label: 'Endommagé'),
             ],
             selected: _condition,
-            onChanged: (v) => setState(() => _condition = v),
+            onChanged: (v) => setState(() {
+              _condition = v;
+              if (v == 'new') _mileageCtrl.clear();
+            }),
           ),
           const SizedBox(height: 16),
+
+          // Kilométrage (uniquement pour occasion / endommagé)
+          if (_condition != 'new') ...[
+            TextFormField(
+              controller: _mileageCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Kilométrage',
+                suffixText: 'km',
+                hintText: '85 000',
+                prefixIcon: Icon(Icons.speed_outlined),
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(7),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
 
           // Disponibilité
           Text('Disponible pour',
