@@ -31,9 +31,19 @@ class _LoginPageState extends ConsumerState<LoginPage>
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
 
-    // Redirection après connexion réussie
-    ref.listen(authProvider, (_, next) {
-      if (next.isAuthenticated && !next.isLoading) {
+    // Redirection + feedback après connexion réussie
+    ref.listen(authProvider, (prev, next) {
+      if (next.isAuthenticated && !next.isLoading &&
+          (prev == null || !prev.isAuthenticated)) {
+        // ScaffoldMessenger au-dessus du navigateur → survit à la navigation
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Bienvenue, ${next.displayName} !'),
+            backgroundColor: Colors.green.shade700,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
         context.go('/');
       }
     });

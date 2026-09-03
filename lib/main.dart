@@ -393,6 +393,13 @@ class _AppDrawer extends ConsumerWidget {
               label: 'Se déconnecter',
               color: cs.error,
               onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Vous êtes déconnecté.'),
+                    behavior: SnackBarBehavior.floating,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
                 _close(context);
                 ref.read(authProvider.notifier).signOut();
               },
@@ -427,6 +434,13 @@ class _AppDrawer extends ConsumerWidget {
               label: 'Se déconnecter',
               color: cs.error,
               onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Vous êtes déconnecté.'),
+                    behavior: SnackBarBehavior.floating,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
                 _close(context);
                 ref.read(authProvider.notifier).signOut();
               },

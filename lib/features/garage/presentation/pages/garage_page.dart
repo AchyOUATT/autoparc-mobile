@@ -133,6 +133,13 @@ class GaragePage extends ConsumerWidget {
               title: const Text('Se déconnecter',
                   style: TextStyle(color: Colors.red)),
               onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Vous êtes déconnecté.'),
+                    behavior: SnackBarBehavior.floating,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
                 Navigator.pop(context);
                 ref.read(authProvider.notifier).signOut();
               },
@@ -502,8 +509,15 @@ class _StaffProfilePage extends ConsumerWidget {
 
           // Déconnexion
           OutlinedButton.icon(
-            onPressed: () async {
-              await ref.read(authProvider.notifier).signOut();
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Vous êtes déconnecté.'),
+                  behavior: SnackBarBehavior.floating,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              ref.read(authProvider.notifier).signOut();
             },
             icon: const Icon(Icons.logout, color: Colors.red),
             label: const Text('Se déconnecter',

@@ -87,8 +87,29 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState();
   }
 
-  /// Extrait le message lisible depuis une exception (ApiException ou autre).
+  /// Extrait un message lisible en français depuis une exception.
   String _extractMessage(Object e) {
+    // ── Erreurs Firebase Auth ──────────────────────────────────────
+    if (e is FirebaseAuthException) {
+      return switch (e.code) {
+        'user-not-found'       => 'Aucun compte trouvé pour cet email.',
+        'wrong-password'       => 'Mot de passe incorrect.',
+        'invalid-credential'   => 'Email ou mot de passe incorrect.',
+        'email-already-in-use' => 'Un compte existe déjà avec cet email.',
+        'weak-password'        => 'Mot de passe trop faible (6 caractères minimum).',
+        'invalid-email'        => 'Adresse email invalide.',
+        'user-disabled'        => 'Ce compte a été désactivé. Contactez le support.',
+        'too-many-requests'    => 'Trop de tentatives. Réessayez dans quelques minutes.',
+        'network-request-failed' => 'Erreur réseau. Vérifiez votre connexion internet.',
+        'operation-not-allowed'  => 'Cette méthode de connexion n\'est pas activée.',
+        'account-exists-with-different-credential'
+                               => 'Ce compte existe déjà avec un autre mode de connexion.',
+        'popup-closed-by-user' || 'cancelled-popup-request'
+                               => 'Connexion Google annulée.',
+        _                      => 'Erreur de connexion (${e.code}).',
+      };
+    }
+    // ── Erreurs API Laravel ────────────────────────────────────────
     if (e is ApiException) {
       // 422 : prendre le premier message du champ "errors" (plus précis que message)
       final errs = e.errors;
