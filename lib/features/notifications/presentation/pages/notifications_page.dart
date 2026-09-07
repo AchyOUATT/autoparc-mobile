@@ -121,7 +121,7 @@ class _NotificationTile extends ConsumerWidget {
       leading: CircleAvatar(
         backgroundColor: color.withAlpha(30),
         child: Icon(
-          IconData(notif.iconCode, fontFamily: 'MaterialIcons'),
+          notif.iconData,
           color: color,
           size: 20,
         ),

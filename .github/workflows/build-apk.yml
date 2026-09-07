@@ -1,0 +1,50 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # Permet de déclencher manuellement depuis GitHub
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.0'
+          channel: stable
+          cache: true
+
+      # Restaure google-services.json depuis les secrets GitHub
+      - name: Restaurer google-services.json
+        run: |
+          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+
+      - name: Télécharger les dépendances
+        run: flutter pub get
+
+      - name: Basculer sur l'URL Railway
+        run: |
+          sed -i 's/static const String baseUrl = _emulator/static const String baseUrl = _railway/' \
+            lib/core/api/endpoints.dart
+
+      - name: Construire l'APK (release)
+        run: flutter build apk --release --no-tree-shake-icons
+
+      - name: Publier l'APK comme artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: autoparc-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30

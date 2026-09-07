@@ -6,13 +6,21 @@ class Endpoints {
   Endpoints._();
 
   // ignore: dead_code
-  static const String _emulator = 'http://10.0.2.2:8000/api';
-  static const String _device   = 'http://192.168.30.75:8000/api';
-  static const String _ngrok  = 'https://jujitsu-platinum-glimpse.ngrok-free.dev/api';
+  static const String _emulator  = 'http://10.0.2.2:8000/api';
+  // ignore: dead_code
+  static const String _device    = 'http://192.168.30.75:8000/api';
+  // ignore: dead_code
+  static const String _ngrok     = 'https://jujitsu-platinum-glimpse.ngrok-free.dev/api';
+  /// URL de production Railway — mettre à jour après déploiement.
+  // ignore: dead_code
+  static const String _render   = 'https://autoparc-backend.onrender.com/api';
 
-
-  /// ⚠ Basculer entre _emulator et _device selon le contexte de test.
-  static const String baseUrl = _emulator;
+  /// ⚠ Basculer selon le contexte :
+  ///   _emulator → émulateur Android (dev local)
+  ///   _device   → device physique sur le même WiFi
+  ///   _ngrok    → test distant via tunnel temporaire
+  ///   _railway  → production Railway (test/prod)
+  static const String baseUrl = _render;
 
   // ── Auth ────────────────────────────────────────────────────────
   static const String login  = '/login';
