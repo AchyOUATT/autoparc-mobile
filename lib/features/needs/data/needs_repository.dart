@@ -38,6 +38,30 @@ final publicModelsProvider =
     ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 });
 
+/// Catégories de pièces détachées — pour le formulaire de besoin.
+final publicPartCategoriesProvider =
+    FutureProvider.autoDispose<List<({int id, String name})>>((ref) async {
+  final client = ref.read(apiClientProvider);
+  final json   = await client.get('/catalog/part-categories');
+  final list   = json as List<dynamic>? ?? [];
+  return list
+      .map((e) => e as Map<String, dynamic>)
+      .map((e) => (id: e['id'] as int, name: e['name'] as String))
+      .toList();
+});
+
+/// Fabricants / équipementiers — pour le formulaire de besoin.
+final publicManufacturersProvider =
+    FutureProvider.autoDispose<List<({int id, String name})>>((ref) async {
+  final client = ref.read(apiClientProvider);
+  final json   = await client.get('/catalog/manufacturers');
+  final list   = json as List<dynamic>? ?? [];
+  return list
+      .map((e) => e as Map<String, dynamic>)
+      .map((e) => (id: e['id'] as int, name: e['name'] as String))
+      .toList();
+});
+
 class NeedsRepository {
   final ApiClient _client;
   const NeedsRepository(this._client);

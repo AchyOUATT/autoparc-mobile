@@ -14,6 +14,7 @@ class Accessory extends Equatable {
   final AccessoryStock   stock;
   final int?    warrantyMonths;
   final bool    isActive;
+  final String? coverUrl; // URL de la photo de couverture (null si aucune photo)
 
   const Accessory({
     required this.id,
@@ -28,10 +29,20 @@ class Accessory extends Equatable {
     required this.stock,
     this.warrantyMonths,
     required this.isActive,
+    this.coverUrl,
   });
 
   factory Accessory.fromJson(Map<String, dynamic> json) {
-    final category = json['category'] as Map<String, dynamic>;
+    final category  = json['category'] as Map<String, dynamic>;
+    final mediaList = json['media'] as List?;
+    String? cover;
+    if (mediaList != null && mediaList.isNotEmpty) {
+      final coverItem = mediaList.firstWhere(
+        (m) => m['is_cover'] == true,
+        orElse: () => mediaList.first,
+      );
+      cover = coverItem['url'] as String?;
+    }
     return Accessory(
       id:             json['id']              as int,
       sku:            json['sku']             as String?,
@@ -45,6 +56,7 @@ class Accessory extends Equatable {
       stock:          AccessoryStock.fromJson(json['stock']     as Map<String, dynamic>),
       warrantyMonths: json['warranty_months'] as int?,
       isActive:       json['is_active']       as bool? ?? true,
+      coverUrl:       cover,
     );
   }
 

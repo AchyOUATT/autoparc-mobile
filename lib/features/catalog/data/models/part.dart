@@ -16,6 +16,7 @@ class Part extends Equatable {
   final PartStock   stock;
   final int?    warrantyMonths;
   final bool    isActive;
+  final String? coverUrl; // URL de la photo de couverture (null si aucune photo)
 
   const Part({
     required this.id,
@@ -32,24 +33,38 @@ class Part extends Equatable {
     required this.stock,
     this.warrantyMonths,
     required this.isActive,
+    this.coverUrl,
   });
 
-  factory Part.fromJson(Map<String, dynamic> json) => Part(
-    id:             json['id']              as int,
-    sku:            json['sku']             as String?,
-    name:           json['name']            as String,
-    description:    json['description']     as String?,
-    type:           json['type']            as String,
-    condition:      json['condition']       as String,
-    categoryId:     json['category_id']     as int?,
-    categoryName:   (json['category'] as Map<String, dynamic>?)?['name'] as String?,
-    manufacturerId: json['manufacturer_id'] as int?,
-    manufacturer:   json['manufacturer']   as String?,
-    pricing:        PartPricing.fromJson(json['pricing'] as Map<String, dynamic>),
-    stock:          PartStock.fromJson(json['stock']     as Map<String, dynamic>),
-    warrantyMonths: json['warranty_months'] as int?,
-    isActive:       json['is_active']       as bool? ?? true,
-  );
+  factory Part.fromJson(Map<String, dynamic> json) {
+    final mediaList = json['media'] as List?;
+    String? cover;
+    if (mediaList != null && mediaList.isNotEmpty) {
+      // Priorité : is_cover = true, sinon premier élément
+      final coverItem = mediaList.firstWhere(
+        (m) => m['is_cover'] == true,
+        orElse: () => mediaList.first,
+      );
+      cover = coverItem['url'] as String?;
+    }
+    return Part(
+      id:             json['id']              as int,
+      sku:            json['sku']             as String?,
+      name:           json['name']            as String,
+      description:    json['description']     as String?,
+      type:           json['type']            as String,
+      condition:      json['condition']       as String,
+      categoryId:     json['category_id']     as int?,
+      categoryName:   (json['category'] as Map<String, dynamic>?)?['name'] as String?,
+      manufacturerId: json['manufacturer_id'] as int?,
+      manufacturer:   json['manufacturer']   as String?,
+      pricing:        PartPricing.fromJson(json['pricing'] as Map<String, dynamic>),
+      stock:          PartStock.fromJson(json['stock']     as Map<String, dynamic>),
+      warrantyMonths: json['warranty_months'] as int?,
+      isActive:       json['is_active']       as bool? ?? true,
+      coverUrl:       cover,
+    );
+  }
 
   bool get isOem         => type == 'oem';
   bool get isAftermarket => type == 'aftermarket';

@@ -219,7 +219,10 @@ class _FilterBar extends ConsumerWidget {
   }
 }
 
-// ── Liste ─────────────────────────────────────────────────────────────
+// ── Grille décalée ───────────────────────────────────────────────────
+
+// Hauteurs d'image qui alternent pour l'effet masonry
+const _imgHeights = [150.0, 115.0, 185.0];
 
 class _PartList extends StatelessWidget {
   final List<Part> parts;
@@ -249,12 +252,9 @@ class _PartList extends StatelessWidget {
             ),
           ),
         ),
-        SliverList.separated(
-          itemCount: parts.length,
-          separatorBuilder: (_, _) => const Divider(height: 1, indent: 72),
-          itemBuilder: (_, i) => _PartTile(part: parts[i]),
+        SliverToBoxAdapter(
+          child: _StaggeredPartsGrid(parts: parts),
         ),
-        // Spinner "chargement suivant"
         if (isLoadingMore)
           const SliverToBoxAdapter(
             child: Padding(
@@ -262,7 +262,6 @@ class _PartList extends StatelessWidget {
               child: Center(child: CircularProgressIndicator()),
             ),
           ),
-        // Message "tout chargé"
         if (!hasMore && parts.isNotEmpty)
           SliverToBoxAdapter(
             child: Padding(
@@ -282,24 +281,56 @@ class _PartList extends StatelessWidget {
   }
 }
 
-class _PartTile extends ConsumerStatefulWidget {
-  final Part part;
-  const _PartTile({required this.part});
+class _StaggeredPartsGrid extends StatelessWidget {
+  final List<Part> parts;
+  const _StaggeredPartsGrid({required this.parts});
 
   @override
-  ConsumerState<_PartTile> createState() => _PartTileState();
+  Widget build(BuildContext context) {
+    final left  = <(Part, double)>[];
+    final right = <(Part, double)>[];
+    for (int i = 0; i < parts.length; i++) {
+      final h = _imgHeights[i % _imgHeights.length];
+      if (i.isEven) left.add((parts[i], h));
+      else          right.add((parts[i], h));
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(children: left.map((e) =>
+                _PartCard(part: e.$1, imageHeight: e.$2)).toList()),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(children: right.map((e) =>
+                _PartCard(part: e.$1, imageHeight: e.$2)).toList()),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _PartTileState extends ConsumerState<_PartTile> {
+class _PartCard extends ConsumerStatefulWidget {
+  final Part part;
+  final double imageHeight;
+  const _PartCard({required this.part, required this.imageHeight});
+
+  @override
+  ConsumerState<_PartCard> createState() => _PartCardState();
+}
+
+class _PartCardState extends ConsumerState<_PartCard> {
   bool _toggling = false;
 
   Future<void> _toggle() async {
     if (_toggling) return;
     setState(() => _toggling = true);
     try {
-      await ref
-          .read(catalogRepositoryProvider)
-          .togglePartAvailability(widget.part.id);
+      await ref.read(catalogRepositoryProvider).togglePartAvailability(widget.part.id);
       ref.read(partListProvider.notifier).refresh();
     } finally {
       if (mounted) setState(() => _toggling = false);
@@ -312,95 +343,163 @@ class _PartTileState extends ConsumerState<_PartTile> {
     final isStaff   = ref.watch(authProvider).isStaff;
     final part      = widget.part;
     final typeLabel = _typeLabels[part.type] ?? part.type.toUpperCase();
-    final condColor = _conditionColors[part.condition] ?? Colors.grey;
 
-    // Compatibilité avec le véhicule du garage sélectionné.
-    // Sentinel -1 → retourne un Set vide immédiatement (pas d'appel API).
     final selectedVehicle = ref.watch(selectedGarageVehicleProvider);
-    final idsAsync = ref.watch(
-      compatiblePartIdsProvider(selectedVehicle?.id ?? -1),
-    );
+    final idsAsync = ref.watch(compatiblePartIdsProvider(selectedVehicle?.id ?? -1));
     final isCompatible = selectedVehicle != null &&
         (idsAsync.valueOrNull?.contains(part.id) ?? false);
 
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: part.isOem ? cs.primaryContainer : cs.secondaryContainer,
-        child: Text(
-          typeLabel.substring(0, 1),
-          style: TextStyle(
-            color: part.isOem ? cs.onPrimaryContainer : cs.onSecondaryContainer,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      title: Text(part.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text.rich(
-        TextSpan(
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      clipBehavior: Clip.hardEdge,
+      elevation: 1.5,
+      shadowColor: cs.shadow.withValues(alpha: 0.12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () => context.push('/parts/${part.id}', extra: part),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (part.sku != null)
-              TextSpan(
-                text: part.sku,
-                style: const TextStyle(fontFamily: 'monospace'),
-              ),
-            if (part.categoryName != null) ...[
-              const TextSpan(text: ' · '),
-              TextSpan(text: part.categoryName!),
-            ],
-          ],
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: cs.outline),
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Text(
-            formatXofShort(part.pricing.sellingPrice),
-            style: TextStyle(fontWeight: FontWeight.w700, color: cs.primary),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Badge compatibilité garage (visible uniquement si compatible)
-              if (isCompatible) ...[
-                Icon(Icons.check_circle, size: 12, color: Colors.green),
-                const SizedBox(width: 3),
-              ],
-              // Pastille état (neuf / reconditionné / occasion)
-              Container(
-                width: 7,
-                height: 7,
-                margin: const EdgeInsets.only(right: 4),
-                decoration: BoxDecoration(
-                  color: condColor,
-                  shape: BoxShape.circle,
+            // ── Zone image ─────────────────────────────────────────
+            Stack(
+              children: [
+                SizedBox(
+                  height: widget.imageHeight,
+                  width: double.infinity,
+                  child: part.coverUrl != null
+                      ? Image.network(part.coverUrl!, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              _PartPlaceholder(type: typeLabel, isOem: part.isOem, cs: cs))
+                      : _PartPlaceholder(type: typeLabel, isOem: part.isOem, cs: cs),
                 ),
-              ),
-              // Badge disponibilité (tappable pour le staff)
-              _toggling
-                  ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : GestureDetector(
-                      onTap: isStaff ? _toggle : null,
-                      child: _AvailabilityBadge(isAvailable: part.stock.isAvailable),
+                // Badge staff toggle
+                if (isStaff)
+                  Positioned(
+                    top: 6, right: 6,
+                    child: _toggling
+                        ? const SizedBox(width: 18, height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : GestureDetector(
+                            onTap: _toggle,
+                            child: _SmallAvailabilityBadge(isAvailable: part.stock.isAvailable),
+                          ),
+                  ),
+                if (isCompatible)
+                  Positioned(
+                    top: 6, left: 6,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.85),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.check, size: 10, color: Colors.white),
                     ),
-            ],
+                  ),
+              ],
+            ),
+
+            // ── Infos ──────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(part.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  if (part.categoryName != null) ...[
+                    const SizedBox(height: 2),
+                    Text(part.categoryName!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelSmall
+                          ?.copyWith(color: cs.outline),
+                    ),
+                  ],
+                  const SizedBox(height: 6),
+                  Text(
+                    formatXofShort(part.pricing.sellingPrice),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: cs.primary,
+                      fontSize: 13,
+                    ),
+                  ),
+                  if (!isStaff) ...[
+                    const SizedBox(height: 4),
+                    _AvailabilityBadge(isAvailable: part.stock.isAvailable),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Placeholder dégradé pour pièce sans photo.
+class _PartPlaceholder extends StatelessWidget {
+  final String type;
+  final bool isOem;
+  final ColorScheme cs;
+  const _PartPlaceholder({required this.type, required this.isOem, required this.cs});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: isOem
+          ? [cs.primaryContainer, cs.primary.withValues(alpha: 0.45)]
+          : [cs.secondaryContainer, cs.secondary.withValues(alpha: 0.35)],
+      ),
+    ),
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.settings_outlined, size: 30,
+              color: isOem ? cs.onPrimaryContainer : cs.onSecondaryContainer),
+          const SizedBox(height: 4),
+          Text(type,
+            style: TextStyle(
+              color: isOem ? cs.onPrimaryContainer : cs.onSecondaryContainer,
+              fontWeight: FontWeight.w600,
+              fontSize: 10,
+            ),
           ),
         ],
       ),
-      onTap: () => context.push('/parts/${part.id}', extra: part),
-    );
-  }
+    ),
+  );
+}
+
+/// Petit badge disponibilité en overlay (staff).
+class _SmallAvailabilityBadge extends StatelessWidget {
+  final bool isAvailable;
+  const _SmallAvailabilityBadge({required this.isAvailable});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+    decoration: BoxDecoration(
+      color: (isAvailable ? Colors.green : Colors.red).withValues(alpha: 0.85),
+      borderRadius: BorderRadius.circular(6),
+    ),
+    child: Text(
+      isAvailable ? '✓' : '✗',
+      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+    ),
+  );
 }
 
 /// Badge "Disponible" / "Indisponible" — tappable pour le staff.

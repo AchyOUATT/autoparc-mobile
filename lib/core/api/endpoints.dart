@@ -20,7 +20,7 @@ class Endpoints {
   ///   _device   → device physique sur le même WiFi
   ///   _ngrok    → test distant via tunnel temporaire
   ///   _railway  → production Railway (test/prod)
-  static const String baseUrl = _render;
+  static const String baseUrl = _emulator;
 
   // ── Auth ────────────────────────────────────────────────────────
   static const String login  = '/login';

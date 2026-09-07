@@ -218,14 +218,14 @@ class AutoParcApp extends StatelessWidget {
       routerConfig: _buildRouter(onboardingDone: onboardingDone),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1A3C5E),
+          seedColor: const Color(0xFF8AAFC8), // bleu ardoise pâle — très doux
           brightness: Brightness.light,
         ),
         useMaterial3: true,
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1A3C5E),
+          seedColor: const Color(0xFF8AAFC8),
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
@@ -292,13 +292,38 @@ class _AppShellState extends ConsumerState<_AppShell> {
       key: scaffoldKey,
       drawer: const _AppDrawer(),
       body: widget.child,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: tabIndex,
-        onDestinationSelected: (i) => context.go(_tabs[i].path),
-        destinations: _tabs.map((t) => NavigationDestination(
-          icon:  Icon(t.icon),
-          label: t.label,
-        )).toList(),
+      bottomNavigationBar: Theme(
+        data: Theme.of(context).copyWith(
+          navigationBarTheme: NavigationBarThemeData(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            indicatorColor:  Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.18),
+            iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
+              color: states.contains(WidgetState.selected)
+                  ? Theme.of(context).colorScheme.onPrimary
+                  : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.55),
+              size: 24,
+            )),
+            labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
+              color: states.contains(WidgetState.selected)
+                  ? Colors.white
+                  : const Color(0xFFB0CCDE), // bleu clair doux pour non sélectionné
+              fontSize: 12,
+              fontWeight: states.contains(WidgetState.selected)
+                  ? FontWeight.w600
+                  : FontWeight.w400,
+            )),
+          ),
+        ),
+        child: NavigationBar(
+          selectedIndex: tabIndex,
+          onDestinationSelected: (i) => context.go(_tabs[i].path),
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          destinations: _tabs.map((t) => NavigationDestination(
+            icon:        Icon(t.icon),
+            selectedIcon: Icon(t.icon),
+            label:       t.label,
+          )).toList(),
+        ),
       ),
     );
   }
