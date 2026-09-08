@@ -168,89 +168,132 @@ class _FilterChips extends ConsumerWidget {
           fn(ref.read(vehicleFilterProvider));
     }
 
-    return SizedBox(
-      height: 44,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        scrollDirection: Axis.horizontal,
-        children: [
-          FilterChip(
-            label: const Text('À vendre'),
-            selected: filter.availability == 'sale',
-            onSelected: (_) => update((f) => f.copyWith(
-              availability: f.availability == 'sale' ? null : 'sale',
-              clearAvailability: f.availability == 'sale',
-            )),
-          ),
-          const SizedBox(width: 8),
-          FilterChip(
-            label: const Text('À louer'),
-            selected: filter.availability == 'rent',
-            onSelected: (_) => update((f) => f.copyWith(
-              availability: f.availability == 'rent' ? null : 'rent',
-              clearAvailability: f.availability == 'rent',
-            )),
-          ),
-          const SizedBox(width: 8),
-          FilterChip(
-            label: const Text('Neuf'),
-            selected: filter.condition == 'new',
-            onSelected: (_) => update((f) => f.condition == 'new'
-                ? f.copyWith(clearCondition: true)
-                : f.copyWith(condition: 'new')),
-          ),
-          const SizedBox(width: 8),
-          const _VDiv(),
-          const SizedBox(width: 8),
-          FilterChip(
-            avatar: const Icon(Icons.airport_shuttle_outlined, size: 14),
-            label: const Text('Utilitaire'),
-            selected: filter.vehicleType == 'utility',
-            onSelected: (_) => update((f) => f.copyWith(
-              vehicleType: f.vehicleType == 'utility' ? null : 'utility',
-              clearVehicleType: f.vehicleType == 'utility',
-            )),
-          ),
-          const SizedBox(width: 8),
-          FilterChip(
-            avatar: const Icon(Icons.local_shipping_outlined, size: 14),
-            label: const Text('Poids lourd'),
-            selected: filter.vehicleType == 'heavy',
-            onSelected: (_) => update((f) => f.copyWith(
-              vehicleType: f.vehicleType == 'heavy' ? null : 'heavy',
-              clearVehicleType: f.vehicleType == 'heavy',
-            )),
-          ),
-          if (cities.isNotEmpty) ...[
+    return _ChipRow(
+      children: [
+        const _GroupLabel('Offre'),
+        FilterChip(
+          label: const Text('À vendre'),
+          selected: filter.availability == 'sale',
+          onSelected: (_) => update((f) => f.copyWith(
+            availability: f.availability == 'sale' ? null : 'sale',
+            clearAvailability: f.availability == 'sale',
+          )),
+        ),
+        const SizedBox(width: 8),
+        FilterChip(
+          label: const Text('À louer'),
+          selected: filter.availability == 'rent',
+          onSelected: (_) => update((f) => f.copyWith(
+            availability: f.availability == 'rent' ? null : 'rent',
+            clearAvailability: f.availability == 'rent',
+          )),
+        ),
+        const SizedBox(width: 8),
+        FilterChip(
+          label: const Text('Neuf'),
+          selected: filter.condition == 'new',
+          onSelected: (_) => update((f) => f.condition == 'new'
+              ? f.copyWith(clearCondition: true)
+              : f.copyWith(condition: 'new')),
+        ),
+        const SizedBox(width: 20),
+        const _GroupLabel('Type'),
+        FilterChip(
+          avatar: const Icon(Icons.airport_shuttle_outlined, size: 14),
+          label: const Text('Utilitaire'),
+          selected: filter.vehicleType == 'utility',
+          onSelected: (_) => update((f) => f.copyWith(
+            vehicleType: f.vehicleType == 'utility' ? null : 'utility',
+            clearVehicleType: f.vehicleType == 'utility',
+          )),
+        ),
+        const SizedBox(width: 8),
+        FilterChip(
+          avatar: const Icon(Icons.local_shipping_outlined, size: 14),
+          label: const Text('Poids lourd'),
+          selected: filter.vehicleType == 'heavy',
+          onSelected: (_) => update((f) => f.copyWith(
+            vehicleType: f.vehicleType == 'heavy' ? null : 'heavy',
+            clearVehicleType: f.vehicleType == 'heavy',
+          )),
+        ),
+        if (cities.isNotEmpty) ...[
+          const SizedBox(width: 20),
+          const _GroupLabel('Ville'),
+          for (final city in cities) ...[
+            FilterChip(
+              avatar: const Icon(Icons.location_on_outlined, size: 14),
+              label: Text(city),
+              selected: filter.city == city,
+              onSelected: (_) => update((f) => f.copyWith(
+                city: f.city == city ? null : city,
+                clearCity: f.city == city,
+                clearLocation: f.city == city,
+              )),
+            ),
             const SizedBox(width: 8),
-            const _VDiv(),
-            for (final city in cities) ...[
-              const SizedBox(width: 8),
-              FilterChip(
-                avatar: const Icon(Icons.location_on_outlined, size: 14),
-                label: Text(city),
-                selected: filter.city == city,
-                onSelected: (_) => update((f) => f.copyWith(
-                  city: f.city == city ? null : city,
-                  clearCity: f.city == city,
-                  clearLocation: f.city == city,
-                )),
-              ),
-            ],
           ],
         ],
+      ],
+    );
+  }
+}
+
+/// Rangée de puces défilante horizontalement.
+///
+/// Le dégradé sur les bords remplace la coupe nette : une puce à moitié
+/// estompée se lit comme « ça continue », pas comme un défaut d'affichage.
+class _ChipRow extends StatelessWidget {
+  final List<Widget> children;
+  const _ChipRow({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: ShaderMask(
+        shaderCallback: (rect) => const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            Colors.transparent,
+            Colors.black,
+            Colors.black,
+            Colors.transparent,
+          ],
+          stops: [0, 0.03, 0.92, 1],
+        ).createShader(rect),
+        blendMode: BlendMode.dstIn,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          scrollDirection: Axis.horizontal,
+          children: children,
+        ),
       ),
     );
   }
 }
 
-class _VDiv extends StatelessWidget {
-  const _VDiv();
+/// Intitulé d'un groupe de filtres — distingue les taxonomies
+/// (offre commerciale, type de véhicule, ville, carrosserie) que le
+/// style uniforme des puces confondait.
+class _GroupLabel extends StatelessWidget {
+  final String text;
+  const _GroupLabel(this.text);
+
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 10),
-    child: VerticalDivider(width: 1, thickness: 1,
-      color: Theme.of(context).colorScheme.outlineVariant),
+  Widget build(BuildContext context) => Center(
+    child: Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Text(
+        text.toUpperCase(),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(context).colorScheme.outline,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.6,
+        ),
+      ),
+    ),
   );
 }
 
@@ -276,13 +319,10 @@ class _BodyStyleChips extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // N'affiche la rangée que si au moins un style est sélectionné ou toujours visible
-    return SizedBox(
-      height: 44,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        scrollDirection: Axis.horizontal,
-        children: _bodyStyles.map((s) {
+    return _ChipRow(
+      children: [
+        const _GroupLabel('Carrosserie'),
+        ..._bodyStyles.map((s) {
           final selected = filter.bodyStyle == s.value;
           return Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -299,8 +339,8 @@ class _BodyStyleChips extends ConsumerWidget {
               },
             ),
           );
-        }).toList(),
-      ),
+        }),
+      ],
     );
   }
 }
@@ -327,11 +367,14 @@ class _VehicleGrid extends StatelessWidget {
       controller: scrollCtrl,
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
           sliver: SliverToBoxAdapter(
             child: Text(
               '$total résultat${total > 1 ? 's' : ''}',
-              style: Theme.of(context).textTheme.bodySmall,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
@@ -340,7 +383,9 @@ class _VehicleGrid extends StatelessWidget {
           sliver: SliverGrid.builder(
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 220,
-              childAspectRatio: 0.72,
+              // 0.92 au lieu de 0.72 : sans photos réelles, le placeholder
+              // mangeait la moitié de l'écran pour une icône générique.
+              childAspectRatio: 0.92,
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
             ),
@@ -371,6 +416,8 @@ class _VehicleGrid extends StatelessWidget {
               ),
             ),
           ),
+        // Dégage la dernière rangée de la barre de navigation et du FAB.
+        const SliverToBoxAdapter(child: SizedBox(height: 88)),
       ],
     );
   }
@@ -403,7 +450,7 @@ class _VehicleCard extends StatelessWidget {
                   vehicle.mediaUrls.isEmpty
                       ? Container(
                           color: cs.surfaceContainerHighest,
-                          child: Icon(Icons.directions_car, size: 56, color: cs.outline),
+                          child: Icon(Icons.directions_car, size: 40, color: cs.outline),
                         )
                       : Image.network(vehicle.mediaUrls.first, fit: BoxFit.cover),
 
@@ -415,17 +462,30 @@ class _VehicleCard extends StatelessWidget {
                   if (vehicle.isImported && vehicle.import_ != null)
                     Positioned(
                       top: 8, right: 8,
+                      // Statut douanier : information d'une autre nature que
+                      // la disponibilité commerciale. Style ajouré plutôt que
+                      // plein, pour ne pas se confondre avec le badge de
+                      // gauche quand les deux cohabitent sur une même carte.
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: vehicle.import_!.customsCleared
-                              ? Colors.green.shade700
-                              : Colors.orange.shade700,
+                          color: Colors.white.withValues(alpha: 0.92),
                           borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: vehicle.import_!.customsCleared
+                                ? const Color(0xFF2E6F6B)
+                                : const Color(0xFFB26A00),
+                          ),
                         ),
                         child: Text(
                           vehicle.import_!.customsCleared ? 'Dédouané' : 'En attente',
-                          style: const TextStyle(color: Colors.white, fontSize: 10),
+                          style: TextStyle(
+                            color: vehicle.import_!.customsCleared
+                                ? const Color(0xFF2E6F6B)
+                                : const Color(0xFFB26A00),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -441,7 +501,10 @@ class _VehicleCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Textes d'identification (min-height)
+                    // Textes d'identification. Les deux lignes secondaires
+                    // occupent une hauteur fixe même vides : sinon une fiche
+                    // sans finition ou sans ville remonte son prix et se
+                    // désaligne de la carte voisine.
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -454,33 +517,38 @@ class _VehicleCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (id.trim != null)
-                          Text(
-                            id.trim!,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: cs.outline,
-                            ),
-                            maxLines: 1,
-                          ),
-                        if (c.locationLabel != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Row(
-                              children: [
-                                Icon(Icons.location_on_outlined, size: 12, color: cs.outline),
-                                const SizedBox(width: 2),
-                                Expanded(
-                                  child: Text(
-                                    c.locationLabel!,
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(color: cs.outline),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                        SizedBox(
+                          height: 16,
+                          child: id.trim == null
+                              ? null
+                              : Text(
+                                  id.trim!,
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(color: cs.outline),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ],
-                            ),
-                          ),
+                        ),
+                        SizedBox(
+                          height: 16,
+                          child: c.locationLabel == null
+                              ? null
+                              : Row(
+                                  children: [
+                                    Icon(Icons.location_on_outlined, size: 12, color: cs.outline),
+                                    const SizedBox(width: 2),
+                                    Expanded(
+                                      child: Text(
+                                        c.locationLabel!,
+                                        style: Theme.of(context).textTheme.bodySmall
+                                            ?.copyWith(color: cs.outline),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
                       ],
                     ),
                     // Prix toujours en bas
@@ -502,17 +570,30 @@ class _AvailabilityBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = vehicle.commercial;
-    final (label, color) = switch (c.availability) {
-      'both' => ('Vente & Location', Colors.blue.shade700),
-      'sale' => ('À vendre',         Colors.green.shade700),
-      'rent' => ('À louer',          Colors.purple.shade700),
-      _      => ('Indisponible',     Colors.grey.shade600),
+    final c  = vehicle.commercial;
+    final cs = Theme.of(context).colorScheme;
+    // Palette explicite plutôt que les rôles du ColorScheme : le thème naît
+    // d'un seed bleu ardoise, dont Material dérive un `secondary` désaturé
+    // (le badge se lisait comme « indisponible ») et un `tertiary` lavande
+    // étranger à la marque. Ces trois tons sont profonds et désaturés comme
+    // le bleu de marque, et restent distincts entre eux.
+    final (label, bg) = switch (c.availability) {
+      'both' => ('Vente & Location', const Color(0xFF2E6F6B)), // sarcelle
+      'sale' => ('À vendre',         const Color(0xFF1F5C7A)), // ardoise
+      'rent' => ('À louer',          const Color(0xFFB26A00)), // ocre
+      _      => ('Indisponible',     cs.outline),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4)),
-      child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 10)),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(4)),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
