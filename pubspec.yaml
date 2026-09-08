@@ -37,6 +37,10 @@ dependencies:
   # Images réseau avec cache
   cached_network_image: ^3.4.1
 
+  # Logos de marques : les sources publiques les distribuent en SVG, qui reste
+  # net à toutes les tailles. À retirer si l'on repasse à des PNG.
+  flutter_svg: ^2.0.10
+
   # Formatage (dates, monnaie XOF)
   intl: ^0.19.0
 
@@ -63,3 +67,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    # Logos de marques, nommés sur le slug de la table `brands`
+    # (bmw.svg, land-rover.svg…). Voir assets/brands/README.md.
+    # Le dossier est déclaré même s'il est vide : l'appli se rabat
+    # proprement sur l'icône générique tant qu'un fichier manque.
+    - assets/brands/
