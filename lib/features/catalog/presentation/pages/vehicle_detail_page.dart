@@ -2,16 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/models/vehicle.dart';
 import '../providers/catalog_providers.dart';
+import '../../../../core/utils/contact_info.dart';
 import '../../../../core/utils/currency_format.dart';
+import '../../../../core/widgets/brand_logo.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../../vehicles/data/vehicle_admin_repository.dart';
 import '../../../vehicles/data/models/catalog_refs.dart';
 import '../../../vehicles/presentation/widgets/vehicle_faults_section.dart';
+
+// Séparateur de milliers à la française : « 246 965 km » plutôt que « 246965 ».
+final _integer = NumberFormat.decimalPattern('fr_FR');
+final _decimal = NumberFormat('#,##0.0', 'fr_FR');
 
 // Ordre d'affichage et libellés des catégories de features
 const _categoryLabels = <String, String>{
@@ -22,8 +29,11 @@ const _categoryLabels = <String, String>{
   'aide_conduite': 'Aides à la conduite',
   'autre':         'Autres',
 };
+// La dotation ferme la marche : cric, gilet, carnet d'entretien sont présents
+// sur tout le parc et ne départagent aucun véhicule. Les équipements qui font
+// choisir un acheteur passent devant.
 const _categoryOrder = [
-  'dotation', 'confort', 'securite', 'multimedia', 'aide_conduite', 'autre',
+  'confort', 'securite', 'multimedia', 'aide_conduite', 'autre', 'dotation',
 ];
 
 class VehicleDetailPage extends ConsumerWidget {
@@ -137,11 +147,8 @@ class _VehicleDetailView extends ConsumerWidget {
               background: vehicle.mediaUrls.isEmpty
                   ? Container(
                       color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      child: Icon(
-                        Icons.directions_car,
-                        size: 80,
-                        color: Theme.of(context).colorScheme.outline,
-                      ),
+                      alignment: Alignment.center,
+                      child: BrandLogo(slug: id.brandSlug, size: 96),
                     )
                   : Image.network(vehicle.mediaUrls.first, fit: BoxFit.cover),
             ),
@@ -166,16 +173,26 @@ class _VehicleDetailView extends ConsumerWidget {
                     if (id.trim     != null) ('Finition',     id.trim!),
                     if (id.engineType != null) ('Motorisation', id.engineType!),
                     if (id.drivetrain != null) ('Transmission', id.drivetrain!),
-                    if (id.color    != null) ('Couleur',      id.color!),
-                    ('Référence',  vehicle.reference),
+                    if (vehicle.combinedL100km != null)
+                      ('Consommation', '${_decimal.format(vehicle.combinedL100km)} L/100 km'),
                   ]),
+                  if (id.color != null)
+                    _ColorRow(
+                      name: id.color!,
+                      hex: id.colorHex,
+                      finish: id.colorFinish,
+                    ),
+                  _InfoGrid([('Référence', vehicle.reference)]),
                   const SizedBox(height: 20),
 
                   // ── État ────────────────────────────────────────
                   _SectionTitle('État'),
                   _InfoGrid([
                     ('Condition', _conditionLabel(c.condition)),
-                    ('Statut',    c.status),
+                    // Le kilométrage décrit l'usure : sa place est ici, aux
+                    // côtés de la condition, plutôt que dans l'identité.
+                    if (vehicle.mileageKm != null)
+                      ('Kilométrage', '${_integer.format(vehicle.mileageKm)} km'),
                     if (vehicle.faultsCount > 0)
                       ('Pannes déclarées', '${vehicle.faultsCount}'),
                   ]),
@@ -232,7 +249,7 @@ class _VehicleDetailView extends ConsumerWidget {
           : null,
 
       // ── Barre d'action (clients uniquement) ───────────────────
-      bottomNavigationBar: isStaff ? null : _ActionBar(commercial: c),
+      bottomNavigationBar: isStaff ? null : const _ActionBar(),
     );
   }
 
@@ -387,43 +404,35 @@ class _ImportSection extends StatelessWidget {
 // ── Barre d'actions ────────────────────────────────────────────────
 
 class _ActionBar extends StatelessWidget {
-  final VehicleCommercial commercial;
-  const _ActionBar({required this.commercial});
+  const _ActionBar();
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        // Les deux actions ouvrent le même numéro commercial, par appel ou par
+        // WhatsApp. Elles remplacent des boutons dont le `onPressed` était vide.
         child: Row(
           children: [
-            // Bouton secondaire : contact
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {},
+                onPressed: () => launchUrl(Uri.parse('tel:$kContactPhone')),
                 icon:  const Icon(Icons.phone),
-                label: const Text('Contacter'),
+                label: const Text('Appeler'),
               ),
             ),
             const SizedBox(width: 12),
-
-            // Bouton principal : acheter ou louer
-            if (commercial.isForSale)
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () {},
-                  icon:  const Icon(Icons.handshake),
-                  label: const Text('Acheter'),
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: () => launchUrl(
+                  Uri.parse('https://wa.me/$kContactWhatsApp'),
+                  mode: LaunchMode.externalApplication,
                 ),
-              )
-            else if (commercial.isForRent)
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () {},
-                  icon:  const Icon(Icons.key),
-                  label: const Text('Réserver'),
-                ),
+                icon:  const Icon(Icons.chat),
+                label: const Text('WhatsApp'),
               ),
+            ),
           ],
         ),
       ),
@@ -572,6 +581,12 @@ class _FeaturesSection extends StatelessWidget {
       grouped.putIfAbsent(f.category, () => []).add(f);
     }
 
+    // Tri alphabétique dans chaque catégorie : l'ordre naturel suivait les
+    // identifiants en base, donc rien de repérable à l'œil.
+    for (final list in grouped.values) {
+      list.sort((a, b) => _sortKey(a.name).compareTo(_sortKey(b.name)));
+    }
+
     // Catégories présentes, triées selon _categoryOrder (extras à la fin)
     final orderedKeys = [
       ..._categoryOrder.where(grouped.containsKey),
@@ -581,13 +596,13 @@ class _FeaturesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _SectionTitle('Équipements'),
         for (final cat in orderedKeys) ...[
-          const SizedBox(height: 16),
-          _SectionTitle(_categoryLabels[cat] ?? cat),
-          if (cat == 'dotation')
-            _DotationGrid(items: grouped[cat]!)
-          else
-            _FeatureChips(items: grouped[cat]!),
+          const SizedBox(height: 14),
+          _FeatureCategoryLabel(_categoryLabels[cat] ?? cat),
+          // La dotation est une information de conformité, pas un argument de
+          // vente : contour discret plutôt que pastille pleine.
+          _FeaturePills(items: grouped[cat]!, outlined: cat == 'dotation'),
         ],
         const SizedBox(height: 4),
       ],
@@ -595,63 +610,93 @@ class _FeaturesSection extends StatelessWidget {
   }
 }
 
-/// Dotation (triangle, cric…) : grille avec icône de présence bien visible.
-class _DotationGrid extends StatelessWidget {
-  final List<VehicleFeature> items;
-  const _DotationGrid({required this.items});
+/// Clé de tri insensible aux accents.
+///
+/// `compareTo` compare des unités UTF-16 : « â » (U+00E2) y passe après « r »,
+/// si bien que « Câbles de démarrage » se rangeait derrière « Cric ».
+String _sortKey(String s) {
+  const accents = 'àâäáãçéèêëíìîïñóòôöõúùûüýÿœæ';
+  const plain   = 'aaaaaceeeeiiiinooooouuuuyyoa';
 
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: items.map((f) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.amber.withOpacity(0.12),
-            border: Border.all(color: Colors.amber.shade400, width: 1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.check_circle_rounded,
-                  size: 15, color: Colors.amber.shade700),
-              const SizedBox(width: 5),
-              Text(
-                f.name,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: cs.onSurface,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
+  final out = StringBuffer();
+  for (final char in s.toLowerCase().split('')) {
+    final i = accents.indexOf(char);
+    out.write(i == -1 ? char : plain[i]);
   }
+
+  return out.toString();
 }
 
-/// Autres catégories (confort, sécurité…) : chips simples.
-class _FeatureChips extends StatelessWidget {
+/// Intitulé de sous-catégorie. Volontairement subordonné aux `_SectionTitle`
+/// (« Véhicule », « Import »…) : « Confort » est une sous-partie du bloc
+/// équipements, pas une section de même rang.
+class _FeatureCategoryLabel extends StatelessWidget {
+  final String text;
+  const _FeatureCategoryLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Text(
+      text.toUpperCase(),
+      // Meme correction que les libelles de `_InfoRow` : ce sont des textes,
+      // pas des bordures.
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.6,
+      ),
+    ),
+  );
+}
+
+/// Pastilles d'équipement.
+///
+/// Plates et sans relief à dessein : elles ne sont pas cliquables, alors que
+/// les `Chip` employées auparavant étaient quasi identiques aux `FilterChip`
+/// de la page de recherche, qui le sont — on tapait dessus sans effet.
+///
+/// Aucune coche non plus : tout ce qui figure ici est présent, rien d'absent
+/// n'est affiché, donc une icône de validation par ligne ne dirait rien et
+/// suggérerait à tort qu'il existe des cases décochées.
+class _FeaturePills extends StatelessWidget {
   final List<VehicleFeature> items;
-  const _FeatureChips({required this.items});
+
+  /// Contour seul au lieu d'un fond plein — réservé à la dotation.
+  final bool outlined;
+
+  const _FeaturePills({required this.items, this.outlined = false});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+
+    // Le gris `surfaceContainerHighest` ne tenait pas sur ce fond quasi blanc :
+    // 1,23:1 mesuré, soit une pastille invisible, alors que sa forme porte une
+    // information — c'est elle qui sépare « Freins à disques avant » de
+    // « Freins à disques 4 roues ». C'est la bordure qui assure désormais la
+    // délimitation (3,23:1, au-dessus du seuil WCAG 1.4.11 de 3:1) ; le fond
+    // reste discret pour que 26 étiquettes ne pèsent pas plus que le prix.
+    final tint = cs.primary;
+
     return Wrap(
-      spacing: 8,
+      spacing: 6,
       runSpacing: 6,
-      children: items.map((f) => Chip(
-        label: Text(f.name, style: const TextStyle(fontSize: 12)),
-        visualDensity: VisualDensity.compact,
-        backgroundColor: cs.surfaceContainerHighest,
-        side: BorderSide.none,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
+      children: items.map((f) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          // La dotation garde son statut de second rang par l'absence de fond,
+          // pas par une bordure plus pâle qui la rendrait illisible.
+          color: outlined ? null : tint.withValues(alpha: 0.12),
+          border: Border.all(color: tint.withValues(alpha: 0.70)),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          f.name,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: outlined ? cs.onSurfaceVariant : cs.onSurface,
+          ),
+        ),
       )).toList(),
     );
   }
@@ -754,8 +799,11 @@ class _InfoRow extends StatelessWidget {
           width: 140,
           child: Text(
             label,
+            // `outline` est un role de bordure : a 4,27:1 mesure, ces libelles
+            // passaient sous le seuil AA de 4,5:1 pour du texte de 12sp.
+            // `onSurfaceVariant` est le role prevu pour du texte secondaire.
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.outline,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -765,6 +813,82 @@ class _InfoRow extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// Ligne « Couleur », avec une pastille de la teinte réelle.
+///
+/// Le nom seul ne renseigne pas : « Bordeaux », « Gris titanium » ou
+/// « Blanc nacré » ne se visualisent pas. La teinte vient de `colors.hex_code`
+/// en base — jamais d'une correspondance devinée à partir du libellé, qui
+/// serait fausse dès la première nuance inhabituelle.
+class _ColorRow extends StatelessWidget {
+  final String name;
+  final String? hex;
+  final String? finish;
+
+  const _ColorRow({required this.name, this.hex, this.finish});
+
+  Color? get _swatch {
+    final raw = hex?.replaceFirst('#', '');
+    if (raw == null || raw.length != 6) return null;
+    final value = int.tryParse(raw, radix: 16);
+    return value == null ? null : Color(0xFF000000 | value);
+  }
+
+  String get _label => switch (finish) {
+    'metallise' => '$name (métallisé)',
+    'nacre'     => '$name (nacré)',
+    _           => name,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final swatch = _swatch;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 140,
+            child: Text(
+              'Couleur',
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: cs.onSurfaceVariant),
+            ),
+          ),
+          Expanded(
+            child: Row(
+              children: [
+                if (swatch != null) ...[
+                  Container(
+                    width: 14,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: swatch,
+                      borderRadius: BorderRadius.circular(3),
+                      // Sans cette bordure, « Blanc » (#FFFFFF) serait
+                      // invisible sur le fond quasi blanc de la page.
+                      border: Border.all(color: cs.outline),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: Text(
+                    _label,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _InfoGrid extends StatelessWidget {

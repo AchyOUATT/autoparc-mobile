@@ -6,6 +6,22 @@ double? _dq(dynamic v) => v == null ? null : _d(v);
 
 // ── Feature / équipement ─────────────────────────────────────────────
 
+/// Laravel sérialise les colonnes `decimal` en chaînes — `"9.40"`, pas `9.4`.
+/// Un cast direct en `num?` lève une exception qui fait échouer le parsing de
+/// tout le catalogue, pas seulement du champ concerné.
+double? _asDouble(Object? value) => switch (value) {
+  null    => null,
+  num n   => n.toDouble(),
+  _       => double.tryParse(value.toString()),
+};
+
+int? _asInt(Object? value) => switch (value) {
+  null    => null,
+  int n   => n,
+  num n   => n.toInt(),
+  _       => int.tryParse(value.toString()),
+};
+
 class VehicleFeature extends Equatable {
   final int    id;
   final String name;
@@ -43,6 +59,13 @@ class Vehicle extends Equatable {
   final List<String> mediaUrls;
   final List<VehicleFeature> features;
 
+  /// Kilométrage. L'API le résout côté serveur : compteur de la carte grise
+  /// pour un véhicule immatriculé, odomètre relevé à l'import sinon.
+  final int? mileageKm;
+
+  /// Consommation mixte, en L/100 km.
+  final double? combinedL100km;
+
   const Vehicle({
     required this.id,
     required this.reference,
@@ -57,6 +80,8 @@ class Vehicle extends Equatable {
     required this.faultsCount,
     required this.mediaUrls,
     this.features = const [],
+    this.mileageKm,
+    this.combinedL100km,
   });
 
   factory Vehicle.fromJson(Map<String, dynamic> json) {
@@ -84,6 +109,9 @@ class Vehicle extends Equatable {
                               ?.map((f) => VehicleFeature.fromJson(f as Map<String, dynamic>))
                               .toList() ??
                           [],
+      mileageKm:          _asInt((json['technical'] as Map<String, dynamic>?)?['mileage_km']),
+      combinedL100km:     _asDouble(
+                              (json['consumption'] as Map<String, dynamic>?)?['combined_l_100km']),
     );
   }
 
@@ -101,33 +129,58 @@ class Vehicle extends Equatable {
 
 class VehicleIdentity extends Equatable {
   final String brand;
+
+  /// Slug de la marque (`land-rover`, `mercedes-benz`…). Sert à retrouver le
+  /// logo : `assets/brands/<slug>.svg`. Le nom affiché ne convient pas comme
+  /// nom de fichier une fois accentué ou espacé.
+  final String? brandSlug;
+
+  /// Chemin du logo côté serveur, si un jour le staff en téléverse un.
+  final String? brandLogoPath;
+
   final String model;
   final String? generation;
   final String? trim;
   final String? engineType;
   final String? drivetrain;
   final String? color;
+
+  /// Code hexadécimal de la teinte, ex. `#4A4A4A`. Sert à afficher une
+  /// pastille : « Bordeaux » ou « Gris titanium » ne se devinent pas.
+  final String? colorHex;
+
+  /// Finition de la peinture : `opaque`, `metallise`, `nacre`.
+  final String? colorFinish;
+
   final int? year;
 
   const VehicleIdentity({
     required this.brand,
+    this.brandSlug,
+    this.brandLogoPath,
     required this.model,
     this.generation,
     this.trim,
     this.engineType,
     this.drivetrain,
     this.color,
+    this.colorHex,
+    this.colorFinish,
     this.year,
   });
 
   factory VehicleIdentity.fromJson(Map<String, dynamic> json) => VehicleIdentity(
-    brand:       json['brand']       as String,
+    brand:         json['brand']           as String,
+    brandSlug:     json['brand_slug']      as String?,
+    brandLogoPath: json['brand_logo_path'] as String?,
     model:       json['model']       as String,
     generation:  json['generation']  as String?,
     trim:        json['trim']        as String?,
     engineType:  json['engine_type'] as String?,
     drivetrain:  json['drivetrain']  as String?,
     color:       json['color']       as String?,
+    colorHex:    json['color_hex']    as String?,
+    colorFinish: json['color_finish'] as String?,
     year:        json['year']        as int?,
   );
 
@@ -184,6 +237,14 @@ class VehicleCommercial extends Equatable {
   final String? locationCity;  // "Ouagadougou"
   final VehiclePartner? partner; // partenaire source (staff)
 
+  /// Mise en avant commerciale : `good_deal`, `flash_sale`, `clearance`.
+  /// `null` signifie « pas de promotion ».
+  final String? dealType;
+
+  /// Libellé traduit du type, fourni par l'API pour éviter de dupliquer la
+  /// traduction des trois valeurs côté application.
+  final String? dealLabel;
+
   const VehicleCommercial({
     required this.condition,
     required this.status,
@@ -200,12 +261,15 @@ class VehicleCommercial extends Equatable {
     this.locationName,
     this.locationCity,
     this.partner,
+    this.dealType,
+    this.dealLabel,
   });
 
   bool get isForSale   => availability == 'sale' || availability == 'both';
   bool get isForRent   => availability == 'rent' || availability == 'both';
   bool get isInStock   => status == 'in_stock';
   bool get isDamaged   => condition == 'damaged';
+  bool get isDeal      => dealType != null;
 
   factory VehicleCommercial.fromJson(Map<String, dynamic> json) => VehicleCommercial(
     condition:        json['condition']    as String,
@@ -225,6 +289,8 @@ class VehicleCommercial extends Equatable {
     partner:          json['partner'] != null
                         ? VehiclePartner.fromJson(json['partner'] as Map<String, dynamic>)
                         : null,
+    dealType:         json['deal_type']  as String?,
+    dealLabel:        json['deal_label'] as String?,
   );
 
   /// Label de localisation affiché sur les cartes et fiches.

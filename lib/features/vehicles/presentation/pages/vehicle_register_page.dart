@@ -67,6 +67,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   // ── Step 4 — Commercial ────────────────────────────────────────────
   String _condition    = 'used';   // 'new' | 'used' | 'damaged'
   String _availability = 'sale';   // 'sale' | 'rent' | 'both'
+
+  /// Mise en avant commerciale. Chaîne vide = aucune promotion : le
+  /// `_ChoiceGroup` exige une valeur non nulle, on la traduit en `null` au
+  /// moment de l'envoi.
+  String _dealType = '';
   bool   _negotiable   = false;
   int?   _selectedPartnerId;
   final _salePriceCtrl       = TextEditingController();
@@ -90,6 +95,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       _condition    = e.commercial.condition;
       _availability = e.commercial.availability;
       _negotiable   = e.commercial.priceNegotiable;
+      _dealType     = e.commercial.dealType ?? '';
       if (e.commercial.salePrice != null)
         _salePriceCtrl.text = _fmtPrice(e.commercial.salePrice!);
       if (e.commercial.rentalDailyRate != null)
@@ -259,6 +265,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       'condition':          _condition,
       'availability':       _availability,
       'price_negotiable':   _negotiable,
+      // Explicitement null quand aucune promotion : c'est ce qui permet d'en
+      // retirer une à l'édition.
+      'deal_type':          _dealType.isEmpty ? null : _dealType,
       if (forSale && _salePriceCtrl.text.trim().isNotEmpty)
         'sale_price': int.parse(_salePriceCtrl.text.replaceAll(RegExp(r'\s'), '')),
       if (forRent && _rentalDailyCtrl.text.trim().isNotEmpty)
@@ -798,6 +807,23 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             ],
             selected: _availability,
             onChanged: (v) => setState(() => _availability = v),
+          ),
+          const SizedBox(height: 16),
+
+          // Mise en avant commerciale
+          Text('Mise en avant',
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          const SizedBox(height: 6),
+          _ChoiceGroup<String>(
+            options: const [
+              (value: '',           label: 'Aucune'),
+              (value: 'good_deal',  label: 'Bonne affaire'),
+              (value: 'flash_sale', label: 'Vente flash'),
+              (value: 'clearance',  label: 'Déstockage'),
+            ],
+            selected: _dealType,
+            onChanged: (v) => setState(() => _dealType = v),
           ),
           const SizedBox(height: 16),
 

@@ -6,6 +6,7 @@ import '../../data/models/vehicle.dart';
 import '../providers/catalog_providers.dart';
 import '../../../../shared/models/paged_state.dart';
 import '../../../../core/utils/currency_format.dart';
+import '../../../../core/widgets/brand_logo.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
@@ -189,13 +190,7 @@ class _FilterChips extends ConsumerWidget {
           )),
         ),
         const SizedBox(width: 8),
-        FilterChip(
-          label: const Text('Neuf'),
-          selected: filter.condition == 'new',
-          onSelected: (_) => update((f) => f.condition == 'new'
-              ? f.copyWith(clearCondition: true)
-              : f.copyWith(condition: 'new')),
-        ),
+        _DealChip(filter: filter),
         const SizedBox(width: 8),
         FilterChip(
           avatar: const Icon(Icons.verified_outlined, size: 14),
@@ -244,6 +239,84 @@ class _FilterChips extends ConsumerWidget {
           ],
         ],
       ],
+    );
+  }
+}
+
+/// Puce « Bonne affaire », qui remplace l'ancien filtre « Neuf ».
+///
+/// Elle pulse doucement tant qu'il existe des promotions et qu'elle n'est pas
+/// encore activée : c'est ce qui la fait remarquer dans une rangée de filtres
+/// par ailleurs immobile. L'animation s'arrête dès qu'on l'active — une puce
+/// qui continue de bouger après avoir été prise en compte devient une gêne.
+///
+/// Elle est également désactivée lorsque le système signale une préférence
+/// pour la réduction des animations.
+class _DealChip extends ConsumerStatefulWidget {
+  final VehicleFilter filter;
+  const _DealChip({required this.filter});
+
+  @override
+  ConsumerState<_DealChip> createState() => _DealChipState();
+}
+
+class _DealChipState extends ConsumerState<_DealChip>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+
+  /// La pulsation ne se joue qu'une fois par affichage de la page.
+  bool _pulsed = false;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = widget.filter.deal == true;
+    final count    = ref.watch(dealCountProvider).valueOrNull ?? 0;
+    final animate  = count > 0 &&
+        !selected &&
+        !MediaQuery.disableAnimationsOf(context);
+
+    // Trois battements, puis plus rien. Une pulsation perpétuelle forcerait un
+    // rendu à chaque vsync tant que la page est ouverte — coûteux en batterie
+    // et vite agaçant — sans attirer davantage l'attention qu'un signal bref.
+    if (animate && !_pulsed) {
+      _pulsed = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _ctrl.repeat(reverse: true, count: 3);
+      });
+    } else if (!animate && _ctrl.isAnimating) {
+      _ctrl.stop();
+      _ctrl.value = 0;
+    }
+
+    final chip = FilterChip(
+      avatar: const Icon(Icons.local_offer_outlined, size: 14),
+      label: Text(count > 0 ? 'Bonne affaire ($count)' : 'Bonne affaire'),
+      selected: selected,
+      onSelected: (_) {
+        ref.read(vehicleFilterProvider.notifier).state = selected
+            ? widget.filter.copyWith(clearDeal: true)
+            : widget.filter.copyWith(deal: true);
+      },
+    );
+
+    return AnimatedBuilder(
+      animation: _ctrl,
+      // Transform.scale ne modifie pas la mise en page : les puces voisines
+      // ne bougent pas pendant la pulsation.
+      builder: (_, child) => Transform.scale(
+        scale: 1 + 0.05 * Curves.easeInOut.transform(_ctrl.value),
+        child: child,
+      ),
+      child: chip,
     );
   }
 }
@@ -432,6 +505,37 @@ class _VehicleGrid extends StatelessWidget {
   }
 }
 
+// ── Mise en avant ───────────────────────────────────────────────
+
+/// Étiquette de mise en avant. Ocre, comme « À louer » : c'est la couleur que
+/// cette interface réserve à ce qui appelle l'attention.
+class _DealBadge extends StatelessWidget {
+  final VehicleCommercial commercial;
+  const _DealBadge({required this.commercial});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = commercial.dealLabel;
+    if (label == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFFB26A00),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
 // ── Carte véhicule ──────────────────────────────────────────────
 
 class _VehicleCard extends StatelessWidget {
@@ -457,9 +561,16 @@ class _VehicleCard extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   vehicle.mediaUrls.isEmpty
+                      // Sans photo, le logo de la marque rend la grille
+                      // identifiable — auparavant les 80 cartes affichaient
+                      // exactement la même icône grise.
                       ? Container(
                           color: cs.surfaceContainerHighest,
-                          child: Icon(Icons.directions_car, size: 40, color: cs.outline),
+                          alignment: Alignment.center,
+                          child: BrandLogo(
+                            slug: vehicle.identity.brandSlug,
+                            size: 56,
+                          ),
                         )
                       : Image.network(vehicle.mediaUrls.first, fit: BoxFit.cover),
 
@@ -467,6 +578,14 @@ class _VehicleCard extends StatelessWidget {
                     top: 8, left: 8,
                     child: _AvailabilityBadge(vehicle: vehicle),
                   ),
+
+                  // En bas à gauche : les deux coins hauts sont déjà pris par
+                  // la disponibilité et le statut douanier.
+                  if (c.isDeal)
+                    Positioned(
+                      bottom: 8, left: 8,
+                      child: _DealBadge(commercial: c),
+                    ),
 
                   if (vehicle.isImported && vehicle.import_ != null)
                     Positioned(

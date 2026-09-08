@@ -26,6 +26,7 @@ class VehicleFilter {
   final String? city;
   final int? locationId;
   final bool? customsCleared; // true = uniquement les importés dédouanés
+  final bool? deal;           // true = uniquement les véhicules mis en avant
 
   const VehicleFilter({
     this.search,
@@ -39,6 +40,7 @@ class VehicleFilter {
     this.city,
     this.locationId,
     this.customsCleared,
+    this.deal,
   });
 
   VehicleFilter copyWith({
@@ -53,6 +55,7 @@ class VehicleFilter {
     String? city,
     int? locationId,
     bool? customsCleared,
+    bool? deal,
     bool clearSearch = false,
     bool clearAvailability = false,
     bool clearCondition = false,
@@ -64,6 +67,7 @@ class VehicleFilter {
     bool clearCity = false,
     bool clearLocation = false,
     bool clearCustomsCleared = false,
+    bool clearDeal = false,
   }) =>
       VehicleFilter(
         search:         clearSearch         ? null : (search       ?? this.search),
@@ -77,6 +81,7 @@ class VehicleFilter {
         city:           clearCity           ? null : (city         ?? this.city),
         locationId:     clearLocation       ? null : (locationId   ?? this.locationId),
         customsCleared: clearCustomsCleared ? null : (customsCleared ?? this.customsCleared),
+        deal:           clearDeal           ? null : (deal           ?? this.deal),
       );
 }
 
@@ -222,6 +227,7 @@ class VehicleListNotifier extends AutoDisposeNotifier<PagedState<Vehicle>> {
         city:         filter.city,
         locationId:   filter.locationId,
         customsCleared: filter.customsCleared,
+        deal:           filter.deal,
       );
       _page = nextPage;
       state = state.copyWith(
@@ -421,6 +427,19 @@ class PartListNotifier extends AutoDisposeNotifier<PagedState<Part>> {
 final vehicleDetailProvider =
     FutureProvider.autoDispose.family<Vehicle, int>((ref, id) async {
   return ref.read(catalogRepositoryProvider).getVehicle(id);
+});
+
+/// Nombre de véhicules mis en avant (bonne affaire, vente flash, déstockage).
+///
+/// Sert uniquement à savoir s'il faut signaler la puce « Bonne affaire » :
+/// on demande donc une seule ligne et on ne lit que le total, plutôt que de
+/// rapatrier des véhicules dont on n'affiche rien.
+final dealCountProvider = FutureProvider<int>((ref) async {
+  final resp = await ref.read(catalogRepositoryProvider).getVehicles(
+    deal: true,
+    perPage: 1,
+  );
+  return resp.total;
 });
 
 final accessoryDetailProvider =
