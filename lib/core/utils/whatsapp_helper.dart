@@ -1,11 +1,11 @@
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../features/cart/data/models/cart_item.dart';
+import 'contact_info.dart';
 import 'currency_format.dart';
 
-/// Numéro WhatsApp du service commercial AutoParc (format international sans +).
-/// À remplacer par le vrai numéro avant la mise en production.
-const _shopWhatsAppPhone = '22600000000';
+// Le numéro vient désormais de contact_info.dart — il vivait ici en double,
+// avec une valeur fictive différente de celle de main.dart.
 
 /// Compose le message WhatsApp à partir du panier.
 String buildWhatsAppMessage(List<CartItem> items) {
@@ -41,7 +41,7 @@ String buildWhatsAppMessage(List<CartItem> items) {
 Future<bool> launchWhatsApp(List<CartItem> items) async {
   final text    = buildWhatsAppMessage(items);
   final encoded = Uri.encodeComponent(text);
-  final uri     = Uri.parse('https://wa.me/$_shopWhatsAppPhone?text=$encoded');
+  final uri     = Uri.parse('https://wa.me/$kContactWhatsApp?text=$encoded');
   if (await canLaunchUrl(uri)) {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
     return true;

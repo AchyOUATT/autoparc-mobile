@@ -28,6 +28,7 @@ import 'features/needs/presentation/pages/needs_list_page.dart';
 import 'features/needs/presentation/pages/client_needs_page.dart';
 import 'features/notifications/presentation/pages/notifications_page.dart';
 import 'features/notifications/presentation/providers/notifications_provider.dart';
+import 'core/utils/contact_info.dart';
 import 'core/services/fcm_service.dart';
 import 'core/api/api_client.dart';
 import 'shared/presentation/pages/media_upload_page.dart';
@@ -234,10 +235,7 @@ class AutoParcApp extends StatelessWidget {
   }
 }
 
-// ── Coordonnées de contact (à adapter) ────────────────────────────
-const _kContactPhone    = '+226 70 00 00 00';
-const _kContactWhatsApp = '+226 70 00 00 00';
-const _kContactEmail    = 'contact@autoparc.com';
+// Coordonnées de contact : voir core/utils/contact_info.dart.
 
 // ── Shell avec NavigationBar + Drawer ─────────────────────────────
 
@@ -506,26 +504,24 @@ class _AppDrawer extends ConsumerWidget {
             _ContactTile(
               icon: Icons.phone_outlined,
               label: 'Téléphone',
-              value: _kContactPhone,
-              onTap: () => launchUrl(Uri.parse('tel:$_kContactPhone')),
+              value: kContactPhoneDisplay,
+              onTap: () => launchUrl(Uri.parse('tel:$kContactPhone')),
             ),
             const SizedBox(height: 12),
             _ContactTile(
               icon: Icons.chat_outlined,
               iconColor: const Color(0xFF25D366),
               label: 'WhatsApp',
-              value: _kContactWhatsApp,
-              onTap: () {
-                final n = _kContactWhatsApp.replaceAll(RegExp(r'[^\d+]'), '');
-                launchUrl(Uri.parse('https://wa.me/$n'));
-              },
+              value: kContactPhoneDisplay,
+              onTap: () =>
+                  launchUrl(Uri.parse('https://wa.me/$kContactWhatsApp')),
             ),
             const SizedBox(height: 12),
             _ContactTile(
               icon: Icons.email_outlined,
               label: 'Email',
-              value: _kContactEmail,
-              onTap: () => launchUrl(Uri.parse('mailto:$_kContactEmail')),
+              value: kContactEmail,
+              onTap: () => launchUrl(Uri.parse('mailto:$kContactEmail')),
             ),
           ],
         ),
