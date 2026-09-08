@@ -196,6 +196,15 @@ class _FilterChips extends ConsumerWidget {
               ? f.copyWith(clearCondition: true)
               : f.copyWith(condition: 'new')),
         ),
+        const SizedBox(width: 8),
+        FilterChip(
+          avatar: const Icon(Icons.verified_outlined, size: 14),
+          label: const Text('Dédouané'),
+          selected: filter.customsCleared == true,
+          onSelected: (_) => update((f) => f.customsCleared == true
+              ? f.copyWith(clearCustomsCleared: true)
+              : f.copyWith(customsCleared: true)),
+        ),
         const SizedBox(width: 20),
         const _GroupLabel('Type'),
         FilterChip(

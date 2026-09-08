@@ -25,6 +25,7 @@ class VehicleFilter {
   final double? priceMax;
   final String? city;
   final int? locationId;
+  final bool? customsCleared; // true = uniquement les importés dédouanés
 
   const VehicleFilter({
     this.search,
@@ -37,6 +38,7 @@ class VehicleFilter {
     this.priceMax,
     this.city,
     this.locationId,
+    this.customsCleared,
   });
 
   VehicleFilter copyWith({
@@ -50,6 +52,7 @@ class VehicleFilter {
     double? priceMax,
     String? city,
     int? locationId,
+    bool? customsCleared,
     bool clearSearch = false,
     bool clearAvailability = false,
     bool clearCondition = false,
@@ -60,18 +63,20 @@ class VehicleFilter {
     bool clearPriceMax = false,
     bool clearCity = false,
     bool clearLocation = false,
+    bool clearCustomsCleared = false,
   }) =>
       VehicleFilter(
-        search:       clearSearch        ? null : (search       ?? this.search),
-        availability: clearAvailability  ? null : (availability ?? this.availability),
-        condition:    clearCondition     ? null : (condition    ?? this.condition),
-        vehicleType:  clearVehicleType   ? null : (vehicleType  ?? this.vehicleType),
-        bodyStyle:    clearBodyStyle     ? null : (bodyStyle    ?? this.bodyStyle),
-        yearMin:      clearYearMin       ? null : (yearMin      ?? this.yearMin),
-        yearMax:      clearYearMax       ? null : (yearMax      ?? this.yearMax),
-        priceMax:     clearPriceMax      ? null : (priceMax     ?? this.priceMax),
-        city:         clearCity          ? null : (city         ?? this.city),
-        locationId:   clearLocation      ? null : (locationId   ?? this.locationId),
+        search:         clearSearch         ? null : (search       ?? this.search),
+        availability:   clearAvailability   ? null : (availability ?? this.availability),
+        condition:      clearCondition      ? null : (condition    ?? this.condition),
+        vehicleType:    clearVehicleType    ? null : (vehicleType  ?? this.vehicleType),
+        bodyStyle:      clearBodyStyle      ? null : (bodyStyle    ?? this.bodyStyle),
+        yearMin:        clearYearMin        ? null : (yearMin      ?? this.yearMin),
+        yearMax:        clearYearMax        ? null : (yearMax      ?? this.yearMax),
+        priceMax:       clearPriceMax       ? null : (priceMax     ?? this.priceMax),
+        city:           clearCity           ? null : (city         ?? this.city),
+        locationId:     clearLocation       ? null : (locationId   ?? this.locationId),
+        customsCleared: clearCustomsCleared ? null : (customsCleared ?? this.customsCleared),
       );
 }
 
@@ -216,6 +221,7 @@ class VehicleListNotifier extends AutoDisposeNotifier<PagedState<Vehicle>> {
         priceMax:     filter.priceMax,
         city:         filter.city,
         locationId:   filter.locationId,
+        customsCleared: filter.customsCleared,
       );
       _page = nextPage;
       state = state.copyWith(
