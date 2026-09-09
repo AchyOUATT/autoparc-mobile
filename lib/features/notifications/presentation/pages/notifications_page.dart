@@ -178,6 +178,20 @@ class _NotificationTile extends ConsumerWidget {
       case 'vehicle_match':
         final vehicleId = int.tryParse(data['vehicle_id']?.toString() ?? '');
         if (vehicleId != null) context.push('/vehicles/$vehicleId');
+
+      // Rappels d'entretien. La destination dépend de ce que le propriétaire
+      // a réellement à faire : une vidange se règle en achetant des pièces,
+      // une assurance ou une visite technique se règle ailleurs — il revient
+      // alors au garage pour saisir la nouvelle date.
+      case 'maintenance_service':
+        final ownedId = int.tryParse(data['owned_vehicle_id']?.toString() ?? '');
+        // Pas de catégorie imposée : une vidange demande l'huile *et* le
+        // filtre, en pré-filtrer une seule masquerait l'autre.
+        context.push(ownedId != null ? '/garage/$ownedId/parts' : '/garage');
+
+      case 'maintenance_technical_inspection':
+      case 'maintenance_insurance':
+        context.push('/garage');
       case 'new_order':
         // Selon order_type, on pourrait naviguer vers la commande
         // Pour l'instant, pas encore de page de détail commande

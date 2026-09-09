@@ -270,6 +270,20 @@ class _AppShellState extends ConsumerState<_AppShell> {
                 context.push('/notifications');
               case 'vehicle_match':
                 if (vehicleId != null) context.push('/vehicles/$vehicleId');
+
+              // Rappels d'entretien : même aiguillage que depuis la liste des
+              // notifications. Une vidange se règle en achetant des pièces, une
+              // assurance ou une visite technique en saisissant la nouvelle
+              // date au garage.
+              case 'maintenance_service':
+                final ownedId =
+                    int.tryParse(data['owned_vehicle_id']?.toString() ?? '');
+                context.push(
+                    ownedId != null ? '/garage/$ownedId/parts' : '/garage');
+              case 'maintenance_technical_inspection':
+              case 'maintenance_insurance':
+                context.push('/garage');
+
               default:
                 context.push('/notifications');
             }
