@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/catalog_repository.dart';
 import '../../data/models/part.dart';
+import '../../data/models/part_category.dart';
 import '../providers/catalog_providers.dart';
 import '../../../../shared/models/paged_state.dart';
 import '../../../../core/utils/currency_format.dart';
@@ -192,12 +193,42 @@ class _FilterBar extends ConsumerWidget {
           fn(ref.read(partFilterProvider));
     }
 
+    // La barre ne contenait que des villes. Aucune n'etant renseignee, elle
+    // s'affichait vide — 48 dp de rien — alors que la page presente 200
+    // references sans aucun moyen de les trier par nature. Les accessoires,
+    // eux, ont leurs categories pour seulement 80 articles.
+    //
+    // Seules les racines sont proposées : l'arbre compte 89 entrées sur trois
+    // niveaux, une barre de 89 puces serait interminable. Le serveur inclut
+    // les descendantes dans le filtre, donc « Freinage » couvre bien disques,
+    // plaquettes et flexibles — auxquels les pièces sont réellement rattachées.
+    final categories = (ref.watch(partCategoriesProvider).valueOrNull ??
+            const <PartCategory>[])
+        .where((c) => c.isRoot)
+        .toList();
+
+    if (categories.isEmpty && cities.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return SizedBox(
       height: 48,
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         scrollDirection: Axis.horizontal,
         children: [
+          for (final c in categories)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: Text(c.name),
+                selected: filter.categoryId == c.id,
+                onSelected: (_) => update((f) => f.categoryId == c.id
+                    ? f.copyWith(clearCategory: true)
+                    : f.copyWith(categoryId: c.id)),
+              ),
+            ),
+
           // Chips de ville
           for (final city in cities)
             Padding(
@@ -222,7 +253,10 @@ class _FilterBar extends ConsumerWidget {
 // ── Grille décalée ───────────────────────────────────────────────────
 
 // Hauteurs d'image qui alternent pour l'effet masonry
-const _imgHeights = [150.0, 115.0, 185.0];
+// Hauteur unique : des vignettes de tailles differentes decalaient les deux
+// colonnes, si bien que les prix ne s'alignaient jamais d'une carte a l'autre.
+// Sur un catalogue ou l'on compare des prix, c'est une gene, pas un effet.
+const _imgHeight = 118.0;
 
 class _PartList extends StatelessWidget {
   final List<Part> parts;
@@ -290,7 +324,7 @@ class _StaggeredPartsGrid extends StatelessWidget {
     final left  = <(Part, double)>[];
     final right = <(Part, double)>[];
     for (int i = 0; i < parts.length; i++) {
-      final h = _imgHeights[i % _imgHeights.length];
+      const h = _imgHeight;
       if (i.isEven) left.add((parts[i], h));
       else          right.add((parts[i], h));
     }
@@ -509,6 +543,10 @@ class _AvailabilityBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Une information portee par 100 % des cartes n'en est plus une : seule
+    // l'indisponibilite merite d'etre signalee.
+    if (isAvailable) return const SizedBox.shrink();
+
     final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -545,6 +583,23 @@ class _GarageFilterBanner extends ConsumerStatefulWidget {
 class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
   OwnedVehicle? _selected;
 
+  /// Restreint la liste aux pièces compatibles avec le véhicule choisi.
+  ///
+  /// Le filtrage est fait par le serveur : `getParts` bascule sur la route
+  /// des pièces compatibles dès qu'un `vehicleModelId` lui est passé. Filtrer
+  /// localement la page courante donnerait des pages de deux résultats et une
+  /// pagination incohérente.
+  bool _onlyCompatible = false;
+
+  void _applyCompatibleFilter(bool on) {
+    setState(() => _onlyCompatible = on);
+
+    final filter = ref.read(partFilterProvider);
+    ref.read(partFilterProvider.notifier).state = on && _selected != null
+        ? filter.copyWith(vehicleModelId: _selected!.vehicleModelId)
+        : filter.copyWith(clearVehicleModel: true);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -562,8 +617,11 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
 
   @override
   void dispose() {
-    // Efface le filtre actif quand on quitte la page des pièces.
+    // Efface le filtre actif quand on quitte la page des pièces — sans quoi
+    // on retrouverait la liste silencieusement restreinte à un véhicule.
     ref.read(selectedGarageVehicleProvider.notifier).state = null;
+    ref.read(partFilterProvider.notifier).state =
+        ref.read(partFilterProvider).copyWith(clearVehicleModel: true);
     super.dispose();
   }
 
@@ -617,19 +675,24 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
                     if (v == null) return;
                     setState(() => _selected = v);
                     ref.read(selectedGarageVehicleProvider.notifier).state = v;
+                    // Changer de véhicule alors que le filtre est actif doit
+                    // relancer la recherche sur le nouveau, pas conserver
+                    // silencieusement les pièces du précédent.
+                    if (_onlyCompatible) _applyCompatibleFilter(true);
                   },
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            FilledButton.tonal(
-              onPressed: () => context.push('/garage/${_selected!.id}/parts'),
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: const Text('Pièces compatibles'),
+            // Filtrer sur place plutôt qu'ouvrir un second écran : le véhicule
+            // est déjà choisi ici, et la liste sait déjà quelles pièces lui
+            // correspondent. Partir ailleurs faisait perdre la recherche, la
+            // catégorie et la ville déjà saisies.
+            FilterChip(
+              label: const Text('Compatibles'),
+              selected: _onlyCompatible,
+              onSelected: (on) => _applyCompatibleFilter(on),
+              visualDensity: VisualDensity.compact,
             ),
           ],
         ),

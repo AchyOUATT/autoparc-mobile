@@ -224,7 +224,8 @@ class _FilterBar extends ConsumerWidget {
 
 // ── Grille décalée ───────────────────────────────────────────────
 
-const _imgHeights = [145.0, 115.0, 180.0];
+// Hauteur unique : voir la note identique sur la page des pieces.
+const _imgHeight = 118.0;
 
 // Icônes par catégorie d'accessoire
 const _categoryIcons = <String, IconData>{
@@ -301,7 +302,7 @@ class _StaggeredAccessoryGrid extends StatelessWidget {
     final left  = <(Accessory, double)>[];
     final right = <(Accessory, double)>[];
     for (int i = 0; i < accessories.length; i++) {
-      final h = _imgHeights[i % _imgHeights.length];
+      const h = _imgHeight;
       if (i.isEven) left.add((accessories[i], h));
       else          right.add((accessories[i], h));
     }
@@ -449,27 +450,26 @@ class _AccessoryPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final icon = _categoryIcons[accessory.categoryValue] ?? Icons.inventory_2_outlined;
     return Container(
+      // `tertiary` est le lavande que Material derive du seed bleu ardoise :
+      // il n'appartient pas a la gamme de la marque. On reste sur les surfaces
+      // neutres, qui laissent l'icone et le texte porter l'information.
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [cs.tertiaryContainer, cs.tertiary.withValues(alpha: 0.4)],
+          colors: [
+            cs.surfaceContainerHighest,
+            cs.surfaceContainerHigh,
+          ],
         ),
       ),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 32, color: cs.onTertiaryContainer),
-            const SizedBox(height: 4),
-            if (accessory.categoryLabel != null)
-              Text(accessory.categoryLabel!,
-                style: TextStyle(
-                  color: cs.onTertiaryContainer,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 10,
-                ),
-              ),
+            // La categorie figure deja en sous-titre de la carte : la repeter
+            // ici affichait « Securite » sous « Securite ». Seule l'icone reste.
+            Icon(icon, size: 30, color: cs.onSurfaceVariant),
           ],
         ),
       ),
@@ -503,6 +503,10 @@ class _AvailabilityBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Une information portee par 100 % des cartes n'en est plus une : seule
+    // l'indisponibilite merite d'etre signalee.
+    if (isAvailable) return const SizedBox.shrink();
+
     final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

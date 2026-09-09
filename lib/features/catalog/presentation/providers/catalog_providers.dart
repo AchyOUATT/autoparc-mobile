@@ -159,13 +159,15 @@ class PartFilter {
     int? locationId,
     bool clearCity = false,
     bool clearLocation = false,
+    bool clearVehicleModel = false,
+    bool clearCategory = false,
   }) =>
       PartFilter(
         search:        search        ?? this.search,
         oem:           oem           ?? this.oem,
-        categoryId:    categoryId    ?? this.categoryId,
+        categoryId:    clearCategory ? null : (categoryId ?? this.categoryId),
         inStockOnly:   inStockOnly   ?? this.inStockOnly,
-        vehicleModelId:vehicleModelId?? this.vehicleModelId,
+        vehicleModelId:clearVehicleModel ? null : (vehicleModelId ?? this.vehicleModelId),
         city:          clearCity     ? null : (city       ?? this.city),
         locationId:    clearLocation ? null : (locationId ?? this.locationId),
       );
