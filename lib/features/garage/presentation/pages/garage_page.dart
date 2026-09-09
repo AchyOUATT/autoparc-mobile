@@ -432,6 +432,30 @@ class _DeadlinesSheetState extends State<_DeadlinesSheet> {
     setState(() => inspection ? _inspection = picked : _insurance = picked);
   }
 
+  /// Ce qui empêche encore le rappel de vidange de fonctionner, ou `null` si
+  /// tout est réuni. Le calcul côté serveur exige les trois valeurs : un
+  /// intervalle, le kilométrage de la dernière vidange, et le kilométrage
+  /// actuel du véhicule.
+  String? _missingForService() {
+    if (_interval == null) return null; // aucun suivi demandé
+
+    final hasLastService = int.tryParse(_serviceKmCtrl.text) != null;
+    final hasCurrent     = widget.vehicle.mileageKm != null;
+
+    if (!hasLastService && !hasCurrent) {
+      return 'Renseignez le kilométrage ci-dessus, ainsi que le kilométrage '
+          'actuel du véhicule via « Mettre à jour ».';
+    }
+    if (!hasLastService) {
+      return 'Renseignez le kilométrage de la dernière vidange ci-dessus.';
+    }
+    if (!hasCurrent) {
+      return 'Renseignez le kilométrage actuel du véhicule via « Mettre à jour ».';
+    }
+
+    return null;
+  }
+
   String _fmtDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
@@ -481,6 +505,9 @@ class _DeadlinesSheetState extends State<_DeadlinesSheet> {
           TextField(
             controller: _serviceKmCtrl,
             keyboardType: TextInputType.number,
+            // Le message d'aide dépend de ce champ : il doit suivre la saisie,
+            // pas attendre la fermeture de la feuille.
+            onChanged: (_) => setState(() {}),
             decoration: const InputDecoration(
               labelText: 'Kilométrage de la dernière vidange',
               suffixText: 'km',
@@ -500,11 +527,33 @@ class _DeadlinesSheetState extends State<_DeadlinesSheet> {
             ],
           ),
           const SizedBox(height: 6),
-          Text(
-            'Le rappel de vidange dépend du kilométrage que vous tenez à jour.',
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: cs.onSurfaceVariant),
-          ),
+          // Le calcul exige trois valeurs. Choisir un intervalle sans les
+          // autres ne produisait aucun rappel, et aucun message : l'utilisateur
+          // croyait avoir activé un suivi inexistant. On dit donc précisément
+          // ce qui manque, au moment où il fait le choix.
+          Builder(builder: (context) {
+            final missing = _missingForService();
+            final warn = missing != null;
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (warn) ...[
+                  Icon(Icons.info_outline, size: 15, color: cs.error),
+                  const SizedBox(width: 6),
+                ],
+                Expanded(
+                  child: Text(
+                    missing ??
+                        'Le rappel de vidange dépend du kilométrage que vous tenez à jour.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: warn ? cs.error : cs.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }),
 
           const SizedBox(height: 20),
           Row(
