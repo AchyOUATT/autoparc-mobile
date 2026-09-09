@@ -58,14 +58,25 @@ class ApiClient {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // 1. Token Sanctum (staff)
-    final sanctumToken = await _kStorage.read(key: _kTokenKey);
-    if (sanctumToken != null) {
-      options.headers['Authorization'] = 'Bearer $sanctumToken';
-      return handler.next(options);
+    // Le jeton dépend de la route, pas de ce qui traîne en mémoire.
+    //
+    // Les routes `/my/…` sont vérifiées par Firebase côté serveur
+    // (`Route::middleware('firebase')->prefix('my')`), les autres par Sanctum.
+    // Le jeton Sanctum était auparavant prioritaire partout : un membre du
+    // staff connecté envoyait donc son jeton Sanctum au garage, que Firebase
+    // rejetait en 401 « token invalide » — le garage devenait inutilisable dès
+    // qu'on s'était connecté côté personnel.
+    final isClientRoute = options.path.startsWith('/my/');
+
+    if (!isClientRoute) {
+      final sanctumToken = await _kStorage.read(key: _kTokenKey);
+      if (sanctumToken != null) {
+        options.headers['Authorization'] = 'Bearer $sanctumToken';
+        return handler.next(options);
+      }
     }
 
-    // 2. ID token Firebase (client mobile) — se rafraîchit automatiquement
+    // ID token Firebase (client mobile) — se rafraîchit automatiquement.
     try {
       final idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
       if (idToken != null) {
