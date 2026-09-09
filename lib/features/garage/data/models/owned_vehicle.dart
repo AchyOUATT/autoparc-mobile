@@ -17,6 +17,19 @@ class OwnedVehicle extends Equatable {
   final OwnedVehicleIdentity identity;
   final bool compatibilityReady;
 
+  /// Échéances d'entretien, de la plus urgente à la moins urgente.
+  ///
+  /// Calculées par le serveur, jamais ici : la tâche de rappel et l'affichage
+  /// doivent s'appuyer sur exactement le même calcul, sinon l'application
+  /// annoncera une date que la notification contredira.
+  final List<VehicleDeadline> deadlines;
+
+  /// Champs bruts, pour le formulaire de saisie.
+  final DateTime? technicalInspectionExpiry;
+  final DateTime? insuranceExpiry;
+  final int? lastServiceMileageKm;
+  final int? serviceIntervalKm;
+
   const OwnedVehicle({
     required this.id,
     required this.designation,
@@ -30,6 +43,11 @@ class OwnedVehicle extends Equatable {
     required this.year,
     required this.identity,
     required this.compatibilityReady,
+    this.deadlines = const [],
+    this.technicalInspectionExpiry,
+    this.insuranceExpiry,
+    this.lastServiceMileageKm,
+    this.serviceIntervalKm,
   });
 
   /// Nom affiché : le surnom en priorité, sinon la désignation complète.
@@ -49,6 +67,14 @@ class OwnedVehicle extends Equatable {
     identity:          OwnedVehicleIdentity.fromJson(
                            json['identity'] as Map<String, dynamic>),
     compatibilityReady: json['compatibility_ready'] as bool? ?? false,
+    deadlines:         (json['deadlines'] as List?)
+                           ?.map((d) => VehicleDeadline.fromJson(d as Map<String, dynamic>))
+                           .toList() ??
+                       const [],
+    technicalInspectionExpiry: _date(json['technical_inspection_expiry']),
+    insuranceExpiry:           _date(json['insurance_expiry']),
+    lastServiceMileageKm:      json['last_service_mileage_km'] as int?,
+    serviceIntervalKm:         json['service_interval_km']     as int?,
   );
 
   @override
@@ -56,6 +82,60 @@ class OwnedVehicle extends Equatable {
 
   /// Vrai si au moins une donnée technique est connue (moteur ou code moteur).
   bool get hasEngineData => engineCode != null || identity.engineType != null;
+
+  /// Échéance la plus urgente, dépassée ou non. `null` si rien n'est suivi.
+  VehicleDeadline? get nextDeadline =>
+      deadlines.isEmpty ? null : deadlines.first;
+}
+
+DateTime? _date(Object? value) =>
+    value == null ? null : DateTime.tryParse(value.toString());
+
+/// Une échéance d'entretien : visite technique, assurance ou vidange.
+class VehicleDeadline {
+  /// `technical_inspection`, `insurance` ou `service`.
+  final String kind;
+
+  /// Libellé prêt à afficher, fourni par le serveur.
+  final String label;
+
+  /// Date d'expiration. Nulle pour la vidange, suivie au kilométrage.
+  final DateTime? dueOn;
+
+  /// Jours restants, négatif si dépassée. Nul pour la vidange.
+  final int? daysLeft;
+
+  final bool overdue;
+
+  /// Précision libre, ex. « Dans 300 km ». Utilisée pour la vidange.
+  final String? detail;
+
+  const VehicleDeadline({
+    required this.kind,
+    required this.label,
+    this.dueOn,
+    this.daysLeft,
+    required this.overdue,
+    this.detail,
+  });
+
+  factory VehicleDeadline.fromJson(Map<String, dynamic> json) => VehicleDeadline(
+    kind:     json['kind']   as String,
+    label:    json['label']  as String,
+    dueOn:    _date(json['due_on']),
+    daysLeft: json['days_left'] as int?,
+    overdue:  json['overdue'] as bool? ?? false,
+    detail:   json['detail'] as String?,
+  );
+
+  /// Texte court résumant l'urgence, prêt pour une pastille.
+  String get summary {
+    if (detail != null) return detail!;
+    if (daysLeft == null) return label;
+    if (overdue) return 'Dépassée de ${daysLeft!.abs()} j';
+    if (daysLeft == 0) return "Expire aujourd'hui";
+    return 'Dans $daysLeft j';
+  }
 }
 
 class OwnedVehicleIdentity extends Equatable {

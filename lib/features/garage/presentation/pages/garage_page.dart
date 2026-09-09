@@ -235,6 +235,38 @@ class _VehicleCard extends ConsumerWidget {
             ),
           ),
 
+          // ── Échéances d'entretien ─────────────────────────────────
+          //
+          // Le bloc entier ouvre l'édition : c'est là que l'œil se pose quand
+          // on veut corriger une date, plutôt que dans un menu contextuel.
+          // Quand rien n'est suivi, l'état vide propose lui-même l'action.
+          if (vehicle.deadlines.isNotEmpty)
+            InkWell(
+              onTap: () => _editDeadlines(context, ref, vehicle),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final d in vehicle.deadlines)
+                      _DeadlineRow(deadline: d),
+                  ],
+                ),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 0, 16, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => _editDeadlines(context, ref, vehicle),
+                  icon: const Icon(Icons.notifications_none, size: 18),
+                  label: const Text('Suivre mes échéances'),
+                ),
+              ),
+            ),
+
           // ── Bouton pièces compatibles ─────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
@@ -267,6 +299,29 @@ class _VehicleCard extends ConsumerWidget {
   String _fmt(int n) {
     if (n >= 1000) return '${(n / 1000).toStringAsFixed(0)} k';
     return n.toString();
+  }
+
+  Future<void> _editDeadlines(
+    BuildContext context,
+    WidgetRef ref,
+    OwnedVehicle vehicle,
+  ) async {
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _DeadlinesSheet(vehicle: vehicle),
+    );
+
+    if (result == null || !context.mounted) return;
+
+    final error =
+        await ref.read(garageProvider.notifier).updateVehicle(vehicle.id, result);
+
+    if (error != null && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error), backgroundColor: Colors.red),
+      );
+    }
   }
 
   Future<void> _editMileage(
@@ -324,6 +379,256 @@ class _VehicleCard extends ConsumerWidget {
 }
 
 // ── Menu contextuel (éditer / supprimer) ─────────────────────────────
+
+/// Saisie des échéances d'entretien.
+///
+/// Tout est facultatif : un propriétaire qui ne renseigne qu'une assurance ne
+/// reçoit que ce rappel-là. Rien n'est donc obligatoire, et « Effacer » permet
+/// de cesser d'être notifié sans supprimer le véhicule.
+class _DeadlinesSheet extends StatefulWidget {
+  final OwnedVehicle vehicle;
+  const _DeadlinesSheet({required this.vehicle});
+
+  @override
+  State<_DeadlinesSheet> createState() => _DeadlinesSheetState();
+}
+
+class _DeadlinesSheetState extends State<_DeadlinesSheet> {
+  late DateTime? _inspection = widget.vehicle.technicalInspectionExpiry;
+  late DateTime? _insurance  = widget.vehicle.insuranceExpiry;
+  late final _serviceKmCtrl = TextEditingController(
+    text: widget.vehicle.lastServiceMileageKm?.toString() ?? '',
+  );
+  late int? _interval = widget.vehicle.serviceIntervalKm;
+
+  /// Intervalles courants. « Aucun » coupe le suivi kilométrique.
+  static const _intervals = [
+    (value: null, label: 'Aucun'),
+    (value: 5000, label: '5 000 km'),
+    (value: 10000, label: '10 000 km'),
+    (value: 15000, label: '15 000 km'),
+  ];
+
+  @override
+  void dispose() {
+    _serviceKmCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pick(bool inspection) async {
+    final now = DateTime.now();
+    final current = inspection ? _inspection : _insurance;
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current ?? now,
+      // Une date passée doit rester saisissable : un propriétaire dont la
+      // visite est déjà expirée est précisément celui qu'il faut prévenir.
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 10),
+    );
+
+    if (picked == null) return;
+    setState(() => inspection ? _inspection = picked : _insurance = picked);
+  }
+
+  String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        16, 16, 16, MediaQuery.viewInsetsOf(context).bottom + 16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Échéances d\'entretien',
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(
+            'Vous serez prévenu 30 jours avant, puis en cas de dépassement.',
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: cs.onSurfaceVariant),
+          ),
+          const SizedBox(height: 16),
+
+          _DateField(
+            label: 'Visite technique',
+            value: _inspection,
+            format: _fmtDate,
+            onPick: () => _pick(true),
+            onClear: () => setState(() => _inspection = null),
+          ),
+          _DateField(
+            label: 'Assurance',
+            value: _insurance,
+            format: _fmtDate,
+            onPick: () => _pick(false),
+            onClear: () => setState(() => _insurance = null),
+          ),
+
+          const SizedBox(height: 12),
+          Text('Vidange',
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: cs.onSurfaceVariant)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _serviceKmCtrl,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Kilométrage de la dernière vidange',
+              suffixText: 'km',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            children: [
+              for (final i in _intervals)
+                ChoiceChip(
+                  label: Text(i.label),
+                  selected: _interval == i.value,
+                  onSelected: (_) => setState(() => _interval = i.value),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Le rappel de vidange dépend du kilométrage que vous tenez à jour.',
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: cs.onSurfaceVariant),
+          ),
+
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Annuler'),
+              ),
+              const Spacer(),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, {
+                  'technical_inspection_expiry':
+                      _inspection?.toIso8601String().substring(0, 10),
+                  'insurance_expiry':
+                      _insurance?.toIso8601String().substring(0, 10),
+                  'last_service_mileage_km': int.tryParse(_serviceKmCtrl.text),
+                  'service_interval_km': _interval,
+                }),
+                child: const Text('Enregistrer'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Champ date en lecture seule : la saisie passe par le sélecteur, jamais au
+/// clavier — un format tapé à la main est la première source d'erreur ici.
+class _DateField extends StatelessWidget {
+  final String label;
+  final DateTime? value;
+  final String Function(DateTime) format;
+  final VoidCallback onPick;
+  final VoidCallback onClear;
+
+  const _DateField({
+    required this.label,
+    required this.value,
+    required this.format,
+    required this.onPick,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: onPick,
+            icon: const Icon(Icons.event, size: 18),
+            label: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value == null ? label : '$label — ${format(value!)}',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ),
+        if (value != null)
+          IconButton(
+            tooltip: 'Effacer',
+            icon: const Icon(Icons.close, size: 18),
+            onPressed: onClear,
+          ),
+      ],
+    ),
+  );
+}
+
+/// Une ligne d'échéance : visite technique, assurance ou vidange.
+///
+/// Trois états seulement — dépassée, proche, lointaine — parce qu'un
+/// propriétaire n'a besoin que de savoir s'il doit agir maintenant, bientôt,
+/// ou pas encore. Le rouge est réservé au dépassement : s'il servait aussi
+/// pour « dans trois semaines », il cesserait d'alerter.
+class _DeadlineRow extends StatelessWidget {
+  final VehicleDeadline deadline;
+  const _DeadlineRow({required this.deadline});
+
+  /// En deçà, l'échéance mérite d'être signalée.
+  static const _soonDays = 30;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final soon = deadline.daysLeft != null && deadline.daysLeft! <= _soonDays;
+
+    final (color, icon) = deadline.overdue
+        ? (cs.error, Icons.error_outline)
+        : soon
+            ? (const Color(0xFFB26A00), Icons.schedule)
+            : (cs.onSurfaceVariant, Icons.check_circle_outline);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              deadline.label,
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: cs.onSurfaceVariant),
+            ),
+          ),
+          Text(
+            deadline.summary,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: color,
+              fontWeight:
+                  deadline.overdue || soon ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _MoreMenu extends ConsumerWidget {
   final OwnedVehicle vehicle;
