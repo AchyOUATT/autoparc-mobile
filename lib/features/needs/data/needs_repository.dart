@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../catalog/data/catalog_repository.dart';
 import 'models/customer_need.dart';
 
 final needsRepositoryProvider = Provider<NeedsRepository>(
@@ -39,15 +40,14 @@ final publicModelsProvider =
 });
 
 /// Catégories de pièces détachées — pour le formulaire de besoin.
+///
+/// Passe par le dépôt catalogue plutôt que d'appeler l'endpoint en direct :
+/// c'est le même arbre que la barre de filtres de la page « Pièces », et il est
+/// désormais servi depuis le cache SQLite.
 final publicPartCategoriesProvider =
     FutureProvider.autoDispose<List<({int id, String name})>>((ref) async {
-  final client = ref.read(apiClientProvider);
-  final json   = await client.get('/catalog/part-categories');
-  final list   = json as List<dynamic>? ?? [];
-  return list
-      .map((e) => e as Map<String, dynamic>)
-      .map((e) => (id: e['id'] as int, name: e['name'] as String))
-      .toList();
+  final categories = await ref.read(catalogRepositoryProvider).getPartCategories();
+  return categories.map((c) => (id: c.id, name: c.name)).toList();
 });
 
 /// Fabricants / équipementiers — pour le formulaire de besoin.

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/api/endpoints.dart';
+import '../../../core/local/catalog_local_cache.dart';
 import '../../../shared/models/paginated_response.dart';
 import 'models/vehicle.dart';
 import 'models/accessory.dart';
@@ -10,13 +11,18 @@ import 'models/part_category.dart';
 import 'models/manufacturer.dart';
 
 final catalogRepositoryProvider = Provider<CatalogRepository>(
-  (ref) => CatalogRepository(ref.read(apiClientProvider)),
+  (ref) => CatalogRepository(
+    ref.read(apiClientProvider),
+    ref.read(catalogLocalCacheProvider),
+  ),
 );
 
 /// Accès aux données du catalogue public (pas d'auth requise).
 class CatalogRepository {
-  final ApiClient _client;
-  const CatalogRepository(this._client);
+  final ApiClient         _client;
+  final CatalogLocalCache _cache;
+
+  const CatalogRepository(this._client, this._cache);
 
   // ── Véhicules ────────────────────────────────────────────────────
 
@@ -111,10 +117,24 @@ class CatalogRepository {
 
   // ── Référentiels (pour les formulaires staff) ─────────────────────
 
+  /// Arbre des catégories de pièces.
+  /// Priorité : cache SQLite local (TTL 24 h) → appel API si expiré.
+  ///
+  /// La barre de filtres de la page « Pièces » en dépend : sans cache, l'arbre
+  /// complet (89 lignes, 4,5 Ko) était rappelé à chaque ouverture de la page.
   Future<List<PartCategory>> getPartCategories() async {
+    final cached = await _cache.loadRawPartCategories();
+    if (cached != null) return _parseCategories(cached);
+
     final list = await _client.getList(Endpoints.catalogPartCategories);
-    return list.map((e) => PartCategory.fromJson(e as Map<String, dynamic>)).toList();
+    await _cache.savePartCategories(list);
+
+    return _parseCategories(list);
   }
+
+  List<PartCategory> _parseCategories(List<dynamic> list) => list
+      .map((e) => PartCategory.fromJson(e as Map<String, dynamic>))
+      .toList();
 
   Future<List<Manufacturer>> getManufacturers() async {
     final list = await _client.getList(Endpoints.catalogManufacturers);

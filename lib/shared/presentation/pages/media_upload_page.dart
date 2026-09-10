@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/widgets/catalog_image.dart';
 import '../../data/media_repository.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -298,10 +299,13 @@ class _PhotoTile extends StatelessWidget {
         // Image
         ClipRRect(
           borderRadius: BorderRadius.circular(10),
-          child: Image.network(
-            item.url,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
+          child: CatalogImage(
+            url: item.url,
+            // Pendant le chargement, un aplat neutre : afficher l'icône
+            // « image cassée » avant même l'échec ferait croire à un média
+            // corrompu alors qu'il arrive.
+            whileLoading: ColoredBox(color: cs.surfaceContainerHighest),
+            fallback: Container(
               color: cs.surfaceContainerHighest,
               child: const Icon(Icons.broken_image_outlined),
             ),

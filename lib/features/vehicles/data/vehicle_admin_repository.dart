@@ -21,20 +21,87 @@ class VehicleAdminRepository {
 
   // ── Références catalogue ──────────────────────────────────────────────────
 
-  /// Charge les tables de référence.
-  /// Priorité : cache SQLite local (TTL 24 h) → appel API si expiré.
+  /// Silence total : sous ce délai, le cache est servi sans rien demander au
+  /// serveur. Évite un aller-retour à chaque redémarrage rapproché.
+  static const _quietWindow = Duration(minutes: 15);
+
+  /// Au-delà, on retélécharge tout. Le mode incrémental ne signale pas les
+  /// suppressions : ce rechargement périodique est ce qui purge du cache une
+  /// marque ou une agence retirée côté serveur.
+  static const _fullReloadAfter = Duration(days: 7);
+
+  /// Charge les tables de référence (≈ 79 Ko en version complète).
+  ///
+  /// Stratégie, du moins coûteux au plus coûteux :
+  /// 1. cache écrit il y a moins de 15 min → servi tel quel, zéro réseau ;
+  /// 2. cache plus ancien → `/catalog/sync?since=…` ne renvoie que les lignes
+  ///    modifiées depuis, soit quelques centaines d'octets tant que rien ne
+  ///    bouge — et les ajouts du personnel apparaissent au lancement suivant
+  ///    au lieu d'attendre l'expiration d'un TTL ;
+  /// 3. pas de cache, cache vieux d'une semaine ou format inconnu → appel complet.
+  ///
+  /// En cas d'échec réseau, la dernière version connue est renvoyée : la
+  /// connectivité est trop irrégulière pour qu'un formulaire reste vide alors
+  /// que les données sont déjà sur l'appareil.
   Future<CatalogRefs> loadRefs() async {
-    // 1. Cache frais ?
-    final cached = await _cache.loadRawRefs();
-    if (cached != null) return _parseRefs(cached);
+    final cached    = await _cache.loadRefs();
+    final since     = cached?.data['server_time'] as String?;
+    final canDelta  = cached != null && since != null &&
+                      cached.age < _fullReloadAfter;
 
-    // 2. Appel réseau
-    final json = await _client.get(Endpoints.catalogSync);
+    if (canDelta && cached.age < _quietWindow) {
+      return _parseRefs(cached.data);
+    }
 
-    // 3. Sauvegarde locale
-    await _cache.saveRefs(json);
+    try {
+      if (canDelta) {
+        final delta  = await _client.get(
+          Endpoints.catalogSync,
+          params: {'since': since},
+        );
+        final merged = _mergeRefs(cached.data, delta);
+        await _cache.saveRefs(merged);
+        return _parseRefs(merged);
+      }
 
-    return _parseRefs(json);
+      final json = await _client.get(Endpoints.catalogSync);
+      await _cache.saveRefs(json);
+      return _parseRefs(json);
+    } catch (_) {
+      if (cached != null) return _parseRefs(cached.data);
+      rethrow;
+    }
+  }
+
+  /// Applique un delta de `/catalog/sync?since=…` sur les refs en cache.
+  ///
+  /// Chaque liste est indexée par `id` : une ligne présente dans le delta
+  /// remplace son homologue locale, une nouvelle est ajoutée. Les clés scalaires
+  /// du delta (dont `server_time`, curseur du prochain appel) écrasent les anciennes.
+  Map<String, dynamic> _mergeRefs(
+    Map<String, dynamic> cached,
+    Map<String, dynamic> delta,
+  ) {
+    final merged = Map<String, dynamic>.from(cached);
+
+    delta.forEach((key, value) {
+      if (value is! List) {
+        merged[key] = value;
+        return;
+      }
+
+      final byId = <Object?, Map<String, dynamic>>{
+        for (final row in (cached[key] as List<dynamic>? ?? const []))
+          (row as Map<String, dynamic>)['id']: row,
+      };
+      for (final row in value) {
+        final map = row as Map<String, dynamic>;
+        byId[map['id']] = map;
+      }
+      merged[key] = byId.values.toList();
+    });
+
+    return merged;
   }
 
   /// Charge les pays.

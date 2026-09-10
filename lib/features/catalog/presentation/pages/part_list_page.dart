@@ -8,6 +8,7 @@ import '../../data/models/part_category.dart';
 import '../providers/catalog_providers.dart';
 import '../../../../shared/models/paged_state.dart';
 import '../../../../core/utils/currency_format.dart';
+import '../../../../core/widgets/catalog_image.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../../features/cart/presentation/pages/cart_page.dart';
 import '../../../../features/vehicles/presentation/providers/vehicle_refs_provider.dart';
@@ -401,9 +402,11 @@ class _PartCardState extends ConsumerState<_PartCard> {
                   height: widget.imageHeight,
                   width: double.infinity,
                   child: part.coverUrl != null
-                      ? Image.network(part.coverUrl!, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _PartPlaceholder(type: typeLabel, isOem: part.isOem, cs: cs))
+                      ? CatalogImage(
+                          url: part.coverUrl!,
+                          fallback: _PartPlaceholder(
+                              type: typeLabel, isOem: part.isOem, cs: cs),
+                        )
                       : _PartPlaceholder(type: typeLabel, isOem: part.isOem, cs: cs),
                 ),
                 // Badge staff toggle

@@ -40,6 +40,7 @@ import 'features/partners/presentation/pages/partner_form_page.dart';
 import 'core/providers/shell_scaffold_provider.dart';
 import 'core/local/catalog_local_cache.dart';
 import 'features/vehicles/presentation/providers/vehicle_refs_provider.dart';
+import 'features/catalog/presentation/providers/catalog_providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -415,6 +416,7 @@ class _AppDrawer extends ConsumerWidget {
                 await ref.read(catalogLocalCacheProvider).clear();
                 ref.invalidate(catalogRefsProvider);
                 ref.invalidate(countriesProvider);
+                ref.invalidate(partCategoriesProvider);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

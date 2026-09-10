@@ -10,6 +10,7 @@ import '../providers/catalog_providers.dart';
 import '../../../../core/utils/contact_info.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/brand_logo.dart';
+import '../../../../core/widgets/catalog_image.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../../vehicles/data/vehicle_admin_repository.dart';
@@ -145,12 +146,11 @@ class _VehicleDetailView extends ConsumerWidget {
                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
               background: vehicle.mediaUrls.isEmpty
-                  ? Container(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      alignment: Alignment.center,
-                      child: BrandLogo(slug: id.brandSlug, size: 96),
-                    )
-                  : Image.network(vehicle.mediaUrls.first, fit: BoxFit.cover),
+                  ? _CoverPlaceholder(slug: id.brandSlug)
+                  : CatalogImage(
+                      url: vehicle.mediaUrls.first,
+                      fallback: _CoverPlaceholder(slug: id.brandSlug),
+                    ),
             ),
           ),
 
@@ -301,6 +301,21 @@ class _VehicleDetailView extends ConsumerWidget {
     'damaged' => 'Accidenté',
     _         => condition,
   };
+}
+
+/// Fond du bandeau quand le véhicule n'a pas de photo — ou qu'elle n'arrive pas.
+///
+/// Le logo de la marque vaut mieux qu'un aplat gris : il reste identifiable.
+class _CoverPlaceholder extends StatelessWidget {
+  final String? slug;
+  const _CoverPlaceholder({required this.slug});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        alignment: Alignment.center,
+        child: BrandLogo(slug: slug, size: 96),
+      );
 }
 
 // ── Section prix ───────────────────────────────────────────────────

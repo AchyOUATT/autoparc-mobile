@@ -7,6 +7,7 @@ import '../providers/catalog_providers.dart';
 import '../../../../shared/models/paged_state.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/brand_logo.dart';
+import '../../../../core/widgets/catalog_image.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
@@ -548,6 +549,15 @@ class _VehicleCard extends StatelessWidget {
     final id = vehicle.identity;
     final cs = Theme.of(context).colorScheme;
 
+    // Sans photo, le logo de la marque rend la grille identifiable — auparavant
+    // les 80 cartes affichaient exactement la même icône grise. Il sert aussi
+    // de repli pendant le chargement de la photo, et si elle échoue.
+    final cover = Container(
+      color: cs.surfaceContainerHighest,
+      alignment: Alignment.center,
+      child: BrandLogo(slug: id.brandSlug, size: 56),
+    );
+
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -560,19 +570,13 @@ class _VehicleCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  vehicle.mediaUrls.isEmpty
-                      // Sans photo, le logo de la marque rend la grille
-                      // identifiable — auparavant les 80 cartes affichaient
-                      // exactement la même icône grise.
-                      ? Container(
-                          color: cs.surfaceContainerHighest,
-                          alignment: Alignment.center,
-                          child: BrandLogo(
-                            slug: vehicle.identity.brandSlug,
-                            size: 56,
-                          ),
-                        )
-                      : Image.network(vehicle.mediaUrls.first, fit: BoxFit.cover),
+                  if (vehicle.mediaUrls.isEmpty)
+                    cover
+                  else
+                    CatalogImage(
+                      url: vehicle.mediaUrls.first,
+                      fallback: cover,
+                    ),
 
                   Positioned(
                     top: 8, left: 8,
