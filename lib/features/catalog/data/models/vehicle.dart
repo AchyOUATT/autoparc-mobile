@@ -66,6 +66,20 @@ class Vehicle extends Equatable {
   /// Consommation mixte, en L/100 km.
   final double? combinedL100km;
 
+  /// Nombre d'équipements hors dotation standard, calculé par l'API.
+  ///
+  /// Null dans la liste du catalogue, qui ne charge pas les équipements : le
+  /// badge « Full option » ne vit que sur la fiche.
+  final int? optionalFeatureCount;
+
+  /// Vrai si le véhicule mérite la mention « full option ».
+  ///
+  /// Ce n'est pas une finition — aucun constructeur n'en fabrique une qui
+  /// porte ce nom. C'est un terme du marché de l'import, que le serveur
+  /// recalcule à partir des équipements réellement rattachés, pour que
+  /// l'acheteur puisse le vérifier juste en dessous.
+  final bool isFullOption;
+
   const Vehicle({
     required this.id,
     required this.reference,
@@ -82,6 +96,8 @@ class Vehicle extends Equatable {
     this.features = const [],
     this.mileageKm,
     this.combinedL100km,
+    this.optionalFeatureCount,
+    this.isFullOption = false,
   });
 
   factory Vehicle.fromJson(Map<String, dynamic> json) {
@@ -112,6 +128,8 @@ class Vehicle extends Equatable {
       mileageKm:          _asInt((json['technical'] as Map<String, dynamic>?)?['mileage_km']),
       combinedL100km:     _asDouble(
                               (json['consumption'] as Map<String, dynamic>?)?['combined_l_100km']),
+      optionalFeatureCount: _asInt(json['optional_feature_count']),
+      isFullOption:         json['is_full_option'] as bool? ?? false,
     );
   }
 

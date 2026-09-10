@@ -165,6 +165,14 @@ class _VehicleDetailView extends ConsumerWidget {
                 children: [
                   // ── Prix ───────────────────────────────────────
                   _PriceSection(commercial: c),
+
+                  // Le badge suit le prix : c'est là qu'il pèse dans la
+                  // décision. Il annonce son propre décompte, pour ne pas
+                  // demander à l'acheteur de croire un mot sur parole.
+                  if (vehicle.isFullOption) ...[
+                    const SizedBox(height: 12),
+                    _FullOptionBadge(count: vehicle.optionalFeatureCount),
+                  ],
                   const SizedBox(height: 20),
 
                   // ── Identité ────────────────────────────────────
@@ -319,6 +327,58 @@ class _CoverPlaceholder extends StatelessWidget {
         alignment: Alignment.center,
         child: BrandLogo(slug: slug, size: 96),
       );
+}
+
+/// Mention « Full option », calculée par l'API à partir des équipements.
+///
+/// Le terme vient du marché de l'import et n'engage d'ordinaire que le
+/// vendeur : deux véhicules annoncés « full option » n'ont pas forcément le
+/// même équipement. Le badge affiche donc son décompte, que l'acheteur
+/// retrouve détaillé dans la section « Équipements » plus bas.
+///
+/// Couleur en dur plutôt qu'un rôle du thème : les puces commerciales de
+/// l'application sont déjà codées par couleur (sarcelle pour la vente, ambre
+/// pour les bonnes affaires), et cette mention parle d'équipement, pas de
+/// prix — elle a besoin d'une teinte à elle. Contraste sur blanc : 10:1.
+class _FullOptionBadge extends StatelessWidget {
+  final int? count;
+  const _FullOptionBadge({required this.count});
+
+  static const _color = Color(0xFF4A3B6B);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: _color,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.workspace_premium_outlined,
+              size: 18, color: Colors.white),
+          const SizedBox(width: 8),
+          const Text(
+            'Full option',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (count != null) ...[
+            const SizedBox(width: 8),
+            Text(
+              '· $count équipements',
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 // ── Section prix ───────────────────────────────────────────────────
