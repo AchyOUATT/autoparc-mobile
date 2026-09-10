@@ -4,4 +4,9 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Même raison qu'en debug : un profilage se fait contre le serveur
+         local, qui répond en HTTP simple. Absent du manifeste principal, donc
+         absent des versions distribuées. -->
+    <application android:usesCleartextTraffic="true" />
 </manifest>

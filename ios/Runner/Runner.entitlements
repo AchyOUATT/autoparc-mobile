@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Notifications push (firebase_messaging).
+
+	     « development » vaut pour les builds lancés depuis Xcode ; Apple
+	     bascule automatiquement sur l'environnement de production lors d'un
+	     archivage signé pour TestFlight ou l'App Store, donc cette valeur n'a
+	     pas à être changée avant publication.
+
+	     La capacité « Push Notifications » doit aussi être activée sur
+	     l'identifiant d'application dans le portail développeur Apple, sans
+	     quoi la signature échoue. -->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

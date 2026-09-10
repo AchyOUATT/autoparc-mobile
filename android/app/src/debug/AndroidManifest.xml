@@ -4,4 +4,10 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Le serveur de développement répond en HTTP simple (10.0.2.2:8000).
+         L'autorisation reste donc ici, et non dans le manifeste principal :
+         une version distribuée parle à Render en HTTPS et n'a aucune raison
+         d'accepter du trafic en clair. -->
+    <application android:usesCleartextTraffic="true" />
 </manifest>

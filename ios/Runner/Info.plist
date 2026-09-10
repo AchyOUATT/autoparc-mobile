@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Auto</string>
+	<string>AutoParc</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>auto</string>
+	<string>AutoParc</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -26,6 +26,37 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+
+	<!-- Autorisations. iOS refuse l'acces et termine l'application si le
+	     texte manque ; App Review rejette les formulations vagues. Dire a quoi
+	     sert l'acces, pas qu'on en a besoin. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Pour photographier un véhicule, une pièce ou un accessoire et illustrer sa fiche.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Pour choisir dans vos photos celles qui illustreront la fiche d'un véhicule, d'une pièce ou d'un accessoire.</string>
+
+	<!-- url_launcher : iOS n'autorise a interroger que les schemas declares.
+	     Sans cette liste, le bouton WhatsApp de la fiche se croit indisponible
+	     meme quand l'application est installee. -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>whatsapp</string>
+		<string>mailto</string>
+	</array>
+
+	<!-- Notifications recues application fermee ou en arriere-plan
+	     (firebase_messaging). -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+
+	<!-- L'application n'utilise que le chiffrement standard du systeme (HTTPS).
+	     Repond d'avance a la question de conformite export posee a chaque
+	     televersement TestFlight. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

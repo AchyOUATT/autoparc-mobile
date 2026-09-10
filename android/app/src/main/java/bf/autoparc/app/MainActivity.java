@@ -1,4 +1,4 @@
-package com.example.auto;
+package bf.autoparc.app;
 
 import io.flutter.embedding.android.FlutterActivity;
 

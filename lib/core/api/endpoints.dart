@@ -15,12 +15,25 @@ class Endpoints {
   // ignore: dead_code
   static const String _render   = 'https://autoparc-backend.onrender.com/api';
 
-  /// ⚠ Basculer selon le contexte :
-  ///   _emulator → émulateur Android (dev local)
-  ///   _device   → device physique sur le même WiFi
-  ///   _ngrok    → test distant via tunnel temporaire
-  ///   _railway  → production Railway (test/prod)
-  static const String baseUrl = _emulator;
+  /// URL de l'API.
+  ///
+  /// Par défaut l'émulateur Android, pour que le développement quotidien ne
+  /// demande aucun réglage. Un build destiné à quelqu'un d'autre — TestFlight,
+  /// App Store, Play Store — fournit l'URL à la compilation :
+  ///
+  ///   flutter build ipa --dart-define=API_BASE_URL=$_render
+  ///
+  /// Sans cela, une version distribuée pointerait sur 10.0.2.2, adresse qui
+  /// n'existe que dans l'émulateur — et qu'iOS refuserait de toute façon,
+  /// n'acceptant pas le HTTP en clair.
+  ///
+  /// Les constantes ci-dessus restent là comme aide-mémoire des adresses
+  /// utilisées : _device pour un téléphone sur le même WiFi, _ngrok pour un
+  /// test distant, _render pour la production.
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: _emulator,
+  );
 
   // ── Auth ────────────────────────────────────────────────────────
   static const String login  = '/login';

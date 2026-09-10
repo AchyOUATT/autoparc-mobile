@@ -19,7 +19,7 @@ dependencies {
 
 
 android {
-    namespace = "com.example.auto"
+    namespace = "bf.autoparc.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -34,8 +34,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.auto"
+        // Identifiant definitif : il ne peut plus changer une fois l'application publiee.
+        applicationId = "bf.autoparc.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
