@@ -49,7 +49,8 @@ class _AccessoryDetailView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs      = Theme.of(context).colorScheme;
-    final isStaff = ref.watch(authProvider).isStaff;
+    final auth    = ref.watch(authProvider);
+    final isStaff = auth.isStaff;
     final p       = accessory.pricing;
 
     Future<void> deleteAccessory() async {
@@ -101,7 +102,7 @@ class _AccessoryDetailView extends ConsumerWidget {
             visualDensity: VisualDensity.compact,
           ),
           const SizedBox(width: 8),
-          if (isStaff) ...[
+          if (auth.canManageCatalog)
             IconButton(
               icon: const Icon(Icons.edit_outlined),
               tooltip: 'Modifier',
@@ -109,12 +110,12 @@ class _AccessoryDetailView extends ConsumerWidget {
                   .push('/accessories/${accessory.id}/edit', extra: accessory)
                   .then((_) => ref.invalidate(accessoryDetailProvider(accessory.id))),
             ),
+          if (auth.canDeleteCatalog)
             IconButton(
               icon: Icon(Icons.delete_outline, color: cs.error),
               tooltip: 'Supprimer',
               onPressed: deleteAccessory,
             ),
-          ],
           if (!isStaff) const CartIconButton(),
         ],
       ),

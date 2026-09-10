@@ -56,7 +56,8 @@ class PartDetailPage extends ConsumerWidget {
     }
 
     final cs      = Theme.of(context).colorScheme;
-    final isStaff = ref.watch(authProvider).isStaff;
+    final auth    = ref.watch(authProvider);
+    final isStaff = auth.isStaff;
     final inStock = part.stock.quantity > 0;
 
     Future<void> deletePart() async {
@@ -103,7 +104,7 @@ class PartDetailPage extends ConsumerWidget {
             expandedHeight: 160,
             pinned: true,
             actions: [
-              if (isStaff) ...[
+              if (auth.canManageCatalog)
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
                   tooltip: 'Modifier',
@@ -111,12 +112,12 @@ class PartDetailPage extends ConsumerWidget {
                       .push('/parts/${part.id}/edit', extra: part)
                       .then((_) => ref.invalidate(partDetailProvider(part.id))),
                 ),
+              if (auth.canDeleteCatalog)
                 IconButton(
                   icon: Icon(Icons.delete_outline, color: cs.error),
                   tooltip: 'Supprimer',
                   onPressed: deletePart,
                 ),
-              ],
               if (!isStaff) const CartIconButton(),
             ],
             flexibleSpace: FlexibleSpaceBar(

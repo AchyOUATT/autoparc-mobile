@@ -58,10 +58,13 @@ class _AccessoryListPageState extends ConsumerState<AccessoryListPage> {
     final paged   = ref.watch(accessoryListProvider);
     final filter  = ref.watch(accessoryFilterProvider);
     final cities  = ref.watch(catalogRefsProvider).valueOrNull?.cities ?? const <String>[];
-    final isStaff = ref.watch(authProvider).isStaff;
+    final auth    = ref.watch(authProvider);
+    final isStaff = auth.isStaff;
 
     return Scaffold(
-      floatingActionButton: isStaff
+      // Un magasinier ou un observateur n'a pas le droit de creer une fiche :
+      // le bouton disparait plutot que de renvoyer un 403.
+      floatingActionButton: auth.canManageCatalog
           ? FloatingActionButton.extended(
               onPressed: () async {
                 await context.push('/accessories/new');
@@ -354,7 +357,8 @@ class _AccessoryCardState extends ConsumerState<_AccessoryCard> {
   @override
   Widget build(BuildContext context) {
     final cs        = Theme.of(context).colorScheme;
-    final isStaff   = ref.watch(authProvider).isStaff;
+    final auth      = ref.watch(authProvider);
+    final isStaff   = auth.isStaff;
     final accessory = widget.accessory;
 
     return Card(
@@ -382,7 +386,9 @@ class _AccessoryCardState extends ConsumerState<_AccessoryCard> {
                         )
                       : _AccessoryPlaceholder(accessory: accessory, cs: cs),
                 ),
-                if (isStaff)
+                // Bascule de disponibilite : reservee aux roles qui tiennent
+                // le stock (direction et magasin), pas a tout le personnel.
+                if (auth.canManageStock)
                   Positioned(
                     top: 6, right: 6,
                     child: _toggling

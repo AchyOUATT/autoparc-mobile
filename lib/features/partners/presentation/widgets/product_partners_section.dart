@@ -103,6 +103,9 @@ class _PartnersSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
+    // L'annuaire se consulte par tout le personnel ; l'associer a un produit
+    // reste a la direction.
+    final canEdit = ref.watch(authProvider).canManagePartners;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,12 +122,13 @@ class _PartnersSection extends ConsumerWidget {
                     ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const Spacer(),
-              TextButton.icon(
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Associer'),
-                onPressed: () =>
-                    _showAttachDialog(context, ref),
-              ),
+              if (canEdit)
+                TextButton.icon(
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Associer'),
+                  onPressed: () =>
+                      _showAttachDialog(context, ref),
+                ),
             ],
           ),
         ),
@@ -156,6 +160,7 @@ class _PartnersSection extends ConsumerWidget {
                   .map((p) => _PartnerRow(
                         partner: p,
                         onDetach: () => onDetach(p.id),
+                        canDetach: canEdit,
                       ))
                   .toList(),
             );
@@ -250,7 +255,15 @@ class _PartnersSection extends ConsumerWidget {
 class _PartnerRow extends StatelessWidget {
   final Partner partner;
   final VoidCallback onDetach;
-  const _PartnerRow({required this.partner, required this.onDetach});
+
+  /// Faux pour un role qui consulte l'annuaire sans pouvoir le modifier.
+  final bool canDetach;
+
+  const _PartnerRow({
+    required this.partner,
+    required this.onDetach,
+    required this.canDetach,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -292,12 +305,13 @@ class _PartnerRow extends StatelessWidget {
             onPressed: () => _launchPhone(partner.phone),
           ),
           // Retirer
-          IconButton(
-            icon: const Icon(Icons.link_off, size: 18),
-            color: cs.error,
-            tooltip: 'Retirer',
-            onPressed: () => _confirmDetach(context),
-          ),
+          if (canDetach)
+            IconButton(
+              icon: const Icon(Icons.link_off, size: 18),
+              color: cs.error,
+              tooltip: 'Retirer',
+              onPressed: () => _confirmDetach(context),
+            ),
         ],
       ),
     );

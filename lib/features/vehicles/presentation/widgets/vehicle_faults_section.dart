@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/vehicle_fault.dart';
 import '../../data/vehicle_fault_repository.dart';
 import '../../../../core/utils/currency_format.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 // ── Provider ──────────────────────────────────────────────────────────
 
@@ -25,6 +26,9 @@ class VehicleFaultsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final faultsAsync = ref.watch(_faultsProvider(vehicleId));
+    // Tout le personnel consulte les pannes ; seuls le mecanicien et la
+    // direction en declarent.
+    final canDeclare  = ref.watch(authProvider).canManageFaults;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,14 +44,15 @@ class VehicleFaultsSection extends ConsumerWidget {
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const Spacer(),
-            FilledButton.tonalIcon(
-              onPressed: () => _openAddSheet(context, ref),
-              icon: const Icon(Icons.add, size: 16),
-              label: const Text('Déclarer'),
-              style: FilledButton.styleFrom(
-                visualDensity: VisualDensity.compact,
+            if (canDeclare)
+              FilledButton.tonalIcon(
+                onPressed: () => _openAddSheet(context, ref),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Déclarer'),
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -75,6 +80,7 @@ class VehicleFaultsSection extends ConsumerWidget {
           data: (faults) => faults.isEmpty
               ? _EmptyFaults(
                   onAdd: () => _openAddSheet(context, ref),
+                  canDeclare: canDeclare,
                 )
               : Column(
                   children: faults
@@ -121,6 +127,7 @@ class _FaultCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final severityColor = Color(fault.severityColor);
     final isOpen = fault.isOpen;
+    final canManage = ref.watch(authProvider).canManageFaults;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -170,6 +177,9 @@ class _FaultCard extends ConsumerWidget {
                       ),
                     ),
                     // ── Menu actions ────────────────────────────
+                    // Resoudre et supprimer sont des ecritures : le menu
+                    // disparait pour qui ne les a pas.
+                    if (canManage)
                     PopupMenuButton<String>(
                       onSelected: (v) =>
                           _handleAction(context, ref, v),
@@ -379,7 +389,12 @@ class _IconFlag extends StatelessWidget {
 
 class _EmptyFaults extends StatelessWidget {
   final VoidCallback onAdd;
-  const _EmptyFaults({required this.onAdd});
+
+  /// Faux pour un role qui consulte sans pouvoir declarer : inutile de lui
+  /// demander une action dont le bouton a disparu.
+  final bool canDeclare;
+
+  const _EmptyFaults({required this.onAdd, required this.canDeclare});
 
   @override
   Widget build(BuildContext context) => Container(
@@ -397,7 +412,9 @@ class _EmptyFaults extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
         Text(
-          'Déclarez les défauts connus pour informer les acheteurs.',
+          canDeclare
+              ? 'Déclarez les défauts connus pour informer les acheteurs.'
+              : 'Ce véhicule ne présente aucun défaut connu.',
           style: Theme.of(context).textTheme.bodySmall,
           textAlign: TextAlign.center,
         ),

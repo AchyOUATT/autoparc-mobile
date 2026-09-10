@@ -49,10 +49,13 @@ class _VehicleListPageState extends ConsumerState<VehicleListPage> {
     final paged   = ref.watch(vehicleListProvider);
     final filter  = ref.watch(vehicleFilterProvider);
     final cities  = ref.watch(catalogRefsProvider).valueOrNull?.cities ?? const <String>[];
-    final isStaff = ref.watch(authProvider).isStaff;
+    final auth    = ref.watch(authProvider);
+    final isStaff = auth.isStaff;
 
     return Scaffold(
-      floatingActionButton: isStaff
+      // Un magasinier ou un observateur n'a pas le droit de creer une fiche :
+      // le bouton disparait plutot que de renvoyer un 403.
+      floatingActionButton: auth.canManageCatalog
           ? FloatingActionButton.extended(
               onPressed: () async {
                 final added = await context.push<bool>('/vehicles/new');

@@ -34,6 +34,34 @@ class AuthState {
     return '';
   }
 
+  // ── Capacites par role ──────────────────────────────────────────────────
+  //
+  // Reflet de App\Enums\UserRole cote serveur. L'API reste l'autorite : ces
+  // getters servent uniquement a masquer les commandes qu'un role ne peut pas
+  // utiliser, plutot que de le laisser buter sur un 403. Toute modification de
+  // la matrice se fait donc des deux cotes.
+
+  bool _roleIn(Set<String> roles) =>
+      isStaff && roles.contains(staffUser?.role);
+
+  /// Creer et modifier une fiche du catalogue.
+  bool get canManageCatalog  => _roleIn(const {'admin', 'manager', 'sales'});
+
+  /// Supprimer definitivement une fiche — plus restreint que la modification.
+  bool get canDeleteCatalog  => _roleIn(const {'admin', 'manager'});
+
+  /// Declarer et resoudre une panne.
+  bool get canManageFaults   => _roleIn(const {'admin', 'manager', 'mechanic'});
+
+  /// Entrees, sorties et disponibilite du stock.
+  bool get canManageStock    => _roleIn(const {'admin', 'manager', 'warehouse'});
+
+  /// Annuaire des partenaires et rattachement aux produits.
+  bool get canManagePartners => _roleIn(const {'admin', 'manager'});
+
+  /// Envoyer une notification a tous les clients.
+  bool get canBroadcast      => _roleIn(const {'admin', 'manager'});
+
   AuthState copyWith({
     AuthType? type,
     StaffUser? staffUser,

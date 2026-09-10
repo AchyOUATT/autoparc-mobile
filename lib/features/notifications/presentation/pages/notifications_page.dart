@@ -15,7 +15,8 @@ class NotificationsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifsAsync = ref.watch(notificationsProvider);
-    final isStaff     = ref.watch(authProvider).isStaff;
+    final auth        = ref.watch(authProvider);
+    final isStaff     = auth.isStaff;
 
     return Scaffold(
       appBar: AppBar(
@@ -40,8 +41,9 @@ class NotificationsPage extends ConsumerWidget {
             },
             orElse: () => const SizedBox.shrink(),
           ),
-          // Bouton broadcast (staff uniquement)
-          if (isStaff)
+          // Bouton broadcast : le message part vers tous les clients et ne se
+          // rattrape pas — reserve a la direction.
+          if (auth.canBroadcast)
             IconButton(
               icon: const Icon(Icons.campaign_outlined),
               tooltip: 'Envoyer un conseil',

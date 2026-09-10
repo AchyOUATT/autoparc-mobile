@@ -72,10 +72,13 @@ class _PartListPageState extends ConsumerState<PartListPage> {
     final paged   = ref.watch(partListProvider);
     final filter  = ref.watch(partFilterProvider);
     final cities  = ref.watch(catalogRefsProvider).valueOrNull?.cities ?? const <String>[];
-    final isStaff = ref.watch(authProvider).isStaff;
+    final auth    = ref.watch(authProvider);
+    final isStaff = auth.isStaff;
 
     return Scaffold(
-      floatingActionButton: isStaff
+      // Un magasinier ou un observateur n'a pas le droit de creer une fiche :
+      // le bouton disparait plutot que de renvoyer un 403.
+      floatingActionButton: auth.canManageCatalog
           ? FloatingActionButton.extended(
               onPressed: () async {
                 await context.push('/parts/new');
@@ -375,7 +378,8 @@ class _PartCardState extends ConsumerState<_PartCard> {
   @override
   Widget build(BuildContext context) {
     final cs        = Theme.of(context).colorScheme;
-    final isStaff   = ref.watch(authProvider).isStaff;
+    final auth      = ref.watch(authProvider);
+    final isStaff   = auth.isStaff;
     final part      = widget.part;
     final typeLabel = _typeLabels[part.type] ?? part.type.toUpperCase();
 
@@ -409,8 +413,9 @@ class _PartCardState extends ConsumerState<_PartCard> {
                         )
                       : _PartPlaceholder(type: typeLabel, isOem: part.isOem, cs: cs),
                 ),
-                // Badge staff toggle
-                if (isStaff)
+                // Bascule de disponibilite : reservee aux roles qui tiennent le
+                // stock (direction et magasin), pas a tout le personnel.
+                if (auth.canManageStock)
                   Positioned(
                     top: 6, right: 6,
                     child: _toggling

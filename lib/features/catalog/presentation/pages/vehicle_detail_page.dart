@@ -80,7 +80,8 @@ class _VehicleDetailView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final id      = vehicle.identity;
     final c       = vehicle.commercial;
-    final isStaff = ref.watch(authProvider).isStaff;
+    final auth    = ref.watch(authProvider);
+    final isStaff = auth.isStaff;
     final cs      = Theme.of(context).colorScheme;
 
     Future<void> deleteVehicle() async {
@@ -123,23 +124,25 @@ class _VehicleDetailView extends ConsumerWidget {
           SliverAppBar(
             expandedHeight: 260,
             pinned: true,
-            actions: isStaff
-                ? [
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined),
-                      tooltip: 'Modifier',
-                      onPressed: () => context
-                          .push('/vehicles/${vehicle.id}/edit', extra: vehicle)
-                          .then((_) => ref.invalidate(
-                              vehicleDetailProvider(vehicle.id))),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.delete_outline, color: cs.error),
-                      tooltip: 'Supprimer',
-                      onPressed: deleteVehicle,
-                    ),
-                  ]
-                : null,
+            // La suppression est plus restreinte que la modification : elle ne
+            // se rattrape pas depuis l'application.
+            actions: [
+              if (auth.canManageCatalog)
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Modifier',
+                  onPressed: () => context
+                      .push('/vehicles/${vehicle.id}/edit', extra: vehicle)
+                      .then((_) => ref.invalidate(
+                          vehicleDetailProvider(vehicle.id))),
+                ),
+              if (auth.canDeleteCatalog)
+                IconButton(
+                  icon: Icon(Icons.delete_outline, color: cs.error),
+                  tooltip: 'Supprimer',
+                  onPressed: deleteVehicle,
+                ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 id.fullName,
@@ -240,7 +243,7 @@ class _VehicleDetailView extends ConsumerWidget {
       ),
 
       // ── FAB staff : gérer les équipements ─────────────────────
-      floatingActionButton: isStaff
+      floatingActionButton: auth.canManageCatalog
           ? FloatingActionButton.extended(
               icon: const Icon(Icons.checklist_outlined),
               label: const Text('Équipements'),

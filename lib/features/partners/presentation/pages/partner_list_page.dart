@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/models/partner.dart';
 import '../../data/partner_repository.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 // ── Provider ──────────────────────────────────────────────────────────
 
@@ -67,14 +68,18 @@ class _PartnerListPageState extends ConsumerState<PartnerListPage> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final created = await context.push<bool>('/partners/new');
-          if (created == true) ref.invalidate(_partnerListProvider);
-        },
-        icon: const Icon(Icons.person_add_alt_1_outlined),
-        label: const Text('Nouveau partenaire'),
-      ),
+      // L'annuaire se consulte par tout le personnel ; l'alimenter reste a la
+      // direction.
+      floatingActionButton: ref.watch(authProvider).canManagePartners
+          ? FloatingActionButton.extended(
+              onPressed: () async {
+                final created = await context.push<bool>('/partners/new');
+                if (created == true) ref.invalidate(_partnerListProvider);
+              },
+              icon: const Icon(Icons.person_add_alt_1_outlined),
+              label: const Text('Nouveau partenaire'),
+            )
+          : null,
       body: partners.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(
@@ -117,6 +122,7 @@ class _PartnerListPageState extends ConsumerState<PartnerListPage> {
               itemBuilder: (_, i) => _PartnerTile(
                 partner: list[i],
                 onChanged: () => ref.invalidate(_partnerListProvider),
+                canEdit: ref.watch(authProvider).canManagePartners,
               ),
             ),
           );
@@ -131,7 +137,16 @@ class _PartnerListPageState extends ConsumerState<PartnerListPage> {
 class _PartnerTile extends StatelessWidget {
   final Partner partner;
   final VoidCallback onChanged;
-  const _PartnerTile({required this.partner, required this.onChanged});
+
+  /// Faux pour un role qui consulte l'annuaire sans pouvoir le modifier :
+  /// les contacts restent joignables, le menu d'edition disparait.
+  final bool canEdit;
+
+  const _PartnerTile({
+    required this.partner,
+    required this.onChanged,
+    required this.canEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -173,6 +188,7 @@ class _PartnerTile extends StatelessWidget {
             onTap: () => _launchPhone(partner.phone),
           ),
           // Menu
+          if (canEdit)
           PopupMenuButton<String>(
             itemBuilder: (_) => [
               const PopupMenuItem(value: 'edit', child: Text('Modifier')),
