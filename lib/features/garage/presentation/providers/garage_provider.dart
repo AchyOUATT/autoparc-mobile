@@ -21,7 +21,7 @@ class GarageNotifier extends AsyncNotifier<List<OwnedVehicle>> {
     } on ApiException catch (e) {
       return e.errors?.values.first.first ?? e.message;
     } catch (e) {
-      return e.toString();
+      return messageFor(e);
     }
   }
 
@@ -36,7 +36,7 @@ class GarageNotifier extends AsyncNotifier<List<OwnedVehicle>> {
     } on ApiException catch (e) {
       return e.errors?.values.first.first ?? e.message;
     } catch (e) {
-      return e.toString();
+      return messageFor(e);
     }
   }
 
@@ -51,7 +51,7 @@ class GarageNotifier extends AsyncNotifier<List<OwnedVehicle>> {
     } on ApiException catch (e) {
       return e.message;
     } catch (e) {
-      return e.toString();
+      return messageFor(e);
     }
   }
 

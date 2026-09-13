@@ -6,6 +6,7 @@ import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../data/models/app_notification.dart';
 import '../../data/notifications_repository.dart';
 import '../providers/notifications_provider.dart';
+import '../../../../core/api/api_exception.dart';
 
 // ════════════════════════════════════════════════════════════════════
 
@@ -66,7 +67,7 @@ class NotificationsPage extends ConsumerWidget {
             children: [
               const Icon(Icons.wifi_off, size: 48),
               const SizedBox(height: 12),
-              Text(e.toString(), textAlign: TextAlign.center),
+              Text(messageFor(e), textAlign: TextAlign.center),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => ref.invalidate(notificationsProvider),
@@ -283,7 +284,7 @@ class _BroadcastSheetState extends ConsumerState<_BroadcastSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
         );
       }
     } finally {

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/partner.dart';
 import '../../data/partner_repository.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
+import '../../../../core/api/api_exception.dart';
 
 // ── Providers ────────────────────────────────────────────────────────
 
@@ -139,7 +140,7 @@ class _PartnersSection extends ConsumerWidget {
           ),
           error: (e, _) => Padding(
             padding: const EdgeInsets.all(16),
-            child: Text('Erreur : $e',
+            child: Text(messageFor(e),
                 style: TextStyle(color: cs.error)),
           ),
           data: (partners) {

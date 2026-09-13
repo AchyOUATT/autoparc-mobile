@@ -6,6 +6,7 @@ import '../../data/models/vehicle_fault.dart';
 import '../../data/vehicle_fault_repository.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../core/api/api_exception.dart';
 
 // ── Provider ──────────────────────────────────────────────────────────
 
@@ -69,7 +70,7 @@ class VehicleFaultsSection extends ConsumerWidget {
               children: [
                 const Icon(Icons.wifi_off, size: 18),
                 const SizedBox(width: 8),
-                Expanded(child: Text(e.toString())),
+                Expanded(child: Text(messageFor(e))),
                 TextButton(
                   onPressed: () => ref.invalidate(_faultsProvider(vehicleId)),
                   child: const Text('Réessayer'),
@@ -326,7 +327,7 @@ class _FaultCard extends ConsumerWidget {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                  content: Text(e.toString()),
+                  content: Text(messageFor(e)),
                   backgroundColor: Colors.red),
             );
           }
@@ -497,7 +498,7 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -835,7 +836,7 @@ class _ResolveFaultSheetState extends ConsumerState<_ResolveFaultSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
         );
       }
     } finally {

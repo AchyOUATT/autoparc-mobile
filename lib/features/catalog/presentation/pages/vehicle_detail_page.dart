@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/api/api_exception.dart';
 
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -62,7 +63,7 @@ class VehicleDetailPage extends ConsumerWidget {
         appBar: AppBar(),
         body: detailAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error:   (e, _) => Center(child: Text(e.toString())),
+          error:   (e, _) => Center(child: Text(messageFor(e))),
           data:    (_) => const SizedBox.shrink(),
         ),
       );
@@ -111,7 +112,7 @@ class _VehicleDetailView extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString()), backgroundColor: cs.error),
+            SnackBar(content: Text(messageFor(e)), backgroundColor: cs.error),
           );
         }
       }
@@ -300,7 +301,7 @@ class _VehicleDetailView extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
         );
       }
     }

@@ -11,6 +11,7 @@ import '../../../../features/cart/data/models/cart_item.dart';
 import '../../../../features/cart/presentation/pages/cart_page.dart';
 import '../../../../features/cart/presentation/providers/cart_provider.dart';
 import '../../../../features/partners/presentation/widgets/product_partners_section.dart';
+import '../../../../core/api/api_exception.dart';
 
 class AccessoryDetailPage extends ConsumerWidget {
   final int accessoryId;
@@ -32,7 +33,7 @@ class AccessoryDetailPage extends ConsumerWidget {
         appBar: AppBar(),
         body: detailAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error:   (e, _) => Center(child: Text(e.toString())),
+          error:   (e, _) => Center(child: Text(messageFor(e))),
           data:    (_) => const SizedBox.shrink(),
         ),
       );
@@ -78,7 +79,7 @@ class _AccessoryDetailView extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString()), backgroundColor: cs.error),
+            SnackBar(content: Text(messageFor(e)), backgroundColor: cs.error),
           );
         }
       }

@@ -82,8 +82,13 @@ class ApiClient {
       if (idToken != null) {
         options.headers['Authorization'] = 'Bearer $idToken';
       }
-    } catch (_) {
-      // Firebase pas initialisé ou pas d'utilisateur connecté → pas d'header
+    } catch (e) {
+      // Cas normal : Firebase pas initialisé, ou personne de connecté. La
+      // requête part alors sans en-tête, et le serveur répondra 401 — ce qui
+      // est correct, mais donne un message qui parle de jeton invalide alors
+      // que le jeton n'a jamais été demandé. La trace évite de chercher du
+      // mauvais côté.
+      debugPrint('[API] jeton Firebase indisponible (${options.path}) : $e');
     }
 
     handler.next(options);

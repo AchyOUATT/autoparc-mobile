@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/models/partner.dart';
 import '../../data/partner_repository.dart';
+import '../../../../core/api/api_exception.dart';
 
 // ════════════════════════════════════════════════════════════════════
 // Formulaire création / édition d'un partenaire (staff)
@@ -80,7 +81,7 @@ class _PartnerFormPageState extends ConsumerState<PartnerFormPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _saving = false);

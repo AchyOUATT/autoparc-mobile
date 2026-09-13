@@ -320,7 +320,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       ),
       body: refsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => _LoadingError(error: e.toString(),
+        error: (e, _) => _LoadingError(error: messageFor(e),
             onRetry: () => ref.invalidate(catalogRefsProvider)),
         data: _buildForm,
       ),

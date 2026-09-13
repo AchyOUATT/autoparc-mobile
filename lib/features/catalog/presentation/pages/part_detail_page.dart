@@ -12,6 +12,7 @@ import '../../../../features/cart/data/models/cart_item.dart';
 import '../../../../features/cart/presentation/pages/cart_page.dart';
 import '../../../../features/cart/presentation/providers/cart_provider.dart';
 import '../../../../features/partners/presentation/widgets/product_partners_section.dart';
+import '../../../../core/api/api_exception.dart';
 
 const _typeLabels = {
   'oem':         'OEM — Constructeur d\'origine',
@@ -49,7 +50,7 @@ class PartDetailPage extends ConsumerWidget {
         appBar: AppBar(),
         body: partAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Erreur : $e')),
+          error: (e, _) => Center(child: Text(messageFor(e))),
           data: (_) => const SizedBox.shrink(),
         ),
       );
@@ -85,7 +86,7 @@ class PartDetailPage extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString()), backgroundColor: cs.error),
+            SnackBar(content: Text(messageFor(e)), backgroundColor: cs.error),
           );
         }
       }

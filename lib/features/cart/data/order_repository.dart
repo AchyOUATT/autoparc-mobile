@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/endpoints.dart';
 import 'models/cart_item.dart';
+import '../../../core/api/api_exception.dart';
 
 /// Soumission de commandes staff vers le backend Laravel.
 class OrderRepository {
@@ -33,7 +34,7 @@ class OrderRepository {
       await _client.post(Endpoints.staffOrders, data: payload);
       return null;
     } catch (e) {
-      return e.toString();
+      return messageFor(e);
     }
   }
 }

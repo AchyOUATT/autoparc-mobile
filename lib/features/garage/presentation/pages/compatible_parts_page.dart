@@ -6,6 +6,7 @@ import '../../data/garage_repository.dart';
 import '../../data/models/owned_vehicle.dart';
 import '../../../../features/catalog/data/models/part.dart';
 import '../../../../core/utils/currency_format.dart';
+import '../../../../core/api/api_exception.dart';
 
 // ── Provider family ──────────────────────────────────────────────────
 
@@ -68,7 +69,7 @@ class CompatiblePartsPage extends ConsumerWidget {
             children: [
               const Icon(Icons.wifi_off, size: 48),
               const SizedBox(height: 12),
-              Text(e.toString(), textAlign: TextAlign.center),
+              Text(messageFor(e), textAlign: TextAlign.center),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => ref.invalidate(_compatiblePartsProvider(ownedVehicleId)),

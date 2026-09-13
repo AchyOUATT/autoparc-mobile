@@ -10,6 +10,7 @@ import '../widgets/fitments_section.dart';
 import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../../../shared/presentation/pages/media_upload_page.dart';
 import '../../../../shared/data/media_repository.dart';
+import '../../../../core/api/api_exception.dart';
 
 const _categories = [
   (value: 'esthetique',  label: 'Esthétique',   icon: Icons.auto_awesome),
@@ -141,7 +142,7 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
         );
       }
     } finally {

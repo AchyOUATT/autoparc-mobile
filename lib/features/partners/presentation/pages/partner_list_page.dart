@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/api/api_exception.dart';
 
 import '../../data/models/partner.dart';
 import '../../data/partner_repository.dart';
@@ -88,7 +89,7 @@ class _PartnerListPageState extends ConsumerState<PartnerListPage> {
             children: [
               const Icon(Icons.wifi_off, size: 48),
               const SizedBox(height: 12),
-              Text(e.toString(), textAlign: TextAlign.center),
+              Text(messageFor(e), textAlign: TextAlign.center),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => ref.invalidate(_partnerListProvider),

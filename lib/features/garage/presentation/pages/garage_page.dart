@@ -6,6 +6,7 @@ import '../../data/models/owned_vehicle.dart';
 import '../providers/garage_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
+import '../../../../core/api/api_exception.dart';
 
 class GaragePage extends ConsumerWidget {
   const GaragePage({super.key});
@@ -98,7 +99,7 @@ class GaragePage extends ConsumerWidget {
       body: garageAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => _ErrorView(
-          error: e.toString(),
+          error: messageFor(e),
           onRetry: () => ref.read(garageProvider.notifier).refresh(),
         ),
         data: (vehicles) => vehicles.isEmpty

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/needs_repository.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../core/api/api_exception.dart';
 
 // ── Page ─────────────────────────────────────────────────────────────────
 
@@ -116,7 +117,7 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
         );
       }
     } finally {

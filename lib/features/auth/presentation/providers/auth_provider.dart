@@ -147,7 +147,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
       return e.message;
     }
-    return e.toString();
+    return messageFor(e);
   }
 
   // ── Connexion staff ────────────────────────────────────────────────

@@ -11,6 +11,7 @@ import '../widgets/fitments_section.dart';
 import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../../../shared/presentation/pages/media_upload_page.dart';
 import '../../../../shared/data/media_repository.dart';
+import '../../../../core/api/api_exception.dart';
 
 // ── Constantes métier ─────────────────────────────────────────────────
 
@@ -163,7 +164,7 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -244,7 +245,7 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
             _SectionTitle('Classification'),
             categoriesAsync.when(
               loading: () => const LinearProgressIndicator(),
-              error: (e, _) => Text('Erreur : $e',
+              error: (e, _) => Text(messageFor(e),
                   style: const TextStyle(color: Colors.red)),
               data: (cats) {
                 // Pré-sélection en mode édition (une seule fois)

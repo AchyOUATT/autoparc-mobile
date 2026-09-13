@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/api/api_exception.dart';
 
 import '../../../core/widgets/catalog_image.dart';
 import '../../data/media_repository.dart';
@@ -41,6 +42,10 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
   bool _loading   = true;
   bool _uploading = false;
 
+  /// Non nul quand la liste n'a pas pu être chargée — à ne pas confondre avec
+  /// une liste réellement vide.
+  String? _loadError;
+
   @override
   void initState() {
     super.initState();
@@ -52,12 +57,19 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
   int             get _id   => widget.config.id;
 
   Future<void> _loadExisting() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
     try {
       final list = await _repo.getMedia(_type, _id);
       if (mounted) setState(() => _uploaded = list);
-    } catch (_) {
-      // silencieux — liste vide
+    } catch (e) {
+      // L'échec était muet : la grille affichait « aucune photo » aussi bien
+      // quand la requête avait échoué que quand il n'y en avait réellement
+      // pas. On téléversait alors des doublons, ou on croyait des photos
+      // perdues.
+      if (mounted) setState(() => _loadError = messageFor(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -96,7 +108,7 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -130,7 +142,7 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
         );
       }
     }
@@ -150,7 +162,7 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
         );
       }
     }
@@ -194,13 +206,20 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
 
                 // ── Grille des photos ────────────────────────────────
                 Expanded(
-                  child: _uploaded.isEmpty
-                      ? _EmptyState(onAdd: () => _pickAndUpload(ImageSource.gallery))
-                      : _PhotoGrid(
+                  child: switch ((_loadError, _uploaded.isEmpty)) {
+                    // L'échec de chargement se dit, et se réessaie : sans
+                    // cela, la page annonçait « aucune photo » alors que les
+                    // photos existaient peut-être bel et bien.
+                    (final String erreur, _) =>
+                        _LoadFailed(message: erreur, onRetry: _loadExisting),
+                    (null, true) =>
+                        _EmptyState(onAdd: () => _pickAndUpload(ImageSource.gallery)),
+                    (null, false) => _PhotoGrid(
                           items: _uploaded,
                           onDelete: _delete,
                           onSetCover: _setCover,
                         ),
+                  },
                 ),
               ],
             ),
@@ -375,6 +394,47 @@ class _PhotoTile extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // État vide
 // ─────────────────────────────────────────────────────────────────────────────
+
+/// La liste n'a pas pu être chargée — à distinguer d'une liste vide.
+class _LoadFailed extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _LoadFailed({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.cloud_off_outlined, size: 44, color: cs.onSurfaceVariant),
+            const SizedBox(height: 12),
+            Text(
+              'Photos non chargées',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 16),
+            FilledButton.tonalIcon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Réessayer'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _EmptyState extends StatelessWidget {
   final VoidCallback onAdd;

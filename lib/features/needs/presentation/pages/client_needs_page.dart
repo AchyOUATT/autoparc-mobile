@@ -6,6 +6,7 @@ import '../../data/models/customer_need.dart';
 import '../../data/needs_repository.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/utils/currency_format.dart';
+import '../../../../core/api/api_exception.dart';
 
 // ── Provider ──────────────────────────────────────────────────────
 
@@ -51,7 +52,7 @@ class ClientNeedsPage extends ConsumerWidget {
             children: [
               const Icon(Icons.wifi_off, size: 48),
               const SizedBox(height: 12),
-              Text(e.toString(), textAlign: TextAlign.center),
+              Text(messageFor(e), textAlign: TextAlign.center),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => ref.invalidate(_myNeedsProvider),
