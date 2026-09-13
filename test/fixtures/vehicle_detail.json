@@ -1,0 +1,103 @@
+{
+    "data": {
+        "id": 1,
+        "reference": "VH-9IF2WVYT",
+        "vin": null,
+        "designation": "Volkswagen Tiguan LE 2023",
+        "vehicle_type": "passenger",
+        "body_style": "pickup",
+        "registration_status": {
+            "value": "unregistered",
+            "label": "Non immatricule"
+        },
+        "identity": {
+            "brand": "Volkswagen",
+            "brand_slug": "volkswagen",
+            "brand_logo_path": null,
+            "model": "Tiguan",
+            "generation": null,
+            "trim": "LE",
+            "engine_type": "Essence",
+            "drivetrain": "RWD",
+            "color": "Gris",
+            "color_hex": "#808080",
+            "color_finish": "metallise",
+            "year": 2023
+        },
+        "technical": {
+            "transmission": "automatic",
+            "gear_count": null,
+            "engine_displacement_cc": null,
+            "engine_code": null,
+            "power_hp": null,
+            "power_kw": null,
+            "torque_nm": null,
+            "cylinders": null,
+            "seats": 5,
+            "doors": 2,
+            "mileage_km": null
+        },
+        "consumption": {
+            "urban_l_100km": "15.90",
+            "extra_urban_l_100km": "10.40",
+            "combined_l_100km": "9.40",
+            "electric_kwh_100km": null,
+            "battery_kwh": null,
+            "electric_range_km": null,
+            "co2_g_km": 295,
+            "fuel_tank_liters": 75
+        },
+        "commercial": {
+            "condition": "new",
+            "status": "in_stock",
+            "status_label": "En stock",
+            "availability": "sale",
+            "sale_price": "2450000.00",
+            "rental_daily_rate": null,
+            "rental_weekly_rate": null,
+            "rental_monthly_rate": null,
+            "rental_deposit": null,
+            "currency": "XOF",
+            "price_negotiable": true,
+            "deal_type": "good_deal",
+            "deal_label": "Bonne affaire",
+            "site": null,
+            "location": null,
+            "location_id": null,
+            "partner": null,
+            "partner_id": null
+        },
+        "import": null,
+        "registration": null,
+        "faults": [],
+        "fault_score": 0,
+        "features": [
+            {
+                "id": 6,
+                "name": "Régulateur de vitesse",
+                "category": "securite"
+            },
+            {
+                "id": 2,
+                "name": "Caméra de recul",
+                "category": "securite"
+            },
+            {
+                "id": 5,
+                "name": "Toit ouvrant",
+                "category": "confort"
+            },
+            {
+                "id": 4,
+                "name": "Sièges cuir",
+                "category": "confort"
+            }
+        ],
+        "optional_feature_count": 4,
+        "is_full_option": false,
+        "media": [],
+        "description": null,
+        "published_at": "2026-08-08T21:48:40+00:00",
+        "created_at": "2026-09-13T21:48:40+00:00"
+    }
+}

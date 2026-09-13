@@ -1,0 +1,35 @@
+name: Tests
+
+# Sur chaque poussée et chaque pull request. Le workflow « Build APK » ne
+# vérifie que la compilation : un modèle qui ne sait plus lire la réponse de
+# l'API compile parfaitement et casse le catalogue au premier lancement.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.0'
+          channel: stable
+          cache: true
+
+      - name: Télécharger les dépendances
+        run: flutter pub get
+
+      # Les avertissements existants sont nombreux ; on ne bloque que sur les
+      # erreurs, sans quoi le garde-fou serait désactivé dès le premier jour.
+      - name: Analyse statique
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Lancer les tests
+        run: flutter test

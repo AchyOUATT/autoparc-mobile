@@ -34,13 +34,15 @@ jobs:
       - name: Télécharger les dépendances
         run: flutter pub get
 
-      - name: Basculer sur l'URL Railway
-        run: |
-          sed -i 's/static const String baseUrl = _emulator/static const String baseUrl = _railway/' \
-            lib/core/api/endpoints.dart
-
+      # L'URL de production se passe à la compilation. Auparavant une
+      # substitution de texte réécrivait endpoints.dart : elle visait `_railway`,
+      # renommé `_render` depuis, et ne correspondait donc plus à rien. `sed` ne
+      # signale pas une recherche infructueuse — l'APK publié partait avec
+      # l'adresse de l'émulateur, sans que rien n'échoue.
       - name: Construire l'APK (release)
-        run: flutter build apk --release --no-tree-shake-icons
+        run: |
+          flutter build apk --release --no-tree-shake-icons \
+            --dart-define=API_BASE_URL=https://autoparc-backend.onrender.com/api
 
       - name: Publier l'APK comme artefact
         uses: actions/upload-artifact@v4
