@@ -68,6 +68,9 @@ class ApiException implements Exception {
   /// moment — vérification de session impossible, maintenance.
   bool get isUnavailable => statusCode == 503;
 
+  /// Trop de requêtes : le serveur demande de patienter.
+  bool get isThrottled => statusCode == 429;
+
   /// Ce qu'on montre à l'utilisateur.
   ///
   /// L'application affichait jusqu'ici l'exception brute :
@@ -90,6 +93,9 @@ class ApiException implements Exception {
       403 => message,
       404 => 'Introuvable. L\'élément a peut-être été supprimé.',
       422 => _validationMessage(),
+      // Le serveur dit combien de temps patienter et pourquoi : son message
+      // est plus utile que « trop de requêtes ».
+      429 => message,
       503 => '$message${_reference()}',
       _   => statusCode != null && statusCode! >= 500
                 ? 'Erreur du serveur.${_reference()}'

@@ -89,6 +89,18 @@ void main() {
       expect(e.userMessage.toLowerCase(), isNot(contains('reconnect')));
       expect(e.userMessage, contains('ff00ff00'));
     });
+
+    /// Après plusieurs mots de passe erronés, le serveur refuse un moment.
+    /// Son message dit combien de temps patienter : le remplacer par un
+    /// générique perdrait cette indication.
+    test('un refus pour excès de tentatives garde le message du serveur', () {
+      final e = ApiException.fromDioError(reponse(429, corps: {
+        'message': 'Trop de tentatives de connexion. Patientez une minute avant de reessayer.',
+      }));
+
+      expect(e.isThrottled, isTrue);
+      expect(e.userMessage, contains('Patientez'));
+    });
   });
 
   group('Référence de requête', () {
