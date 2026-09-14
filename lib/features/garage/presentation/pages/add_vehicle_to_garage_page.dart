@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
+
 import '../providers/garage_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/vin_decode_provider.dart';
 import '../../data/models/vin_decode_result.dart';
 import '../../../vehicles/data/models/catalog_refs.dart';
@@ -169,6 +172,12 @@ class _AddVehicleToGaragePageState
 
   @override
   Widget build(BuildContext context) {
+    // Le formulaire compte dix champs, et l'enregistrement passe par une route
+    // protégée. Sans ce garde, un visiteur non connecté le remplissait
+    // entièrement pour se heurter à un refus au moment de sauvegarder, en
+    // perdant tout. Mieux vaut le dire avant qu'après.
+    if (!ref.watch(authProvider).isClient) return const _LoginRequired();
+
     final refsAsync = ref.watch(catalogRefsProvider);
     final vinState  = ref.watch(vinDecodeProvider);
 
@@ -864,4 +873,54 @@ class _UpperCaseFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) =>
       newValue.copyWith(text: newValue.text.toUpperCase());
+}
+
+/// Écran opposé à un visiteur qui veut enregistrer un véhicule.
+///
+/// Le compte n'est pas une formalité administrative : les rappels d'échéance
+/// partent vers un appareil identifié. Sans compte, il n'y a personne à
+/// prévenir — autant l'expliquer plutôt que de le faire découvrir au moment
+/// d'enregistrer.
+class _LoginRequired extends StatelessWidget {
+  const _LoginRequired();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Ajouter un véhicule')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.directions_car_outlined, size: 60, color: cs.outline),
+              const SizedBox(height: 16),
+              Text(
+                'Un compte est nécessaire',
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Vos rappels de visite technique, d\'assurance et de vidange '
+                'vous sont envoyés : il faut savoir à qui.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: cs.onSurfaceVariant),
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: () => context.push('/login'),
+                icon: const Icon(Icons.login),
+                label: const Text('Se connecter / S\'inscrire'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
