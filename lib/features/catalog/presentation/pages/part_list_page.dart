@@ -711,20 +711,73 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
 
 // ── États vide / erreur ──────────────────────────────────────────────
 
-class _EmptyView extends StatelessWidget {
+/// Aucun résultat — en nommant les filtres qui l'expliquent.
+///
+/// « Aucune pièce trouvée » laissait chercher lequel des quatre critères
+/// actifs est de trop. Le catalogue compte 200 pièces : quand l'écran est
+/// vide, c'est presque toujours un filtre, pas un catalogue vide.
+class _EmptyView extends ConsumerWidget {
   const _EmptyView();
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.settings_outlined, size: 64, color: Theme.of(context).colorScheme.outline),
-        const SizedBox(height: 12),
-        const Text('Aucune pièce trouvée'),
-      ],
-    ),
-  );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs      = Theme.of(context).colorScheme;
+    final filtre  = ref.watch(partFilterProvider);
+    final actifs  = <String>[
+      if (filtre.search?.isNotEmpty == true) '« ${filtre.search} »',
+      if (filtre.oem?.isNotEmpty == true)    'référence OEM',
+      if (filtre.categoryId != null)         'une catégorie',
+      if (filtre.vehicleModelId != null)     'compatibilité véhicule',
+      if (filtre.city != null)               filtre.city!,
+      if (filtre.inStockOnly)                'en stock',
+    ];
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.settings_outlined, size: 56, color: cs.outline),
+            const SizedBox(height: 14),
+            Text(
+              'Aucune pièce trouvée',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            if (actifs.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Filtres actifs : ${actifs.join(', ')}.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: cs.onSurfaceVariant),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.tonalIcon(
+                onPressed: () =>
+                    ref.read(partFilterProvider.notifier).state = const PartFilter(),
+                icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
+                label: const Text('Tout effacer'),
+              ),
+            ] else ...[
+              const SizedBox(height: 8),
+              Text(
+                'Le catalogue ne contient aucune pièce pour le moment.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: cs.onSurfaceVariant),
+              ),
+            ],
+            TextButton.icon(
+              onPressed: () => context.push('/needs/new?type=part'),
+              icon: const Icon(Icons.inbox_outlined, size: 18),
+              label: const Text('Dites-nous ce que vous cherchez'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _ErrorView extends StatelessWidget {

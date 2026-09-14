@@ -179,27 +179,94 @@ class _PartTile extends StatelessWidget {
 
 // ── Vide ──────────────────────────────────────────────────────────────
 
+/// Aucun résultat — et l'écran doit dire lequel des deux vides c'est.
+///
+/// « Aucune pièce compatible trouvée » laissait deviner : le catalogue est-il
+/// vide pour ce modèle, ou manque-t-il une information sur le véhicule ? Les
+/// deux causes appellent des gestes opposés, et l'une des deux se répare en
+/// trente secondes.
+///
+/// Dans tous les cas on propose une sortie : parcourir le catalogue entier, ou
+/// déposer un besoin — ce qui transforme une impasse en signal pour l'équipe,
+/// puisque chaque besoin notifie le personnel.
 class _EmptyParts extends StatelessWidget {
   final OwnedVehicle? vehicle;
   const _EmptyParts({this.vehicle});
 
+  bool get _motorisationManquante => vehicle?.compatibilityReady == false;
+
+  String get _titre => _motorisationManquante
+      ? 'Motorisation inconnue'
+      : 'Aucune pièce déclarée pour ce modèle';
+
+  String get _explication {
+    if (_motorisationManquante) {
+      return 'Sans la motorisation, impossible de savoir quelles pièces vont '
+          'sur ce véhicule. Renseignez-la, ou saisissez le numéro de série : '
+          'il la retrouve tout seul.';
+    }
+
+    final modele = vehicle?.identity.model;
+
+    return modele == null
+        ? 'Aucune pièce du catalogue n\'est rattachée à ce véhicule pour le moment.'
+        : 'Aucune pièce du catalogue n\'est rattachée à ce modèle — '
+            'une $modele — pour le moment.';
+  }
+
   @override
-  Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.settings_outlined, size: 64,
-            color: Theme.of(context).colorScheme.outline),
-        const SizedBox(height: 12),
-        const Text('Aucune pièce compatible trouvée'),
-        if (vehicle?.compatibilityReady == false) ...[
-          const SizedBox(height: 8),
-          const Text(
-            'Ajoutez la motorisation à votre véhicule\npour un meilleur résultat.',
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ],
-    ),
-  );
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _motorisationManquante
+                  ? Icons.help_outline
+                  : Icons.settings_outlined,
+              size: 56,
+              color: cs.outline,
+            ),
+            const SizedBox(height: 14),
+            Text(
+              _titre,
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _explication,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(height: 24),
+
+            if (_motorisationManquante)
+              FilledButton.icon(
+                onPressed: () => context.push('/garage'),
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Compléter mon véhicule'),
+              ),
+
+            // Le besoin n'est pas un lot de consolation : c'est le seul canal
+            // qui prévienne l'équipe qu'une demande existe sans réponse.
+            TextButton.icon(
+              onPressed: () => context.push('/needs/new?type=part'),
+              icon: const Icon(Icons.inbox_outlined, size: 18),
+              label: const Text('Dites-nous ce que vous cherchez'),
+            ),
+            TextButton(
+              onPressed: () => context.go('/parts'),
+              child: const Text('Parcourir toutes les pièces'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

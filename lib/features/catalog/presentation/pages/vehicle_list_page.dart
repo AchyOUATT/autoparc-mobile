@@ -756,19 +756,71 @@ class _PriceRow extends StatelessWidget {
 
 // ── États vide / erreur ─────────────────────────────────────────
 
-class _EmptyView extends StatelessWidget {
+/// Aucun résultat — en nommant les filtres qui l'expliquent.
+///
+/// La barre en compte une douzaine, dont plusieurs restent actifs hors de
+/// l'écran une fois la liste défilée. « Aucun véhicule trouvé » obligeait à
+/// remonter les décocher un par un pour trouver le coupable.
+class _EmptyView extends ConsumerWidget {
   const _EmptyView();
+
   @override
-  Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.search_off, size: 64, color: Theme.of(context).colorScheme.outline),
-        const SizedBox(height: 12),
-        const Text('Aucun véhicule trouvé'),
-      ],
-    ),
-  );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs     = Theme.of(context).colorScheme;
+    final f      = ref.watch(vehicleFilterProvider);
+    final actifs = <String>[
+      if (f.search?.isNotEmpty == true) '« ${f.search} »',
+      if (f.availability != null)       f.availability == 'sale' ? 'à vendre' : 'à louer',
+      if (f.deal == true)               'bonne affaire',
+      if (f.customsCleared == true)     'dédouané',
+      if (f.vehicleType != null)        'type de véhicule',
+      if (f.bodyStyle != null)          'carrosserie',
+      if (f.condition != null)          'état',
+      if (f.yearMin != null || f.yearMax != null) 'année',
+      if (f.priceMax != null)           'prix maximum',
+      if (f.city != null)               f.city!,
+    ];
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.search_off, size: 56, color: cs.outline),
+            const SizedBox(height: 14),
+            Text(
+              'Aucun véhicule trouvé',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              actifs.isEmpty
+                  ? 'Le catalogue ne contient aucun véhicule pour le moment.'
+                  : 'Filtres actifs : ${actifs.join(', ')}.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(color: cs.onSurfaceVariant),
+            ),
+            if (actifs.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              FilledButton.tonalIcon(
+                onPressed: () =>
+                    ref.read(vehicleFilterProvider.notifier).state = const VehicleFilter(),
+                icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
+                label: const Text('Tout effacer'),
+              ),
+            ],
+            TextButton.icon(
+              onPressed: () => context.push('/needs/new?type=vehicle'),
+              icon: const Icon(Icons.inbox_outlined, size: 18),
+              label: const Text('Dites-nous ce que vous cherchez'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _ErrorView extends StatelessWidget {

@@ -190,6 +190,47 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  // ── Connexion unifiée ──────────────────────────────────────────────
+  //
+  // Clients et personnel relèvent de deux systèmes d'identité distincts :
+  // Firebase pour les uns, un compte serveur pour les autres. L'écran de
+  // connexion demandait donc à chacun de se classer lui-même — et un employé
+  // qui ne remarquait pas les onglets lisait « aucun compte trouvé », un
+  // message qui accuse le compte alors que le problème était l'onglet.
+  //
+  // On essaie donc les deux, Firebase d'abord : les clients sont la majorité,
+  // le cas courant ne coûte qu'un appel.
+  //
+  // Firebase ne distingue plus « compte inconnu » de « mot de passe faux »
+  // (protection contre l'énumération de comptes) : impossible de savoir au vu
+  // de l'échec s'il faut tenter l'autre système. On le tente donc toujours.
+
+  Future<void> signIn(String email, String password) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final user = await _repo.signInWithEmailAndPassword(email, password);
+      state = AuthState(type: AuthType.client, firebaseUser: user);
+      return;
+    } catch (_) {
+      // Silence volontaire : ce n'est peut-être pas un client.
+    }
+
+    try {
+      final staff = await _repo.loginStaff(email, password);
+      state = AuthState(type: AuthType.staff, staffUser: staff);
+      return;
+    } catch (e) {
+      // Un refus pour excès de tentatives se dit tel quel : « identifiants
+      // incorrects » enverrait chercher une faute de frappe inexistante.
+      final message = (e is ApiException && e.isThrottled)
+          ? e.userMessage
+          : 'Email ou mot de passe incorrect.';
+
+      state = state.copyWith(isLoading: false, error: message);
+    }
+  }
+
   Future<void> registerClient(String email, String password) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {

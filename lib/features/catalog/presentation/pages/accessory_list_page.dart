@@ -538,20 +538,59 @@ class _AvailabilityBadge extends StatelessWidget {
 
 // ── États vide / erreur ─────────────────────────────────────────
 
-class _EmptyView extends StatelessWidget {
+/// Aucun résultat — en nommant les filtres qui l'expliquent.
+class _EmptyView extends ConsumerWidget {
   const _EmptyView();
 
   @override
-  Widget build(BuildContext context) => Center(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs     = Theme.of(context).colorScheme;
+    final f      = ref.watch(accessoryFilterProvider);
+    final actifs = <String>[
+      if (f.search?.isNotEmpty == true) '« ${f.search} »',
+      if (f.category != null)           'une catégorie',
+      if (f.priceMax != null)           'prix maximum',
+      if (f.city != null)               f.city!,
+    ];
+
+    return Center(
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.inventory_2_outlined, size: 64, color: Theme.of(context).colorScheme.outline),
-        const SizedBox(height: 12),
-        const Text('Aucun accessoire trouvé'),
+        Icon(Icons.inventory_2_outlined, size: 56, color: cs.outline),
+        const SizedBox(height: 14),
+        Text('Aucun accessoire trouvé',
+            style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Text(
+            actifs.isEmpty
+                ? 'Le catalogue ne contient aucun accessoire pour le moment.'
+                : 'Filtres actifs : ${actifs.join(', ')}.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: cs.onSurfaceVariant),
+          ),
+        ),
+        if (actifs.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          FilledButton.tonalIcon(
+            onPressed: () =>
+                ref.read(accessoryFilterProvider.notifier).state = const AccessoryFilter(),
+            icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
+            label: const Text('Tout effacer'),
+          ),
+        ],
+        TextButton.icon(
+          onPressed: () => context.push('/needs/new?type=accessory'),
+          icon: const Icon(Icons.inbox_outlined, size: 18),
+          label: const Text('Dites-nous ce que vous cherchez'),
+        ),
       ],
     ),
-  );
+    );
+  }
 }
 
 class _ErrorView extends StatelessWidget {
