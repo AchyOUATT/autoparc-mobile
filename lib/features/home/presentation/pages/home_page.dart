@@ -691,19 +691,21 @@ class _BrowseSection extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Expanded(
-            child: _BrowseTile(
-              icon: Icons.settings_outlined,
-              label: 'Pièces',
-              onTap: () => context.go('/parts'),
-            ),
-          ),
-          const SizedBox(width: 8),
+          // Même ordre que la barre du bas : deux rangements différents pour
+          // les mêmes trois destinations obligeraient à relire à chaque fois.
           Expanded(
             child: _BrowseTile(
               icon: Icons.tune_outlined,
               label: 'Accessoires',
               onTap: () => context.go('/accessories'),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _BrowseTile(
+              icon: Icons.settings_outlined,
+              label: 'Pièces',
+              onTap: () => context.go('/parts'),
             ),
           ),
         ],
