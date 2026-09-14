@@ -554,8 +554,10 @@ class _DealsSection extends ConsumerWidget {
                   'Bonnes affaires',
                   onSeeAll: () => context.go('/vehicles'),
                 ),
+                // Ajusté au contenu réel : une carte sans ville laissait
+                // sinon un bandeau vide sous le prix.
                 SizedBox(
-                  height: 176,
+                  height: 152,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: list.length,
