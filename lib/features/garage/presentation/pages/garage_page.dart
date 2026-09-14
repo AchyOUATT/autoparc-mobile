@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/models/owned_vehicle.dart';
 import '../providers/garage_provider.dart';
+import '../widgets/mileage_dialog.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
 import '../../../../core/api/api_exception.dart';
@@ -285,7 +286,7 @@ class _VehicleCard extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
-                  onPressed: () => _editMileage(context, ref, vehicle),
+                  onPressed: () => showMileageDialog(context, ref, vehicle),
                   icon: const Icon(Icons.speed, size: 18),
                   label: const Text('Mettre à jour'),
                 ),
@@ -325,58 +326,6 @@ class _VehicleCard extends ConsumerWidget {
     }
   }
 
-  Future<void> _editMileage(
-    BuildContext context,
-    WidgetRef ref,
-    OwnedVehicle vehicle,
-  ) async {
-    final ctrl = TextEditingController(
-      text: vehicle.mileageKm?.toString() ?? '',
-    );
-
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Mettre à jour'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: ctrl,
-              decoration: const InputDecoration(
-                labelText: 'Kilométrage actuel',
-                suffixText: 'km',
-              ),
-              keyboardType: TextInputType.number,
-              autofocus: true,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, {
-              'mileage_km': int.tryParse(ctrl.text) ?? vehicle.mileageKm,
-            }),
-            child: const Text('Sauvegarder'),
-          ),
-        ],
-      ),
-    );
-
-    ctrl.dispose();
-
-    if (result != null && context.mounted) {
-      final error = await ref
-          .read(garageProvider.notifier)
-          .updateVehicle(vehicle.id, result);
-      if (error != null && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error), backgroundColor: Colors.red),
-        );
-      }
-    }
-  }
 }
 
 // ── Menu contextuel (éditer / supprimer) ─────────────────────────────

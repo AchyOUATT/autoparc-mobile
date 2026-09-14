@@ -15,6 +15,7 @@ import 'features/catalog/presentation/pages/part_detail_page.dart';
 import 'features/catalog/presentation/pages/part_list_page.dart';
 import 'features/catalog/presentation/pages/vehicle_detail_page.dart';
 import 'features/catalog/presentation/pages/vehicle_list_page.dart';
+import 'features/home/presentation/pages/home_page.dart';
 import 'features/garage/data/models/owned_vehicle.dart';
 import 'features/garage/presentation/pages/add_vehicle_to_garage_page.dart';
 import 'features/garage/presentation/pages/compatible_parts_page.dart';
@@ -76,7 +77,10 @@ GoRouter _buildRouter({required bool onboardingDone}) => GoRouter(
     ShellRoute(
       builder: (context, state, child) => _AppShell(child: child),
       routes: [
-        GoRoute(path: '/',            builder: (_, __) => const VehicleListPage()),
+        GoRoute(path: '/',            builder: (_, __) => const HomePage()),
+        // La recherche véhicules quitte la racine : elle sert l'acheteur de
+        // passage, quand l'accueil sert le propriétaire, qui lui revient.
+        GoRoute(path: '/vehicles',    builder: (_, __) => const VehicleListPage()),
         GoRoute(path: '/accessories', builder: (_, __) => const AccessoryListPage()),
         GoRoute(path: '/parts',       builder: (_, __) => const PartListPage()),
       ],
@@ -250,7 +254,8 @@ class _AppShell extends ConsumerStatefulWidget {
 
 class _AppShellState extends ConsumerState<_AppShell> {
   static const _tabs = [
-    (path: '/',            icon: Icons.directions_car_outlined, label: 'Véhicules'),
+    (path: '/',            icon: Icons.home_outlined,           label: 'Accueil'),
+    (path: '/vehicles',    icon: Icons.directions_car_outlined, label: 'Véhicules'),
     (path: '/accessories', icon: Icons.tune_outlined,           label: 'Accessoires'),
     (path: '/parts',       icon: Icons.settings_outlined,       label: 'Pièces'),
   ];
