@@ -13,12 +13,18 @@ class LoginPage extends ConsumerStatefulWidget {
 
 class _LoginPageState extends ConsumerState<LoginPage>
     with SingleTickerProviderStateMixin {
+  /// Rang des onglets, dans l'ordre où ils sont déclarés plus bas.
+  static const _ongletClient = 1;
+
   late final TabController _tabs;
 
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 2, vsync: this);
+    // Onglet client par défaut : ils sont le public de l'application, le
+    // personnel se compte sur les doigts d'une main. Ouvrir sur « Personnel »
+    // imposait un détour à tout le monde pour épargner un geste à quelques-uns.
+    _tabs = TabController(length: 2, vsync: this, initialIndex: _ongletClient);
   }
 
   @override
@@ -44,7 +50,14 @@ class _LoginPageState extends ConsumerState<LoginPage>
             duration: const Duration(seconds: 3),
           ),
         );
-        context.go('/');
+        // Rendre la main à l'écran qui a demandé la connexion, quand il y en
+        // a un : le formulaire d'ajout de véhicule attend là-dessous, saisie
+        // intacte. Sans cela, `go` remplacerait la pile et effacerait tout.
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/');
+        }
       }
     });
 

@@ -30,17 +30,22 @@ final homeVehicleProvider = Provider<OwnedVehicle?>((ref) {
 
 /// Rang d'urgence d'un véhicule : plus la valeur est basse, plus ça presse.
 ///
-/// Une échéance dépassée passe devant tout le reste — c'est la seule chose
-/// qu'un propriétaire doit voir en ouvrant l'application. Un véhicule sans
-/// échéance datée ferme la marche : la vidange se compte en kilomètres, on ne
-/// peut pas la comparer à des jours.
+/// `daysLeft` est négatif une fois l'échéance passée, ce qui suffit à ordonner
+/// l'ensemble : une visite technique dépassée de 11 jours (-11) passe devant
+/// une assurance dépassée de 2 jours (-2), elle-même devant un contrôle dans 4
+/// jours. Une première version renvoyait une même valeur pour tout ce qui
+/// était dépassé — deux voitures en retard devenaient alors indiscernables, et
+/// c'était la moins urgente qui s'affichait.
 int urgencyOf(OwnedVehicle vehicle) {
   final prochaine = vehicle.nextDeadline;
 
   if (prochaine == null) return 1 << 30;
-  if (prochaine.overdue) return -1 << 20;
+  if (prochaine.daysLeft != null) return prochaine.daysLeft!;
 
-  return prochaine.daysLeft ?? (1 << 29);
+  // La vidange se compte en kilomètres : impossible de la comparer à des
+  // jours. Dépassée, elle passe devant ce qui est encore à venir ; sinon elle
+  // ferme la marche.
+  return prochaine.overdue ? -1 : 1 << 29;
 }
 
 /// Vrai si un autre véhicule que celui affiché réclame de l'attention.

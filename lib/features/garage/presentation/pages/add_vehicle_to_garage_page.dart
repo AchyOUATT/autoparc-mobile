@@ -129,6 +129,16 @@ class _AddVehicleToGaragePageState
     if (_brand == null) { _snack('Veuillez sélectionner une marque.'); return; }
     if (_model == null) { _snack('Veuillez sélectionner un modèle.'); return; }
 
+    // Le compte n'est demandé qu'ici, une fois la saisie faite. Le réclamer
+    // d'entrée fait renoncer avant d'avoir rien montré ; le réclamer après
+    // coup, sans rien conserver, fait perdre dix champs. La connexion s'ouvre
+    // par-dessus ce formulaire, qui reste vivant en dessous : au retour, la
+    // saisie est intacte et l'enregistrement reprend tout seul.
+    if (!ref.read(authProvider).isClient) {
+      final connecte = await _demanderConnexion();
+      if (!connecte) return;
+    }
+
     setState(() => _submitting = true);
 
     final payload = <String, dynamic>{
@@ -158,6 +168,52 @@ class _AddVehicleToGaragePageState
     }
   }
 
+  /// Explique pourquoi un compte est nécessaire, puis ouvre la connexion.
+  ///
+  /// L'explication n'est pas de la politesse : arriver sur un écran de
+  /// connexion sans savoir pourquoi donne l'impression d'un péage. Dire que
+  /// les rappels ont besoin d'un destinataire, c'est rappeler ce qu'on vient
+  /// justement de gagner en remplissant le formulaire.
+  Future<bool> _demanderConnexion() async {
+    final veutSeConnecter = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Un compte pour vos rappels'),
+        content: const Text(
+          'Visite technique, assurance, vidange : ces rappels vous sont '
+          'envoyés, il faut donc savoir à qui.\n\n'
+          'Votre saisie est conservée.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Plus tard'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Se connecter'),
+          ),
+        ],
+      ),
+    );
+
+    if (veutSeConnecter != true || !mounted) return false;
+
+    // `push` : l'écran de connexion se pose au-dessus, ce formulaire reste
+    // monté en dessous avec ses valeurs.
+    await context.push('/login');
+
+    if (!mounted) return false;
+
+    final connecte = ref.read(authProvider).isClient;
+
+    if (!connecte) {
+      _snack('Connexion annulée — votre saisie est conservée.');
+    }
+
+    return connecte;
+  }
+
   void _snack(String msg, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
@@ -172,12 +228,6 @@ class _AddVehicleToGaragePageState
 
   @override
   Widget build(BuildContext context) {
-    // Le formulaire compte dix champs, et l'enregistrement passe par une route
-    // protégée. Sans ce garde, un visiteur non connecté le remplissait
-    // entièrement pour se heurter à un refus au moment de sauvegarder, en
-    // perdant tout. Mieux vaut le dire avant qu'après.
-    if (!ref.watch(authProvider).isClient) return const _LoginRequired();
-
     final refsAsync = ref.watch(catalogRefsProvider);
     final vinState  = ref.watch(vinDecodeProvider);
 
@@ -873,54 +923,4 @@ class _UpperCaseFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) =>
       newValue.copyWith(text: newValue.text.toUpperCase());
-}
-
-/// Écran opposé à un visiteur qui veut enregistrer un véhicule.
-///
-/// Le compte n'est pas une formalité administrative : les rappels d'échéance
-/// partent vers un appareil identifié. Sans compte, il n'y a personne à
-/// prévenir — autant l'expliquer plutôt que de le faire découvrir au moment
-/// d'enregistrer.
-class _LoginRequired extends StatelessWidget {
-  const _LoginRequired();
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Ajouter un véhicule')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.directions_car_outlined, size: 60, color: cs.outline),
-              const SizedBox(height: 16),
-              Text(
-                'Un compte est nécessaire',
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Vos rappels de visite technique, d\'assurance et de vidange '
-                'vous sont envoyés : il faut savoir à qui.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium
-                    ?.copyWith(color: cs.onSurfaceVariant),
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: () => context.push('/login'),
-                icon: const Icon(Icons.login),
-                label: const Text('Se connecter / S\'inscrire'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
