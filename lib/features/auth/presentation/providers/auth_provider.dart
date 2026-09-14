@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/api/api_client.dart';
@@ -205,6 +206,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
   // (protection contre l'énumération de comptes) : impossible de savoir au vu
   // de l'échec s'il faut tenter l'autre système. On le tente donc toujours.
 
+  /// Codes Firebase qui désignent le compte ou le mot de passe, et eux seuls.
+  ///
+  /// `invalid-credential` couvre aujourd'hui « compte inconnu » comme « mot de
+  /// passe faux » : Firebase les confond volontairement pour empêcher
+  /// d'énumérer les comptes.
+  static bool _estUnRefusDIdentifiants(String code) => const {
+        'invalid-credential',
+        'user-not-found',
+        'wrong-password',
+        'invalid-email',
+        'user-disabled',
+      }.contains(code);
+
   Future<void> signIn(String email, String password) async {
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -212,8 +226,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final user = await _repo.signInWithEmailAndPassword(email, password);
       state = AuthState(type: AuthType.client, firebaseUser: user);
       return;
-    } catch (_) {
-      // Silence volontaire : ce n'est peut-être pas un client.
+    } on FirebaseAuthException catch (e) {
+      debugPrint('[Auth] Firebase a refusé : ${e.code}');
+
+      // Seul un refus d'identifiants autorise à essayer l'autre système. Une
+      // panne réseau ou une configuration Firebase absente n'a rien à voir
+      // avec le compte : la masquer derrière « mot de passe incorrect »
+      // enverrait chercher une faute de frappe pendant des heures.
+      if (!_estUnRefusDIdentifiants(e.code)) {
+        state = state.copyWith(isLoading: false, error: _extractMessage(e));
+        return;
+      }
+    } catch (e) {
+      debugPrint('[Auth] Firebase indisponible : $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Connexion impossible pour le moment. Réessayez.',
+      );
+      return;
     }
 
     try {
