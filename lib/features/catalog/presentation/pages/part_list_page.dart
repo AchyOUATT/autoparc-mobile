@@ -624,13 +624,18 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
   }
 
   @override
-  void dispose() {
+  void deactivate() {
     // Efface le filtre actif quand on quitte la page des pièces — sans quoi
     // on retrouverait la liste silencieusement restreinte à un véhicule.
+    //
+    // Dans `dispose()`, Riverpod refuse `ref` : le widget est déjà démonté, et
+    // chaque sortie de la page levait « Cannot use "ref" after the widget was
+    // disposed ». `deactivate()` s'exécute juste avant, alors que `ref` est
+    // encore valide.
     ref.read(selectedGarageVehicleProvider.notifier).state = null;
     ref.read(partFilterProvider.notifier).state =
         ref.read(partFilterProvider).copyWith(clearVehicleModel: true);
-    super.dispose();
+    super.deactivate();
   }
 
   @override
