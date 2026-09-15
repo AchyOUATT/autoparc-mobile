@@ -123,6 +123,20 @@ class _AddVehicleToGaragePageState
     setState(() {});
   }
 
+  /// Vrai si la génération choisie n'était pas produite l'année saisie.
+  ///
+  /// Muet tant que les deux champs ne sont pas remplis, et muet aussi quand la
+  /// base ignore les années de production du modèle : on n'accuse pas sur la
+  /// foi d'une donnée absente.
+  bool get _generationIncoherente {
+    final modele = _model;
+    final annee  = int.tryParse(_yearCtrl.text);
+
+    if (modele == null || annee == null) return false;
+
+    return !modele.couvreAnnee(annee);
+  }
+
   /// Vrai si le serveur pourra calculer la compatibilité de ce véhicule.
   bool get _motorisationConnue => motorisationResolue(
         engineType: _engineType,
@@ -376,7 +390,8 @@ class _AddVehicleToGaragePageState
                     FilteringTextInputFormatter.digitsOnly,
                     LengthLimitingTextInputFormatter(4),
                   ],
-                  onChanged: (_) => _prefilledFields.remove('year'),
+                  // setState : l'avertissement de generation depend de cette valeur.
+                  onChanged: (_) => setState(() => _prefilledFields.remove('year')),
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Année obligatoire';
                     final y = int.tryParse(v);
@@ -399,6 +414,25 @@ class _AddVehicleToGaragePageState
                       _prefilledFields.add('year');
                     });
                   },
+                ),
+
+              // Génération incompatible avec l'année saisie.
+              //
+              // Le contrôle ne peut se faire qu'ici, les deux champs remplis :
+              // le modèle se choisit avant l'année, et l'année peut changer
+              // après coup. Il se contente d'avertir — la base ne couvre pas
+              // toutes les générations, et bloquer sur une donnée incomplète
+              // empêcherait d'enregistrer une voiture parfaitement réelle.
+              if (_generationIncoherente)
+                _GenerationHint(
+                  modele: _model!,
+                  annee: int.parse(_yearCtrl.text),
+                  alternatives: refs.generationsPour(_model!, int.parse(_yearCtrl.text)),
+                  onSelect: (m) => setState(() {
+                    _model = m;
+                    _trim = null;
+                    _prefilledFields.remove('model');
+                  }),
                 ),
 
               const SizedBox(height: 24),
@@ -982,6 +1016,112 @@ class _YearCandidatesHint extends StatelessWidget {
               visualDensity: VisualDensity.compact,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Signale une génération qui n'existait pas l'année du véhicule.
+///
+/// Le cas se produit parce qu'un « modèle » est ici une génération : trois
+/// Corolla coexistent, et la première de la liste est la plus récente. Choisir
+/// la mauvaise ne se voyait nulle part, et privait ensuite le véhicule des
+/// pièces qui lui correspondent vraiment — celles d'une E210 ne vont pas sur
+/// une E180.
+///
+/// L'avertissement propose la bonne génération plutôt que de se contenter de
+/// constater l'erreur : sans cela, il faudrait rouvrir la liste et deviner à
+/// nouveau. Quand plusieurs générations couvrent l'année — elles se
+/// chevauchent sur leur millésime de transition — on les propose toutes au
+/// lieu d'en imposer une.
+class _GenerationHint extends StatelessWidget {
+  const _GenerationHint({
+    required this.modele,
+    required this.annee,
+    required this.alternatives,
+    required this.onSelect,
+  });
+
+  final ModelRef modele;
+  final int annee;
+  final List<ModelRef> alternatives;
+  final ValueChanged<ModelRef> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    const couleur = Color(0xFF8A5A00);
+
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAEEDA),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.info_outline, size: 18, color: couleur),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  modele.yearsLabel == null
+                      ? '${modele.displayName} ne correspond peut-être pas à $annee.'
+                      : 'La ${modele.generation ?? modele.name} est produite '
+                          '${modele.yearsLabel}. Votre véhicule est de $annee.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: couleur),
+                ),
+              ),
+            ],
+          ),
+          if (alternatives.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              alternatives.length == 1
+                  ? 'Vouliez-vous celle-ci ?'
+                  : 'Générations produites en $annee :',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: couleur, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                for (final m in alternatives)
+                  ActionChip(
+                    label: Text(m.displayName),
+                    onPressed: () => onSelect(m),
+                    visualDensity: VisualDensity.compact,
+                  ),
+              ],
+            ),
+          ] else
+            // Le cas du Mazda3 de 2014 : la seule generation en base commence
+            // en 2018. Rien a proposer, et le dire vaut mieux que se taire —
+            // la personne saurait sinon que quelque chose cloche sans savoir
+            // qu'aucun choix correct n'existe.
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'Aucune autre génération de ${modele.name} n\'est enregistrée '
+                'pour cette année. Vous pouvez continuer : la recherche de '
+                'pièces sera simplement moins précise.',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: couleur),
+              ),
+            ),
         ],
       ),
     );

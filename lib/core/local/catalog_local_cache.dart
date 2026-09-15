@@ -36,9 +36,21 @@ class CachedPayload {
 ///
 /// Dans tous les cas, [clear] force un rechargement complet au prochain accès.
 class CatalogLocalCache {
+  /// Forme attendue des lignes en cache.
+  ///
+  /// À incrémenter dès que `/catalog/sync` renvoie un champ de plus. Le
+  /// rafraîchissement se fait par delta : seules reviennent les lignes dont
+  /// `updated_at` a changé côté serveur. Ajouter une colonne à la réponse ne
+  /// touche aucun `updated_at`, donc les lignes déjà en cache garderaient
+  /// indéfiniment leur ancienne forme — sans champ, sans erreur, sans rien qui
+  /// le signale. Changer ce numéro jette le cache et force un rechargement
+  /// complet, une fois.
+  static const _schemaVersion   = 2; // 2 : années de production des modèles
+
   static const _kRefs           = 'refs';
   static const _kCountries      = 'countries';
   static const _kPartCategories = 'part_categories';
+  static const _kSchema         = '_schema_version';
   static const _ttlMs           = 24 * 60 * 60 * 1000; // 24 h
 
   Database? _db;
@@ -60,7 +72,38 @@ class CatalogLocalCache {
         )
       '''),
     );
+
+    await _verifierSchema(_db!);
+
     return _db!;
+  }
+
+  /// Vide le cache si son contenu date d'une forme de réponse antérieure.
+  ///
+  /// La version vit dans la table plutôt que dans `openDatabase(version:)` :
+  /// la structure SQLite, elle, ne change pas — c'est le JSON stocké dedans qui
+  /// gagne des champs. Une migration de schéma SQLite ne verrait rien.
+  Future<void> _verifierSchema(Database db) async {
+    final rows = await db.query(
+      'entries',
+      columns: ['data'],
+      where: 'key = ?',
+      whereArgs: [_kSchema],
+      limit: 1,
+    );
+
+    final stockee = rows.isEmpty
+        ? 0
+        : (jsonDecode(rows.first['data'] as String) as Map)['v'] as int? ?? 0;
+
+    if (stockee == _schemaVersion) return;
+
+    await db.delete('entries');
+    await db.insert('entries', {
+      'key':        _kSchema,
+      'data':       jsonEncode({'v': _schemaVersion}),
+      'updated_at': DateTime.now().millisecondsSinceEpoch,
+    });
   }
 
   // ── Refs catalogue (/catalog/sync) ────────────────────────────────────────

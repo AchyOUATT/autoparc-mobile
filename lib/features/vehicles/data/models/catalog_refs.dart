@@ -24,6 +24,16 @@ class ModelRef {
   /// 'bus' | 'estate' | 'coupe' | 'convertible' | 'truck' | 'other').
   final String? bodyType;
 
+  /// Années de production de cette génération. `productionEnd` est nul tant
+  /// que la génération est encore fabriquée.
+  ///
+  /// Un « modèle » désigne ici une génération, pas un nom commercial : trois
+  /// Corolla coexistent — E210, E180, E140. Sans ces deux dates, le menu
+  /// n'affiche que des codes constructeur, et rien n'empêche de rattacher une
+  /// voiture de 2016 à une génération apparue en 2019.
+  final int? productionStart;
+  final int? productionEnd;
+
   /// Valeurs par défaut renseignées dans la base (priment sur l'inférence).
   final String? defaultVehicleType;  // passenger | utility | heavy
   final int?    defaultSeats;
@@ -37,6 +47,8 @@ class ModelRef {
     required this.name,
     this.generation,
     this.bodyType,
+    this.productionStart,
+    this.productionEnd,
     this.defaultVehicleType,
     this.defaultSeats,
     this.defaultDoors,
@@ -50,6 +62,8 @@ class ModelRef {
     name:                j['name']                  as String,
     generation:          j['generation']             as String?,
     bodyType:            j['body_type']              as String?,
+    productionStart:     j['production_start']       as int?,
+    productionEnd:       j['production_end']         as int?,
     defaultVehicleType:  j['default_vehicle_type']  as String?,
     defaultSeats:        j['default_seats']          as int?,
     defaultDoors:        j['default_doors']          as int?,
@@ -57,7 +71,42 @@ class ModelRef {
     defaultPowerHp:      j['default_power_hp']       as int?,
   );
 
-  String get displayName => generation != null ? '$name ($generation)' : name;
+  /// Nom affiché dans les listes.
+  ///
+  /// Les années comptent plus que le code : « Corolla (E180, 2013–2019) » se
+  /// choisit sans connaître la nomenclature Toyota, « Corolla (E180) » non.
+  /// Trois lignes ne différant que par un code interne laissaient prendre la
+  /// première, qui est la plus récente — d'où des voitures rattachées à une
+  /// génération postérieure à leur année.
+  String get displayName {
+    final details = [
+      if (generation != null) generation!,
+      if (yearsLabel != null) yearsLabel!,
+    ];
+
+    return details.isEmpty ? name : '$name (${details.join(', ')})';
+  }
+
+  /// « 2013–2019 », « depuis 2018 », ou nul si la période est inconnue.
+  String? get yearsLabel {
+    if (productionStart == null) return null;
+
+    return productionEnd == null
+        ? 'depuis $productionStart'
+        : '$productionStart–$productionEnd';
+  }
+
+  /// Cette génération était-elle produite l'année indiquée ?
+  ///
+  /// Vrai quand la période est inconnue : on ne reproche rien sur la foi d'une
+  /// donnée absente. La borne de fin est inclusive — les générations se
+  /// chevauchent d'une année, le millésime de transition existe des deux côtés.
+  bool couvreAnnee(int annee) {
+    if (productionStart == null) return true;
+    if (annee < productionStart!) return false;
+
+    return productionEnd == null || annee <= productionEnd!;
+  }
 
   /// Déduit la valeur normalisée de `body_style` (enum véhicule) à partir du
   /// `body_type` stocké sur le modèle. Couvre les valeurs normalisées ET les
@@ -267,6 +316,31 @@ class CatalogRefs {
 
   List<TrimRef> trimsForModel(int modelId) =>
       trims.where((t) => t.vehicleModelId == modelId).toList();
+
+  /// Générations du même modèle qui, elles, étaient produites cette année-là.
+  ///
+  /// Sert quand la génération choisie ne couvre pas l'année saisie : plutôt
+  /// que de dire seulement « c'est faux », on propose ce qui est juste. Le
+  /// résultat peut contenir plusieurs entrées — les générations se chevauchent
+  /// sur leur année de transition — et il est alors plus honnête de laisser
+  /// choisir que de trancher au hasard.
+  ///
+  /// Classées de la plus récente à la plus ancienne.
+  List<ModelRef> generationsPour(ModelRef modele, int annee) {
+    final candidates = vehicleModels
+        .where((m) =>
+            m.id != modele.id &&
+            m.brandId == modele.brandId &&
+            m.name == modele.name &&
+            m.couvreAnnee(annee))
+        .toList();
+
+    candidates.sort(
+      (a, b) => (b.productionStart ?? 0).compareTo(a.productionStart ?? 0),
+    );
+
+    return candidates;
+  }
 
   /// Locations groupées par ville.
   Map<String, List<LocationRef>> get locationsByCity {
