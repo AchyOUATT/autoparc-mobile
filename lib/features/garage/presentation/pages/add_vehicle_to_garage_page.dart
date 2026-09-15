@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:go_router/go_router.dart';
 
+import '../../data/engine_data.dart';
 import '../providers/garage_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/vin_decode_provider.dart';
@@ -121,6 +122,13 @@ class _AddVehicleToGaragePageState
 
     setState(() {});
   }
+
+  /// Vrai si le serveur pourra calculer la compatibilité de ce véhicule.
+  bool get _motorisationConnue => motorisationResolue(
+        engineType: _engineType,
+        trim:       _trim,
+        engineCode: _engineCode,
+      );
 
   // ── Soumission du formulaire ───────────────────────────────────────
 
@@ -396,9 +404,24 @@ class _AddVehicleToGaragePageState
               const SizedBox(height: 24),
 
               // ═══════════════════════════════════════════════════════
-              // 3. Détails optionnels
+              // 3. Motorisation
               // ═══════════════════════════════════════════════════════
-              _SectionTitle('Détails (optionnels)'),
+              //
+              // Sortie de « Détails (optionnels) », où elle était rangée sous
+              // un titre qui invitait à la sauter. Elle reste facultative — on
+              // n'a pas le droit de bloquer quelqu'un qui ignore sa
+              // motorisation — mais elle n'est pas un détail : c'est elle qui
+              // décide de la compatibilité des pièces, cote serveur, via
+              // `effective_engine_type_id`.
+              _SectionTitle('Motorisation'),
+              const SizedBox(height: 4),
+              Text(
+                'C\'est elle qui détermine quelles pièces vont sur votre '
+                'véhicule. La finition suffit souvent à la déduire.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
               const SizedBox(height: 16),
 
               // Finition
@@ -422,8 +445,7 @@ class _AddVehicleToGaragePageState
                 child: DropdownButtonFormField<EngineTypeRef>(
                   value: _engineType,
                   decoration: InputDecoration(
-                    labelText: 'Motorisation',
-                    helperText: 'Améliore la précision de la recherche de pièces',
+                    labelText: 'Carburant',
                     suffixIcon: _engineType != null
                         ? IconButton(
                             icon: const Icon(Icons.clear, size: 18),
@@ -445,7 +467,21 @@ class _AddVehicleToGaragePageState
                   }),
                 ),
               ),
-              const SizedBox(height: 12),
+
+              // Conséquence, dite ici et non à l'enregistrement : la personne
+              // a encore le champ sous les yeux et peut y répondre. Une boîte
+              // de dialogue au moment d'enregistrer arriverait après l'effort,
+              // pour un reproche qu'on ne peut pas toujours satisfaire.
+              const SizedBox(height: 8),
+              _CompatibiliteHint(resolue: _motorisationConnue),
+
+              const SizedBox(height: 24),
+
+              // ═══════════════════════════════════════════════════════
+              // 4. Détails optionnels
+              // ═══════════════════════════════════════════════════════
+              _SectionTitle('Détails (optionnels)'),
+              const SizedBox(height: 16),
 
               // Couleur
               DropdownButtonFormField<ColorRef>(
@@ -534,6 +570,47 @@ class _AddVehicleToGaragePageState
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Titre de section.
+/// Dit, sous le champ, ce que son absence coûtera.
+///
+/// Deux états et non un seul : confirmer que c'est bon vaut autant qu'avertir
+/// que ça ne l'est pas — sans le retour vert, on ne sait pas si choisir une
+/// finition a suffi, et on croit le champ toujours vide.
+class _CompatibiliteHint extends StatelessWidget {
+  const _CompatibiliteHint({required this.resolue});
+
+  final bool resolue;
+
+  @override
+  Widget build(BuildContext context) {
+    final couleur = resolue ? const Color(0xFF2E7D32) : const Color(0xFF8A5A00);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          resolue ? Icons.check_circle_outline : Icons.info_outline,
+          size: 16,
+          color: couleur,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            resolue
+                ? 'Les pièces compatibles avec ce véhicule pourront être filtrées.'
+                : 'Sans cette information, la liste des pièces compatibles '
+                    'restera vide. Vous pourrez la compléter plus tard depuis '
+                    'votre garage.',
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: couleur),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SectionTitle extends StatelessWidget {
   final String text;
   const _SectionTitle(this.text);

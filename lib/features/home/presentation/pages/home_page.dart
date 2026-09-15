@@ -12,6 +12,7 @@ import '../../../catalog/data/models/part.dart';
 import '../../../catalog/data/models/vehicle.dart';
 import '../../../garage/data/models/owned_vehicle.dart';
 import '../../../garage/presentation/providers/garage_provider.dart';
+import '../../../garage/presentation/widgets/engine_prompt.dart';
 import '../../../garage/presentation/widgets/mileage_dialog.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
 import '../providers/home_providers.dart';
@@ -228,6 +229,14 @@ class _VehicleCard extends ConsumerWidget {
                       ],
                     ),
                   ),
+
+                // Sous les échéances, et non au-dessus : les dates sont la
+                // raison d'ouvrir l'application, le manque à combler vient
+                // ensuite. Il disparaît de lui-même une fois renseigné.
+                if (!vehicle.compatibilityReady) ...[
+                  const SizedBox(height: 12),
+                  MissingEngineBanner(vehicle: vehicle),
+                ],
 
                 const SizedBox(height: 12),
                 // Le geste qui fait vivre le rappel de vidange : sans

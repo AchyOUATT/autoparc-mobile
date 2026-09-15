@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/models/owned_vehicle.dart';
 import '../providers/garage_provider.dart';
+import '../widgets/engine_prompt.dart';
 import '../widgets/mileage_dialog.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
@@ -267,6 +268,16 @@ class _VehicleCard extends ConsumerWidget {
                   label: const Text('Suivre mes échéances'),
                 ),
               ),
+            ),
+
+          // ── Motorisation manquante ────────────────────────────────
+          //
+          // Juste au-dessus du bouton qu'elle rend inopérant : la liste des
+          // pièces compatibles s'ouvrirait vide, sans rien dire.
+          if (!vehicle.compatibilityReady)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: MissingEngineBanner(vehicle: vehicle),
             ),
 
           // ── Bouton pièces compatibles ─────────────────────────────
