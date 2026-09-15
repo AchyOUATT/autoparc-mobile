@@ -1,4 +1,4 @@
-name: Build APK
+name: Build Android
 
 on:
   push:
@@ -8,6 +8,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    # Le contexte `secrets` n'est pas lisible depuis le `if` d'une étape : on le
+    # recopie ici, où il l'est, pour pouvoir construire même avant que la clé
+    # n'existe.
+    env:
+      KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
 
     steps:
       - name: Checkout code
@@ -22,7 +28,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.32.0'
+          flutter-version: '3.47.2'
           channel: stable
           cache: true
 
@@ -31,22 +37,77 @@ jobs:
         run: |
           echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
 
+      # Clé de signature. Absente, le build reste possible — utile tant que la
+      # clé n'existe pas — mais l'artefact est alors signé en debug, ce que
+      # Google Play refuse. La vérification en fin de workflow le dit, plutôt
+      # que de laisser découvrir le problème à l'envoi.
+      - name: Restaurer la clé de signature
+        if: env.KEYSTORE_B64 != ''
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > android/autoparc-upload.jks
+          cat > android/key.properties <<EOF
+          storeFile=autoparc-upload.jks
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+
       - name: Télécharger les dépendances
         run: flutter pub get
+
+      # Les avertissements restent non bloquants : le dépôt en porte une
+      # vingtaine, antérieurs. Les erreurs, elles, arrêtent le build.
+      - name: Analyse statique
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Tests
+        run: flutter test
 
       # L'URL de production se passe à la compilation. Auparavant une
       # substitution de texte réécrivait endpoints.dart : elle visait `_railway`,
       # renommé `_render` depuis, et ne correspondait donc plus à rien. `sed` ne
       # signale pas une recherche infructueuse — l'APK publié partait avec
       # l'adresse de l'émulateur, sans que rien n'échoue.
-      - name: Construire l'APK (release)
+      - name: Construire l'App Bundle (Play Store)
+        run: |
+          flutter build appbundle --release --no-tree-shake-icons \
+            --dart-define=API_BASE_URL=https://autoparc-backend.onrender.com/api
+
+      # L'APK reste utile pour l'installation directe (test terrain, partage
+      # WhatsApp) : Play n'accepte que le bundle, mais un bundle ne s'installe
+      # pas sur un téléphone.
+      - name: Construire l'APK (installation directe)
         run: |
           flutter build apk --release --no-tree-shake-icons \
             --dart-define=API_BASE_URL=https://autoparc-backend.onrender.com/api
 
-      - name: Publier l'APK comme artefact
+      # Le garde-fou qui compte.
+      #
+      # Sans clé, le build ne échoue pas : il retombe sur la clé de debug et
+      # produit un bundle d'apparence normale. Google Play le rejette à l'envoi,
+      # après téléversement, avec un message qui ne dit pas d'où vient le
+      # problème. On lit donc le certificat ici : le certificat de debug porte
+      # toujours « CN=Android Debug », et sa présence arrête le workflow.
+      - name: Vérifier que le bundle n'est pas signé en debug
+        run: |
+          bundle=build/app/outputs/bundle/release/app-release.aab
+          echo "Signataire du bundle :"
+          keytool -printcert -jarfile "$bundle" | grep -E "Propriétaire|Owner|Valid" || true
+
+          if keytool -printcert -jarfile "$bundle" | grep -q "CN=Android Debug"; then
+            echo "::error::Bundle signé avec la clé de DEBUG — Google Play le refusera."
+            echo "Renseigner les secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,"
+            echo "ANDROID_KEY_ALIAS et ANDROID_KEY_PASSWORD dans les paramètres du dépôt."
+            exit 1
+          fi
+
+          echo "Signature de publication confirmée."
+
+      - name: Publier les artefacts
         uses: actions/upload-artifact@v4
         with:
-          name: autoparc-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: autoparc-android
+          path: |
+            build/app/outputs/bundle/release/app-release.aab
+            build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30

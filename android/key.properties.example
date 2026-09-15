@@ -1,0 +1,24 @@
+# Modele du fichier android/key.properties — a copier, remplir, et NE PAS commiter.
+#
+# Creer la cle (une seule fois, et la conserver a vie) :
+#
+#   keytool -genkey -v \
+#     -keystore ~/autoparc-upload.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 \
+#     -alias autoparc
+#
+# `-validity 10000` fait environ 27 ans : Google Play exige une validite qui
+# depasse le 22 octobre 2033. Une cle plus courte est refusee a l'inscription.
+#
+# Perdre cette cle sans etre inscrit a Play App Signing rend l'application
+# impossible a mettre a jour — il faut alors republier sous un autre
+# identifiant, en perdant les installations et les avis. Inscris-toi a Play App
+# Signing des le premier envoi : Google conserve la cle de signature finale, et
+# celle-ci ne sert plus qu'a l'envoi, remplacable en cas de perte.
+#
+# Sauvegarde le .jks et ces mots de passe ailleurs que sur cette machine.
+
+storeFile=../autoparc-upload.jks
+storePassword=REMPLACER
+keyAlias=autoparc
+keyPassword=REMPLACER

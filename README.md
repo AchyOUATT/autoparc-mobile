@@ -1,17 +1,113 @@
-# auto
+# AutoParc — application mobile
 
-A new Flutter project.
+Vente et location de véhicules, pièces détachées et accessoires au Burkina Faso.
+Flutter, avec une API Laravel séparée ([autoparc-backend](https://github.com/AchyOUATT/autoparc-backend)).
 
-## Getting Started
+## Développement
 
-This project is a starting point for a Flutter application.
+```bash
+flutter pub get
+flutter run
+```
 
-A few resources to get you started if this is your first Flutter project:
+Par défaut l'application vise `http://10.0.2.2:8000/api`, c'est-à-dire le
+`php artisan serve` de la machine hôte vu depuis l'émulateur Android. Aucun
+réglage n'est donc nécessaire au quotidien.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Pour viser une autre API :
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter run --dart-define=API_BASE_URL=https://autoparc-backend.onrender.com/api
+```
+
+`API_BASE_URL` se lit dans [`lib/core/api/endpoints.dart`](lib/core/api/endpoints.dart),
+qui conserve en commentaire les adresses usuelles : téléphone sur le même WiFi,
+tunnel ngrok, production.
+
+**Tout build destiné à quelqu'un d'autre doit passer cette variable.** Sans
+elle, l'application distribuée pointe sur `10.0.2.2`, une adresse qui n'existe
+que dans l'émulateur.
+
+```bash
+flutter test
+flutter analyze
+```
+
+## Publication Android
+
+### 1. La clé de signature
+
+Une seule fois, et à conserver à vie :
+
+```bash
+keytool -genkey -v -keystore ~/autoparc-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias autoparc
+```
+
+`-validity 10000` fait environ 27 ans. Google Play exige une validité qui
+dépasse le 22 octobre 2033 ; une clé plus courte est refusée.
+
+Copier ensuite [`android/key.properties.example`](android/key.properties.example)
+vers `android/key.properties` et le remplir. Les deux fichiers — la clé et le
+`key.properties` — sont ignorés par git et ne doivent jamais y entrer.
+
+> **Inscris-toi à Play App Signing dès le premier envoi.** Google conserve alors
+> la clé de signature finale, et celle générée ci-dessus ne sert plus qu'à
+> l'envoi : perdue, elle se remplace. Sans cette inscription, perdre la clé rend
+> l'application impossible à mettre à jour — il faut republier sous un autre
+> identifiant, en perdant installations et avis.
+
+### 2. Construire
+
+```bash
+flutter build appbundle --release --dart-define=API_BASE_URL=https://autoparc-backend.onrender.com/api
+```
+
+Le `.aab` produit dans `build/app/outputs/bundle/release/` est ce que Play
+accepte. Pour une installation directe — test terrain, envoi par WhatsApp — il
+faut un APK, que Play n'accepte pas :
+
+```bash
+flutter build apk --release --dart-define=API_BASE_URL=https://autoparc-backend.onrender.com/api
+```
+
+Sans `android/key.properties`, le build **réussit quand même** mais signe avec la
+clé de debug : c'est ce qui permet de tester une version release sans clé. Gradle
+l'annonce alors en clair au début du build. Vérifier avant tout envoi :
+
+```bash
+keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab
+```
+
+Si le propriétaire est `CN=Android Debug`, Play refusera le fichier.
+
+### 3. Intégration continue
+
+[`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml) construit le
+bundle et l'APK à chaque poussée sur `main`, et **échoue si le bundle est signé
+en debug** — sans quoi l'erreur ne se découvrirait qu'au téléversement, avec un
+message qui n'en donne pas la cause.
+
+Secrets à renseigner dans les paramètres du dépôt :
+
+| Secret | Contenu |
+|---|---|
+| `GOOGLE_SERVICES_JSON` | contenu de `android/app/google-services.json` |
+| `ANDROID_KEYSTORE_BASE64` | `base64 -w0 ~/autoparc-upload.jks` |
+| `ANDROID_KEYSTORE_PASSWORD` | mot de passe du magasin |
+| `ANDROID_KEY_ALIAS` | `autoparc` |
+| `ANDROID_KEY_PASSWORD` | mot de passe de la clé |
+
+Tant que `ANDROID_KEYSTORE_BASE64` est absent, le workflow construit quand même
+— et s'arrête à la vérification de signature, en nommant les secrets manquants.
+
+### 4. Numéro de version
+
+`version: 1.0.0+1` dans [`pubspec.yaml`](pubspec.yaml) : la partie avant le `+`
+est le nom affiché, celle après le `versionCode`. **Play refuse deux envois avec
+le même `versionCode`** — l'incrémenter à chaque téléversement.
+
+## iOS
+
+Voir [`ios/README.md`](ios/README.md). Il manque encore un Mac ou une CI macOS,
+un compte Apple Developer, le `GoogleService-Info.plist` de `bf.autoparc.app`,
+une clé APNs et une équipe de signature.
