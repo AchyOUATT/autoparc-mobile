@@ -1,0 +1,5 @@
+name: icone
+environment:
+  sdk: ^3.5.0
+dependencies:
+  image: ^4.2.0

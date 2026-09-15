@@ -1,0 +1,35 @@
+# Génération des icônes d'application.
+#
+#   dart run flutter_launcher_icons
+#
+# Les sources vivent dans assets/icon/ et sont produites par le script décrit
+# dans assets/icon/README.md, à partir du logo d'origine. Ne pas les retoucher à
+# la main : régénérer.
+
+flutter_launcher_icons:
+  # ── Android ───────────────────────────────────────────────────────────────
+  android: "ic_launcher"
+
+  # Ancien format (Android 7 et antérieurs) : le dessin est masqué tel quel,
+  # fond compris.
+  image_path_android: "assets/icon/app_icon.png"
+
+  # Format adaptatif (Android 8+). Le système compose deux calques et se réserve
+  # le droit de découper un cercle, un carré arrondi, une goutte — seuls les
+  # 66 % centraux du calque avant sont garantis. L'emblème y occupe 58 %, il ne
+  # sera donc jamais rogné, quel que soit le lanceur.
+  adaptive_icon_background: "#0B4A9E"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+
+  # Icône monochrome (Android 13+, « thème dynamique »). Le système la teinte
+  # lui-même selon le fond d'écran ; il ne lit que la silhouette.
+  adaptive_icon_monochrome: "assets/icon/app_icon_foreground.png"
+
+  # ── iOS ───────────────────────────────────────────────────────────────────
+  ios: true
+  image_path_ios: "assets/icon/app_icon.png"
+
+  # L'App Store refuse toute transparence dans l'icône : elle est aplatie sur
+  # cette couleur, la même que le fond du dessin.
+  remove_alpha_ios: true
+  background_color_ios: "#0B4A9E"

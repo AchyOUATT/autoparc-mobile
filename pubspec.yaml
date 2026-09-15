@@ -64,6 +64,7 @@ dev_dependencies:
   riverpod_generator: ^2.4.3
   custom_lint: ^0.7.0
   riverpod_lint: ^2.3.13
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
