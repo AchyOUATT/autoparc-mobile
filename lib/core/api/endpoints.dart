@@ -60,6 +60,12 @@ class Endpoints {
   static String myCompatibleParts(int ownedVehicleId) =>
       '/my/vehicles/$ownedVehicleId/compatible-parts';
 
+  /// Suppression du compte et de toutes ses données.
+  ///
+  /// Google Play l'exige de toute application qui permet d'en créer un : la
+  /// demande doit pouvoir partir de l'application elle-même.
+  static const String myAccount  = '/my/account';
+
   // ── Décodage VIN (public) ────────────────────────────────────────
   static String vinDecode(String vin) => '/catalog/vin-decode/$vin';
 

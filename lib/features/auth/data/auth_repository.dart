@@ -97,6 +97,23 @@ class AuthRepository {
   /// Déconnecte le client Firebase.
   Future<void> signOutClient() => FirebaseAuth.instance.signOut();
 
+  /// Supprime le compte client et toutes ses données.
+  ///
+  /// C'est le serveur qui efface aussi l'identité Firebase, pas l'application.
+  /// Une suppression côté téléphone se heurterait à `requires-recent-login` —
+  /// Firebase refuse d'effacer un compte dont la session date de plus de
+  /// quelques minutes — et il faudrait redemander le mot de passe au pire
+  /// moment. Le serveur, lui, agit avec le compte de service et n'a pas cette
+  /// contrainte.
+  ///
+  /// La déconnexion locale suit l'effacement : sans elle, l'application
+  /// garderait en mémoire une session dont le compte n'existe plus, et
+  /// enchaînerait les 401 sans que rien n'explique pourquoi.
+  Future<void> deleteClientAccount() async {
+    await _client.delete(Endpoints.myAccount);
+    await FirebaseAuth.instance.signOut();
+  }
+
   /// Stream de l'état Firebase Auth — émet à chaque changement de session.
   Stream<User?> get firebaseAuthStream => FirebaseAuth.instance.authStateChanges();
 }

@@ -132,9 +132,8 @@ class GaragePage extends ConsumerWidget {
             ),
             const Divider(),
             ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Se déconnecter',
-                  style: TextStyle(color: Colors.red)),
+              leading: const Icon(Icons.logout),
+              title: const Text('Se déconnecter'),
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -147,9 +146,137 @@ class GaragePage extends ConsumerWidget {
                 ref.read(authProvider.notifier).signOut();
               },
             ),
+
+            // La suppression de compte doit être atteignable depuis
+            // l'application : Google Play l'exige de toute application qui
+            // permet d'en créer un, et un courriel au support ne suffit pas.
+            //
+            // Le rouge est réservé à cette ligne-là. « Se déconnecter » le
+            // portait aussi, alors qu'elle se défait d'un geste : deux entrées
+            // voisines de la même couleur, dont une seule est irréversible,
+            // c'est une invitation à se tromper.
+            ListTile(
+              leading: const Icon(Icons.delete_forever, color: Colors.red),
+              title: const Text('Supprimer mon compte',
+                  style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                _confirmerSuppression(context, ref, auth);
+              },
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  /// Demande confirmation, puis supprime le compte.
+  ///
+  /// La confirmation exige de saisir son adresse : un simple bouton
+  /// « Confirmer » se tape par réflexe, et ce geste-ci ne se rattrape pas —
+  /// les véhicules, leurs échéances et l'historique partent avec le compte.
+  /// Recopier son adresse oblige à lire ce qu'on est en train de faire.
+  Future<void> _confirmerSuppression(
+    BuildContext context,
+    WidgetRef ref,
+    AuthState auth,
+  ) async {
+    final email = auth.firebaseUser?.email ?? '';
+
+    final confirme = await showDialog<bool>(
+      context: context,
+      builder: (_) => _SuppressionDialog(email: email),
+    );
+
+    if (confirme != true || !context.mounted) return;
+
+    final erreur = await ref.read(authProvider.notifier).deleteAccount();
+
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(erreur ?? 'Votre compte et vos données ont été supprimés.'),
+        backgroundColor:
+            erreur != null ? Theme.of(context).colorScheme.error : null,
+      ),
+    );
+  }
+}
+
+/// Confirmation de suppression de compte.
+///
+/// Énumère ce qui disparaît plutôt que de demander « êtes-vous sûr ? » : la
+/// question ne renseigne sur rien, la liste si.
+class _SuppressionDialog extends StatefulWidget {
+  const _SuppressionDialog({required this.email});
+
+  final String email;
+
+  @override
+  State<_SuppressionDialog> createState() => _SuppressionDialogState();
+}
+
+class _SuppressionDialogState extends State<_SuppressionDialog> {
+  final _saisie = TextEditingController();
+
+  @override
+  void dispose() {
+    _saisie.dispose();
+    super.dispose();
+  }
+
+  bool get _correspond =>
+      _saisie.text.trim().toLowerCase() == widget.email.toLowerCase();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return AlertDialog(
+      title: const Text('Supprimer mon compte'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Seront supprimés définitivement :'),
+          const SizedBox(height: 8),
+          const Text(
+            '• vos véhicules et leurs échéances\n'
+            '• vos demandes de recherche\n'
+            '• vos notifications\n'
+            '• votre compte de connexion',
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Les factures des commandes déjà honorées sont conservées, '
+            'la comptabilité l\'impose.',
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: cs.onSurfaceVariant),
+          ),
+          const SizedBox(height: 16),
+          Text('Pour confirmer, saisissez ${widget.email} :'),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _saisie,
+            autocorrect: false,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(border: OutlineInputBorder()),
+            onChanged: (_) => setState(() {}),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Annuler'),
+        ),
+        FilledButton(
+          onPressed: _correspond ? () => Navigator.pop(context, true) : null,
+          style: FilledButton.styleFrom(backgroundColor: cs.error),
+          child: const Text('Supprimer définitivement'),
+        ),
+      ],
     );
   }
 }

@@ -276,6 +276,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (state.isClient) await _repo.signOutClient();
     state = const AuthState();
   }
+
+  /// Supprime définitivement le compte client.
+  ///
+  /// Rend `null` en cas de succès, le message à afficher sinon. L'état n'est
+  /// remis à zéro que si l'effacement a réellement eu lieu : annoncer une
+  /// déconnexion après un échec laisserait croire que les données sont parties.
+  Future<String?> deleteAccount() async {
+    if (!state.isClient) return 'Seuls les comptes clients se suppriment ici.';
+
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      await _repo.deleteClientAccount();
+      state = const AuthState();
+      return null;
+    } catch (e) {
+      final message = messageFor(e);
+      state = state.copyWith(isLoading: false, error: message);
+      return message;
+    }
+  }
 }
 
 // ── Provider ───────────────────────────────────────────────────────
