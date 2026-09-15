@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Politique de confidentialité — AutoParc</title>
+<style>
+  :root {
+    --encre:      #14212b;
+    --encre-pale: #4a5b68;
+    --fond:       #f7f9fb;
+    --carte:      #ffffff;
+    --trait:      #dde5eb;
+    --accent:     #1f6587;
+    --alerte:     #8a5a00;
+    --alerte-fond:#faeeda;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0 20px 80px;
+    background: var(--fond);
+    color: var(--encre);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  main { max-width: 720px; margin: 0 auto; }
+
+  header {
+    padding: 56px 0 32px;
+    border-bottom: 1px solid var(--trait);
+    margin-bottom: 40px;
+  }
+
+  h1 { font-size: 30px; line-height: 1.2; margin: 0 0 8px; }
+
+  .sous-titre { color: var(--encre-pale); margin: 0; }
+
+  h2 {
+    font-size: 20px;
+    margin: 44px 0 12px;
+    padding-top: 20px;
+    border-top: 1px solid var(--trait);
+  }
+
+  h3 { font-size: 16px; margin: 24px 0 8px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 15px;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--trait);
+    vertical-align: top;
+  }
+
+  th { background: var(--carte); font-weight: 600; }
+
+  code {
+    background: var(--carte);
+    border: 1px solid var(--trait);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 14px;
+  }
+
+  .remplir {
+    background: var(--alerte-fond);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 20px 0;
+    color: var(--alerte);
+    font-size: 15px;
+  }
+
+  .remplir strong { display: block; margin-bottom: 4px; }
+
+  a { color: var(--accent); }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--trait);
+    color: var(--encre-pale);
+    font-size: 14px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --encre:      #e8eef3;
+      --encre-pale: #9fb0bd;
+      --fond:       #101820;
+      --carte:      #18232d;
+      --trait:      #2a3947;
+      --accent:     #6fb4d6;
+      --alerte:     #e0b070;
+      --alerte-fond:#2e2618;
+    }
+  }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <h1>Politique de confidentialité</h1>
+  <p class="sous-titre">Application mobile AutoParc — en vigueur au <!--DATE-->15 septembre 2026<!--/DATE--></p>
+</header>
+
+<div class="remplir">
+  <strong>À compléter avant publication</strong>
+  Les mentions <code>[RESPONSABLE]</code>, <code>[EMAIL]</code> et <code>[ADRESSE]</code>
+  ci-dessous doivent être remplacées par les coordonnées réelles de l'exploitant.
+  Google Play refuse une politique dont le contact est inexistant.
+</div>
+
+<p>
+  AutoParc est une application de vente et de location de véhicules, de pièces
+  détachées et d'accessoires, avec un carnet d'entretien personnel — « mon
+  garage ». Ce document décrit, sans généralités, quelles données l'application
+  recueille, pourquoi, où elles vont, et comment en obtenir la suppression.
+</p>
+
+<p>
+  Le responsable du traitement est <code>[RESPONSABLE]</code>,
+  <code>[ADRESSE]</code>, Burkina Faso. Toute question relative à ce document ou
+  à vos données se pose à <code>[EMAIL]</code>.
+</p>
+
+<h2>1. Ce que nous recueillons</h2>
+
+<h3>Ce que vous nous donnez</h3>
+
+<table>
+  <tr><th>Donnée</th><th>Quand</th><th>Pourquoi</th></tr>
+  <tr>
+    <td>Adresse électronique et mot de passe</td>
+    <td>À la création du compte et à chaque connexion</td>
+    <td>Identifier votre compte. Le mot de passe est traité par Firebase
+        Authentication (Google) et <strong>n'atteint jamais nos serveurs</strong> :
+        nous n'en conservons aucune copie, ni chiffrée ni autre.</td>
+  </tr>
+  <tr>
+    <td>Nom, s'il est fourni par votre fournisseur d'identité</td>
+    <td>À la première connexion</td>
+    <td>Vous nommer dans l'application plutôt que de vous appeler « client ».</td>
+  </tr>
+  <tr>
+    <td>Fiches de vos véhicules : marque, modèle, génération, année,
+        finition, motorisation, couleur, surnom, kilométrage,
+        <strong>numéro de série (VIN)</strong> et
+        <strong>plaque d'immatriculation</strong></td>
+    <td>Quand vous ajoutez un véhicule à votre garage</td>
+    <td>Déterminer quelles pièces vont sur votre véhicule, et tenir votre
+        carnet d'entretien. Le VIN et la plaque sont facultatifs.</td>
+  </tr>
+  <tr>
+    <td>Échéances : visite technique, assurance, dernière vidange et son
+        kilométrage</td>
+    <td>Quand vous les renseignez</td>
+    <td>Vous prévenir avant l'échéance.</td>
+  </tr>
+  <tr>
+    <td>Demandes « mes besoins » : description libre, budget, et si vous les
+        indiquez, nom, téléphone et adresse électronique de contact</td>
+    <td>Quand vous déclarez chercher un véhicule ou une pièce</td>
+    <td>Vous recontacter quand la pièce est disponible.</td>
+  </tr>
+</table>
+
+<h3>Ce que l'application transmet sans que vous le saisissiez</h3>
+
+<table>
+  <tr><th>Donnée</th><th>Pourquoi</th></tr>
+  <tr>
+    <td>Jeton de notification de l'appareil (Firebase Cloud Messaging)</td>
+    <td>Envoyer les rappels d'échéance sur votre téléphone. Il identifie
+        l'installation, pas la personne, et change si vous réinstallez
+        l'application.</td>
+  </tr>
+  <tr>
+    <td>Adresse IP, type d'appareil et de navigation, date et heure de chaque
+        appel au serveur</td>
+    <td>Journaux techniques, et limitation du nombre de tentatives de connexion
+        — sans quoi un mot de passe se devine à la cadence du réseau.</td>
+  </tr>
+  <tr>
+    <td>Mesures d'audience automatiques de Google Analytics pour Firebase :
+        ouvertures de l'application, durée des sessions, modèle d'appareil,
+        version du système, pays</td>
+    <td>Cette bibliothèque est intégrée à la version Android. Elle recueille ces
+        événements d'elle-même, sans que l'application les demande.</td>
+  </tr>
+</table>
+
+<h3>Ce que nous ne recueillons pas</h3>
+
+<p>
+  L'application ne demande ni n'utilise votre <strong>position
+  géographique</strong>. Elle ne lit pas vos contacts, votre agenda, vos
+  messages, ni la liste des applications installées. Elle n'intègre aucune régie
+  publicitaire et aucun traceur publicitaire.
+</p>
+
+<p>
+  Les autorisations <em>appareil photo</em> et <em>accès aux photos</em> ne
+  servent qu'au personnel d'AutoParc, pour photographier un véhicule ou une
+  pièce au catalogue. Elles ne sont jamais sollicitées pour un compte client, et
+  aucune photo n'est prise à votre insu.
+</p>
+
+<h2>2. À qui ces données sont transmises</h2>
+
+<p>
+  Nous ne vendons aucune donnée et n'en louons aucune. Elles sont confiées aux
+  prestataires suivants, uniquement pour faire fonctionner le service :
+</p>
+
+<table>
+  <tr><th>Prestataire</th><th>Ce qu'il reçoit</th><th>Où</th></tr>
+  <tr>
+    <td>Google (Firebase Authentication, Cloud Messaging, Analytics)</td>
+    <td>Adresse électronique, mot de passe, identifiant de compte, jeton de
+        notification, mesures d'audience</td>
+    <td>Serveurs de Google, hors du Burkina Faso</td>
+  </tr>
+  <tr>
+    <td>Render (hébergement de notre serveur)</td>
+    <td>L'ensemble des données de votre garage et de vos demandes</td>
+    <td>Centre de données de l'hébergeur, hors du Burkina Faso</td>
+  </tr>
+  <tr>
+    <td>vPIC — <em>National Highway Traffic Safety Administration</em>,
+        administration des États-Unis</td>
+    <td><strong>Le numéro de série (VIN) seul</strong>, lorsque vous demandez le
+        décodage automatique d'un véhicule. Aucune donnée de compte ne
+        l'accompagne : ce service reçoit un numéro, pas une personne.</td>
+    <td>États-Unis</td>
+  </tr>
+</table>
+
+<p>
+  Vos données peuvent aussi être communiquées si la loi l'exige, sur réquisition
+  d'une autorité compétente.
+</p>
+
+<h2>3. Combien de temps elles sont conservées</h2>
+
+<p>
+  Les données de votre compte et de votre garage sont conservées tant que le
+  compte existe. Les journaux techniques du serveur sont conservés au plus
+  quatre-vingt-dix jours. Les demandes « mes besoins » sont conservées deux ans
+  après leur traitement, afin de pouvoir vous recontacter si le besoin
+  réapparaît.
+</p>
+
+<p>
+  Un véhicule supprimé de votre garage est d'abord marqué comme supprimé, puis
+  effacé définitivement au bout de trente jours — ce délai existe pour pouvoir
+  réparer une suppression accidentelle.
+</p>
+
+<h2>4. Vos droits</h2>
+
+<p>
+  Vous pouvez à tout moment demander à <strong>consulter</strong> les données
+  vous concernant, à les <strong>corriger</strong>, à les
+  <strong>recevoir</strong> dans un format lisible, ou à les
+  <strong>supprimer</strong>. La plupart se modifient directement dans
+  l'application : les fiches de vos véhicules, leurs échéances, votre
+  kilométrage.
+</p>
+
+<h3>Supprimer votre compte</h3>
+
+<p>
+  Écrivez à <code>[EMAIL]</code> depuis l'adresse électronique de votre compte,
+  avec pour objet « Suppression de compte ». Nous supprimons alors, sous trente
+  jours : votre compte d'identification, les fiches de vos véhicules et leurs
+  échéances, vos demandes, et les jetons de notification de vos appareils.
+</p>
+
+<p>
+  Restent conservées les données que la comptabilité impose de garder — factures
+  et commandes honorées — pour la durée que la loi prévoit. Elles ne servent à
+  rien d'autre.
+</p>
+
+<h2>5. Sécurité</h2>
+
+<p>
+  Les échanges entre l'application et nos serveurs passent par une liaison
+  chiffrée (HTTPS). Les mots de passe ne transitent jamais par nos serveurs et
+  sont gérés par Firebase Authentication. Les jetons de session sont rangés sur
+  votre téléphone dans le coffre du système d'exploitation, et non dans un
+  fichier ordinaire.
+</p>
+
+<p>
+  Aucun système n'est à l'abri. Si une atteinte à vos données survenait, nous en
+  informerions les personnes concernées et l'autorité compétente.
+</p>
+
+<h2>6. Enfants</h2>
+
+<p>
+  L'application s'adresse à des personnes majeures, propriétaires ou acheteuses
+  de véhicules. Elle n'est pas destinée aux enfants de moins de treize ans et
+  nous ne recueillons pas sciemment leurs données. Si vous constatez qu'un
+  enfant nous en a transmis, écrivez à <code>[EMAIL]</code> : elles seront
+  effacées.
+</p>
+
+<h2>7. Modifications</h2>
+
+<p>
+  Ce document peut évoluer si l'application change. La date en tête de page
+  indique la version en vigueur. Une modification substantielle — une nouvelle
+  catégorie de données, un nouveau destinataire — sera annoncée dans
+  l'application avant de prendre effet.
+</p>
+
+<footer>
+  <p>
+    AutoParc — <code>[RESPONSABLE]</code> — <code>[EMAIL]</code><br>
+    Dernière mise à jour : <!--DATE-->15 septembre 2026<!--/DATE-->
+  </p>
+</footer>
+
+</main>
+</body>
+</html>
