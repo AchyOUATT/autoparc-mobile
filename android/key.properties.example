@@ -1,11 +1,17 @@
 # Modele du fichier android/key.properties — a copier, remplir, et NE PAS commiter.
 #
-# Creer la cle (une seule fois, et la conserver a vie) :
+# Creer la cle (une seule fois, et la conserver a vie).
 #
-#   keytool -genkey -v \
-#     -keystore ~/autoparc-upload.jks \
-#     -keyalg RSA -keysize 2048 -validity 10000 \
-#     -alias autoparc
+# keytool est un binaire Java : il ne developpe pas le « ~ » d'un shell POSIX et
+# creerait un dossier nomme « ~ ». Donner un chemin explicite.
+#
+#   PowerShell :
+#     keytool -genkey -v -keystore "$env:USERPROFILE\autoparc-upload.jks" \
+#       -keyalg RSA -keysize 2048 -validity 10000 -alias autoparc
+#
+#   Git Bash, macOS, Linux :
+#     keytool -genkey -v -keystore "$HOME/autoparc-upload.jks" \
+#       -keyalg RSA -keysize 2048 -validity 10000 -alias autoparc
 #
 # `-validity 10000` fait environ 27 ans : Google Play exige une validite qui
 # depasse le 22 octobre 2033. Une cle plus courte est refusee a l'inscription.
@@ -18,7 +24,14 @@
 #
 # Sauvegarde le .jks et ces mots de passe ailleurs que sur cette machine.
 
-storeFile=../autoparc-upload.jks
+# storeFile : chemin absolu, ou relatif au dossier android/. Absolu de
+# preference — garder la cle hors du depot evite de la commiter par megarde le
+# jour ou une regle .gitignore change.
+#
+#   Windows : utiliser des barres obliques normales, ou doubler les antislashs.
+#     storeFile=C:/Users/USER/autoparc-upload.jks
+#
+storeFile=C:/Users/USER/autoparc-upload.jks
 storePassword=REMPLACER
 keyAlias=autoparc
 keyPassword=REMPLACER

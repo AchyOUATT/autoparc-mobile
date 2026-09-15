@@ -37,10 +37,19 @@ flutter analyze
 
 ### 1. La clé de signature
 
-Une seule fois, et à conserver à vie :
+Une seule fois, et à conserver à vie.
+
+Sous Windows (PowerShell) — `keytool` est un binaire Windows et ne développe pas
+le `~` d'un shell POSIX, il faut donc un chemin explicite :
 
 ```bash
-keytool -genkey -v -keystore ~/autoparc-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias autoparc
+keytool -genkey -v -keystore "$env:USERPROFILE\autoparc-upload.jks" -keyalg RSA -keysize 2048 -validity 10000 -alias autoparc
+```
+
+Sous macOS, Linux, ou Git Bash sous Windows :
+
+```bash
+keytool -genkey -v -keystore "$HOME/autoparc-upload.jks" -keyalg RSA -keysize 2048 -validity 10000 -alias autoparc
 ```
 
 `-validity 10000` fait environ 27 ans. Google Play exige une validité qui
