@@ -51,8 +51,37 @@ jobs:
 
       # Restaure google-services.json depuis les secrets GitHub
       - name: Restaurer google-services.json
+        # Le secret passe par l'environnement, pas par le texte du script.
+        # `echo '${{ secrets.… }}'` collait le JSON dans le script avant que
+        # bash ne l'exécute : une apostrophe dans le contenu suffisait à le
+        # casser. Le même défaut avait déjà déformé les mots de passe.
+        #
+        # Le fichier est ensuite vérifié : Gradle le rejette par « Malformed
+        # root json » après plusieurs minutes de compilation, sans dire si le
+        # secret est vide, tronqué ou d'un autre projet.
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
-          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+          fichier=android/app/google-services.json
+          printf '%s' "$GOOGLE_SERVICES_JSON" > "$fichier"
+          echo "google-services.json : $(stat -c%s "$fichier") octets."
+
+          if [ ! -s "$fichier" ]; then
+            echo "::error::Le secret GOOGLE_SERVICES_JSON est vide."
+            exit 1
+          fi
+
+          if ! python3 -m json.tool "$fichier" > /dev/null 2>&1; then
+            echo "::error::Le secret GOOGLE_SERVICES_JSON n'est pas du JSON valide — probablement tronqué au copier-coller. Recoller le contenu complet de android/app/google-services.json."
+            exit 1
+          fi
+
+          if ! grep -q '"package_name": *"bf.autoparc.app"' "$fichier"; then
+            echo "::error::GOOGLE_SERVICES_JSON ne déclare pas le paquet bf.autoparc.app : c'est une ancienne version du fichier. Télécharger la version à jour depuis la console Firebase."
+            exit 1
+          fi
+
+          echo "google-services.json valide, paquet bf.autoparc.app présent."
 
       # Clé de signature. Absente, le build reste possible — utile tant que la
       # clé n'existe pas — mais l'artefact est alors signé en debug, ce que
