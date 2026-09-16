@@ -5,6 +5,11 @@ version: 1.0.0+1
 
 environment:
   sdk: ^3.11.5
+  # Version de Flutter du projet. Les workflows la lisent ici plutôt que de la
+  # réécrire chacun de leur côté : les deux avaient divergé, et celui des tests
+  # est resté sur Flutter 3.32 — Dart 3.8, trop ancien pour le SDK exigé
+  # ci-dessus. `flutter pub get` échouait, et les tests ne tournaient plus.
+  flutter: '>=3.47.2'
 
 dependencies:
   flutter:

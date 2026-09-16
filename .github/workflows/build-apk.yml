@@ -25,10 +25,13 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # Même source que le workflow « Tests » : `environment: flutter:` dans
+      # pubspec.yaml. Les deux portaient chacun leur numéro, et ils ont fini
+      # par diverger sans que rien ne le signale.
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.2'
+          flutter-version-file: pubspec.yaml
           channel: stable
           cache: true
 

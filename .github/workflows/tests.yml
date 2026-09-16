@@ -16,12 +16,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # La version se lit dans pubspec.yaml, sous `environment: flutter:`.
+      #
+      # Elle était écrite ici, et dans « Build Android ». Mettre l'une à jour
+      # sans l'autre a laissé ce workflow sur Flutter 3.32, qui livre Dart 3.8
+      # quand le projet en exige 3.11 : `flutter pub get` échouait, et les
+      # tests ne tournaient plus du tout. Personne ne s'en apercevait — un
+      # workflow rouge ne se voit que si on le regarde.
       - name: Installer Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.32.0'
+          flutter-version-file: pubspec.yaml
           channel: stable
           cache: true
+
+      - name: Version retenue
+        run: flutter --version
 
       - name: Télécharger les dépendances
         run: flutter pub get
