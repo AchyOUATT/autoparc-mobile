@@ -68,11 +68,18 @@ dependencies {
     // Desugaring — requis par flutter_local_notifications (API Java 8+ sur Android < 26)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 
-    // Import the Firebase BoM
-    implementation(platform("com.google.firebase:firebase-bom:34.18.0"))
-
-    // When using the BoM, don't specify versions in Firebase dependencies
-    implementation("com.google.firebase:firebase-analytics")
+    // Pas de dépendance Firebase déclarée ici : Authentication et Messaging
+    // arrivent par leurs greffons Flutter, qui fixent eux-mêmes leurs versions.
+    //
+    // Cette section déclarait firebase-analytics, collé depuis l'assistant de
+    // la console Firebase. Aucune ligne de Dart ne l'appelait, et il recueillait
+    // pourtant d'office ouvertures, sessions, modèle d'appareil et pays — une
+    // collecte à déclarer dans la politique de confidentialité et le formulaire
+    // Play, pour un service dont personne ne lisait les chiffres. Retiré.
+    //
+    // La nomenclature firebase-bom qui l'accompagnait est partie avec lui : sans
+    // dépendance à régler, elle ne pouvait plus que contredire les versions
+    // choisies par les greffons.
 }
 
 

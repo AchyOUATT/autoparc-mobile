@@ -113,8 +113,7 @@ réponses, avec ce qui les justifie dans le code.
 | **Informations personnelles → Numéro de téléphone** | Oui | Non | Non | Fonctionnalité de l'application | Champ facultatif de « mes besoins » (`customer_needs.contact_phone`) |
 | **Informations personnelles → ID utilisateur** | Oui | Non | Oui | Fonctionnalité, gestion du compte | UID Firebase, clé de rattachement de toutes les données client |
 | **Informations personnelles → Autres informations** | Oui | Non | Non | Fonctionnalité de l'application | **VIN et plaque d'immatriculation** des véhicules du garage — tous deux facultatifs |
-| **Activité dans l'application → Interactions** | Oui | Non | Non | Analyse | Google Analytics for Firebase, automatique (voir le piège ci-dessous) |
-| **Identifiants d'appareil** | Oui | Non | Non | Fonctionnalité (notifications), analyse | Jeton FCM (`client_fcm_tokens`) et identifiant d'instance Analytics |
+| **Identifiants d'appareil** | Oui | Non | Non | Fonctionnalité de l'application | Jeton FCM (`client_fcm_tokens`), pour envoyer les rappels d'échéance |
 | **Photos et vidéos** | Oui | Non | Non | Fonctionnalité de l'application | Téléversées par le personnel pour illustrer le catalogue |
 
 ### Données **non** collectées — à laisser décochées
@@ -122,29 +121,37 @@ réponses, avec ce qui les justifie dans le code.
 - **Position** — l'application ne demande aucune autorisation de localisation.
 - **Informations financières** — aucun paiement n'a lieu dans l'application.
 - **Contacts, agenda, SMS, fichiers, audio** — aucune autorisation correspondante.
-- **Journaux de plantage et diagnostics** — Crashlytics n'est pas intégré.
+- **Journaux de plantage et diagnostics** — Crashlytics n'est pas intégré. Le
+  journal d'erreurs de l'application reste sur l'appareil et n'est envoyé nulle
+  part.
+- **Activité dans l'application** — aucun outil de mesure d'audience (voir
+  ci-dessous).
 
-### Le piège : Firebase Analytics
+### Firebase Analytics : retiré
 
-`android/app/build.gradle.kts` déclare :
+`android/app/build.gradle.kts` déclarait `firebase-analytics`, collé depuis
+l'assistant de la console Firebase. Aucune ligne de Dart ne l'appelait, mais la
+bibliothèque recueillait d'elle-même ouvertures, sessions, modèle d'appareil et
+pays — une collecte qu'il aurait fallu déclarer ici.
 
-```kotlin
-implementation("com.google.firebase:firebase-analytics")
+Elle a été retirée, et le retrait vérifié de deux façons :
+
+- **dans l'arbre des dépendances** : le moteur de mesure
+  (`play-services-measurement`, `-impl`, `-sdk`) n'y figure plus. Seule reste
+  `firebase-measurement-connector`, une interface dont `firebase-messaging` se
+  sert *si* Analytics est présent, et qui sans lui ne fait rien ;
+- **sur un appareil vierge** : ni base `google_app_measurement_local.db`, ni
+  préférences `measurement`, ni une seule ligne sous les balises `FA`.
+
+Pour le revérifier après une mise à jour de dépendances :
+
+```bash
+cd android && ./gradlew :app:dependencies --configuration releaseRuntimeClasspath | grep play-services-measurement
 ```
 
-**Aucune ligne de Dart ne l'appelle**, et pourtant la bibliothèque recueille
-d'elle-même les ouvertures de l'application, la durée des sessions, le modèle
-d'appareil, la version du système et le pays. C'est ce qui oblige à cocher
-*Activité dans l'application* et *Identifiants d'appareil*.
-
-Deux options, et il faut en choisir une :
-
-1. **La garder** et déclarer ces deux lignes — c'est ce que la politique de
-   confidentialité décrit aujourd'hui.
-2. **La retirer** : supprimer cette dépendance, puis retirer les deux lignes
-   correspondantes de la politique. Rien dans l'application ne s'en sert.
-
-Ne pas déclarer tout en la gardant est le seul choix à écarter.
+Rien ne doit sortir, hormis `-base` et `-sdk-api`. Si le moteur réapparaît — un
+greffon peut l'amener avec lui —, il faudra soit le retirer, soit cocher
+*Activité dans l'application* et mettre à jour la politique de confidentialité.
 
 ### Le cas des photos
 
@@ -199,7 +206,7 @@ selon l'activité réelle, pas par défaut.
 - [ ] Captures d'écran produites
 - [ ] Inscription à **Play App Signing** au premier envoi
 - [ ] `versionCode` incrémenté dans `pubspec.yaml` à chaque nouvel envoi
-- [ ] Choix fait sur Firebase Analytics : gardé et déclaré, ou retiré
+- [x] Firebase Analytics retiré — revérifier après chaque mise à jour de greffon (section 2)
 
 ## 7. Le délai auquel personne ne pense
 
