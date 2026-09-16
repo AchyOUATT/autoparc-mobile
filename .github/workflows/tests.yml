@@ -16,17 +16,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # La version se lit dans pubspec.yaml, sous `environment: flutter:`.
+      # Doit rester égale à celle de « Build Android », et au moins égale à la
+      # contrainte `environment: flutter:` de pubspec.yaml.
       #
-      # Elle était écrite ici, et dans « Build Android ». Mettre l'une à jour
-      # sans l'autre a laissé ce workflow sur Flutter 3.32, qui livre Dart 3.8
-      # quand le projet en exige 3.11 : `flutter pub get` échouait, et les
-      # tests ne tournaient plus du tout. Personne ne s'en apercevait — un
-      # workflow rouge ne se voit que si on le regarde.
+      # Les deux workflows ont déjà divergé : celui-ci est resté sur Flutter
+      # 3.32, qui livre Dart 3.8 quand le projet en exige 3.11. `flutter pub
+      # get` échouait, l'analyse et les tests étaient sautés, et le workflow
+      # s'arrêtait avant d'avoir rien vérifié — pendant huit poussées.
+      #
+      # `flutter-version-file: pubspec.yaml` avait l'air d'être la réponse :
+      # une seule source. L'action ne sait pas résoudre une plage comme
+      # « >=3.47.2 » et échoue à l'installation. C'est donc la contrainte dans
+      # pubspec qui sert de garde-fou : sur une version trop ancienne, `pub
+      # get` refuse en nommant la version attendue, au lieu de laisser sortir
+      # une erreur de SDK Dart sans rapport apparent.
       - name: Installer Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version-file: pubspec.yaml
+          flutter-version: '3.47.2'
           channel: stable
           cache: true
 

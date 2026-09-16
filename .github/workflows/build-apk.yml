@@ -25,13 +25,14 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # Même source que le workflow « Tests » : `environment: flutter:` dans
-      # pubspec.yaml. Les deux portaient chacun leur numéro, et ils ont fini
-      # par diverger sans que rien ne le signale.
+      # Doit rester égale à celle du workflow « Tests ». Les deux ont déjà
+      # divergé sans que rien ne le signale ; c'est la contrainte
+      # `environment: flutter:` de pubspec.yaml qui rattrape le cas, en
+      # faisant échouer `pub get` avec la version attendue en clair.
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version-file: pubspec.yaml
+          flutter-version: '3.47.2'
           channel: stable
           cache: true
 
