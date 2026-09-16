@@ -23,18 +23,42 @@ plugins {
 // la CI verifie le certificat du bundle avant de le publier. Un repli muet
 // produirait un artefact que Play rejette apres coup, sans que rien n'ait
 // signale l'absence de cle au moment ou elle comptait.
+//
+// Deux sources, dans cet ordre :
+//
+//  1. L'environnement — ANDROID_KEYSTORE_FILE, ANDROID_KEYSTORE_PASSWORD,
+//     ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD. C'est ce qu'utilise la CI.
+//
+//     Elle ecrivait auparavant les mots de passe dans key.properties, par un
+//     heredoc. Deux transformations s'intercalaient alors entre le secret et
+//     Gradle : le shell developpait `$` et executait les accents graves, puis
+//     java.util.Properties avalait les antislashs. Un mot de passe contenant l'un
+//     de ces caracteres arrivait faux — pendant que l'epreuve de la cle, qui
+//     lisait l'environnement, passait au vert. Lire la meme source que l'epreuve
+//     supprime l'ecart.
+//
+//  2. android/key.properties — pour le poste de developpement. Attention : ce
+//     format traite `\` comme un caractere d'echappement, il faut l'ecrire `\\`.
 val fichierCle = rootProject.file("key.properties")
-val signatureDisponible = fichierCle.exists()
 val cleDePublication = Properties().apply {
-    if (signatureDisponible) {
+    if (fichierCle.exists()) {
         FileInputStream(fichierCle).use { load(it) }
     }
 }
 
+/** Valeur de l'environnement si elle existe, sinon de key.properties. */
+fun parametreDeSignature(variable: String, cle: String): String? =
+    System.getenv(variable)?.takeIf { it.isNotEmpty() }
+        ?: cleDePublication.getProperty(cle)
+
+val cheminDuMagasin   = parametreDeSignature("ANDROID_KEYSTORE_FILE", "storeFile")
+val signatureDisponible = cheminDuMagasin != null
+
 if (!signatureDisponible) {
     logger.lifecycle(
-        "\n[AutoParc] android/key.properties est absent : les builds release " +
-            "seront signes avec la cle de DEBUG.\n" +
+        "\n[AutoParc] Aucune cle de signature (ni ANDROID_KEYSTORE_FILE, ni " +
+            "android/key.properties) : les builds release seront signes avec " +
+            "la cle de DEBUG.\n" +
             "           Utilisable en local, refuse par Google Play. " +
             "Voir android/key.properties.example.\n"
     )
@@ -81,12 +105,11 @@ android {
     signingConfigs {
         if (signatureDisponible) {
             create("release") {
-                // Chemin relatif au dossier android/, ou absolu — c'est ainsi
-                // que la CI pointe vers le fichier qu'elle vient de decoder.
-                storeFile     = rootProject.file(cleDePublication["storeFile"] as String)
-                storePassword = cleDePublication["storePassword"] as String
-                keyAlias      = cleDePublication["keyAlias"] as String
-                keyPassword   = cleDePublication["keyPassword"] as String
+                // Chemin relatif au dossier android/, ou absolu.
+                storeFile     = rootProject.file(cheminDuMagasin!!)
+                storePassword = parametreDeSignature("ANDROID_KEYSTORE_PASSWORD", "storePassword")
+                keyAlias      = parametreDeSignature("ANDROID_KEY_ALIAS", "keyAlias")
+                keyPassword   = parametreDeSignature("ANDROID_KEY_PASSWORD", "keyPassword")
             }
         }
     }

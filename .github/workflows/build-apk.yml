@@ -15,6 +15,19 @@ jobs:
     env:
       KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
 
+      # Lus directement par android/app/build.gradle.kts, et par l'épreuve de la
+      # clé : la même source pour les deux.
+      #
+      # Ils étaient auparavant recopiés dans key.properties par un heredoc. Le
+      # shell y développait `$` et exécutait les accents graves, puis
+      # java.util.Properties avalait les antislashs : un mot de passe contenant
+      # l'un de ces caractères arrivait faux chez Gradle, alors que l'épreuve,
+      # qui lisait l'environnement, le trouvait juste. Le bundle échouait sur une
+      # clé déclarée valide.
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS:         ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD:      ${{ secrets.ANDROID_KEY_PASSWORD }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,59 +58,34 @@ jobs:
       # clé n'existe pas — mais l'artefact est alors signé en debug, ce que
       # Google Play refuse. La vérification en fin de workflow le dit, plutôt
       # que de laisser découvrir le problème à l'envoi.
+      #
+      # Seul le fichier est écrit ici. Les mots de passe ne passent plus par un
+      # fichier texte : voir le bloc `env` en tête du job.
       - name: Restaurer la clé de signature
         if: env.KEYSTORE_B64 != ''
         run: |
           echo "$KEYSTORE_B64" | base64 -d > android/autoparc-upload.jks
-          cat > android/key.properties <<EOF
-          storeFile=autoparc-upload.jks
-          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
-          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
-          EOF
+          echo "ANDROID_KEYSTORE_FILE=autoparc-upload.jks" >> "$GITHUB_ENV"
 
-      # Éprouver la clé avant de bâtir.
+      # Éprouver la clé avant de bâtir, exactement comme Gradle le fera.
       #
       # Gradle échoue sur une clé illisible par un message qui ne nomme pas la
-      # cause — « Failed to read key from store » couvre aussi bien un fichier
-      # tronqué qu'un mot de passe faux ou un alias absent, et il sort au bout
-      # de plusieurs minutes de compilation. `keytool`, lui, répond en une
-      # seconde et dit lequel des trois est en défaut.
+      # cause, et au bout de plusieurs minutes de compilation. Deux versions de
+      # cette épreuve ont laissé passer l'échec :
       #
-      # Rien de secret n'est affiché : les mots de passe passent par
-      # l'environnement, et keytool n'en fait pas état.
+      #  • `keytool -list` n'utilise que le mot de passe du magasin. Dans un
+      #    magasin PKCS12, un mot de passe de clé erroné l'ouvre sans difficulté
+      #    et n'est refusé qu'à l'extraction de la clé privée — l'opération de
+      #    Gradle.
+      #  • la suivante lisait l'environnement, quand Gradle lisait un
+      #    key.properties écrit par le shell, qui déformait `$`, `\` et les
+      #    accents graves. Les deux ne voyaient pas le même mot de passe.
+      #
+      # VerifierCle ouvre le magasin puis la clé, et lit désormais les mêmes
+      # variables que Gradle. Rien n'est affiché des mots de passe.
       - name: Éprouver la clé de signature
         if: env.KEYSTORE_B64 != ''
-        env:
-          STORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KEY_ALIAS:  ${{ secrets.ANDROID_KEY_ALIAS }}
-        run: |
-          fichier=android/autoparc-upload.jks
-          taille=$(stat -c%s "$fichier")
-          echo "Clé décodée : $taille octets."
-
-          # Un magasin vide ou de quelques octets signale un secret tronqué au
-          # copier-coller — le cas le plus fréquent, et le plus déroutant.
-          if [ "$taille" -lt 1000 ]; then
-            echo "::error::La clé décodée ne fait que $taille octets : le secret ANDROID_KEYSTORE_BASE64 est incomplet."
-            echo "Regénérer avec :  base64 -w0 <chemin du .jks>"
-            exit 1
-          fi
-
-          if ! keytool -list -keystore "$fichier" -storepass "$STORE_PASS" > /tmp/keytool.txt 2>&1; then
-            echo "::error::Le magasin de clés refuse de s'ouvrir. Message de keytool ci-dessous."
-            cat /tmp/keytool.txt
-            echo "Causes usuelles : ANDROID_KEYSTORE_PASSWORD incorrect, ou secret base64 corrompu."
-            exit 1
-          fi
-
-          if ! grep -qi "^$KEY_ALIAS," /tmp/keytool.txt; then
-            echo "::error::L'alias « $KEY_ALIAS » est absent du magasin. Alias présents :"
-            grep -i "PrivateKeyEntry\|trustedCertEntry" /tmp/keytool.txt || cat /tmp/keytool.txt
-            exit 1
-          fi
-
-          echo "Magasin lisible, alias « $KEY_ALIAS » présent."
+        run: java tool/ci/VerifierCle.java android/autoparc-upload.jks "$ANDROID_KEY_ALIAS"
 
       - name: Télécharger les dépendances
         run: flutter pub get
