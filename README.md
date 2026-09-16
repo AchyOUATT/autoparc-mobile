@@ -33,6 +33,27 @@ flutter test
 flutter analyze
 ```
 
+### Retrouver une erreur qui ne se reproduit pas
+
+Les erreurs sont écrites sur l'appareil, en plus de la console. Le tampon de
+`logcat` est circulaire : une poignée de minutes suffit à l'écraser, et un écran
+rouge aperçu le matin n'a plus de trace l'après-midi.
+
+```bash
+adb shell run-as bf.autoparc.app cat databases/erreurs.log
+```
+
+Chaque entrée porte l'horodatage, l'exception, la bibliothèque et la pile
+d'appels complète. Pour repartir de zéro :
+
+```bash
+adb shell run-as bf.autoparc.app rm databases/erreurs.log
+```
+
+Le fichier ne quitte jamais l'appareil — rien n'est envoyé nulle part, ce serait
+une collecte de données à déclarer. Voir
+[`error_journal.dart`](lib/core/diagnostics/error_journal.dart).
+
 ## Publication Android
 
 ### 1. La clé de signature

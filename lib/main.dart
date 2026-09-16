@@ -32,6 +32,7 @@ import 'features/notifications/presentation/providers/notifications_provider.dar
 import 'core/utils/contact_info.dart';
 import 'core/services/fcm_service.dart';
 import 'core/api/api_client.dart';
+import 'core/diagnostics/error_journal.dart';
 import 'shared/presentation/pages/media_upload_page.dart';
 import 'features/onboarding/data/onboarding_service.dart';
 import 'features/onboarding/presentation/pages/onboarding_page.dart';
@@ -45,6 +46,12 @@ import 'features/catalog/presentation/providers/catalog_providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Avant tout le reste : une erreur survenue pendant l'initialisation doit
+  // être consignée comme les autres. Voir ErrorJournal — un écran rouge vu une
+  // seule fois, impossible à reproduire, et dont la trace avait déjà été
+  // écrasée dans le journal système quand il a fallu la lire.
+  await ErrorJournal.installer();
 
   // Initialise Firebase avant tout accès à FirebaseAuth.
   try {
