@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supprimer son compte AutoParc</title>
+<style>
+  :root {
+    --encre:      #14212b;
+    --encre-pale: #4a5b68;
+    --fond:       #f7f9fb;
+    --carte:      #ffffff;
+    --trait:      #dde5eb;
+    --accent:     #1f6587;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 0 20px 80px;
+    background: var(--fond);
+    color: var(--encre);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  main { max-width: 720px; margin: 0 auto; }
+
+  header {
+    padding: 56px 0 32px;
+    border-bottom: 1px solid var(--trait);
+    margin-bottom: 40px;
+  }
+
+  h1 { font-size: 30px; line-height: 1.2; margin: 0 0 8px; }
+
+  .sous-titre { color: var(--encre-pale); margin: 0; }
+
+  h2 {
+    font-size: 20px;
+    margin: 44px 0 12px;
+    padding-top: 20px;
+    border-top: 1px solid var(--trait);
+  }
+
+  ol.etapes { padding-left: 20px; }
+  ol.etapes li { margin-bottom: 8px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 15px;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--trait);
+    vertical-align: top;
+  }
+
+  th { background: var(--carte); font-weight: 600; }
+
+  .courriel {
+    display: inline-block;
+    background: var(--carte);
+    border: 1px solid var(--trait);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 8px 0 16px;
+    font-size: 17px;
+  }
+
+  a { color: var(--accent); }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--trait);
+    color: var(--encre-pale);
+    font-size: 14px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --encre:      #e8eef3;
+      --encre-pale: #9fb0bd;
+      --fond:       #101820;
+      --carte:      #18232d;
+      --trait:      #2a3947;
+      --accent:     #6fb4d6;
+    }
+  }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <h1>Supprimer son compte AutoParc</h1>
+  <p class="sous-titre">Application mobile AutoParc (<code>bf.autoparc.app</code>) — Achy OUATTARA</p>
+</header>
+
+<p>
+  Vous pouvez supprimer votre compte AutoParc et les données qui s'y rattachent,
+  à tout moment et sans justification. Deux chemins : depuis l'application, ou
+  en nous écrivant.
+</p>
+
+<h2>Depuis l'application — immédiat</h2>
+
+<ol class="etapes">
+  <li>Ouvrez AutoParc et connectez-vous.</li>
+  <li>Allez dans <strong>Mon garage</strong>.</li>
+  <li>Touchez votre initiale, en haut à droite de l'écran.</li>
+  <li>Choisissez <strong>Supprimer mon compte</strong>.</li>
+  <li>Confirmez en saisissant votre adresse électronique — ce geste ne se
+      rattrape pas, la saisie évite de le faire par mégarde.</li>
+</ol>
+
+<p>La suppression est effectuée aussitôt, sans délai d'attente.</p>
+
+<h2>Par courriel — si vous n'avez plus l'application</h2>
+
+<p>
+  Écrivez-nous <strong>depuis l'adresse électronique de votre compte</strong>,
+  avec pour objet « Suppression de compte » :
+</p>
+
+<p class="courriel">
+  <a href="mailto:achyouatt@gmail.com?subject=Suppression%20de%20compte">achyouatt@gmail.com</a>
+</p>
+
+<p>
+  Nous procédons sous trente jours. Écrire depuis l'adresse du compte nous
+  permet de vérifier que la demande vient bien de vous : sans cette
+  vérification, n'importe qui pourrait faire supprimer le compte d'un autre.
+</p>
+
+<h2>Ce qui est supprimé</h2>
+
+<table>
+  <tr><th>Donnée</th><th>Délai</th></tr>
+  <tr>
+    <td>Votre compte de connexion, chez nous comme chez Firebase (Google)</td>
+    <td>Immédiat</td>
+  </tr>
+  <tr>
+    <td>Les fiches de vos véhicules — marque, modèle, année, kilométrage,
+        numéro de série (VIN), plaque d'immatriculation, surnom —
+        <strong>y compris celles que vous aviez déjà supprimées</strong></td>
+    <td>Immédiat</td>
+  </tr>
+  <tr>
+    <td>Vos échéances : visite technique, assurance, vidange</td>
+    <td>Immédiat</td>
+  </tr>
+  <tr>
+    <td>Vos demandes « mes besoins » et leurs coordonnées de contact</td>
+    <td>Immédiat</td>
+  </tr>
+  <tr>
+    <td>Vos notifications et les jetons de notification de vos appareils</td>
+    <td>Immédiat</td>
+  </tr>
+</table>
+
+<h2>Ce qui est conservé, et pourquoi</h2>
+
+<table>
+  <tr><th>Donnée</th><th>Durée</th><th>Raison</th></tr>
+  <tr>
+    <td>Factures et commandes déjà honorées</td>
+    <td>La durée légale de conservation comptable</td>
+    <td>La loi impose de conserver les opérations commerciales réalisées. Ces
+        pièces sont détachées de votre compte et ne servent à rien d'autre.</td>
+  </tr>
+  <tr>
+    <td>Journaux techniques du serveur (adresse IP, date et heure des appels)</td>
+    <td>Quatre-vingt-dix jours au plus</td>
+    <td>Sécurité et diagnostic. Ils s'effacent ensuite d'eux-mêmes.</td>
+  </tr>
+</table>
+
+<p>
+  Aucune de ces données conservées n'est utilisée pour vous recontacter, ni
+  transmise à des tiers à des fins commerciales.
+</p>
+
+<h2>Reprendre plus tard</h2>
+
+<p>
+  La suppression est définitive : nous ne pouvons pas restaurer un compte
+  effacé. Rien ne vous empêche d'en créer un nouveau, mais il repartira vide —
+  vos véhicules et vos échéances seront à ressaisir.
+</p>
+
+<footer>
+  <p>
+    AutoParc — Achy OUATTARA — Secteur 28, Ouagadougou, Burkina Faso<br>
+    <a href="mailto:achyouatt@gmail.com">achyouatt@gmail.com</a> —
+    <a href="confidentialite.html">Politique de confidentialité</a>
+  </p>
+</footer>
+
+</main>
+</body>
+</html>

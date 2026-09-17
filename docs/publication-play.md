@@ -83,8 +83,18 @@ d'un véhicule, le formulaire d'ajout au garage.
 
 - Catégorie : **Achats** (ou *Automobile et véhicules* si la liste le propose).
 - Courriel d'assistance : le même que dans la politique de confidentialité.
-- Politique de confidentialité : `https://<compte>.github.io/autoparc-mobile/confidentialite.html`
-  — activer GitHub Pages sur `main` / dossier `/docs` pour obtenir cette URL.
+- Politique de confidentialité : `https://achyouatt.github.io/autoparc-mobile/confidentialite.html`
+- **URL de suppression de compte** :
+  `https://achyouatt.github.io/autoparc-mobile/suppression-compte.html`
+
+Les deux demandent que **GitHub Pages soit activé** sur `main` / dossier
+`/docs`. Play teste les liens : une page introuvable fait rejeter la fiche.
+
+La page de suppression est réclamée séparément de la politique de
+confidentialité, dans *Sécurité des données*. Elle doit s'ouvrir **sans
+connexion** — quelqu'un qui a désinstallé l'application doit pouvoir demander
+la suppression — et énumérer ce qui est effacé, ce qui est conservé et pour
+combien de temps.
 
 ---
 
