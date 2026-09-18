@@ -171,15 +171,24 @@ greffon peut l'amener avec lui —, il faudra soit le retirer, soit cocher
 
 ### Le cas des photos
 
-Les autorisations `CAMERA` et `READ_MEDIA_IMAGES` existent pour que le personnel
-photographie un véhicule ou une pièce. Aucun écran client n'y mène — le
-téléversement n'est atteint que depuis les pages d'ajout de véhicule, de pièce
-et d'accessoire, réservées au personnel.
+Le personnel photographie les véhicules et les pièces du catalogue. Aucun écran
+client n'y mène — le téléversement n'est atteint que depuis les pages d'ajout de
+véhicule, de pièce et d'accessoire, réservées au personnel.
 
-Le formulaire raisonne néanmoins sur ce que l'application *peut faire*, pas sur
-qui s'en sert. **Déclarer** est donc le choix prudent : c'est vrai, et cela évite
-d'avoir à s'expliquer. Décocher ne serait défendable que si ces écrans
-disparaissaient de l'application cliente.
+Seule l'autorisation `CAMERA` est demandée. **Aucun accès étendu aux photos** :
+la galerie passe par le sélecteur de photos d'Android (`useAndroidPhotoPicker`
+activé dans `main.dart`), qui ne transmet que les images choisies et ne requiert
+aucune autorisation.
+
+`READ_MEDIA_IMAGES` était déclarée auparavant. Play a bloqué la version 45 pour
+cette raison — depuis Android 13, les autorisations étendues aux photos et vidéos
+ne sont admises que si un sélecteur système ne suffit pas. Elle est désormais
+retirée, avec `READ_MEDIA_VIDEO` et `READ_EXTERNAL_STORAGE`, par
+`tools:node="remove"` dans le manifeste : un greffon ne peut plus la ramener.
+
+Côté *Sécurité des données*, les photos restent **collectées** — le personnel les
+téléverse —, indépendamment de toute autorisation. Le formulaire raisonne sur ce
+que l'application fait, pas sur qui s'en sert : déclarer est le choix exact.
 
 ---
 

@@ -57,6 +57,11 @@ dependencies:
 
   # Sélection de photos depuis la galerie ou l'appareil photo
   image_picker: ^1.1.2
+  # Déclarés explicitement pour activer le sélecteur de photos du système
+  # (voir main.dart) : sans lui, l'application devait réclamer
+  # READ_MEDIA_IMAGES, que Google Play refuse depuis Android 13.
+  image_picker_android: ^0.8.13
+  image_picker_platform_interface: ^2.11.1
 
   # Persistance légère (onboarding vu, préférences UI)
   shared_preferences: ^2.3.2

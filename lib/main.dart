@@ -1,6 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker_android/image_picker_android.dart';
+import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -52,6 +54,16 @@ Future<void> main() async {
   // seule fois, impossible à reproduire, et dont la trace avait déjà été
   // écrasée dans le journal système quand il a fallu la lire.
   await ErrorJournal.installer();
+
+  // Sélecteur de photos du système pour la galerie, sur toutes les versions
+  // d'Android. Il ne donne à l'application que les images choisies et ne
+  // demande aucune autorisation : c'est ce qui permet de se passer de
+  // READ_MEDIA_IMAGES, que Google Play a refusée à la version 45. Sans ce
+  // réglage, le greffon ne l'emploie d'office qu'à partir d'Android 16.
+  final selecteurImages = ImagePickerPlatform.instance;
+  if (selecteurImages is ImagePickerAndroid) {
+    selecteurImages.useAndroidPhotoPicker = true;
+  }
 
   // Initialise Firebase avant tout accès à FirebaseAuth.
   try {

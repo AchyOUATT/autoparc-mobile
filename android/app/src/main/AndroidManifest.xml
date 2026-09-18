@@ -12,13 +12,23 @@
     <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION" tools:node="remove" />
 
-    <!-- Lecture photos (galerie) — Android 13+ -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <!-- Caméra -->
+    <!-- Aucun accès étendu aux photos et vidéos.
+         La galerie passe par le sélecteur de photos du système
+         (image_picker, useAndroidPhotoPicker activé dans main.dart) : il ne
+         donne à l'application que les images que la personne choisit, et ne
+         demande aucune autorisation.
+
+         READ_MEDIA_IMAGES et READ_EXTERNAL_STORAGE étaient déclarées ici par
+         habitude. Play a bloqué la version 45 pour la première : depuis Android
+         13, ces autorisations étendues ne sont admises que si un sélecteur
+         système ne peut pas faire l'affaire — ce n'est pas le cas.
+         tools:node="remove" les efface aussi si un greffon les ramène. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
+
+    <!-- Caméra : prise de photo du catalogue par le personnel. -->
     <uses-permission android:name="android.permission.CAMERA" />
-    <!-- Android 9 et inférieur -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
     <application
         android:label="AutoParc"
         android:name="${applicationName}"
