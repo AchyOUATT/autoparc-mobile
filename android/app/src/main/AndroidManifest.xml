@@ -1,4 +1,17 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Aucun identifiant publicitaire.
+         La console Play a reçu la réponse « Non » à la question « votre appli
+         utilise-t-elle un identifiant publicitaire ? ». Ces permissions ne sont
+         écrites nulle part ici, mais une bibliothèque peut les ajouter d'office
+         au manifeste fusionné : firebase-analytics le faisait, avant d'être
+         retiré. tools:node="remove" les efface quelle qu'en soit l'origine, pour
+         que la déclaration reste vraie même si un greffon les ramène. -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION" tools:node="remove" />
+
     <!-- Lecture photos (galerie) — Android 13+ -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <!-- Caméra -->
