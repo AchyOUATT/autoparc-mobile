@@ -132,9 +132,21 @@ Tant que `ANDROID_KEYSTORE_BASE64` est absent, le workflow construit quand même
 
 ### 4. Numéro de version
 
-`version: 1.0.0+1` dans [`pubspec.yaml`](pubspec.yaml) : la partie avant le `+`
-est le nom affiché, celle après le `versionCode`. **Play refuse deux envois avec
-le même `versionCode`** — l'incrémenter à chaque téléversement.
+Deux nombres distincts :
+
+- le **nom de version** (`1.0.0`), affiché aux utilisateurs, vient de
+  [`pubspec.yaml`](pubspec.yaml) — la partie avant le `+`. À changer à la main
+  quand une version le mérite ;
+- le **`versionCode`**, que Play exige strictement croissant d'un envoi à
+  l'autre, est fixé par la CI au **numéro d'exécution du workflow**
+  (`--build-number=${{ github.run_number }}`). Il augmente tout seul.
+
+La partie après le `+` dans `pubspec.yaml` ne sert plus qu'aux builds locaux.
+**N'envoie pas à Play un bundle construit sur ta machine** : il porterait ce
+petit numéro, inférieur à ceux déjà publiés, et serait refusé par des messages
+qui ne nomment pas la cause — « cette release ne permet pas d'ajouter ni de
+supprimer des app bundles », « aucun utilisateur actuel ne peut effectuer une
+mise à jour ».
 
 ## iOS
 

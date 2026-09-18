@@ -132,9 +132,23 @@ jobs:
       # renommé `_render` depuis, et ne correspondait donc plus à rien. `sed` ne
       # signale pas une recherche infructueuse — l'APK publié partait avec
       # l'adresse de l'émulateur, sans que rien n'échoue.
+      # Le numéro de build (versionCode Android) est celui de l'exécution.
+      #
+      # Il venait de pubspec.yaml — `version: 1.0.0+1` — et valait donc 1 pour
+      # chaque build. Play exige un versionCode strictement croissant d'un envoi
+      # à l'autre : le deuxième bundle a été refusé par deux messages qui ne
+      # nomment pas le numéro — « cette release ne permet pas d'ajouter ni de
+      # supprimer des app bundles » et « aucun utilisateur actuel ne peut
+      # effectuer une mise à jour ».
+      #
+      # `github.run_number` ne fait que croître pour ce workflow : chaque bundle
+      # dépasse le précédent sans que personne ait à y penser. Le nom de version
+      # affiché (1.0.0) reste celui de pubspec.yaml.
       - name: Construire l'App Bundle (Play Store)
         run: |
+          echo "versionCode de ce build : ${{ github.run_number }}"
           flutter build appbundle --release --no-tree-shake-icons \
+            --build-number=${{ github.run_number }} \
             --dart-define=API_BASE_URL=https://autoparc-backend.onrender.com/api
 
       # L'APK reste utile pour l'installation directe (test terrain, partage
@@ -143,6 +157,7 @@ jobs:
       - name: Construire l'APK (installation directe)
         run: |
           flutter build apk --release --no-tree-shake-icons \
+            --build-number=${{ github.run_number }} \
             --dart-define=API_BASE_URL=https://autoparc-backend.onrender.com/api
 
       # Le garde-fou qui compte.
