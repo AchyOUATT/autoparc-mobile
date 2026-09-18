@@ -31,40 +31,47 @@ Véhicules, pièces et accessoires au Burkina — et le carnet de votre voiture.
 
 ### Description longue — 4 000 caractères maximum
 
+*(2202 caractères. Ne promet que ce qui existe : le VIN se **saisit**, il ne se scanne pas.)*
+
 ```
-AutoParc réunit ce qu'il faut pour acheter, louer et entretenir un véhicule au
-Burkina Faso.
+AutoParc réunit tout ce qu'il faut pour acheter, louer et entretenir un véhicule au Burkina Faso : un catalogue de véhicules, de pièces détachées et d'accessoires, et un carnet d'entretien qui vous prévient avant chaque échéance.
 
-ACHETER ET LOUER
-Parcourez les véhicules disponibles : marque, modèle, année, kilométrage,
-finition, motorisation, équipements et photos. Les prix sont affichés, à la
-vente comme à la location — journalière, hebdomadaire ou mensuelle. Un appel ou
-un message WhatsApp suffit à joindre le vendeur depuis la fiche.
+🚗 ACHETER OU LOUER UN VÉHICULE
+• Des véhicules à la vente et à la location, avec leur prix en FCFA
+• Location à la journée, à la semaine ou au mois
+• Filtres par offre (à vendre, à louer, bonnes affaires) et par carrosserie : berline, SUV/4x4, citadine…
+• Chaque fiche détaille la marque, le modèle, l'année, le kilométrage, la finition, la motorisation, la transmission et les équipements
+• Joignez le vendeur en un geste, par appel ou par WhatsApp
 
-PIÈCES ET ACCESSOIRES
-Le catalogue couvre les pièces détachées et les accessoires, avec leur
-disponibilité en stock, leur état — neuf, reconditionné, occasion — et leur
-référence constructeur. La recherche par numéro OEM retrouve une pièce à partir
-de la référence lue sur l'ancienne.
+🔧 PIÈCES DÉTACHÉES ET ACCESSOIRES
+• Freinage, filtration, distribution, suspension, électricité, carrosserie…
+• Disponibilité en stock et état de chaque pièce : neuve, reconditionnée ou d'occasion
+• Retrouvez une pièce à partir de sa référence constructeur (numéro OEM)
+• Accessoires de confort, de sécurité et d'esthétique
+• Remplissez votre panier et passez commande par WhatsApp
 
-MON GARAGE
-Enregistrez vos véhicules et l'application vous dit quelles pièces vont dessus.
-La compatibilité se calcule sur le modèle, l'année et la motorisation : plus la
-fiche est complète, plus la liste est juste. Le numéro de série (VIN) se décode
-automatiquement pour remplir le formulaire à votre place.
+🏠 MON GARAGE
+• Enregistrez un ou plusieurs véhicules
+• Saisissez le numéro de châssis (VIN) : le formulaire se remplit tout seul
+• AutoParc vous montre les pièces compatibles avec chacun de vos véhicules
+• L'application vous aide à choisir la bonne génération de modèle, et vous prévient si elle ne correspond pas à l'année de votre voiture
 
-NE PLUS RIEN OUBLIER
-Visite technique, assurance, vidange : indiquez les dates et le kilométrage, et
-AutoParc vous prévient avant l'échéance. La page d'accueil met en avant le
-véhicule qui réclame votre attention, et affiche en clair ce qui est dépassé.
+🔔 NE PLUS RIEN OUBLIER
+• Visite technique, assurance, vidange : indiquez les dates et le kilométrage
+• Recevez un rappel avant chaque échéance
+• L'accueil met en avant le véhicule qui demande votre attention, et affiche clairement ce qui est dépassé
 
-VOUS NE TROUVEZ PAS ?
-Décrivez ce que vous cherchez — un modèle précis, une pièce, un budget. La
-demande arrive chez nous, et nous revenons vers vous quand nous l'avons.
+🔎 VOUS NE TROUVEZ PAS ?
+Décrivez ce que vous cherchez : un véhicule, une pièce, un budget. Votre demande nous parvient directement, et nous revenons vers vous dès que nous l'avons.
 
-AutoParc est utilisable sans compte pour consulter le catalogue. Un compte n'est
-demandé qu'au moment d'enregistrer un véhicule, parce qu'un rappel a besoin d'un
-destinataire. Il se supprime depuis l'application, à tout moment.
+🔒 VOS DONNÉES
+• Consultez tout le catalogue sans créer de compte
+• Un compte n'est demandé que pour enregistrer un véhicule et recevoir vos rappels
+• Aucune publicité, aucun suivi de votre activité
+• Supprimez votre compte et vos données à tout moment, depuis l'application
+
+AutoParc — Ouagadougou, Burkina Faso
+Une question, une suggestion ? achyouatt@gmail.com
 ```
 
 ### Éléments graphiques
@@ -73,11 +80,10 @@ destinataire. Il se supprime depuis l'application, à tout moment.
 |---|---|---|
 | Icône | `assets/icon/play_icone_512.png` | 512×512, PNG 32 bits, sans transparence |
 | Bandeau | `assets/icon/play_banniere_1024x500.png` | 1024×500 exactement |
-| Captures téléphone | à produire | 2 minimum, 8 maximum, format 16:9 ou 9:16 |
+| Captures téléphone | `docs/captures/play-*.png` (4 fichiers) | 2 minimum, 8 maximum, format 16:9 ou 9:16 |
 
-Les captures manquent. Les plus parlantes, dans l'ordre : l'accueil avec un
-véhicule et son échéance dépassée, la liste des pièces compatibles, la fiche
-d'un véhicule, le formulaire d'ajout au garage.
+Les captures montrent encore les données de démonstration : à refaire avec de
+vraies photos de véhicules avant la production (voir `docs/captures/README.md`).
 
 ### Catégorie et coordonnées
 
