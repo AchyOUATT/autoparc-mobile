@@ -254,7 +254,11 @@ Image _composer(Image embleme, int cote, double proportion, Color? fond) {
 /// d'installation sur la droite du bandeau, et un dessin centré s'y fait
 /// recouvrir. La moitié droite reste donc volontairement vide.
 Image _banniere(Image embleme, Color fond) {
-  final toile = Image(width: 1024, height: 500, numChannels: 4);
+  // Trois canaux, pas quatre. Play exige pour l'image de présentation un JPEG ou
+  // un PNG 24 bits *sans* couche de transparence. Une première version était en
+  // RVBA : refusée avec un message qui ne parle que de dimensions et de poids —
+  // tous deux corrects —, sans nommer la transparence, qui était la cause.
+  final toile = Image(width: 1024, height: 500, numChannels: 3);
   fill(toile, color: fond);
 
   final hauteur = (500 * 0.72).round();
