@@ -3,37 +3,241 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AutoParc</title>
+
+<title>AutoParc — véhicules et pièces détachées au Burkina Faso</title>
+<meta name="description" content="Achetez, louez et entretenez votre véhicule au Burkina Faso. Catalogue de véhicules, pièces détachées compatibles avec votre motorisation, et rappels d'échéance : visite technique, assurance, vidange.">
+<link rel="canonical" href="https://achyouatt.github.io/autoparc-mobile/">
+
+<!-- Vignette des liens partagés sur Facebook, WhatsApp et Messenger. Sans
+     ces balises, un lien s'affiche nu : une URL grise, sans image ni texte,
+     que personne n'ouvre dans un fil d'actualité. -->
+<meta property="og:type"        content="website">
+<meta property="og:site_name"   content="AutoParc">
+<meta property="og:locale"      content="fr_FR">
+<meta property="og:url"         content="https://achyouatt.github.io/autoparc-mobile/">
+<meta property="og:title"       content="AutoParc — véhicules et pièces détachées au Burkina Faso">
+<meta property="og:description" content="Le catalogue, les pièces qui vont vraiment sur votre voiture, et vos échéances d'entretien. Application Android gratuite.">
+<meta property="og:image"       content="https://achyouatt.github.io/autoparc-mobile/images/partage.png">
+<meta property="og:image:width"  content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt"   content="AutoParc — véhicules, pièces détachées et accessoires, Burkina Faso">
+
+<meta name="twitter:card"        content="summary_large_image">
+<meta name="twitter:title"       content="AutoParc — véhicules et pièces détachées au Burkina Faso">
+<meta name="twitter:description" content="Le catalogue, les pièces qui vont vraiment sur votre voiture, et vos échéances d'entretien.">
+<meta name="twitter:image"       content="https://achyouatt.github.io/autoparc-mobile/images/partage.png">
+
+<link rel="icon" type="image/png" href="images/icone-512.png">
+<link rel="apple-touch-icon" href="images/icone-512.png">
+<meta name="theme-color" content="#0B4A9E">
+
 <style>
+  :root {
+    --encre:      #14212b;
+    --encre-pale: #4a5b68;
+    --fond:       #f7f9fb;
+    --carte:      #ffffff;
+    --trait:      #dde5eb;
+    --accent:     #1f6587;
+    --marque:     #0b4a9e;
+    --sur-marque: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+
   body {
     margin: 0;
-    min-height: 100vh;
-    display: grid;
-    place-items: center;
-    background: #f7f9fb;
-    color: #14212b;
-    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    text-align: center;
-    padding: 24px;
+    padding: 0 20px 64px;
+    background: var(--fond);
+    color: var(--encre);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
-  h1 { margin: 0 0 8px; font-size: 28px; }
-  p  { margin: 0 0 20px; color: #4a5b68; }
-  a  { color: #1f6587; }
+
+  main { max-width: 860px; margin: 0 auto; }
+
+  /* ── En-tête ───────────────────────────────────────────────── */
+
+  header {
+    display: grid;
+    justify-items: center;
+    text-align: center;
+    gap: 14px;
+    padding: 56px 0 44px;
+  }
+
+  header img {
+    width: 96px;
+    height: 96px;
+    border-radius: 22px;
+    box-shadow: 0 4px 16px rgb(11 74 158 / 0.22);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(30px, 6vw, 40px);
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  .accroche {
+    margin: 0;
+    max-width: 30em;
+    color: var(--encre-pale);
+    font-size: 18px;
+  }
+
+  .telecharger {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 14px 28px;
+    border-radius: 999px;
+    background: var(--marque);
+    color: var(--sur-marque);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .telecharger:hover, .telecharger:focus-visible { background: #0a4189; }
+
+  .mention { margin: 0; color: var(--encre-pale); font-size: 14px; }
+
+  /* ── Ce que fait l'application ─────────────────────────────── */
+
+  .atouts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 16px;
+    margin: 0 0 48px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .atouts li {
+    background: var(--carte);
+    border: 1px solid var(--trait);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .atouts h2 { margin: 0 0 6px; font-size: 17px; }
+
+  .atouts p  { margin: 0; color: var(--encre-pale); font-size: 15px; }
+
+  /* ── Captures ──────────────────────────────────────────────── */
+
+  .captures {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding-bottom: 12px;
+    margin-bottom: 48px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .captures img {
+    width: 208px;
+    flex: 0 0 auto;
+    border: 1px solid var(--trait);
+    border-radius: 12px;
+    scroll-snap-align: start;
+  }
+
+  /* ── Pied de page ──────────────────────────────────────────── */
+
+  footer {
+    border-top: 1px solid var(--trait);
+    padding-top: 24px;
+    color: var(--encre-pale);
+    font-size: 14px;
+  }
+
+  footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 14px; }
+
+  a { color: var(--accent); }
+
   @media (prefers-color-scheme: dark) {
-    body { background: #101820; color: #e8eef3; }
-    p    { color: #9fb0bd; }
-    a    { color: #6fb4d6; }
+    :root:not([data-theme="light"]) {
+      --encre:      #e8eef3;
+      --encre-pale: #9fb0bd;
+      --fond:       #101820;
+      --carte:      #18232d;
+      --trait:      #2a3947;
+      --accent:     #6fb4d6;
+      --marque:     #2f7ad4;
+      --sur-marque: #08121c;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --encre:      #e8eef3;
+    --encre-pale: #9fb0bd;
+    --fond:       #101820;
+    --carte:      #18232d;
+    --trait:      #2a3947;
+    --accent:     #6fb4d6;
+    --marque:     #2f7ad4;
+    --sur-marque: #08121c;
   }
 </style>
 </head>
 <body>
-<div>
-  <h1>AutoParc</h1>
-  <p>Véhicules, pièces détachées et accessoires — Burkina Faso.</p>
-  <p>
-    <a href="confidentialite.html">Politique de confidentialité</a><br>
-    <a href="suppression-compte.html">Supprimer son compte</a>
+<main>
+
+<header>
+  <img src="images/icone-512.png" alt="Logo AutoParc" width="96" height="96">
+  <h1>Véhicules et pièces détachées, au Burkina&nbsp;Faso</h1>
+  <p class="accroche">
+    Le catalogue, les pièces qui vont vraiment sur votre voiture, et vos
+    échéances d'entretien — le tout dans une application gratuite.
   </p>
+  <a class="telecharger" href="https://play.google.com/store/apps/details?id=bf.autoparc.app">
+    Télécharger sur Google Play
+  </a>
+  <p class="mention">Android — gratuit, sans publicité.</p>
+</header>
+
+<ul class="atouts">
+  <li>
+    <h2>Mon garage</h2>
+    <p>
+      Enregistrez votre véhicule et ses échéances : visite technique,
+      assurance, vidange. L'application vous prévient avant la date, pas
+      après.
+    </p>
+  </li>
+  <li>
+    <h2>Les bonnes pièces</h2>
+    <p>
+      La compatibilité tient compte de la génération et de la motorisation,
+      pas seulement de la marque : ce qui s'affiche se monte réellement sur
+      votre voiture.
+    </p>
+  </li>
+  <li>
+    <h2>Vente et location</h2>
+    <p>
+      Véhicules à vendre ou à louer, pièces et accessoires, avec le prix, la
+      ville et la disponibilité. Consultable sans créer de compte.
+    </p>
+  </li>
+</ul>
+
+<div class="captures">
+  <img src="captures/play-1-accueil.png" alt="Écran d'accueil d'AutoParc" width="208" loading="lazy">
+  <img src="captures/play-2-pieces-compatibles.png" alt="Pièces compatibles avec le véhicule enregistré" width="208" loading="lazy">
+  <img src="captures/play-3-fiche-vehicule.png" alt="Fiche détaillée d'un véhicule" width="208" loading="lazy">
+  <img src="captures/play-4-catalogue.png" alt="Catalogue des véhicules" width="208" loading="lazy">
 </div>
+
+<footer>
+  <nav>
+    <a href="confidentialite.html">Politique de confidentialité</a>
+    <a href="suppression-compte.html">Supprimer son compte</a>
+    <a href="mailto:achyouatt@gmail.com">Nous écrire</a>
+  </nav>
+  <p>AutoParc — Achy OUATTARA — Ouagadougou, Burkina Faso.</p>
+</footer>
+
+</main>
 </body>
 </html>
