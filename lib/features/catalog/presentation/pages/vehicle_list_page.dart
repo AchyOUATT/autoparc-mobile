@@ -476,7 +476,7 @@ class _VehicleGrid extends StatelessWidget {
               mainAxisSpacing: 10,
             ),
             itemCount: vehicles.length,
-            itemBuilder: (_, i) => _VehicleCard(vehicle: vehicles[i]),
+            itemBuilder: (_, i) => VehicleCard(vehicle: vehicles[i]),
           ),
         ),
         // Spinner "chargement suivant"
@@ -542,15 +542,22 @@ class _DealBadge extends StatelessWidget {
 
 // ── Carte véhicule ──────────────────────────────────────────────
 
-class _VehicleCard extends StatelessWidget {
+/// Une fiche de la grille de recherche.
+///
+/// Publique pour être mesurée en test : sa hauteur est imposée par le
+/// `childAspectRatio` de la grille, et le bloc de texte n'y tenait plus.
+class VehicleCard extends StatelessWidget {
   final Vehicle vehicle;
-  const _VehicleCard({required this.vehicle});
+  const VehicleCard({super.key, required this.vehicle});
 
   @override
   Widget build(BuildContext context) {
     final c  = vehicle.commercial;
     final id = vehicle.identity;
     final cs = Theme.of(context).colorScheme;
+
+    /// Hauteur d'une ligne secondaire, réservée même quand elle est vide.
+    final ligne = MediaQuery.textScalerOf(context).scale(16);
 
     // Sans photo, le logo de la marque rend la grille identifiable — auparavant
     // les 80 cartes affichaient exactement la même icône grise. Il sert aussi
@@ -628,18 +635,23 @@ class _VehicleCard extends StatelessWidget {
               ),
             ),
 
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-                child: Column(
+            // Hauteur dictée par le texte, et non par une fraction de la
+            // carte : à deux colonnes sur un écran de 411 dp, les deux
+            // cinquièmes réservés ici valaient 82 px pour 87 px de contenu —
+            // le titre, les deux lignes secondaires et le prix débordaient de
+            // 5 px. La photo prend maintenant ce qui reste.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+              child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     // Textes d'identification. Les deux lignes secondaires
                     // occupent une hauteur fixe même vides : sinon une fiche
                     // sans finition ou sans ville remonte son prix et se
-                    // désaligne de la carte voisine.
+                    // désaligne de la carte voisine. Cette hauteur suit le
+                    // réglage de taille du texte du téléphone — figée à 16,
+                    // elle rognait la ligne dès que l'utilisateur agrandit.
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -653,7 +665,7 @@ class _VehicleCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         SizedBox(
-                          height: 16,
+                          height: ligne,
                           child: id.trim == null
                               ? null
                               : Text(
@@ -665,7 +677,7 @@ class _VehicleCard extends StatelessWidget {
                                 ),
                         ),
                         SizedBox(
-                          height: 16,
+                          height: ligne,
                           child: c.locationLabel == null
                               ? null
                               : Row(
@@ -686,11 +698,13 @@ class _VehicleCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    // Prix toujours en bas
+                    const SizedBox(height: 2),
+                    // Prix en dernier, sous les lignes d'identification dont
+                    // la hauteur est fixe : toutes les cartes l'alignent donc
+                    // à la même distance du bas.
                     _PriceRow(commercial: c),
                   ],
                 ),
-              ),
             ),
           ],
         ),
