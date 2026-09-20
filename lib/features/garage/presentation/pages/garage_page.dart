@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/models/owned_vehicle.dart';
 import '../providers/garage_provider.dart';
+import '../widgets/consumption_tile.dart';
 import '../widgets/engine_prompt.dart';
 import '../widgets/mileage_dialog.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -396,6 +397,16 @@ class _VehicleCard extends ConsumerWidget {
                 ),
               ),
             ),
+
+          // ── Consommation ──────────────────────────────────────────
+          //
+          // La cote officielle du moteur choisi, ou l'invitation à le
+          // choisir. Elle se lit avec les échéances : c'est la même
+          // question — ce que cette voiture coûte à faire rouler.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
+            child: ConsumptionTile(vehicle: vehicle),
+          ),
 
           // ── Motorisation manquante ────────────────────────────────
           //

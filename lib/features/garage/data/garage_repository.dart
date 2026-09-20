@@ -4,6 +4,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/api/endpoints.dart';
 import '../../../shared/models/paginated_response.dart';
 import '../../catalog/data/models/part.dart';
+import 'models/motorisation.dart';
 import 'models/owned_vehicle.dart';
 import 'models/garage_compatibility.dart';
 import 'models/vin_decode_result.dart';
@@ -33,6 +34,26 @@ class GarageRepository {
   Future<OwnedVehicle> updateVehicle(int id, Map<String, dynamic> payload) async {
     final json = await _client.put('${Endpoints.myVehicles}/$id', data: payload);
     return OwnedVehicle.fromJson(json['data'] as Map<String, dynamic>);
+  }
+
+  /// Motorisations connues pour un modèle, avec leur cote officielle.
+  ///
+  /// L'année sert à classer : le serveur remonte d'abord les millésimes les
+  /// plus proches, puis élague les doublons. Une liste vide signifie qu'aucune
+  /// source publique ne couvre ce modèle — le cas des Fortuner, Prado et
+  /// autres véhicules vendus ni en Amérique du Nord ni en Europe.
+  Future<List<Motorisation>> motorisations({
+    required int vehicleModelId,
+    int? year,
+  }) async {
+    final json = await _client.get(Endpoints.catalogMotorisations, params: {
+      'vehicle_model_id': vehicleModelId,
+      if (year != null) 'year': year,
+    });
+
+    return (json['data'] as List)
+        .map((m) => Motorisation.fromJson(m as Map<String, dynamic>))
+        .toList();
   }
 
   /// Retire un véhicule du garage.

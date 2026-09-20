@@ -50,6 +50,7 @@ class Endpoints {
   static const String catalogPartCategories = '/catalog/part-categories';
   static const String catalogManufacturers  = '/catalog/manufacturers';
   static const String compatibleParts       = '/catalog/compatible-parts';
+  static const String catalogMotorisations  = '/catalog/motorisations';
 
   // ── Back-office stock (staff) ───────────────────────────────────
   static const String staffParts       = '/parts';

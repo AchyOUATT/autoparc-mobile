@@ -17,6 +17,15 @@ class OwnedVehicle extends Equatable {
   final OwnedVehicleIdentity identity;
   final bool compatibilityReady;
 
+  /// Motorisation choisie par le propriétaire, et sa cote officielle.
+  ///
+  /// Nulle tant qu'il ne l'a pas choisie : le catalogue connaît le modèle,
+  /// mais rien ne dit lequel des moteurs se trouve sous le capot. Une Camry
+  /// 2013 consomme 8,2 ou 9,4 l/100 selon qu'elle a le 2,5 l quatre cylindres
+  /// ou le 3,5 l V6.
+  final int? motorisationId;
+  final VehicleConsumption? consumption;
+
   /// Échéances d'entretien, de la plus urgente à la moins urgente.
   ///
   /// Calculées par le serveur, jamais ici : la tâche de rappel et l'affichage
@@ -43,6 +52,8 @@ class OwnedVehicle extends Equatable {
     required this.year,
     required this.identity,
     required this.compatibilityReady,
+    this.motorisationId,
+    this.consumption,
     this.deadlines = const [],
     this.technicalInspectionExpiry,
     this.insuranceExpiry,
@@ -67,6 +78,11 @@ class OwnedVehicle extends Equatable {
     identity:          OwnedVehicleIdentity.fromJson(
                            json['identity'] as Map<String, dynamic>),
     compatibilityReady: json['compatibility_ready'] as bool? ?? false,
+    motorisationId:    json['motorisation_id']   as int?,
+    consumption:       json['consumption'] == null
+                           ? null
+                           : VehicleConsumption.fromJson(
+                               json['consumption'] as Map<String, dynamic>),
     deadlines:         (json['deadlines'] as List?)
                            ?.map((d) => VehicleDeadline.fromJson(d as Map<String, dynamic>))
                            .toList() ??
@@ -90,6 +106,52 @@ class OwnedVehicle extends Equatable {
 
 DateTime? _date(Object? value) =>
     value == null ? null : DateTime.tryParse(value.toString());
+
+/// La cote de consommation officielle d'une motorisation.
+///
+/// Toujours accompagnée de sa provenance et de son cycle d'essai : la même
+/// voiture se lit 8,2 l/100 selon la méthode canadienne et 6,4 selon la norme
+/// européenne. Afficher le chiffre seul ferait passer deux protocoles pour une
+/// contradiction.
+class VehicleConsumption extends Equatable {
+  /// La motorisation, telle que le propriétaire doit la reconnaître :
+  /// « 2,5 l 4 cyl. boîte auto. 6 ».
+  final String label;
+  final String? fuel;
+  final double? cityL100km;
+  final double? highwayL100km;
+  final double? combinedL100km;
+  final String source;
+  final String cycle;
+
+  const VehicleConsumption({
+    required this.label,
+    this.fuel,
+    this.cityL100km,
+    this.highwayL100km,
+    this.combinedL100km,
+    required this.source,
+    required this.cycle,
+  });
+
+  factory VehicleConsumption.fromJson(Map<String, dynamic> json) =>
+      VehicleConsumption(
+        label:          json['label']  as String? ?? '',
+        fuel:           json['fuel']   as String?,
+        cityL100km:     _double(json['city_l_100km']),
+        highwayL100km:  _double(json['highway_l_100km']),
+        combinedL100km: _double(json['combined_l_100km']),
+        source:         json['source'] as String? ?? '',
+        cycle:          json['cycle']  as String? ?? '',
+      );
+
+  @override
+  List<Object?> get props => [label, combinedL100km, source, cycle];
+}
+
+/// Laravel sérialise les décimaux en chaînes : « 8.20 », pas 8.2.
+double? _double(Object? value) =>
+    value == null ? null : double.tryParse(value.toString());
 
 /// Une échéance d'entretien : visite technique, assurance ou vidange.
 class VehicleDeadline {
