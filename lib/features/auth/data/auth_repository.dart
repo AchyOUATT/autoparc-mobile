@@ -116,4 +116,10 @@ class AuthRepository {
 
   /// Stream de l'état Firebase Auth — émet à chaque changement de session.
   Stream<User?> get firebaseAuthStream => FirebaseAuth.instance.authStateChanges();
+
+  /// Session Firebase déjà restaurée, s'il y en a une.
+  ///
+  /// Nulle pendant les premières secondes du démarrage, le temps que Firebase
+  /// relise sa session sur le disque : `firebaseAuthStream` reste seul juge.
+  User? get utilisateurCourant => FirebaseAuth.instance.currentUser;
 }

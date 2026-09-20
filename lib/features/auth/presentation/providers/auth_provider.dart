@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -85,12 +87,56 @@ class AuthState {
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _repo;
 
+  StreamSubscription<User?>? _abonnementFirebase;
+
   AuthNotifier(this._repo) : super(const AuthState()) {
+    // L'écoute d'abord : elle doit être en place avant que `_init` ne rende la
+    // main, sinon une session restaurée entre-temps passe inaperçue.
+    _ecouterFirebase();
     _init();
   }
 
+  /// Suit l'état d'authentification Firebase pour toute la durée de vie de
+  /// l'application, au lieu de le lire une seule fois au démarrage.
+  ///
+  /// Firebase restaure une session enregistrée de façon asynchrone : au
+  /// lancement, `currentUser` reste nul pendant quelques secondes. Une lecture
+  /// unique tombait donc régulièrement dans ce trou et affichait « Non
+  /// connecté » alors que la session existait.
+  ///
+  /// Le cas est systématique après une connexion Google : l'onglet Chrome
+  /// passe au premier plan, Android tue le processus de l'application, puis le
+  /// relance pour recevoir le résultat. La `Future` rendue par
+  /// `signInWithProvider` meurt avec l'ancien processus — seul ce flux annonce
+  /// la connexion au nouveau.
+  void _ecouterFirebase() {
+    // Firebase peut être hors service — initialisation échouée sur l'appareil,
+    // ou plugin absent sous test. L'application doit rester utilisable en
+    // catalogue seul plutôt que de mourir au démarrage.
+    final Stream<User?> flux;
+    try {
+      flux = _repo.firebaseAuthStream;
+    } catch (e) {
+      debugPrint('[Auth] Flux Firebase indisponible : $e');
+      return;
+    }
+
+    _abonnementFirebase = flux.listen((utilisateur) {
+      if (!mounted) return;
+      // Une session du personnel prime : elle vient d'un autre système
+      // d'identité et ne doit pas être écrasée par un résidu Firebase.
+      if (state.isStaff) return;
+
+      if (utilisateur != null) {
+        state = AuthState(type: AuthType.client, firebaseUser: utilisateur);
+      } else if (state.isClient) {
+        state = const AuthState();
+      }
+    });
+  }
+
   /// Au démarrage : vérifie si un token Sanctum existe encore (staff),
-  /// ou si Firebase a un utilisateur connecté (client).
+  /// ou si Firebase a déjà restauré un utilisateur (client).
   Future<void> _init() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -101,19 +147,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
         state = AuthState(type: AuthType.staff, staffUser: staff);
         return;
       }
-
-      // 2. Utilisateur Firebase connecté ?
-      final fbUser = FirebaseAuth.instance.currentUser;
-      if (fbUser != null) {
-        state = AuthState(type: AuthType.client, firebaseUser: fbUser);
-        return;
-      }
     } catch (_) {
       // Token invalide ou erreur réseau → on efface
       await ApiClient.deleteToken();
     }
 
-    state = const AuthState();
+    if (!mounted) return;
+
+    // 2. Session Firebase déjà restaurée ? Sinon, `_ecouterFirebase` prendra
+    //    le relais dès qu'elle le sera.
+    User? fbUser;
+    try {
+      fbUser = _repo.utilisateurCourant;
+    } catch (e) {
+      debugPrint('[Auth] Firebase indisponible : $e');
+    }
+
+    state = fbUser != null
+        ? AuthState(type: AuthType.client, firebaseUser: fbUser)
+        : const AuthState();
+  }
+
+  @override
+  void dispose() {
+    _abonnementFirebase?.cancel();
+    super.dispose();
   }
 
   /// Extrait un message lisible en français depuis une exception.
