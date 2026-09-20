@@ -8,10 +8,10 @@ import '../providers/garage_provider.dart';
 
 /// La consommation du véhicule, ou l'invitation à la connaître.
 ///
-/// Le chiffre ne s'affiche jamais seul : il porte sa provenance et son cycle
-/// d'essai. Une même voiture se lit 8,2 l/100 selon la méthode canadienne et
-/// 6,4 selon la norme européenne — sans cette mention, le propriétaire qui
-/// compare deux véhicules croirait à une différence de moteur.
+/// La fiche ne porte que le chiffre : la motorisation, la boîte et la
+/// provenance de la cote restent dans le dialogue de choix, où elles
+/// éclairent la décision. Sur la fiche, elles encombraient une carte qui doit
+/// se lire d'un coup d'œil, entre le kilométrage et les échéances.
 class ConsumptionTile extends ConsumerWidget {
   final OwnedVehicle vehicle;
 
@@ -40,9 +40,7 @@ class ConsumptionTile extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  mixte == null
-                      ? conso.label
-                      : '${_nombre(mixte)} l/100 km — ${conso.label}',
+                  mixte == null ? '—' : '${_nombre(mixte)} l/100 km',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 if (conso.cityL100km != null && conso.highwayL100km != null)
@@ -52,11 +50,6 @@ class ConsumptionTile extends ConsumerWidget {
                     style: Theme.of(context).textTheme.bodySmall
                         ?.copyWith(color: cs.outline),
                   ),
-                Text(
-                  '${conso.source} — ${conso.cycle}',
-                  style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: cs.outline),
-                ),
               ],
             ),
           ),

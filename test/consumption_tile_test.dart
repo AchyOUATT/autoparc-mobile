@@ -7,10 +7,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// La consommation affichée au propriétaire.
 ///
-/// Deux exigences, et elles tiennent à la même idée : un chiffre sans
-/// provenance ne se discute pas. Une même voiture se lit 8,2 l/100 selon la
-/// méthode canadienne et 6,4 selon la norme européenne — afficher le nombre
-/// seul ferait passer deux protocoles d'essai pour une différence de moteur.
+/// La fiche du garage ne porte que le chiffre : la motorisation, la boîte et
+/// la provenance de la cote appartiennent au dialogue de choix, où elles
+/// éclairent la décision. Sur une carte qui doit se lire d'un coup d'œil,
+/// entre le kilométrage et les échéances, elles encombraient.
 ///
 /// Et tant qu'aucune motorisation n'est choisie, l'application ne devine pas :
 /// elle demande. Le catalogue connaît le modèle, mais rien ne dit lequel des
@@ -46,21 +46,18 @@ void main() {
       );
 
   group('Consommation du véhicule', () {
-    testWidgets('la cote s\'affiche avec sa provenance et son cycle',
-        (tester) async {
+    testWidgets('la fiche porte le chiffre, et lui seul', (tester) async {
       await tester.pumpWidget(ecran(vehicule(conso: cote)));
 
       expect(find.textContaining('8,2 l/100 km'), findsOneWidget);
-      expect(find.textContaining('2,5 l 4 cyl.'), findsOneWidget);
       expect(find.textContaining('ville 9,5'), findsOneWidget);
 
-      // Sans cette mention, deux cycles d'essai passeraient pour deux moteurs.
-      expect(
-        find.textContaining('Ressources naturelles Canada'),
-        findsOneWidget,
-        reason: 'Un chiffre sans provenance ne se discute pas.',
-      );
-      expect(find.textContaining('cinq cycles'), findsOneWidget);
+      // La motorisation, la boîte et la provenance restent dans le dialogue
+      // de choix : sur la fiche, elles encombrent une carte qui doit se lire
+      // d'un coup d'œil.
+      expect(find.textContaining('4 cyl.'), findsNothing);
+      expect(find.textContaining('Ressources naturelles Canada'), findsNothing);
+      expect(find.textContaining('cinq cycles'), findsNothing);
     });
 
     testWidgets('la virgule décimale est celle du français', (tester) async {
