@@ -760,8 +760,14 @@ class _DeadlineRow extends StatelessWidget {
           Expanded(
             child: Text(
               deadline.label,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: cs.onSurfaceVariant),
+              // Le libelle suit la couleur du delai quand l'echeance est
+              // depassee : « Assurance » en gris a cote d'un « Depassee de
+              // 12 j » en rouge laissait croire a un detail de mise en forme.
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: deadline.overdue ? cs.error : cs.onSurfaceVariant,
+                fontWeight:
+                    deadline.overdue ? FontWeight.w600 : FontWeight.normal,
+              ),
             ),
           ),
           Text(

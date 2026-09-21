@@ -188,6 +188,17 @@ class _VehicleDetailView extends ConsumerWidget {
                     if (vehicle.combinedL100km != null)
                       ('Consommation', '${_decimal.format(vehicle.combinedL100km)} L/100 km'),
                   ]),
+
+                  // ── Consommation officielle ─────────────────────
+                  //
+                  // Une fourchette, et non un chiffre : l'annonce connaît son
+                  // modèle et son millésime, rarement sa motorisation. Entre
+                  // le 2,5 l quatre cylindres et le 3,5 l V6 d'une même Camry,
+                  // l'écart atteint 1,2 l/100. Choisir pour l'acheteur serait
+                  // lui mentir sur une dépense qu'il paiera chaque semaine.
+                  if (vehicle.officialConsumption != null)
+                    _ConsommationOfficielle(cote: vehicle.officialConsumption!),
+
                   if (id.color != null)
                     _ColorRow(
                       name: id.color!,
@@ -979,6 +990,62 @@ class _InfoGrid extends StatelessWidget {
     final filtered = items.where((e) => e.$2 != null).toList();
     return Column(
       children: filtered.map((e) => _InfoRow(e.$1, e.$2!)).toList(),
+    );
+  }
+}
+
+/// La consommation officielle du modèle, sur la fiche d'une annonce.
+///
+/// Elle vit hors de la grille d'identité, parce qu'elle ne décrit pas ce
+/// véhicule-ci mais son modèle : une fourchette, sa provenance et son cycle
+/// d'essai. Rangée entre « Finition » et « Transmission », elle se lirait
+/// comme une caractéristique mesurée sur l'exemplaire en vente.
+class _ConsommationOfficielle extends StatelessWidget {
+  final OfficialConsumption cote;
+
+  const _ConsommationOfficielle({required this.cote});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.local_gas_station_outlined, size: 18, color: cs.outline),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Consommation officielle : ${cote.libelle}',
+                  style: Theme.of(context).textTheme.bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  cote.estUnique
+                      ? 'Millésime ${cote.modelYear} — ${cote.source}, ${cote.cycle}'
+                      : 'Selon la motorisation '
+                        '(${cote.motorisations} connues pour le millésime ${cote.modelYear}) '
+                        '— ${cote.source}, ${cote.cycle}',
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: cs.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -66,6 +66,14 @@ class Vehicle extends Equatable {
   /// Consommation mixte, en L/100 km.
   final double? combinedL100km;
 
+  /// Fourchette officielle du modèle, sur la fiche détaillée uniquement.
+  ///
+  /// Une annonce connaît son modèle et son millésime, rarement sa
+  /// motorisation : le vendeur saisit « Toyota Camry 2013 », pas « 2,5 l
+  /// quatre cylindres ». Or l'écart entre les moteurs d'un même modèle atteint
+  /// couramment un litre et demi aux cent. On annonce donc une fourchette.
+  final OfficialConsumption? officialConsumption;
+
   /// Nombre d'équipements hors dotation standard, calculé par l'API.
   ///
   /// Null dans la liste du catalogue, qui ne charge pas les équipements : le
@@ -96,6 +104,7 @@ class Vehicle extends Equatable {
     this.features = const [],
     this.mileageKm,
     this.combinedL100km,
+    this.officialConsumption,
     this.optionalFeatureCount,
     this.isFullOption = false,
   });
@@ -128,6 +137,8 @@ class Vehicle extends Equatable {
       mileageKm:          _asInt((json['technical'] as Map<String, dynamic>?)?['mileage_km']),
       combinedL100km:     _asDouble(
                               (json['consumption'] as Map<String, dynamic>?)?['combined_l_100km']),
+      officialConsumption: OfficialConsumption.depuisJson(
+                              (json['consumption'] as Map<String, dynamic>?)?['official']),
       optionalFeatureCount: _asInt(json['optional_feature_count']),
       isFullOption:         json['is_full_option'] as bool? ?? false,
     );
@@ -351,4 +362,58 @@ class VehicleImport extends Equatable {
 
   @override
   List<Object?> get props => [originCountry, customsCleared];
+}
+
+/// La fourchette de consommation officielle d'un modèle.
+///
+/// Deux bornes plutôt qu'un chiffre : une annonce connaît son modèle, rarement
+/// sa motorisation, et l'écart entre les moteurs d'un même modèle atteint
+/// couramment un litre et demi aux cent. Annoncer une valeur unique
+/// reviendrait à choisir un moteur au hasard pour le compte de l'acheteur.
+class OfficialConsumption {
+  final double min;
+  final double max;
+
+  /// Nombre de motorisations connues pour ce modèle et ce millésime.
+  final int motorisations;
+
+  final int modelYear;
+  final String source;
+  final String cycle;
+
+  const OfficialConsumption({
+    required this.min,
+    required this.max,
+    required this.motorisations,
+    required this.modelYear,
+    required this.source,
+    required this.cycle,
+  });
+
+  static OfficialConsumption? depuisJson(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+
+    final min = _asDouble(json['min']);
+    final max = _asDouble(json['max']);
+    if (min == null || max == null) return null;
+
+    return OfficialConsumption(
+      min:           min,
+      max:           max,
+      motorisations: _asInt(json['motorisations']) ?? 1,
+      modelYear:     _asInt(json['model_year']) ?? 0,
+      source:        json['source'] as String? ?? '',
+      cycle:         json['cycle']  as String? ?? '',
+    );
+  }
+
+  /// Vrai quand toutes les motorisations connues donnent la même valeur.
+  bool get estUnique => (max - min).abs() < 0.05;
+
+  /// « 8,2 l/100 km » ou « 8,2 à 9,4 l/100 km », en français.
+  String get libelle {
+    String n(double v) => v.toStringAsFixed(1).replaceAll('.', ',');
+
+    return estUnique ? '${n(min)} l/100 km' : '${n(min)} à ${n(max)} l/100 km';
+  }
 }

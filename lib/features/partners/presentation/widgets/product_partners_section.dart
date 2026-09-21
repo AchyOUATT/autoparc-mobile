@@ -177,77 +177,121 @@ class _PartnersSection extends ConsumerWidget {
     final all = await ref.read(partnerRepositoryProvider).getPartners(perPage: 100);
     if (!context.mounted) return;
 
-    Partner? selected;
-    final roleCtrl  = TextEditingController();
-    final notesCtrl = TextEditingController();
-
     await showDialog<void>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => AlertDialog(
-          title: const Text('Associer un partenaire'),
-          content: SizedBox(
-            width: 360,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<Partner>(
-                  value: selected,
-                  decoration: const InputDecoration(
-                    labelText: 'Partenaire *',
-                    prefixIcon: Icon(Icons.handshake_outlined),
-                  ),
-                  items: all.data
-                      .map((p) => DropdownMenuItem(
-                            value: p,
-                            child: Text(p.displayName,
-                                overflow: TextOverflow.ellipsis),
-                          ))
-                      .toList(),
-                  onChanged: (p) => setSt(() => selected = p),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: roleCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Rôle (optionnel)',
-                    hintText: 'fournisseur, importateur…',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: notesCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Notes (optionnel)',
-                  ),
-                  maxLines: 2,
-                ),
-              ],
+      builder: (ctx) => _AttachPartnerDialog(
+        partenaires: all.data,
+        onAttach: onAttach,
+      ),
+    );
+  }
+}
+
+/// Les contrôleurs appartiennent à la boîte, pas à la fonction qui l'ouvre.
+///
+/// Ils étaient créés avant `showDialog` et détruits juste après. Or
+/// `showDialog` rend la main dès le `Navigator.pop` : la boîte s'anime encore,
+/// ses champs sont toujours montés, et le clavier qui se referme suffit à les
+/// faire se réabonner à des contrôleurs détruits — « A TextEditingController
+/// was used after being disposed », puis un écran rouge.
+///
+/// Le même défaut a été trouvé sur la boîte de kilométrage, où il produisait
+/// le plantage intermittent qu'on n'arrivait pas à reproduire. Voir
+/// mileage_dialog.dart et son test.
+class _AttachPartnerDialog extends StatefulWidget {
+  final List<Partner> partenaires;
+  final _AttachFn onAttach;
+
+  const _AttachPartnerDialog({
+    required this.partenaires,
+    required this.onAttach,
+  });
+
+  @override
+  State<_AttachPartnerDialog> createState() => _AttachPartnerDialogState();
+}
+
+class _AttachPartnerDialogState extends State<_AttachPartnerDialog> {
+  final _roleCtrl  = TextEditingController();
+  final _notesCtrl = TextEditingController();
+  Partner? _selected;
+
+  @override
+  void dispose() {
+    _roleCtrl.dispose();
+    _notesCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Associer un partenaire'),
+      content: SizedBox(
+        width: 360,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<Partner>(
+              initialValue: _selected,
+              decoration: const InputDecoration(
+                labelText: 'Partenaire *',
+                prefixIcon: Icon(Icons.handshake_outlined),
+              ),
+              items: widget.partenaires
+                  .map((p) => DropdownMenuItem(
+                        value: p,
+                        child: Text(p.displayName, overflow: TextOverflow.ellipsis),
+                      ))
+                  .toList(),
+              onChanged: (p) => setState(() => _selected = p),
             ),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Annuler')),
-            FilledButton(
-              onPressed: selected == null
-                  ? null
-                  : () async {
-                      Navigator.pop(ctx);
-                      await onAttach(
-                        selected!.id,
-                        roleCtrl.text.trim().isEmpty ? null : roleCtrl.text.trim(),
-                        notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
-                      );
-                    },
-              child: const Text('Associer'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _roleCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Rôle (optionnel)',
+                hintText: 'fournisseur, importateur…',
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _notesCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Notes (optionnel)',
+              ),
+              maxLines: 2,
             ),
           ],
         ),
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Annuler'),
+        ),
+        FilledButton(
+          onPressed: _selected == null
+              ? null
+              : () {
+                  // Le texte se lit avant de fermer : apres le pop, la boite
+                  // s'anime encore mais son etat peut etre detruit a tout
+                  // moment.
+                  final role  = _roleCtrl.text.trim();
+                  final notes = _notesCtrl.text.trim();
+                  final id    = _selected!.id;
+
+                  Navigator.pop(context);
+                  widget.onAttach(
+                    id,
+                    role.isEmpty ? null : role,
+                    notes.isEmpty ? null : notes,
+                  );
+                },
+          child: const Text('Associer'),
+        ),
+      ],
     );
-    roleCtrl.dispose();
-    notesCtrl.dispose();
   }
 }
 

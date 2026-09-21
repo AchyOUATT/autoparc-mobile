@@ -168,24 +168,30 @@ class _VehicleCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            height: 120,
-            width: double.infinity,
-            child: Container(
-              color: cs.surfaceContainerHighest,
-              alignment: Alignment.center,
-              child: BrandLogo(slug: _slug(vehicle.identity.brand), size: 56),
-            ),
-          ),
+          // Le logo de la marque tient dans la ligne de titre.
+          //
+          // Il occupait auparavant un bandeau de 120 px en haut de la carte —
+          // la moitie de sa hauteur pour une icone, qui repoussait les
+          // echeances sous la ligne de flottaison. Or ce sont elles la raison
+          // d'ouvrir l'application.
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
                   children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: cs.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      alignment: Alignment.center,
+                      child: BrandLogo(slug: _slug(vehicle.identity.brand), size: 26),
+                    ),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         vehicle.nickname ?? vehicle.designation,
@@ -203,7 +209,7 @@ class _VehicleCard extends ConsumerWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
                 if (prochaine != null)
                   _UrgentDeadline(deadline: prochaine)
@@ -217,13 +223,24 @@ class _VehicleCard extends ConsumerWidget {
                     padding: const EdgeInsets.only(top: 6),
                     child: Row(
                       children: [
-                        Icon(_iconFor(d.kind), size: 16, color: cs.onSurfaceVariant),
+                        // Une echeance depassee reste rouge meme en seconde
+                        // ligne : elle s'affichait en gris, de la meme encre
+                        // qu'une date lointaine, et une visite technique
+                        // expiree se lisait comme une formalite a venir.
+                        Icon(
+                          d.overdue ? Icons.error_outline : _iconFor(d.kind),
+                          size: 16,
+                          color: d.overdue ? cs.error : cs.onSurfaceVariant,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             _libelle(d),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: cs.onSurfaceVariant),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: d.overdue ? cs.error : cs.onSurfaceVariant,
+                              fontWeight:
+                                  d.overdue ? FontWeight.w600 : FontWeight.normal,
+                            ),
                           ),
                         ),
                       ],
@@ -234,11 +251,11 @@ class _VehicleCard extends ConsumerWidget {
                 // raison d'ouvrir l'application, le manque à combler vient
                 // ensuite. Il disparaît de lui-même une fois renseigné.
                 if (!vehicle.compatibilityReady) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   MissingEngineBanner(vehicle: vehicle),
                 ],
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 // Le geste qui fait vivre le rappel de vidange : sans
                 // kilométrage tenu à jour, il ne part jamais.
                 OutlinedButton.icon(
@@ -246,7 +263,7 @@ class _VehicleCard extends ConsumerWidget {
                   icon: const Icon(Icons.speed_outlined, size: 18),
                   label: const Text('Mettre à jour le kilométrage'),
                   style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(42),
+                    minimumSize: const Size.fromHeight(38),
                   ),
                 ),
               ],
