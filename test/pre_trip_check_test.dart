@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:auto/core/api/api_client.dart';
+import 'package:auto/core/api/api_exception.dart';
 import 'package:auto/features/garage/data/check_draft_store.dart';
 import 'package:auto/features/garage/data/garage_repository.dart';
 import 'package:auto/features/garage/data/models/owned_vehicle.dart';
@@ -346,6 +349,152 @@ void main() {
     expect(troisieme.envois, isEmpty);
   });
 
+  testWidgets("un refus du serveur n'est pas présenté comme une coupure réseau",
+      (tester) async {
+    // Un 422 ne passera jamais, quel que soit le réseau. Le garder en attente le
+    // faisait rejouer à chaque ouverture de l'écran, en promettant chaque fois
+    // qu'il finirait par partir.
+    final liste = CheckTemplate(items: [point('pneus-etat', 'Pneus')]);
+    final premier = _FauxDepot(
+      liste: liste,
+      refus: ApiException(
+        statusCode: 422,
+        message: 'refus',
+        errors: const {'mileage_km': ['Le kilométrage ne peut pas dépasser 2000000.']},
+      ),
+    );
+
+    await tester.pumpWidget(ecran(premier));
+    await tester.pumpAndSettle();
+    await composer(tester);
+    await tester.tap(find.text('Rien à signaler').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Terminer le contrôle'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('repartira dès que le réseau revient'),
+      findsNothing,
+      reason: 'Un refus ne repartira pas : le promettre est un mensonge.',
+    );
+    expect(find.textContaining("n'a pas été accepté"), findsOneWidget);
+    expect(find.textContaining('Corrige la saisie'), findsOneWidget);
+
+    // Et il ne doit pas rester collé en attente.
+    final second = _FauxDepot(liste: liste);
+    await reouvrir(tester, second);
+    expect(second.envois, isEmpty, reason: 'Une charge refusée ne doit pas être rejouée.');
+  });
+
+  testWidgets('la clé survit à une relance, pour ne pas enregistrer deux contrôles',
+      (tester) async {
+    // Si le premier envoi a atteint le serveur sans que la réponse revienne, le
+    // passage existe déjà. Une clé neuve au second essai en créerait un second,
+    // et c'est précisément ce que la clé est censée empêcher.
+    final liste = CheckTemplate(items: [point('pneus-etat', 'Pneus')]);
+    final premier = _FauxDepot(liste: liste, echoueEnvoi: true);
+
+    await tester.pumpWidget(ecran(premier));
+    await tester.pumpAndSettle();
+    await composer(tester);
+    await tester.tap(find.text('Rien à signaler').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Terminer le contrôle'));
+    await tester.pumpAndSettle();
+
+    // Relance : le rejeu automatique échoue encore, puis l'utilisateur termine
+    // lui-même une seconde fois.
+    final second = _FauxDepot(liste: liste, echoueEnvoi: true);
+    await reouvrir(tester, second);
+    await tester.tap(find.text('Terminer le contrôle'));
+    await tester.pumpAndSettle();
+
+    expect(second.envois, hasLength(2));
+    for (final envoi in second.envois) {
+      expect(
+        envoi['client_reference'],
+        premier.envois.first['client_reference'],
+        reason: 'La clé du contrôle ne doit jamais être régénérée.',
+      );
+    }
+  });
+
+  testWidgets('un envoi trop ancien pour le serveur est abandonné, pas rejoué',
+      (tester) async {
+    // Le serveur refuse un performed_at de plus de trente jours. Sans
+    // péremption côté téléphone, la charge repartait indéfiniment pour se faire
+    // refuser chaque fois.
+    SharedPreferences.setMockInitialValues({
+      'check_pending_1': jsonEncode({
+        'client_reference': '3f1c9a2e-5b7d-4e8a-9c1f-2d6b8e4a7c05',
+        'performed_at': DateTime.now().toUtc().subtract(const Duration(days: 40)).toIso8601String(),
+        'answers': [{'item_code': 'pneus-etat', 'status': 'ok'}],
+      }),
+    });
+
+    final depot = _FauxDepot(liste: CheckTemplate(items: [point('pneus-etat', 'Pneus')]));
+    await tester.pumpWidget(ecran(depot));
+    await tester.pumpAndSettle();
+
+    expect(depot.envois, isEmpty);
+    expect(await const CheckDraftStore().lireEnAttente(1), isNull);
+  });
+
+  testWidgets('un verdict atteint par un renvoi dit autant que les autres',
+      (tester) async {
+    // Le même contrôle ne doit pas annoncer moins de choses selon le chemin.
+    // Atteint par un renvoi, le verdict n'a pas de liste recomposée sous la
+    // main : le nombre de points se relit dans le brouillon.
+    SharedPreferences.setMockInitialValues({
+      'check_draft_1': jsonEncode({
+        'trip_distance_km': 400,
+        'answers': {'pneus-etat': 'ok'},
+        'client_reference': '3f1c9a2e-5b7d-4e8a-9c1f-2d6b8e4a7c05',
+        'items_count': 5,
+        'saved_at': DateTime.now().toIso8601String(),
+      }),
+      'check_pending_1': jsonEncode({
+        'client_reference': '3f1c9a2e-5b7d-4e8a-9c1f-2d6b8e4a7c05',
+        'performed_at': DateTime.now().toUtc().toIso8601String(),
+        'answers': [{'item_code': 'pneus-etat', 'status': 'ok'}],
+      }),
+    });
+
+    final depot = _FauxDepot(
+      liste: CheckTemplate(items: [point('pneus-etat', 'Pneus')]),
+      reponse: resultat(detail: 'Rien à signaler sur le point vérifié', verifies: 1),
+    );
+
+    await tester.pumpWidget(ecran(depot));
+    await tester.pumpAndSettle();
+
+    expect(depot.envois, hasLength(1));
+    expect(find.textContaining("4 points n'ont pas été vérifiés"), findsOneWidget);
+  });
+
+  testWidgets("l'échec d'envoi se voit en tête de liste, pas après le dernier point",
+      (tester) async {
+    // Rendu en fin de ListView, le message n'était jamais à l'écran sur une
+    // liste de quinze points : l'échec passait inaperçu.
+    final depot = _FauxDepot(
+      liste: CheckTemplate(items: [
+        for (var i = 0; i < 12; i++) point('point-$i', 'Point numéro $i'),
+      ]),
+      echoueEnvoi: true,
+    );
+
+    await tester.pumpWidget(ecran(depot));
+    await tester.pumpAndSettle();
+    await composer(tester);
+    await tester.tap(find.text('Rien à signaler').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Terminer le contrôle'));
+    await tester.pumpAndSettle();
+
+    // Sans défilement : le message doit déjà être rendu.
+    expect(find.textContaining('Envoi impossible pour le moment'), findsOneWidget);
+  });
+
   testWidgets('les réponses déjà données survivent à la fermeture de l\'écran',
       (tester) async {
     // On coche quatre points, on va chercher le cric, on revient dix minutes
@@ -484,6 +633,7 @@ class _FauxDepot extends GarageRepository {
     required this.liste,
     VehicleCheck? reponse,
     this.echoueEnvoi = false,
+    this.refus,
   })  : parDistanceKm = const {},
         reponse = reponse ??
             VehicleCheck(
@@ -514,12 +664,16 @@ class _FauxDepot extends GarageRepository {
           checkedCount: 1,
         ),
         echoueEnvoi = false,
+        refus = null,
         super(ApiClient());
 
   final CheckTemplate liste;
   final Map<int, CheckTemplate> parDistanceKm;
   final VehicleCheck reponse;
   final bool echoueEnvoi;
+
+  /// Un refus du serveur, par opposition a une panne de transport.
+  final ApiException? refus;
 
   final List<Map<String, dynamic>> envois = [];
   final List<int?> distancesDemandees = [];
@@ -533,6 +687,7 @@ class _FauxDepot extends GarageRepository {
   @override
   Future<VehicleCheck> submitCheck(int ownedVehicleId, Map<String, dynamic> payload) async {
     envois.add(payload);
+    if (refus != null) throw refus!;
     if (echoueEnvoi) throw Exception('hors ligne');
     return reponse;
   }

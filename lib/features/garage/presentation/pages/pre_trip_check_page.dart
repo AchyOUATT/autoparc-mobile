@@ -74,6 +74,14 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
   /// Un contrôle terminé dont l'envoi n'est pas passé.
   bool _enAttente = false;
 
+  /// Le serveur a refusé la charge pour une raison que le réseau ne réglera
+  /// pas : la garder en attente la ferait rejouer à chaque ouverture.
+  bool _refusDefinitif = false;
+
+  /// Le nombre de points que la liste comptait, y compris quand l'écran arrive
+  /// au verdict par un renvoi, sans avoir recomposé la liste.
+  int? _totalPoints;
+
   CheckDraftStore get _brouillons => ref.read(checkDraftStoreProvider);
 
   @override
@@ -97,19 +105,33 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
   /// est plus précieux qu'un contrôle à moitié rempli, et le serveur reconnaît
   /// sa clé — un rejeu ne crée donc jamais un second passage.
   Future<void> _reprendre() async {
+    // Les deux se lisent AVANT toute tentative d'envoi. Un renvoi qui aboutit
+    // mène droit au verdict sans que la liste ait été recomposée : si le nombre
+    // de points n'a pas été relu d'abord, le même contrôle annonce moins de
+    // choses selon le chemin par lequel on arrive à son verdict.
+    final brouillon = await _brouillons.lireBrouillon(widget.ownedVehicleId);
     final enAttente = await _brouillons.lireEnAttente(widget.ownedVehicleId);
 
+    if (!mounted) return;
+
+    if (brouillon != null) {
+      _totalPoints = brouillon.itemsCount;
+
+      // La clé du contrôle en cours est relue avec ses réponses, et non
+      // refabriquée. Sans cela, une relance de l'application en produisait une
+      // neuve : si le premier envoi avait atteint le serveur sans que la réponse
+      // revienne, un second « Terminer » enregistrait un deuxième passage — la
+      // chose même que la clé existe pour empêcher.
+      final cle = brouillon.clientReference;
+      if (cle != null && cle.isNotEmpty) _reference = cle;
+    }
+
     if (enAttente != null) {
-      if (!mounted) return;
       setState(() => _enAttente = true);
-      // Silencieux : c'est une reprise que personne n'a demandée. La bannière de
-      // l'étape de départ dit déjà que le contrôle attend ; y ajouter un message
-      // d'erreur le dirait deux fois.
-      await _envoyerCharge(enAttente, silencieux: true);
+      await _envoyerCharge(enAttente);
       if (_resultat != null) return;
     }
 
-    final brouillon = await _brouillons.lireBrouillon(widget.ownedVehicleId);
     if (!mounted || brouillon == null || brouillon.estVide) {
       _preremplirKilometrage();
       return;
@@ -121,7 +143,10 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
       _kilometrage.text = brouillon.mileageKm?.toString() ?? '';
     });
 
-    if (_distanceKm != null) {
+    // Après un refus définitif, le kilométrage est peut-être la cause : on reste
+    // à l'étape de départ, où le champ est atteignable, au lieu de rouvrir une
+    // liste dont le bouton renverra la même charge refusée.
+    if (_distanceKm != null && !_refusDefinitif) {
       await _composer(reprise: true);
     }
   }
@@ -140,6 +165,8 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
         tripDistanceKm: _distanceKm,
         mileageKm: _kilometrageSaisi,
         answers: Map.of(_reponses),
+        clientReference: _reference.isEmpty ? null : _reference,
+        itemsCount: _liste?.items.length ?? _totalPoints,
         savedAt: DateTime.now(),
       ),
     );
@@ -165,6 +192,7 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
 
       setState(() {
         _liste = liste;
+        _totalPoints = liste.items.length;
         _chargement = false;
         _etape = _Etape.liste;
 
@@ -228,10 +256,11 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
     await _envoyerCharge(charge);
   }
 
-  Future<void> _envoyerCharge(Map<String, dynamic> charge, {bool silencieux = false}) async {
+  Future<void> _envoyerCharge(Map<String, dynamic> charge) async {
     setState(() {
       _envoi = true;
       _erreur = null;
+      _refusDefinitif = false;
     });
 
     try {
@@ -248,6 +277,7 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
         _resultat = resultat;
         _envoi = false;
         _enAttente = false;
+        _refusDefinitif = false;
         _etape = _Etape.verdict;
       });
 
@@ -257,17 +287,39 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
       await ref.read(garageProvider.notifier).refresh();
     } catch (e) {
       if (!mounted) return;
+
+      // Un refus du serveur ne passera jamais, quel que soit le réseau : le
+      // garder en attente le ferait rejouer à chaque ouverture de l'écran, avec
+      // un message promettant un envoi qui n'aboutira pas. Seule une panne de
+      // transport mérite d'être gardée.
+      final definitif = e is ApiException &&
+          !e.isNetworkFailure &&
+          (e.isValidation || e.isForbidden || e.isNotFound);
+
+      if (definitif) {
+        await _brouillons.effacerEnAttente(widget.ownedVehicleId);
+      }
+
+      if (!mounted) return;
+
       setState(() {
         _envoi = false;
-        _enAttente = true;
+        _enAttente = !definitif;
+        _refusDefinitif = definitif;
+
         // « Une erreur est survenue. Réessayez. » serait ici un mensonge par
         // omission : le contrôle n'est pas perdu, et il n'y a rien à refaire.
         // Quelqu'un qui croit avoir perdu un quart d'heure de travail ne
         // recommence pas.
-        _erreur = silencieux
-            ? null
+        _erreur = definitif
+            ? "Le contrôle n'a pas été accepté : ${messageFor(e)}\n"
+                'Corrige la saisie, puis termine à nouveau.'
             : 'Envoi impossible pour le moment : ${messageFor(e)}\n'
                 'Le contrôle est gardé sur ce téléphone et repartira dès que le réseau revient.';
+
+        // Le champ du kilométrage n'est atteignable qu'à l'étape de départ, et
+        // c'est la saisie la plus probablement en cause.
+        if (definitif) _etape = _Etape.depart;
       });
     }
   }
@@ -306,7 +358,10 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
             kilometrage: _kilometrage,
             chargement: _chargement,
             erreur: _erreur,
-            enAttente: _enAttente,
+            // La bannière ne s'affiche que faute de message : les deux disent la
+            // même chose, et un écran qui se répète se lit moins bien qu'un
+            // écran qui dit une fois.
+            enAttente: _enAttente && _erreur == null,
             onDistance: (km) => setState(() => _distanceKm = km),
             onComposer: _composer,
           ),
@@ -328,7 +383,7 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
           ),
         _Etape.verdict => _Verdict(
             resultat: _resultat!,
-            total: _liste?.items.length,
+            total: _totalPoints,
             ownedVehicleId: widget.ownedVehicleId,
             vehicle: widget.vehicle,
           ),
@@ -449,17 +504,31 @@ class _Depart extends StatelessWidget {
         TextField(
           controller: kilometrage,
           keyboardType: TextInputType.number,
+          // Sept chiffres : le serveur refuse au-delà de deux millions de
+          // kilomètres, et un chiffre de trop faisait partir une charge que le
+          // serveur refusait sans que la cause soit évidente.
+          maxLength: 7,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
             suffixText: 'km',
             isDense: true,
+            counterText: '',
           ),
         ),
 
         if (erreur != null) ...[
           const SizedBox(height: 16),
-          Text(erreur!, style: tt.bodySmall?.copyWith(color: cs.error)),
+          Card(
+            color: cs.errorContainer,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                erreur!,
+                style: tt.bodySmall?.copyWith(color: cs.onErrorContainer),
+              ),
+            ),
+          ),
         ],
 
         const SizedBox(height: 28),
@@ -516,6 +585,21 @@ class _Liste extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             children: [
+              // En tête, et non en fin de liste : sur quinze points, un message
+              // rendu après le dernier ne se voit pas — l'échec d'envoi passait
+              // donc inaperçu, alors que c'est le moment où il compte le plus.
+              if (erreur != null)
+                Card(
+                  color: cs.errorContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Text(
+                      erreur!,
+                      style: tt.bodySmall?.copyWith(color: cs.onErrorContainer),
+                    ),
+                  ),
+                ),
+
               Text(
                 '${liste.items.length} points pour ce véhicule et ce trajet. Ils ne sont pas les mêmes pour tous : chacun dit pourquoi il est là.',
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
@@ -551,18 +635,6 @@ class _Liste extends StatelessWidget {
                   ),
                 const SizedBox(height: 12),
               ],
-
-              if (erreur != null)
-                Card(
-                  color: cs.errorContainer,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Text(
-                      erreur!,
-                      style: tt.bodySmall?.copyWith(color: cs.onErrorContainer),
-                    ),
-                  ),
-                ),
             ],
           ),
         ),

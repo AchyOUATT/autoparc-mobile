@@ -37,6 +37,13 @@ class CheckDraftStore {
   /// enregistrer un constat périmé comme s'il était d'aujourd'hui.
   static const Duration validite = Duration(days: 2);
 
+  /// Au-delà, le serveur refuse le contrôle : sa validation n'accepte pas un
+  /// `performed_at` de plus de trente jours. Sans cette péremption, un envoi
+  /// bloqué repartait à chaque ouverture de l'écran pour se faire refuser
+  /// chaque fois — et la bannière continuait de promettre qu'il passerait.
+  /// Vingt-cinq jours laissent la marge d'un décalage d'horloge.
+  static const Duration peremptionEnvoi = Duration(days: 25);
+
   // ── Brouillon ───────────────────────────────────────────────────
 
   Future<void> enregistrerBrouillon(int vehiculeId, CheckDraft brouillon) async {
@@ -76,7 +83,26 @@ class CheckDraftStore {
     final brut = prefs.getString('$_prefixeEnAttente$vehiculeId');
     if (brut == null) return null;
 
-    return _decoder(brut, (json) => json);
+    final charge = _decoder(brut, (json) => json);
+
+    if (charge == null || _troptard(charge['performed_at'])) {
+      await effacerEnAttente(vehiculeId);
+      return null;
+    }
+
+    return charge;
+  }
+
+  /// La date du contrôle est-elle hors de ce que le serveur accepte encore ?
+  ///
+  /// Elle est lue dans la charge elle-même, et non stockée à part, parce que
+  /// c'est exactement le champ sur lequel le serveur tranche : lier la
+  /// péremption à autre chose laisserait les deux règles diverger.
+  bool _troptard(Object? performedAt) {
+    final date = DateTime.tryParse(performedAt?.toString() ?? '');
+    if (date == null) return false;
+
+    return DateTime.now().toUtc().difference(date.toUtc()) > peremptionEnvoi;
   }
 
   Future<void> effacerEnAttente(int vehiculeId) async {
@@ -108,12 +134,27 @@ class CheckDraft {
   /// code du point → `ok`, `watch` ou `bad`.
   final Map<String, String> answers;
 
+  /// La clé d'idempotence du contrôle en cours.
+  ///
+  /// Persistée avec le brouillon, et pas seulement gardée en mémoire : sans
+  /// cela, une relance de l'application en fabriquait une neuve, et un contrôle
+  /// dont le premier envoi avait atteint le serveur sans que la réponse revienne
+  /// s'enregistrait une seconde fois. C'est la garantie même du mécanisme.
+  final String? clientReference;
+
+  /// Le nombre de points que la liste comptait, pour que le verdict puisse dire
+  /// combien n'ont pas été vérifiés même quand il est atteint par un renvoi,
+  /// sans que la liste ait été recomposée.
+  final int? itemsCount;
+
   final DateTime savedAt;
 
   const CheckDraft({
     this.tripDistanceKm,
     this.mileageKm,
     required this.answers,
+    this.clientReference,
+    this.itemsCount,
     required this.savedAt,
   });
 
@@ -126,12 +167,16 @@ class CheckDraft {
     'trip_distance_km': tripDistanceKm,
     'mileage_km': mileageKm,
     'answers': answers,
+    'client_reference': clientReference,
+    'items_count': itemsCount,
     'saved_at': savedAt.toIso8601String(),
   };
 
   factory CheckDraft.fromJson(Map<String, dynamic> json) => CheckDraft(
-    tripDistanceKm: json['trip_distance_km'] as int?,
-    mileageKm:      json['mileage_km']       as int?,
+    tripDistanceKm:  json['trip_distance_km'] as int?,
+    mileageKm:       json['mileage_km']       as int?,
+    clientReference: json['client_reference'] as String?,
+    itemsCount:      json['items_count']      as int?,
     answers: (json['answers'] as Map?)?.map(
           (cle, valeur) => MapEntry(cle.toString(), valeur.toString()),
         ) ??
