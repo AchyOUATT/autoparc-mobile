@@ -10,9 +10,16 @@ import '../../../../core/api/api_exception.dart';
 
 // ── Provider family ──────────────────────────────────────────────────
 
+/// La clé porte le véhicule ET la catégorie : ouvrir « Pneus » après un contrôle
+/// ne doit pas resservir la liste complète mise en cache pour ce véhicule.
+typedef _Demande = ({int ownedVehicleId, int? categoryId});
+
 final _compatiblePartsProvider =
-    FutureProvider.autoDispose.family<List<Part>, int>((ref, ownedVehicleId) {
-  return ref.read(garageRepositoryProvider).compatibleParts(ownedVehicleId);
+    FutureProvider.autoDispose.family<List<Part>, _Demande>((ref, demande) {
+  return ref.read(garageRepositoryProvider).compatibleParts(
+        demande.ownedVehicleId,
+        categoryId: demande.categoryId,
+      );
 });
 
 // ── Page ─────────────────────────────────────────────────────────────
@@ -21,18 +28,32 @@ class CompatiblePartsPage extends ConsumerWidget {
   final int ownedVehicleId;
   final OwnedVehicle? vehicle;
 
+  /// Catégorie à laquelle se limiter, et son nom pour le titre.
+  ///
+  /// Renseignées quand on arrive depuis un contrôle avant voyage : un pneu usé
+  /// mène au rayon des pneus, pas à cinq cents pièces parmi lesquelles il
+  /// faudrait retrouver celle dont on vient de parler.
+  final int? categoryId;
+  final String? categoryLabel;
+
   const CompatiblePartsPage({
     super.key,
     required this.ownedVehicleId,
     this.vehicle,
+    this.categoryId,
+    this.categoryLabel,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final partsAsync = ref.watch(_compatiblePartsProvider(ownedVehicleId));
-    final title      = vehicle != null
-        ? 'Pièces — ${vehicle!.displayName}'
-        : 'Pièces compatibles';
+    final partsAsync = ref.watch(_compatiblePartsProvider(
+      (ownedVehicleId: ownedVehicleId, categoryId: categoryId),
+    ));
+    final title = categoryLabel != null
+        ? '$categoryLabel — ${vehicle?.displayName ?? 'mon véhicule'}'
+        : vehicle != null
+            ? 'Pièces — ${vehicle!.displayName}'
+            : 'Pièces compatibles';
 
     return Scaffold(
       appBar: AppBar(
@@ -72,7 +93,9 @@ class CompatiblePartsPage extends ConsumerWidget {
               Text(messageFor(e), textAlign: TextAlign.center),
               const SizedBox(height: 16),
               FilledButton(
-                onPressed: () => ref.invalidate(_compatiblePartsProvider(ownedVehicleId)),
+                onPressed: () => ref.invalidate(_compatiblePartsProvider(
+                  (ownedVehicleId: ownedVehicleId, categoryId: categoryId),
+                )),
                 child: const Text('Réessayer'),
               ),
             ],

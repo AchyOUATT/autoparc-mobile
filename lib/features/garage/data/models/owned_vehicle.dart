@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'vehicle_check.dart';
+
 class OwnedVehicle extends Equatable {
   final int id;
   final String designation;
@@ -25,6 +27,11 @@ class OwnedVehicle extends Equatable {
   /// ou le 3,5 l V6.
   final int? motorisationId;
   final VehicleConsumption? consumption;
+
+  /// Le dernier contrôle avant voyage, en résumé. Nul tant qu'aucun n'a été
+  /// fait : la fiche propose alors d'en faire un, plutôt que d'afficher un
+  /// état qu'elle ne connaît pas.
+  final LastCheck? lastCheck;
 
   /// Échéances d'entretien, de la plus urgente à la moins urgente.
   ///
@@ -54,6 +61,7 @@ class OwnedVehicle extends Equatable {
     required this.compatibilityReady,
     this.motorisationId,
     this.consumption,
+    this.lastCheck,
     this.deadlines = const [],
     this.technicalInspectionExpiry,
     this.insuranceExpiry,
@@ -83,6 +91,10 @@ class OwnedVehicle extends Equatable {
                            ? null
                            : VehicleConsumption.fromJson(
                                json['consumption'] as Map<String, dynamic>),
+    lastCheck:         json['last_check'] == null
+                           ? null
+                           : LastCheck.fromJson(
+                               json['last_check'] as Map<String, dynamic>),
     deadlines:         (json['deadlines'] as List?)
                            ?.map((d) => VehicleDeadline.fromJson(d as Map<String, dynamic>))
                            .toList() ??

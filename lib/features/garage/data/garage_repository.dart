@@ -7,6 +7,7 @@ import '../../catalog/data/models/part.dart';
 import 'models/motorisation.dart';
 import 'models/owned_vehicle.dart';
 import 'models/garage_compatibility.dart';
+import 'models/vehicle_check.dart';
 import 'models/vin_decode_result.dart';
 
 final garageRepositoryProvider = Provider<GarageRepository>(
@@ -56,14 +57,52 @@ class GarageRepository {
         .toList();
   }
 
+  /// Les points à vérifier avant un voyage, composés pour ce véhicule.
+  ///
+  /// La distance change la liste : la climatisation et les provisions
+  /// n'apparaissent qu'au-delà d'un certain trajet, et une vidange à 200 km de
+  /// son terme devient un défaut si le trajet en fait 360.
+  Future<CheckTemplate> checkTemplate(int ownedVehicleId, {int? tripDistanceKm}) async {
+    final json = await _client.get(
+      Endpoints.myCheckTemplate(ownedVehicleId),
+      params: {if (tripDistanceKm != null) 'trip_distance_km': tripDistanceKm},
+    );
+
+    return CheckTemplate.fromJson(json['data'] as Map<String, dynamic>);
+  }
+
+  /// Enregistre un contrôle et renvoie son verdict.
+  ///
+  /// La charge porte une `client_reference` : un contrôle se remplit capot
+  /// ouvert, souvent sans réseau, et l'envoi sera rejoué. Le serveur retrouve
+  /// alors le passage au lieu d'en créer un second.
+  Future<VehicleCheck> submitCheck(int ownedVehicleId, Map<String, dynamic> payload) async {
+    final json = await _client.post(Endpoints.myChecks(ownedVehicleId), data: payload);
+    return VehicleCheck.fromJson(json['data'] as Map<String, dynamic>);
+  }
+
+  /// Historique des contrôles d'un véhicule, du plus récent au plus ancien.
+  Future<List<VehicleCheck>> checkHistory(int ownedVehicleId) async {
+    final json = await _client.get(Endpoints.myChecks(ownedVehicleId));
+    final page = PaginatedResponse.fromJson(json, VehicleCheck.fromJson);
+    return page.data;
+  }
+
   /// Retire un véhicule du garage.
   Future<void> deleteVehicle(int id) async {
     await _client.delete('${Endpoints.myVehicles}/$id');
   }
 
   /// Pièces compatibles avec un véhicule du garage (matching précis).
-  Future<List<Part>> compatibleParts(int ownedVehicleId) async {
-    final json = await _client.get(Endpoints.myCompatibleParts(ownedVehicleId));
+  ///
+  /// [categoryId] restreint à une catégorie et à ses sous-catégories : c'est le
+  /// chemin qu'emprunte un point de contrôle en défaut. Sans lui, un pneu usé
+  /// ouvrirait cinq cents pièces.
+  Future<List<Part>> compatibleParts(int ownedVehicleId, {int? categoryId}) async {
+    final json = await _client.get(
+      Endpoints.myCompatibleParts(ownedVehicleId),
+      params: {if (categoryId != null) 'category_id': categoryId},
+    );
     final page = PaginatedResponse.fromJson(json, Part.fromJson);
     return page.data;
   }

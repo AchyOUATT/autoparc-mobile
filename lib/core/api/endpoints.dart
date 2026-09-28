@@ -61,6 +61,18 @@ class Endpoints {
   static String myCompatibleParts(int ownedVehicleId) =>
       '/my/vehicles/$ownedVehicleId/compatible-parts';
 
+  /// Liste des points à vérifier avant un voyage.
+  ///
+  /// Composée par le serveur pour ce véhicule-là : ses échéances, son
+  /// millésime, son kilométrage, sa carrosserie et la distance annoncée. Ce
+  /// n'est pas une liste figée que l'application pourrait embarquer.
+  static String myCheckTemplate(int ownedVehicleId) =>
+      '/my/vehicles/$ownedVehicleId/check-template';
+
+  /// Historique des contrôles (GET) et enregistrement d'un passage (POST).
+  static String myChecks(int ownedVehicleId) =>
+      '/my/vehicles/$ownedVehicleId/checks';
+
   /// Suppression du compte et de toutes ses données.
   ///
   /// Google Play l'exige de toute application qui permet d'en créer un : la

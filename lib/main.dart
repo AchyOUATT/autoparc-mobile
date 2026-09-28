@@ -21,6 +21,7 @@ import 'features/home/presentation/pages/home_page.dart';
 import 'features/garage/data/models/owned_vehicle.dart';
 import 'features/garage/presentation/pages/add_vehicle_to_garage_page.dart';
 import 'features/garage/presentation/pages/compatible_parts_page.dart';
+import 'features/garage/presentation/pages/pre_trip_check_page.dart';
 import 'features/garage/presentation/pages/garage_page.dart';
 import 'features/cart/presentation/pages/cart_page.dart';
 import 'features/catalog/presentation/pages/add_part_page.dart';
@@ -176,7 +177,26 @@ GoRouter _buildRouter({required bool onboardingDone}) => GoRouter(
       builder: (_, state) {
         final id      = int.parse(state.pathParameters['id']!);
         final vehicle = state.extra as OwnedVehicle?;
-        return CompatiblePartsPage(ownedVehicleId: id, vehicle: vehicle);
+        // Catégorie passée en requête, et non par `extra` : on arrive ici
+        // depuis un contrôle avant voyage, dont `extra` porte déjà le véhicule.
+        final params  = state.uri.queryParameters;
+        return CompatiblePartsPage(
+          ownedVehicleId: id,
+          vehicle: vehicle,
+          categoryId: int.tryParse(params['category_id'] ?? ''),
+          categoryLabel: params['category_label'],
+        );
+      },
+    ),
+
+    // Contrôle avant voyage. La liste n'est pas embarquée : le serveur la
+    // compose pour ce véhicule et ce trajet.
+    GoRoute(
+      path: '/garage/:id/check',
+      builder: (_, state) {
+        final id      = int.parse(state.pathParameters['id']!);
+        final vehicle = state.extra as OwnedVehicle?;
+        return PreTripCheckPage(ownedVehicleId: id, vehicle: vehicle);
       },
     ),
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/owned_vehicle.dart';
+import '../../data/models/vehicle_check.dart';
 import '../providers/garage_provider.dart';
 import '../widgets/consumption_tile.dart';
 import '../widgets/engine_prompt.dart';
@@ -418,6 +419,39 @@ class _VehicleCard extends ConsumerWidget {
               child: MissingEngineBanner(vehicle: vehicle),
             ),
 
+          // ── Contrôle avant voyage ─────────────────────────────────
+          //
+          // En premier, et en bouton plein : c'est la seule action de cette
+          // fiche qui ait un déclencheur dans la vie réelle. Les autres
+          // attendent qu'on y pense ; celle-ci, on se la demande avant de
+          // prendre la route.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (vehicle.lastCheck != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _DernierControle(lastCheck: vehicle.lastCheck!),
+                  ),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.tonalIcon(
+                    onPressed: () => context.push(
+                      '/garage/${vehicle.id}/check',
+                      extra: vehicle,
+                    ),
+                    icon: const Icon(Icons.checklist_rtl, size: 18),
+                    label: Text(vehicle.lastCheck == null
+                        ? 'Contrôle avant voyage'
+                        : 'Refaire le contrôle'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           // ── Bouton pièces compatibles ─────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
@@ -781,6 +815,71 @@ class _DeadlineRow extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Le dernier contrôle avant voyage, sur une ligne.
+///
+/// La même grammaire visuelle que les échéances — icône, libellé, chiffre à
+/// droite, rouge quand c'est bloquant — parce que c'est la même question posée
+/// autrement : qu'est-ce qui reste à faire sur cette voiture. Un troisième
+/// dialecte visuel pour la même donnée n'apprendrait rien de plus au lecteur.
+class _DernierControle extends StatelessWidget {
+  final LastCheck lastCheck;
+  const _DernierControle({required this.lastCheck});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    final aReprendre = lastCheck.aReprendre;
+
+    final (Color couleur, IconData icone) = lastCheck.bloque
+        ? (cs.error, Icons.report_outlined)
+        : aReprendre > 0
+            ? (const Color(0xFFB26A00), Icons.schedule)
+            : (cs.onSurfaceVariant, Icons.check_circle_outline);
+
+    return Row(
+      children: [
+        Icon(icone, size: 15, color: couleur),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'Dernier contrôle · ${_quand(lastCheck.performedAt)}',
+            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+          ),
+        ),
+        Text(
+          aReprendre == 0
+              ? 'Rien à reprendre'
+              : aReprendre == 1
+                  ? '1 point à reprendre'
+                  : '$aReprendre points à reprendre',
+          style: tt.bodySmall?.copyWith(
+            color: couleur,
+            fontWeight: lastCheck.bloque ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Une date relative : « hier » se situe sans calculer, « 14/09 » non.
+  String _quand(DateTime? date) {
+    if (date == null) return 'récemment';
+
+    final jours = DateTime.now().difference(date).inDays;
+
+    return switch (jours) {
+      <= 0 => "aujourd'hui",
+      1 => 'hier',
+      < 7 => 'il y a $jours jours',
+      < 14 => 'la semaine dernière',
+      < 60 => 'il y a ${(jours / 7).round()} semaines',
+      _ => 'il y a ${(jours / 30).round()} mois',
+    };
   }
 }
 
