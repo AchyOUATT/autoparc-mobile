@@ -752,10 +752,17 @@ class _PointDeControle extends StatelessWidget {
                 style: const ButtonStyle(
                   visualDensity: VisualDensity(horizontal: -2, vertical: -2),
                 ),
+                // Trois segments sur la largeur d'un téléphone laissent environ
+                // cent points à chacun : « Rien à signaler » y passait à la
+                // ligne et se faisait rogner en plein mot. Les libellés tiennent
+                // désormais sur une ligne, et l'ellipse rattrape le jour où une
+                // police plus large ou un texte agrandi les dépasserait — un
+                // libellé tronqué proprement se lit encore, un libellé coupé en
+                // deux ne se lit plus.
                 segments: const [
-                  ButtonSegment(value: 'ok', label: Text('Rien à signaler')),
-                  ButtonSegment(value: 'watch', label: Text('À surveiller')),
-                  ButtonSegment(value: 'bad', label: Text('Défaut')),
+                  ButtonSegment(value: 'ok', label: _Segment('Correct')),
+                  ButtonSegment(value: 'watch', label: _Segment('À surveiller')),
+                  ButtonSegment(value: 'bad', label: _Segment('Défaut')),
                 ],
                 selected: etat == null ? const <String>{} : {etat!},
                 emptySelectionAllowed: true,
@@ -769,6 +776,35 @@ class _PointDeControle extends StatelessWidget {
       ),
     );
   }
+}
+
+/// « 345 900 » plutôt que « 345900 » : un compteur se lit par tranches de trois,
+/// comme partout ailleurs dans l'application.
+String _kilometres(int valeur) {
+  final chiffres = valeur.toString();
+  final tampon = StringBuffer();
+
+  for (var i = 0; i < chiffres.length; i++) {
+    if (i > 0 && (chiffres.length - i) % 3 == 0) tampon.write(' ');
+    tampon.write(chiffres[i]);
+  }
+
+  return tampon.toString();
+}
+
+/// Le libellé d'un segment : une ligne, quitte à être tronqué par une ellipse.
+class _Segment extends StatelessWidget {
+  final String texte;
+  const _Segment(this.texte);
+
+  @override
+  Widget build(BuildContext context) => Text(
+    texte,
+    maxLines: 1,
+    softWrap: false,
+    overflow: TextOverflow.ellipsis,
+    textAlign: TextAlign.center,
+  );
 }
 
 class _Etiquette extends StatelessWidget {
@@ -881,7 +917,7 @@ class _Verdict extends StatelessWidget {
               Icon(Icons.speed, size: 15, color: cs.onSurfaceVariant),
               const SizedBox(width: 6),
               Text(
-                'Compteur relevé : ${resultat.mileageKm} km',
+                'Compteur relevé : ${_kilometres(resultat.mileageKm!)} km',
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
             ],
@@ -890,7 +926,9 @@ class _Verdict extends StatelessWidget {
 
         if (bloquants.isNotEmpty) ...[
           const SizedBox(height: 20),
-          _Titre(texte: 'À régler avant de partir', couleur: cs.error),
+          // « À régler » et non « À régler avant de partir » : la carte du
+          // verdict vient de le dire, et l'écran le répétait trois fois.
+          _Titre(texte: 'À régler', couleur: cs.error),
           for (final point in bloquants)
             _PointAReprendre(
               point: point,
@@ -901,7 +939,7 @@ class _Verdict extends StatelessWidget {
 
         if (aSurveiller.isNotEmpty) ...[
           const SizedBox(height: 20),
-          _Titre(texte: 'Peut attendre le retour', couleur: cs.primary),
+          _Titre(texte: 'Peut attendre', couleur: cs.primary),
           for (final point in aSurveiller)
             _PointAReprendre(
               point: point,

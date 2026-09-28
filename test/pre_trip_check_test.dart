@@ -219,7 +219,7 @@ void main() {
     await tester.pumpAndSettle();
     await composer(tester);
 
-    await tester.tap(find.text('Rien à signaler').last);
+    await tester.tap(find.text('Correct').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Terminer le contrôle'));
     await tester.pumpAndSettle();
@@ -240,7 +240,7 @@ void main() {
     await tester.pumpWidget(ecran(depot));
     await tester.pumpAndSettle();
     await composer(tester);
-    await tester.tap(find.text('Rien à signaler').last);
+    await tester.tap(find.text('Correct').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Terminer le contrôle'));
     await tester.pumpAndSettle();
@@ -293,8 +293,8 @@ void main() {
     await tester.tap(find.text('Terminer le contrôle'));
     await tester.pumpAndSettle();
 
-    expect(find.text('À RÉGLER AVANT DE PARTIR'), findsOneWidget);
-    expect(find.text('PEUT ATTENDRE LE RETOUR'), findsOneWidget);
+    expect(find.text('À RÉGLER'), findsOneWidget);
+    expect(find.text('PEUT ATTENDRE'), findsOneWidget);
     expect(find.text('Pression et usure des quatre pneus'), findsOneWidget);
 
     // Un point qui mène à une catégorie de pièces propose de les ouvrir ;
@@ -316,7 +316,7 @@ void main() {
     await tester.pumpWidget(ecran(premier));
     await tester.pumpAndSettle();
     await composer(tester);
-    await tester.tap(find.text('Rien à signaler').last);
+    await tester.tap(find.text('Correct').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Terminer le contrôle'));
     await tester.pumpAndSettle();
@@ -367,7 +367,7 @@ void main() {
     await tester.pumpWidget(ecran(premier));
     await tester.pumpAndSettle();
     await composer(tester);
-    await tester.tap(find.text('Rien à signaler').last);
+    await tester.tap(find.text('Correct').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Terminer le contrôle'));
     await tester.pumpAndSettle();
@@ -397,7 +397,7 @@ void main() {
     await tester.pumpWidget(ecran(premier));
     await tester.pumpAndSettle();
     await composer(tester);
-    await tester.tap(find.text('Rien à signaler').last);
+    await tester.tap(find.text('Correct').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Terminer le contrôle'));
     await tester.pumpAndSettle();
@@ -486,7 +486,7 @@ void main() {
     await tester.pumpWidget(ecran(depot));
     await tester.pumpAndSettle();
     await composer(tester);
-    await tester.tap(find.text('Rien à signaler').first);
+    await tester.tap(find.text('Correct').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Terminer le contrôle'));
     await tester.pumpAndSettle();
