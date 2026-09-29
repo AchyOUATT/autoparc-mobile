@@ -21,7 +21,7 @@ import 'features/home/presentation/pages/home_page.dart';
 import 'features/garage/data/models/owned_vehicle.dart';
 import 'features/garage/presentation/pages/add_vehicle_to_garage_page.dart';
 import 'features/garage/presentation/pages/compatible_parts_page.dart';
-import 'features/garage/presentation/pages/pre_trip_check_page.dart';
+import 'features/garage/presentation/pages/vehicle_check_page.dart';
 import 'features/garage/presentation/pages/garage_page.dart';
 import 'features/cart/presentation/pages/cart_page.dart';
 import 'features/catalog/presentation/pages/add_part_page.dart';
@@ -196,7 +196,7 @@ GoRouter _buildRouter({required bool onboardingDone}) => GoRouter(
       builder: (_, state) {
         final id      = int.parse(state.pathParameters['id']!);
         final vehicle = state.extra as OwnedVehicle?;
-        return PreTripCheckPage(ownedVehicleId: id, vehicle: vehicle);
+        return VehicleCheckPage(ownedVehicleId: id, vehicle: vehicle);
       },
     ),
 

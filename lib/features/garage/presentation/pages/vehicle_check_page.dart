@@ -12,45 +12,54 @@ import '../../data/models/owned_vehicle.dart';
 import '../../data/models/vehicle_check.dart';
 import '../providers/garage_provider.dart';
 
-/// Le contrôle avant voyage.
+/// Le contrôle d'un véhicule du garage, quel qu'en soit le motif.
 ///
-/// Trois étapes, et l'ordre a une raison. On demande d'abord la distance et le
-/// compteur : la distance change la liste — la climatisation et les provisions
-/// n'apparaissent qu'au-delà d'un certain trajet, et une vidange à deux cents
-/// kilomètres de son terme devient un défaut si le trajet en fait trois cent
-/// soixante. Le compteur, lui, est la contrepartie discrète de la fonction :
-/// c'est la seule occasion où quelqu'un se trouve devant son tableau de bord
-/// avec l'application ouverte, et sans ce relevé le rappel de vidange ne part
-/// jamais.
+/// Un seul point d'entrée, et le choix du motif au premier écran : avant un
+/// voyage, ou à l'entrée d'une saison. Cinq boutons « faire un contrôle » sur
+/// une fiche de garage, c'est aucun bouton utilisé.
+///
+/// Cette page s'est d'abord appelée « avant voyage », et le bouton qui y menait
+/// aussi. Le contrôle de saison s'y est ajouté sans que le nom suive : le
+/// contenant portait alors le nom de l'un de ses contenus, et l'autre avait
+/// l'air d'y être par erreur.
+///
+/// Trois étapes, et l'ordre a une raison. On demande d'abord le motif, puis —
+/// pour un voyage seulement — la distance, qui change la liste : la
+/// climatisation et les provisions n'apparaissent qu'au-delà d'un certain
+/// trajet, et une vidange à deux cents kilomètres de son terme devient un défaut
+/// si le trajet en fait trois cent soixante. Le compteur, lui, est demandé dans
+/// tous les cas : c'est la seule occasion où quelqu'un se trouve devant son
+/// tableau de bord avec l'application ouverte, et sans ce relevé le rappel de
+/// vidange ne part jamais.
 ///
 /// Vient ensuite la liste, composée par le serveur pour ce véhicule-là, chaque
 /// point portant la raison chiffrée qui l'a fait apparaître. Puis le verdict, en
-/// deux blocs : ce qui doit être réglé avant de partir, et ce qui peut attendre.
+/// deux blocs : ce qui doit être réglé, et ce qui peut attendre.
 ///
 /// Rien n'est calculé ici. Ni la liste, ni le verdict, ni les seuils : un seuil
 /// recopié côté application finit par contredire le serveur, et le propriétaire
 /// voit alors deux vérités pour une même voiture. C'est la règle que le projet
 /// s'est déjà donnée pour les échéances.
-class PreTripCheckPage extends ConsumerStatefulWidget {
+class VehicleCheckPage extends ConsumerStatefulWidget {
   final int ownedVehicleId;
 
   /// Nul après un lien profond ou un rechargement à chaud : la page doit
   /// fonctionner sans, comme l'écran des pièces compatibles.
   final OwnedVehicle? vehicle;
 
-  const PreTripCheckPage({
+  const VehicleCheckPage({
     super.key,
     required this.ownedVehicleId,
     this.vehicle,
   });
 
   @override
-  ConsumerState<PreTripCheckPage> createState() => _PreTripCheckPageState();
+  ConsumerState<VehicleCheckPage> createState() => _VehicleCheckPageState();
 }
 
 enum _Etape { depart, liste, verdict }
 
-class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
+class _VehicleCheckPageState extends ConsumerState<VehicleCheckPage> {
   _Etape _etape = _Etape.depart;
 
   /// Le contrôleur appartient à l'état, et se libère avec lui.
@@ -378,10 +387,16 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          // Le titre vient du serveur : « Avant de partir », « Contrôle
-          // d'hivernage »… Il dépend de la saison, donc du calendrier, qui n'a
-          // pas à être découpé des deux côtés.
-          _etape == _Etape.verdict ? 'Contrôle terminé' : _titre,
+          // Le titre suit l'étape. À l'étape de choix il reste neutre : il y
+          // affichait le titre du contrôle précédemment composé, donc
+          // « Contrôle d'hivernage » au moment même où l'on venait en changer.
+          // Une fois la liste composée, le titre vient du serveur — il dépend
+          // de la saison, donc d'un calendrier qui n'est pas découpé ici.
+          switch (_etape) {
+            _Etape.depart => 'Contrôler mon véhicule',
+            _Etape.liste => _titre,
+            _Etape.verdict => 'Contrôle terminé',
+          },
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),

@@ -443,9 +443,13 @@ class _VehicleCard extends ConsumerWidget {
                       extra: vehicle,
                     ),
                     icon: const Icon(Icons.checklist_rtl, size: 18),
+                    // Un libellé neutre, et non « Contrôle avant voyage » :
+                    // l'écran propose désormais aussi le contrôle de saison, et
+                    // un bouton qui annonce l'un de ses contenus donne à croire
+                    // que l'autre n'est pas là.
                     label: Text(vehicle.lastCheck == null
-                        ? 'Contrôle avant voyage'
-                        : 'Refaire le contrôle'),
+                        ? 'Contrôler mon véhicule'
+                        : 'Refaire un contrôle'),
                   ),
                 ),
               ],

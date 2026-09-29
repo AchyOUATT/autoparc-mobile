@@ -10,7 +10,7 @@ import 'package:auto/core/api/api_client.dart';
 import 'package:auto/features/garage/data/garage_repository.dart';
 import 'package:auto/features/garage/data/models/owned_vehicle.dart';
 import 'package:auto/features/garage/data/models/vehicle_check.dart';
-import 'package:auto/features/garage/presentation/pages/pre_trip_check_page.dart';
+import 'package:auto/features/garage/presentation/pages/vehicle_check_page.dart';
 
 /// Captures d'écran du contrôle avant voyage.
 ///
@@ -70,7 +70,7 @@ void main() {
             colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF8AAFC8)),
             useMaterial3: true,
           ),
-          home: const PreTripCheckPage(ownedVehicleId: 5, vehicle: _prado),
+          home: const VehicleCheckPage(ownedVehicleId: 5, vehicle: _prado),
         ),
       );
 

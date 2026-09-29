@@ -11,7 +11,7 @@ import 'package:auto/features/garage/data/check_draft_store.dart';
 import 'package:auto/features/garage/data/garage_repository.dart';
 import 'package:auto/features/garage/data/models/owned_vehicle.dart';
 import 'package:auto/features/garage/data/models/vehicle_check.dart';
-import 'package:auto/features/garage/presentation/pages/pre_trip_check_page.dart';
+import 'package:auto/features/garage/presentation/pages/vehicle_check_page.dart';
 
 /// Le contrôle avant voyage, côté application.
 ///
@@ -98,7 +98,7 @@ void main() {
   Widget ecran(_FauxDepot depot) => ProviderScope(
         overrides: [garageRepositoryProvider.overrideWithValue(depot)],
         child: const MaterialApp(
-          home: PreTripCheckPage(ownedVehicleId: 1, vehicle: vehicule),
+          home: VehicleCheckPage(ownedVehicleId: 1, vehicle: vehicule),
         ),
       );
 
@@ -228,6 +228,45 @@ void main() {
 
     expect(find.text("Contrôle d'hivernage"), findsOneWidget);
     expect(find.textContaining("L'eau et la boue"), findsOneWidget);
+  });
+
+  testWidgets("l'écran de choix ne porte le nom d'aucun des contrôles",
+      (tester) async {
+    // Le contenant ne doit pas s'appeler comme l'un de ses contenus. La page
+    // s'appelait « Avant de partir » jusque dans le titre : au moment même où
+    // l'on venait changer de contrôle, la barre affichait celui qu'on quittait,
+    // et le contrôle de saison avait l'air d'être là par erreur.
+    final depot = _FauxDepot(
+      liste: CheckTemplate(
+        reason: 'seasonal',
+        title: "Contrôle d'hivernage",
+        items: [point('pluies-pneus', 'Rainures')],
+        availableReasons: const [
+          CheckReasonOption(value: 'trip', label: 'Avant un voyage', hint: ''),
+          CheckReasonOption(value: 'seasonal', label: "Contrôle d'hivernage", hint: '', season: 'pluies'),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(ecran(depot));
+    await tester.pumpAndSettle();
+
+    final titre = tester.widget<AppBar>(find.byType(AppBar)).title as Text;
+    expect(titre.data, 'Contrôler mon véhicule');
+
+    // Et il ne doit pas se mettre à porter celui du dernier contrôle composé
+    // quand on revient y changer d'avis.
+    await tester.tap(find.text("Contrôle d'hivernage"));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text("Voir ce qu'il faut vérifier"));
+    await tester.pumpAndSettle();
+    expect((tester.widget<AppBar>(find.byType(AppBar)).title as Text).data,
+        "Contrôle d'hivernage");
+
+    await tester.tap(find.text('Changer de contrôle'));
+    await tester.pumpAndSettle();
+    expect((tester.widget<AppBar>(find.byType(AppBar)).title as Text).data,
+        'Contrôler mon véhicule');
   });
 
   testWidgets("un contrôle de saison ne demande pas de distance", (tester) async {
