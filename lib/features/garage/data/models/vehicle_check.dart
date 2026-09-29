@@ -69,23 +69,70 @@ class CheckItem extends Equatable {
   List<Object?> get props => [code];
 }
 
+/// Un type de contrôle que le serveur propose aujourd'hui.
+///
+/// Le libellé du saisonnier dépend de la saison en cours, donc du calendrier —
+/// qui reste côté serveur. Découpé des deux côtés, il finirait par ne plus
+/// tomber au même mois, et l'application proposerait un contrôle d'hivernage
+/// que le serveur composerait en saison sèche.
+class CheckReasonOption {
+  /// `trip` ou `seasonal`.
+  final String value;
+  final String label;
+  final String hint;
+
+  /// `pluies` ou `seche` pour un contrôle de saison, nul sinon.
+  final String? season;
+
+  const CheckReasonOption({
+    required this.value,
+    required this.label,
+    required this.hint,
+    this.season,
+  });
+
+  bool get estVoyage => value == 'trip';
+
+  factory CheckReasonOption.fromJson(Map<String, dynamic> json) => CheckReasonOption(
+    value:  json['value']  as String,
+    label:  json['label']  as String? ?? '',
+    hint:   json['hint']   as String? ?? '',
+    season: json['season'] as String?,
+  );
+}
+
 /// La liste composée, plus le kilométrage connu du véhicule.
 class CheckTemplate {
+  final String reason;
+
+  /// Le titre de l'écran, rédigé par le serveur : « Avant de partir » ou
+  /// « Contrôle d'hivernage » selon le motif et la saison.
+  final String title;
+
   final int? tripDistanceKm;
   final int? mileageKm;
   final List<CheckItem> items;
+  final List<CheckReasonOption> availableReasons;
 
   const CheckTemplate({
+    this.reason = 'trip',
+    this.title = 'Avant de partir',
     this.tripDistanceKm,
     this.mileageKm,
     required this.items,
+    this.availableReasons = const [],
   });
 
   factory CheckTemplate.fromJson(Map<String, dynamic> json) => CheckTemplate(
+    reason:         json['reason'] as String? ?? 'trip',
+    title:          json['title']  as String? ?? 'Avant de partir',
     tripDistanceKm: json['trip_distance_km'] as int?,
     mileageKm:      json['mileage_km']       as int?,
     items: (json['items'] as List? ?? const [])
         .map((i) => CheckItem.fromJson(i as Map<String, dynamic>))
+        .toList(),
+    availableReasons: (json['available_reasons'] as List? ?? const [])
+        .map((r) => CheckReasonOption.fromJson(r as Map<String, dynamic>))
         .toList(),
   );
 

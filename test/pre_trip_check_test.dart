@@ -136,7 +136,9 @@ void main() {
 
     expect(find.text('190 000 km au compteur'), findsOneWidget);
     expect(find.text('Trajet de 400 km'), findsOneWidget);
-    expect(depot.distancesDemandees, [400]);
+    // Deux appels : celui de l'ouverture, qui demande au serveur quels
+    // contrôles ont un sens aujourd'hui, puis la composition avec la distance.
+    expect(depot.distancesDemandees, [null, 400]);
   });
 
   testWidgets("une réponse à un point qui n'est plus demandé ne compte plus",
@@ -199,6 +201,103 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('182000'), findsOneWidget);
+  });
+
+  // ── Le contrôle de saison ──────────────────────────────────────
+
+  testWidgets('le choix du type de contrôle vient du serveur', (tester) async {
+    // Le libellé du saisonnier dépend de la saison en cours. Découpé des deux
+    // côtés, le calendrier finirait par ne plus tomber au même mois.
+    final depot = _FauxDepot(
+      liste: CheckTemplate(
+        items: [point('pneus-etat', 'Pneus')],
+        availableReasons: const [
+          CheckReasonOption(value: 'trip', label: 'Avant un voyage', hint: 'La liste dépend de la distance.'),
+          CheckReasonOption(
+            value: 'seasonal',
+            label: "Contrôle d'hivernage",
+            hint: "L'eau et la boue : ce qui compte est de voir, d'être vu et de tenir la route.",
+            season: 'pluies',
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(ecran(depot));
+    await tester.pumpAndSettle();
+
+    expect(find.text("Contrôle d'hivernage"), findsOneWidget);
+    expect(find.textContaining("L'eau et la boue"), findsOneWidget);
+  });
+
+  testWidgets("un contrôle de saison ne demande pas de distance", (tester) async {
+    // Il ne va nulle part : lui demander « Où vas-tu ? » n'aurait aucun sens,
+    // et le bouton ne doit pas attendre une réponse qui ne viendra pas.
+    final depot = _FauxDepot(
+      liste: CheckTemplate(
+        reason: 'seasonal',
+        title: "Contrôle d'hivernage",
+        items: [point('pluies-pneus', 'Profondeur des rainures', severite: 'blocking')],
+        availableReasons: const [
+          CheckReasonOption(value: 'trip', label: 'Avant un voyage', hint: ''),
+          CheckReasonOption(value: 'seasonal', label: "Contrôle d'hivernage", hint: '', season: 'pluies'),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(ecran(depot));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text("Contrôle d'hivernage"));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Où vas-tu ?'), findsNothing);
+
+    // Sans avoir choisi de distance, le bouton doit être actif.
+    await tester.tap(find.text("Voir ce qu'il faut vérifier"));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Profondeur des rainures'), findsOneWidget);
+    expect(depot.motifsDemandes.last, 'seasonal');
+    expect(depot.distancesDemandees.last, isNull);
+  });
+
+  testWidgets("le motif part avec l'envoi, et survit au brouillon", (tester) async {
+    // Sans lui, un brouillon d'hivernage repris le lendemain repartirait comme
+    // un contrôle avant voyage, avec un verdict qui parlerait de partir.
+    final liste = CheckTemplate(
+      reason: 'seasonal',
+      title: "Contrôle d'hivernage",
+      items: [point('pluies-pneus', 'Profondeur des rainures')],
+      availableReasons: const [
+        CheckReasonOption(value: 'trip', label: 'Avant un voyage', hint: ''),
+        CheckReasonOption(value: 'seasonal', label: "Contrôle d'hivernage", hint: '', season: 'pluies'),
+      ],
+    );
+
+    final depot = _FauxDepot(liste: liste);
+    await tester.pumpWidget(ecran(depot));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text("Contrôle d'hivernage"));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text("Voir ce qu'il faut vérifier"));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Correct').first);
+    await tester.pumpAndSettle();
+
+    // Réouverture : le brouillon doit rendre le contrôle à sa saison.
+    final second = _FauxDepot(liste: liste);
+    await reouvrir(tester, second);
+
+    expect(second.motifsDemandes.last, 'seasonal',
+        reason: 'Le brouillon doit se rouvrir sur le même type de contrôle.');
+
+    await tester.tap(find.text('Terminer le contrôle'));
+    await tester.pumpAndSettle();
+
+    expect(second.envois.last['reason'], 'seasonal');
+    expect(second.envois.last.containsKey('trip_distance_km'), isFalse,
+        reason: "Un contrôle de saison ne porte pas de distance.");
   });
 
   // ── Le verdict ─────────────────────────────────────────────────
@@ -677,10 +776,16 @@ class _FauxDepot extends GarageRepository {
 
   final List<Map<String, dynamic>> envois = [];
   final List<int?> distancesDemandees = [];
+  final List<String> motifsDemandes = [];
 
   @override
-  Future<CheckTemplate> checkTemplate(int ownedVehicleId, {int? tripDistanceKm}) async {
+  Future<CheckTemplate> checkTemplate(
+    int ownedVehicleId, {
+    int? tripDistanceKm,
+    String reason = 'trip',
+  }) async {
     distancesDemandees.add(tripDistanceKm);
+    motifsDemandes.add(reason);
     return parDistanceKm[tripDistanceKm] ?? liste;
   }
 

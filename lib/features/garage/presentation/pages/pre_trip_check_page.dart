@@ -61,6 +61,16 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
   /// détruit.
   final TextEditingController _kilometrage = TextEditingController();
 
+  /// `trip` ou `seasonal`. Le défaut est le voyage : c'est le seul contrôle qui
+  /// ait un déclencheur dans la vie réelle.
+  String _motif = 'trip';
+
+  /// Les contrôles que le serveur propose aujourd'hui. Le libellé du saisonnier
+  /// dépend de la saison, donc du calendrier, qui n'est pas ici.
+  List<CheckReasonOption> _types = const [];
+
+  String _titre = 'Avant de partir';
+
   int? _distanceKm;
   CheckTemplate? _liste;
   final Map<String, String> _reponses = {};
@@ -134,11 +144,13 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
 
     if (!mounted || brouillon == null || brouillon.estVide) {
       _preremplirKilometrage();
+      await _chargerTypes();
       return;
     }
 
     setState(() {
       _distanceKm = brouillon.tripDistanceKm;
+      _motif = brouillon.reason ?? 'trip';
       _reponses.addAll(brouillon.answers);
       _kilometrage.text = brouillon.mileageKm?.toString() ?? '';
     });
@@ -146,8 +158,36 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
     // Après un refus définitif, le kilométrage est peut-être la cause : on reste
     // à l'étape de départ, où le champ est atteignable, au lieu de rouvrir une
     // liste dont le bouton renverra la même charge refusée.
-    if (_distanceKm != null && !_refusDefinitif) {
+    if (!_refusDefinitif && (_distanceKm != null || _motif != 'trip')) {
       await _composer(reprise: true);
+    } else {
+      await _chargerTypes();
+    }
+  }
+
+  /// Demande au serveur quels contrôles ont un sens aujourd'hui.
+  ///
+  /// Sans réseau, on garde le choix par défaut plutôt que de bloquer l'écran :
+  /// le contrôle avant voyage est le seul qui ne dépende d'aucun calendrier, et
+  /// c'est celui qu'on vient faire neuf fois sur dix.
+  Future<void> _chargerTypes() async {
+    if (_types.isNotEmpty) return;
+
+    try {
+      final modele = await ref
+          .read(garageRepositoryProvider)
+          .checkTemplate(widget.ownedVehicleId);
+
+      if (!mounted) return;
+
+      setState(() {
+        _types = modele.availableReasons;
+        if (_kilometrage.text.isEmpty && modele.mileageKm != null) {
+          _kilometrage.text = modele.mileageKm.toString();
+        }
+      });
+    } catch (_) {
+      // Silencieux : rien n'est perdu, et l'écran reste utilisable.
     }
   }
 
@@ -167,6 +207,7 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
         answers: Map.of(_reponses),
         clientReference: _reference.isEmpty ? null : _reference,
         itemsCount: _liste?.items.length ?? _totalPoints,
+        reason: _motif,
         savedAt: DateTime.now(),
       ),
     );
@@ -185,13 +226,16 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
     try {
       final liste = await ref.read(garageRepositoryProvider).checkTemplate(
             widget.ownedVehicleId,
-            tripDistanceKm: _distanceKm,
+            tripDistanceKm: _motif == 'trip' ? _distanceKm : null,
+            reason: _motif,
           );
 
       if (!mounted) return;
 
       setState(() {
         _liste = liste;
+        _titre = liste.title;
+        if (liste.availableReasons.isNotEmpty) _types = liste.availableReasons;
         _totalPoints = liste.items.length;
         _chargement = false;
         _etape = _Etape.liste;
@@ -232,7 +276,8 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
 
   Map<String, dynamic> _charge() => {
     'client_reference': _reference,
-    if (_distanceKm != null) 'trip_distance_km': _distanceKm,
+    'reason': _motif,
+    if (_motif == 'trip' && _distanceKm != null) 'trip_distance_km': _distanceKm,
     if (_kilometrageSaisi != null) 'mileage_km': _kilometrageSaisi,
 
     // La date du contrôle, et non celle de l'envoi : un contrôle rempli hier
@@ -333,7 +378,10 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _etape == _Etape.verdict ? 'Contrôle terminé' : 'Avant de partir',
+          // Le titre vient du serveur : « Avant de partir », « Contrôle
+          // d'hivernage »… Il dépend de la saison, donc du calendrier, qui n'a
+          // pas à être découpé des deux côtés.
+          _etape == _Etape.verdict ? 'Contrôle terminé' : _titre,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -354,6 +402,9 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
       body: switch (_etape) {
         _Etape.depart => _Depart(
             nom: nom,
+            types: _types,
+            motif: _motif,
+            onMotif: (motif) => setState(() => _motif = motif),
             distanceKm: _distanceKm,
             kilometrage: _kilometrage,
             chargement: _chargement,
@@ -367,6 +418,7 @@ class _PreTripCheckPageState extends ConsumerState<PreTripCheckPage> {
           ),
         _Etape.liste => _Liste(
             liste: _liste!,
+            motif: _motif,
             distanceKm: _distanceKm,
             reponses: _reponses,
             envoi: _envoi,
@@ -413,6 +465,9 @@ String _uuidV4() {
 
 class _Depart extends StatelessWidget {
   final String nom;
+  final List<CheckReasonOption> types;
+  final String motif;
+  final ValueChanged<String> onMotif;
   final int? distanceKm;
   final TextEditingController kilometrage;
   final bool chargement;
@@ -423,6 +478,9 @@ class _Depart extends StatelessWidget {
 
   const _Depart({
     required this.nom,
+    required this.types,
+    required this.motif,
+    required this.onMotif,
     required this.distanceKm,
     required this.kilometrage,
     required this.chargement,
@@ -431,6 +489,8 @@ class _Depart extends StatelessWidget {
     required this.onDistance,
     required this.onComposer,
   });
+
+  bool get _voyage => motif == 'trip';
 
   /// Des distances qui parlent plutôt que des paliers ronds : « la ville » et
   /// « une autre région » se choisissent sans calculer.
@@ -471,29 +531,48 @@ class _Depart extends StatelessWidget {
           ),
 
         Text(nom, style: tt.titleMedium),
-        const SizedBox(height: 4),
-        Text(
-          'La liste dépend du trajet : un aller-retour en ville et une descente de quatre cents kilomètres ne demandent pas la même chose.',
-          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-        ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
 
-        Text('Où vas-tu ?', style: tt.titleSmall),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final trajet in _trajets)
-              ChoiceChip(
-                label: Text('${trajet.libelle} · ${trajet.km} km'),
-                selected: distanceKm == trajet.km,
-                onSelected: (_) => onDistance(trajet.km),
+        // ── Quel contrôle ? ───────────────────────────────────────
+        //
+        // Un seul point d'entrée, et le choix ici plutôt que deux boutons sur
+        // la fiche du garage : cinq boutons « faire un contrôle » sur une
+        // carte, et aucun n'est utilisé.
+        if (types.length > 1) ...[
+          for (final type in types)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _ChoixMotif(
+                type: type,
+                choisi: type.value == motif,
+                onChoisir: () => onMotif(type.value),
               ),
-          ],
-        ),
+            ),
+          const SizedBox(height: 12),
+        ],
 
-        const SizedBox(height: 24),
+        // ── La distance, pour un voyage seulement ─────────────────
+        //
+        // Un contrôle de saison ne va nulle part : lui demander une distance
+        // n'aurait aucun sens, et le bouton ne l'attend donc pas.
+        if (_voyage) ...[
+          Text('Où vas-tu ?', style: tt.titleSmall),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final trajet in _trajets)
+                ChoiceChip(
+                  label: Text('${trajet.libelle} · ${trajet.km} km'),
+                  selected: distanceKm == trajet.km,
+                  onSelected: (_) => onDistance(trajet.km),
+                ),
+            ],
+          ),
+          const SizedBox(height: 24),
+        ],
+
         Text('Kilométrage au compteur', style: tt.titleSmall),
         const SizedBox(height: 4),
         Text(
@@ -533,9 +612,10 @@ class _Depart extends StatelessWidget {
 
         const SizedBox(height: 28),
         FilledButton.icon(
-          // Sans distance, la liste ne serait pas composée mais générique :
-          // le bouton attend donc ce choix.
-          onPressed: distanceKm == null || chargement ? null : onComposer,
+          // Sans distance, la liste d'un voyage ne serait pas composée mais
+          // générique : le bouton attend donc ce choix. Un contrôle de saison,
+          // lui, tient sa composition de la saison.
+          onPressed: (_voyage && distanceKm == null) || chargement ? null : onComposer,
           icon: chargement
               ? const SizedBox(
                   width: 16,
@@ -554,6 +634,7 @@ class _Depart extends StatelessWidget {
 
 class _Liste extends StatelessWidget {
   final CheckTemplate liste;
+  final String motif;
   final int? distanceKm;
   final Map<String, String> reponses;
   final bool envoi;
@@ -564,6 +645,7 @@ class _Liste extends StatelessWidget {
 
   const _Liste({
     required this.liste,
+    required this.motif,
     required this.distanceKm,
     required this.reponses,
     required this.envoi,
@@ -600,18 +682,28 @@ class _Liste extends StatelessWidget {
                   ),
                 ),
 
+              // La phrase suit le motif : un contrôle de saison n'a pas de
+              // trajet, et ses points ne portent pas de raison individuelle —
+              // c'est la saison qui les commande, et le titre l'annonce déjà.
               Text(
-                '${liste.items.length} points pour ce véhicule et ce trajet. Ils ne sont pas les mêmes pour tous : chacun dit pourquoi il est là.',
+                motif == 'trip'
+                    ? '${liste.items.length} points pour ce véhicule et ce trajet. Ils ne sont pas les mêmes pour tous : chacun dit pourquoi il est là.'
+                    : '${liste.items.length} points à vérifier une fois avant la saison, pas à chaque trajet.',
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
                   onPressed: onModifierTrajet,
-                  icon: const Icon(Icons.edit_road, size: 16),
-                  label: Text(distanceKm == null
-                      ? 'Choisir le trajet'
-                      : 'Trajet de $distanceKm km · Modifier'),
+                  icon: Icon(
+                    motif == 'trip' ? Icons.edit_road : Icons.swap_horiz,
+                    size: 16,
+                  ),
+                  label: Text(switch ((motif, distanceKm)) {
+                    ('trip', null) => 'Choisir le trajet',
+                    ('trip', final km) => 'Trajet de $km km · Modifier',
+                    _ => 'Changer de contrôle',
+                  }),
                 ),
               ),
               const SizedBox(height: 8),
@@ -769,6 +861,78 @@ class _PointDeControle extends StatelessWidget {
                 onSelectionChanged: (choix) {
                   if (choix.isNotEmpty) onEtat(choix.first);
                 },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Une carte de choix du type de contrôle.
+///
+/// Le libellé et la phrase viennent du serveur — « Contrôle d'hivernage », « La
+/// poussière et la chaleur : ce qui compte est de respirer et de refroidir » —
+/// parce qu'ils dépendent de la saison en cours.
+class _ChoixMotif extends StatelessWidget {
+  final CheckReasonOption type;
+  final bool choisi;
+  final VoidCallback onChoisir;
+
+  const _ChoixMotif({
+    required this.type,
+    required this.choisi,
+    required this.onChoisir,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return InkWell(
+      onTap: onChoisir,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: choisi ? cs.secondaryContainer : null,
+          border: Border.all(
+            color: choisi ? cs.secondary : cs.outlineVariant,
+            width: choisi ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              choisi ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              size: 20,
+              color: choisi ? cs.secondary : cs.onSurfaceVariant,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    type.label,
+                    style: tt.titleSmall?.copyWith(
+                      color: choisi ? cs.onSecondaryContainer : null,
+                    ),
+                  ),
+                  if (type.hint.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      type.hint,
+                      style: tt.bodySmall?.copyWith(
+                        color: choisi ? cs.onSecondaryContainer : cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ],

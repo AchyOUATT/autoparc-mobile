@@ -127,6 +127,34 @@ void main() {
     await capturer(tester, '05-verdict-bloque');
   });
 
+  testWidgets("le contrôle d'hivernage", (tester) async {
+    await taillePhone(tester);
+
+    final depot = _DepotPrado(saison: true);
+    await tester.pumpWidget(ecran(depot));
+    await tester.pumpAndSettle();
+
+    // Le choix du type de contrôle : un seul point d'entrée, et c'est ici qu'on
+    // dit ce qu'on vient faire.
+    expect(find.text("Contrôle d'hivernage"), findsOneWidget);
+    await capturer(tester, '07-choix-du-controle');
+
+    await tester.tap(find.text("Contrôle d'hivernage"));
+    await tester.pumpAndSettle();
+
+    // Un contrôle de saison ne va nulle part : pas de distance à choisir.
+    expect(find.text('Où vas-tu ?'), findsNothing);
+
+    await tester.tap(find.text("Voir ce qu'il faut vérifier"));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Profondeur des rainures'), findsOneWidget);
+    expect(find.text('0/5'), findsOneWidget,
+        reason: "Cinq points : un contrôle de saison n'a aucun déclencheur "
+            'extérieur, il ne tient que s\'il se fait en trois minutes.');
+    await capturer(tester, '08-hivernage-liste');
+  });
+
   testWidgets('un contrôle sans défaut ne certifie rien', (tester) async {
     await taillePhone(tester);
 
@@ -198,16 +226,41 @@ const _prado = OwnedVehicle(
 
 /// Dépôt qui rend la liste réelle du serveur pour ce véhicule et ce trajet.
 class _DepotPrado extends GarageRepository {
-  _DepotPrado({this.verdictClair = false}) : super(ApiClient());
+  _DepotPrado({this.verdictClair = false, this.saison = false}) : super(ApiClient());
 
   final bool verdictClair;
+  final bool saison;
+
+  /// Ce que le serveur propose un 10 juillet : l'hivernage est la saison en
+  /// cours, et c'est lui qui nomme le contrôle.
+  static const _types = [
+    {
+      'value': 'trip',
+      'label': 'Avant un voyage',
+      'hint': "La liste dépend de la distance : un aller-retour en ville et une descente de quatre cents kilomètres ne demandent pas la même chose.",
+      'season': null,
+    },
+    {
+      'value': 'seasonal',
+      'label': "Contrôle d'hivernage",
+      'hint': "L'eau et la boue : ce qui compte est de voir, d'être vu et de tenir la route.",
+      'season': 'pluies',
+    },
+  ];
 
   @override
-  Future<CheckTemplate> checkTemplate(int ownedVehicleId, {int? tripDistanceKm}) async =>
+  Future<CheckTemplate> checkTemplate(
+    int ownedVehicleId, {
+    int? tripDistanceKm,
+    String reason = 'trip',
+  }) async =>
       CheckTemplate.fromJson({
+        'reason': reason,
+        'title': reason == 'seasonal' ? "Contrôle d'hivernage" : 'Avant de partir',
         'trip_distance_km': tripDistanceKm,
         'mileage_km': 345900,
-        'items': _points,
+        'available_reasons': saison ? _types : const [],
+        'items': reason == 'seasonal' ? _pointsHivernage : _points,
       });
 
   @override
@@ -265,6 +318,18 @@ class _DepotPrado extends GarageRepository {
   @override
   Future<List<OwnedVehicle>> getVehicles() async => const [];
 }
+
+/// Le contrôle d'hivernage, tel que le serveur le compose un 10 juillet.
+///
+/// Cinq points, et aucun ne porte de « raison » : la saison est annoncée par le
+/// titre du contrôle, et la répéter sur chaque carte serait du bruit.
+const List<Map<String, dynamic>> _pointsHivernage = [
+  {'code': 'pluies-pneus', 'category': 'pneus', 'category_label': 'Pneus', 'title': 'Profondeur des rainures', 'help': "Sur route mouillée, un pneu à moitié usé n'évacue plus l'eau : la voiture flotte et ne dirige plus. C'est le seul point de cette liste qui tue.", 'severity': 'blocking', 'reasons': <String>[], 'part_category_id': 31},
+  {'code': 'pluies-essuie-glaces', 'category': 'eclairage', 'category_label': 'Éclairage et visibilité', 'title': 'Balais et lave-glace', 'help': "Un balai durci transforme une averse en écran opaque. Ils se remplacent avant la première pluie, pas après — au milieu de la saison, tout le monde en cherche en même temps.", 'severity': 'blocking', 'reasons': <String>[]},
+  {'code': 'pluies-eclairage', 'category': 'eclairage', 'category_label': 'Éclairage et visibilité', 'title': 'Feux avant, arrière et antibrouillards', 'help': "Une averse ramène la visibilité à cinquante mètres en plein jour. Les feux arrière comptent autant que les phares : ce sont eux qui te font voir de celui qui arrive derrière.", 'severity': 'blocking', 'reasons': <String>[], 'part_category_id': 52},
+  {'code': 'pluies-etancheite', 'category': 'niveaux', 'category_label': 'Niveaux et fuites', 'title': 'Écoulements et joints de portes', 'help': "Les écoulements du pare-brise et du toit se bouchent de poussière et de feuilles pendant la saison sèche. L'eau passe alors dans l'habitacle, pourrit les tapis et finit dans le faisceau électrique — une panne qui coûte cher et qu'on ne relie jamais à la pluie.", 'severity': 'watch', 'reasons': <String>[]},
+  {'code': 'pluies-desembuage', 'category': 'confort', 'category_label': 'Climatisation', 'title': 'Désembuage du pare-brise', 'help': "Par temps de pluie, c'est la climatisation qui assèche l'air et désembue, pas la ventilation seule. Si elle ne fonctionne pas, tu roules à l'aveugle au premier orage.", 'severity': 'watch', 'reasons': <String>[], 'part_category_id': 60},
+];
 
 /// La sortie de `ControleAvantVoyage::liste()` pour le Prado, recopiée telle
 /// quelle : dix-sept points, onze du noyau et six déclenchés par une condition.

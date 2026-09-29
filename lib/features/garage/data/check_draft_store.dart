@@ -147,6 +147,11 @@ class CheckDraft {
   /// sans que la liste ait été recomposée.
   final int? itemsCount;
 
+  /// Le motif du contrôle en cours : `trip` ou `seasonal`. Sans lui, un
+  /// brouillon d'hivernage repris le lendemain repartirait comme un contrôle
+  /// avant voyage, avec un verdict qui parlerait de partir.
+  final String? reason;
+
   final DateTime savedAt;
 
   const CheckDraft({
@@ -155,6 +160,7 @@ class CheckDraft {
     required this.answers,
     this.clientReference,
     this.itemsCount,
+    this.reason,
     required this.savedAt,
   });
 
@@ -169,6 +175,7 @@ class CheckDraft {
     'answers': answers,
     'client_reference': clientReference,
     'items_count': itemsCount,
+    'reason': reason,
     'saved_at': savedAt.toIso8601String(),
   };
 
@@ -177,6 +184,7 @@ class CheckDraft {
     mileageKm:       json['mileage_km']       as int?,
     clientReference: json['client_reference'] as String?,
     itemsCount:      json['items_count']      as int?,
+    reason:          json['reason']           as String?,
     answers: (json['answers'] as Map?)?.map(
           (cle, valeur) => MapEntry(cle.toString(), valeur.toString()),
         ) ??

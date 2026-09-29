@@ -62,10 +62,17 @@ class GarageRepository {
   /// La distance change la liste : la climatisation et les provisions
   /// n'apparaissent qu'au-delà d'un certain trajet, et une vidange à 200 km de
   /// son terme devient un défaut si le trajet en fait 360.
-  Future<CheckTemplate> checkTemplate(int ownedVehicleId, {int? tripDistanceKm}) async {
+  Future<CheckTemplate> checkTemplate(
+    int ownedVehicleId, {
+    int? tripDistanceKm,
+    String reason = 'trip',
+  }) async {
     final json = await _client.get(
       Endpoints.myCheckTemplate(ownedVehicleId),
-      params: {if (tripDistanceKm != null) 'trip_distance_km': tripDistanceKm},
+      params: {
+        'reason': reason,
+        if (tripDistanceKm != null) 'trip_distance_km': tripDistanceKm,
+      },
     );
 
     return CheckTemplate.fromJson(json['data'] as Map<String, dynamic>);
