@@ -134,7 +134,7 @@ Tant que `ANDROID_KEYSTORE_BASE64` est absent, le workflow construit quand même
 
 Deux nombres distincts :
 
-- le **nom de version** (`1.0.0`), affiché aux utilisateurs, vient de
+- le **nom de version** (`1.1.0`), affiché aux utilisateurs, vient de
   [`pubspec.yaml`](pubspec.yaml) — la partie avant le `+`. À changer à la main
   quand une version le mérite ;
 - le **`versionCode`**, que Play exige strictement croissant d'un envoi à

@@ -220,6 +220,32 @@ selon l'activité réelle, pas par défaut.
 
 ---
 
+## 5 bis. Les deux numéros de version, et lequel Play regarde
+
+Ils n'ont ni la même source ni le même rôle, et les confondre fait refuser
+l'envoi sans que le message de Google dise pourquoi.
+
+**Le nom de version** — `1.1.0` — est ce que l'utilisateur lit sur la fiche. Il
+vient de `version:` dans `pubspec.yaml`, partie avant le `+`. On le relève à la
+main quand une publication le mérite : une fonction nouvelle, pas une correction.
+
+**Le numéro de build** est celui que Play contrôle. Il doit être strictement
+supérieur à celui du dernier envoi accepté, sans quoi le bundle est refusé. Il
+n'est **pas** dans `pubspec.yaml` : le workflow *Build Android* l'impose avec
+`--build-number=${{ github.run_number }}`, c'est-à-dire le numéro d'exécution du
+workflow. Pour le connaître avant d'envoyer, ouvrir l'exécution dans l'onglet
+*Actions* : l'étape « Construire l'App Bundle » l'affiche.
+
+Le `+1` resté dans `pubspec.yaml` ne sert donc qu'aux builds locaux.
+
+> **Un bundle construit sur un poste de développement n'est jamais publiable.**
+> Il cumule deux défauts : son numéro de build vaut 1, et l'URL de l'API retombe
+> sur `http://10.0.2.2:8000/api` — l'adresse de l'émulateur, qui ne répond chez
+> personne. Seul le workflow passe
+> `--dart-define=API_BASE_URL=https://autoparc-backend.onrender.com/api`.
+> L'`.aab` à envoyer se télécharge dans l'artefact `autoparc-android` de
+> l'exécution, conservé trente jours.
+
 ## 6. Avant d'envoyer
 
 - [ ] Clé de signature créée et sauvegardée **hors de cette machine**
@@ -230,7 +256,10 @@ selon l'activité réelle, pas par défaut.
 - [ ] `db:seed --class=VehicleModelsSeeder --force` puis `catalog:backfill-fitments --fresh` passés en production
 - [ ] Captures d'écran produites
 - [ ] Inscription à **Play App Signing** au premier envoi
-- [ ] `versionCode` incrémenté dans `pubspec.yaml` à chaque nouvel envoi
+- [ ] Bundle pris dans l'artefact du workflow **Build Android**, jamais construit
+      sur un poste de développement
+- [ ] `version:` de `pubspec.yaml` relevé quand la publication le mérite — c'est
+      le **nom** affiché aux utilisateurs, pas le numéro que Play contrôle
 - [x] Firebase Analytics retiré — revérifier après chaque mise à jour de greffon (section 2)
 
 ## 7. Le délai auquel personne ne pense

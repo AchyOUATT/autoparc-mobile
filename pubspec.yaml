@@ -1,7 +1,7 @@
 name: auto
 description: "AutoParc – vente et location de véhicules, pièces et accessoires."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.1.0+1
 
 environment:
   sdk: ^3.11.5
