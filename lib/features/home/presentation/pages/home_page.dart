@@ -189,7 +189,11 @@ class _VehicleCard extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       alignment: Alignment.center,
-                      child: BrandLogo(slug: _slug(vehicle.identity.brand), size: 26),
+                      // Le slug vient du serveur. Il était fabriqué ici à partir
+                      // du nom, ce qui tenait tant qu'aucune marque n'avait
+                      // d'accent : « Citroën » devenait « citro-n » et perdait
+                      // son logo sans que rien ne le signale.
+                      child: BrandLogo(slug: vehicle.identity.brandSlug, size: 26),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -849,13 +853,6 @@ class _SectionSkeleton extends StatelessWidget {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────
-
-/// Le garage renvoie le nom de la marque, pas son slug ; le logo se range sous
-/// un nom de fichier normalisé.
-String? _slug(String? brand) => brand
-    ?.toLowerCase()
-    .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
-    .replaceAll(RegExp(r'^-|-$'), '');
 
 String _fmtKm(int km) =>
     km.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]} ');

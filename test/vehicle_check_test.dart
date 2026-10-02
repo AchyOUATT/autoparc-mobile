@@ -722,6 +722,43 @@ void main() {
     });
   });
 
+  // ── L'identité du véhicule ─────────────────────────────────────
+
+  group('Logo de marque', () {
+    test('le slug vient du serveur, y compris pour une marque accentuée', () {
+      // Il était fabriqué côté application à partir du nom : « Citroën »
+      // devenait « citro-n », aucun fichier ne portait ce nom, et la marque
+      // perdait son logo sans que rien ne le signale.
+      final v = OwnedVehicle.fromJson({
+        'id': 1,
+        'designation': 'Citroën C3 2018',
+        'brand_id': 1,
+        'vehicle_model_id': 1,
+        'year': 2018,
+        'identity': {'brand': 'Citroën', 'brand_slug': 'citroen', 'model': 'C3'},
+        'compatibility_ready': true,
+      });
+
+      expect(v.identity.brandSlug, 'citroen');
+    });
+
+    test('une marque sans slug ne fait pas planter la fiche', () {
+      // Le bloc identity est sous whenLoaded côté serveur : la clé peut être
+      // absente. BrandLogo retombe alors sur son icône générique.
+      final v = OwnedVehicle.fromJson({
+        'id': 1,
+        'designation': 'Sans marque',
+        'brand_id': 1,
+        'vehicle_model_id': 1,
+        'year': 2018,
+        'identity': <String, dynamic>{},
+        'compatibility_ready': true,
+      });
+
+      expect(v.identity.brandSlug, isNull);
+    });
+  });
+
   // ── Le résumé porté par la fiche du garage ─────────────────────
 
   group('Dernier contrôle', () {

@@ -214,6 +214,13 @@ class VehicleDeadline {
 
 class OwnedVehicleIdentity extends Equatable {
   final String? brand;
+
+  /// Slug de la marque, tel que l'API le renvoie — il nomme le fichier de logo.
+  ///
+  /// Fourni par le serveur plutôt que dérivé du nom : une dérivation locale
+  /// transformait « Citroën » en « citro-n » et faisait disparaître son logo.
+  final String? brandSlug;
+
   final String? model;
   final String? trim;
   final String? engineType;
@@ -222,6 +229,7 @@ class OwnedVehicleIdentity extends Equatable {
 
   const OwnedVehicleIdentity({
     this.brand,
+    this.brandSlug,
     this.model,
     this.trim,
     this.engineType,
@@ -232,6 +240,7 @@ class OwnedVehicleIdentity extends Equatable {
   factory OwnedVehicleIdentity.fromJson(Map<String, dynamic> json) =>
       OwnedVehicleIdentity(
         brand:      json['brand']       as String?,
+        brandSlug:  json['brand_slug']  as String?,
         model:      json['model']       as String?,
         trim:       json['trim']        as String?,
         engineType: json['engine_type'] as String?,

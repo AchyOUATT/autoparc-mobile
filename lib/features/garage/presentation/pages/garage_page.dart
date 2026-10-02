@@ -11,6 +11,7 @@ import '../widgets/mileage_dialog.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
 import '../../../../core/api/api_exception.dart';
+import '../../../../core/widgets/brand_logo.dart';
 
 class GaragePage extends ConsumerWidget {
   const GaragePage({super.key});
@@ -317,14 +318,27 @@ class _VehicleCard extends ConsumerWidget {
         children: [
           // ── En-tête ──────────────────────────────────────────────
           ListTile(
-            leading: CircleAvatar(
-              backgroundColor: cs.primaryContainer,
-              child: Text(
-                vehicle.displayName[0].toUpperCase(),
-                style: TextStyle(
-                  color: cs.onPrimaryContainer,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+            // Le logo de la marque plutôt que l'initiale du surnom.
+            //
+            // L'initiale ne disait rien : « M » valait aussi bien pour « Ma
+            // Corolla » que pour « Ma seconde voiture », et deux véhicules
+            // surnommés par leur propriétaire portaient la même lettre. Le logo,
+            // lui, se reconnaît sans lire — c'est déjà ce que fait la fiche de
+            // l'accueil, et le garage est l'écran où l'on cherche une voiture
+            // parmi plusieurs.
+            //
+            // BrandLogo retombe sur une icône générique quand le fichier
+            // manque : aucune case vide, aucune erreur.
+            leading: SizedBox(
+              width: 40,
+              height: 40,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: BrandLogo(slug: id.brandSlug, size: 30),
                 ),
               ),
             ),
