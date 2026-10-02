@@ -254,6 +254,9 @@ Le `+1` resté dans `pubspec.yaml` ne sert donc qu'aux builds locaux.
 - [ ] GitHub Pages activé, URL de la politique accessible depuis un navigateur
 - [ ] Mots de passe du personnel changés en production (`staff:rotate-password --all`)
 - [ ] `db:seed --class=VehicleModelsSeeder --force` puis `catalog:backfill-fitments --fresh` passés en production
+      — la commande annonce combien de lignes elle va remplacer et combien de
+      compatibilités saisies elle épargne, puis demande confirmation ; lire ces
+      deux chiffres avant de répondre, ils ne se rattrapent pas
 - [ ] Captures d'écran produites
 - [ ] Inscription à **Play App Signing** au premier envoi
 - [ ] Bundle pris dans l'artefact du workflow **Build Android**, jamais construit

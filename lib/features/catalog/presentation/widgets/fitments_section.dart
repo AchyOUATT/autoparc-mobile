@@ -3,28 +3,134 @@ import 'package:flutter/services.dart';
 
 import '../../../vehicles/data/models/catalog_refs.dart';
 
+/// D'où vient une ligne de compatibilité.
+///
+/// L'API distingue les deux depuis que `catalog:backfill-fitments` a dû savoir
+/// quoi épargner. Pour celui qui relit une liste, la distinction compte
+/// davantage encore : une ligne proposée n'a été vérifiée par personne, et rien
+/// ne le disait.
+enum FitmentOrigin {
+  declaree,
+  proposee;
+
+  static FitmentOrigin depuisApi(String? valeur) =>
+      valeur == 'generated' ? FitmentOrigin.proposee : FitmentOrigin.declaree;
+
+  String get libelle => this == FitmentOrigin.proposee ? 'Proposée' : 'Déclarée';
+}
+
 /// Un fitment = compatibilité déclarée entre une pièce/accessoire et un modèle.
+///
+/// La classe portait les objets du référentiel — une `BrandRef`, une
+/// `ModelRef`, une `TrimRef`. Pratique pour construire une ligne depuis le
+/// formulaire, impossible pour en relire une : l'API rend des identifiants, et
+/// trois colonnes qu'aucun champ du formulaire ne propose (motorisation,
+/// transmission, code moteur). Une ligne reconstruite à partir du seul
+/// référentiel les perdait au premier enregistrement.
+///
+/// Elle porte donc désormais ce que l'API échange, plus les libellés
+/// nécessaires à l'affichage. Un modèle absent du référentiel — retiré du
+/// catalogue, par exemple — garde ainsi son identifiant et survit à
+/// l'aller-retour, même si son nom ne peut plus être affiché.
 class FitmentEntry {
-  final BrandRef  brand;
-  final ModelRef  model;
-  final TrimRef?  trim;
-  final int?      yearFrom;
-  final int?      yearTo;
-  final String?   position; // pour les pièces uniquement
+  final int     vehicleModelId;
+  final int?    brandId;
+  final String  brandName;
+  final String  modelName;
+  final int?    trimId;
+  final String? trimName;
+  final int?    engineTypeId;
+  final int?    drivetrainId;
+  final String? engineCode;
+  final int?    yearFrom;
+  final int?    yearTo;
+  final String? position; // pour les pièces uniquement
+  final String? notes;
+  final FitmentOrigin origin;
 
   const FitmentEntry({
-    required this.brand,
-    required this.model,
-    this.trim,
+    required this.vehicleModelId,
+    required this.brandName,
+    required this.modelName,
+    this.brandId,
+    this.trimId,
+    this.trimName,
+    this.engineTypeId,
+    this.drivetrainId,
+    this.engineCode,
     this.yearFrom,
     this.yearTo,
     this.position,
+    this.notes,
+    this.origin = FitmentOrigin.declaree,
   });
+
+  /// Une ligne saisie dans le formulaire, depuis les objets du référentiel.
+  factory FitmentEntry.saisie({
+    required BrandRef brand,
+    required ModelRef model,
+    TrimRef? trim,
+    int? yearFrom,
+    int? yearTo,
+    String? position,
+  }) =>
+      FitmentEntry(
+        vehicleModelId: model.id,
+        brandId:        brand.id,
+        brandName:      brand.name,
+        modelName:      model.displayName,
+        trimId:         trim?.id,
+        trimName:       trim?.name,
+        yearFrom:       yearFrom,
+        yearTo:         yearTo,
+        position:       position,
+      );
+
+  /// Une ligne relue depuis l'API.
+  ///
+  /// Les libellés viennent du référentiel quand il connaît la ligne, sinon de
+  /// ce que l'API a rendu. Aucun des deux n'est indispensable : perdre un nom
+  /// dégrade l'affichage, perdre un identifiant perdrait la donnée.
+  factory FitmentEntry.depuisJson(
+    Map<String, dynamic> json, {
+    CatalogRefs? refs,
+  }) {
+    final modelId = json['vehicle_model_id'] as int;
+    final brandId = json['brand_id'] as int?;
+
+    final modele = refs?.vehicleModels
+        .where((m) => m.id == modelId)
+        .firstOrNull;
+    final marque = brandId == null
+        ? null
+        : refs?.brands.where((b) => b.id == brandId).firstOrNull;
+
+    return FitmentEntry(
+      vehicleModelId: modelId,
+      brandId:        brandId ?? modele?.brandId,
+      brandName:      marque?.name ?? '',
+      modelName:      modele?.displayName
+          ?? json['vehicle_model'] as String?
+          ?? 'Modèle n° $modelId',
+      trimId:         json['trim_id'] as int?,
+      trimName:       json['trim'] as String?,
+      engineTypeId:   json['engine_type_id'] as int?,
+      drivetrainId:   json['drivetrain_id'] as int?,
+      engineCode:     json['engine_code'] as String?,
+      yearFrom:       json['year_from'] as int?,
+      yearTo:         json['year_to'] as int?,
+      position:       json['position'] as String?,
+      notes:          json['notes'] as String?,
+      origin:         FitmentOrigin.depuisApi(json['source'] as String?),
+    );
+  }
 
   /// Libellé affiché dans la liste.
   String get label {
-    final buf = StringBuffer('${brand.name} ${model.displayName}');
-    if (trim != null) buf.write(' · ${trim!.name}');
+    final buf = StringBuffer(
+      brandName.isEmpty ? modelName : '$brandName $modelName',
+    );
+    if (trimName != null) buf.write(' · $trimName');
     if (yearFrom != null && yearTo != null) {
       buf.write(' ($yearFrom – $yearTo)');
     } else if (yearFrom != null) {
@@ -38,13 +144,28 @@ class FitmentEntry {
     return buf.toString();
   }
 
+  /// L'initiale de l'avatar, qui doit tenir même sans libellé de marque.
+  String get initiale {
+    final source = brandName.isNotEmpty ? brandName : modelName;
+    return source.isEmpty ? '?' : source[0].toUpperCase();
+  }
+
   /// Payload JSON pour l'API.
+  ///
+  /// Toute clé omise ici est une colonne vidée à l'enregistrement : le `PUT`
+  /// remplace la liste entière. L'origine, elle, n'est pas envoyée — c'est le
+  /// serveur qui en décide, et une requête ne doit pas pouvoir faire passer
+  /// une saisie pour une proposition.
   Map<String, dynamic> toJson() => {
-    'vehicle_model_id': model.id,
-    if (trim     != null) 'trim_id':   trim!.id,
-    if (yearFrom != null) 'year_from': yearFrom,
-    if (yearTo   != null) 'year_to':   yearTo,
-    if (position != null && position!.isNotEmpty) 'position': position,
+    'vehicle_model_id': vehicleModelId,
+    if (trimId       != null) 'trim_id':        trimId,
+    if (engineTypeId != null) 'engine_type_id': engineTypeId,
+    if (drivetrainId != null) 'drivetrain_id':  drivetrainId,
+    if (engineCode   != null && engineCode!.isNotEmpty) 'engine_code': engineCode,
+    if (yearFrom     != null) 'year_from':      yearFrom,
+    if (yearTo       != null) 'year_to':        yearTo,
+    if (position     != null && position!.isNotEmpty) 'position': position,
+    if (notes        != null && notes!.isNotEmpty)    'notes':    notes,
   };
 }
 
@@ -59,11 +180,20 @@ class FitmentsSection extends StatefulWidget {
   final bool showPosition; // true pour les pièces, false pour les accessoires
   final void Function(List<FitmentEntry>) onChanged;
 
+  /// Les compatibilités déjà enregistrées, en modification.
+  ///
+  /// Sans elles, la section démarrait vide sur une pièce qui en portait cinq.
+  /// Ajouter une ligne puis enregistrer envoyait une liste d'un seul élément,
+  /// et le `PUT` remplaçant la liste entière, les quatre autres disparaissaient
+  /// sans un message. C'était exactement le geste qu'on vient faire ici.
+  final List<FitmentEntry> initiales;
+
   const FitmentsSection({
     super.key,
     required this.refs,
     required this.onChanged,
     this.showPosition = false,
+    this.initiales = const [],
   });
 
   @override
@@ -71,7 +201,7 @@ class FitmentsSection extends StatefulWidget {
 }
 
 class _FitmentsSectionState extends State<FitmentsSection> {
-  final List<FitmentEntry> _entries = [];
+  late final List<FitmentEntry> _entries = [...widget.initiales];
 
   void _add(FitmentEntry entry) {
     setState(() => _entries.add(entry));
@@ -147,7 +277,7 @@ class _FitmentsSectionState extends State<FitmentsSection> {
                     radius: 16,
                     backgroundColor: cs.primaryContainer,
                     child: Text(
-                      e.brand.name[0].toUpperCase(),
+                      e.initiale,
                       style: TextStyle(
                         fontSize: 12,
                         color: cs.onPrimaryContainer,
@@ -156,6 +286,16 @@ class _FitmentsSectionState extends State<FitmentsSection> {
                     ),
                   ),
                   title: Text(e.label, style: const TextStyle(fontSize: 13)),
+                  // Une ligne proposée n'a été vérifiée par personne : elle
+                  // vient du remplissage automatique du catalogue. La garder
+                  // en enregistrant, c'est en répondre.
+                  subtitle: e.origin == FitmentOrigin.proposee
+                      ? Text(
+                          'Proposée automatiquement, non vérifiée',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: cs.outline),
+                        )
+                      : null,
                   trailing: IconButton(
                     icon: const Icon(Icons.close, size: 18),
                     onPressed: () => _remove(i),
@@ -164,6 +304,24 @@ class _FitmentsSectionState extends State<FitmentsSection> {
                 ),
               );
             },
+          ),
+
+        // ── Ce que l'enregistrement fera des lignes proposées ─────
+        //
+        // La conversion est volontaire — la liste affichée distingue les deux
+        // origines, donc laisser une ligne, c'est en répondre. Mais une
+        // décision que l'écran ne dit pas est une surprise, pas un choix.
+        if (_entries.any((e) => e.origin == FitmentOrigin.proposee))
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'En enregistrant, les lignes proposées que vous laissez ici '
+              'deviennent des compatibilités déclarées : elles ne seront plus '
+              'recalculées, et vous en répondez. Retirez celles que vous ne '
+              'pouvez pas confirmer.',
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: cs.outline),
+            ),
           ),
 
         const SizedBox(height: 10),
@@ -226,7 +384,7 @@ class _FitmentSheetState extends State<_FitmentSheet> {
       return;
     }
 
-    final entry = FitmentEntry(
+    final entry = FitmentEntry.saisie(
       brand:    _brand!,
       model:    _model!,
       trim:     _trim,
@@ -396,6 +554,187 @@ class _FitmentSheetState extends State<_FitmentSheet> {
           ),
         ],
       ),
+    );
+  }
+}
+// ── Compatibilités illisibles ─────────────────────────────────────────
+
+/// Ce qui s'affiche quand les compatibilités existantes n'ont pas pu être
+/// relues.
+///
+/// La tentation serait d'afficher une section vide et de laisser enregistrer :
+/// l'écran aurait l'air de marcher, et le premier enregistrement effacerait
+/// des compatibilités que personne n'a demandé à retirer. Mieux vaut un bloc
+/// qui dit ce qui manque et pourquoi le reste de la fiche reste modifiable.
+///
+/// Le reste l'est vraiment : l'enregistrement omet alors la clé, et l'API ne
+/// touche aux compatibilités que si elle la reçoit. Elles sont donc conservées
+/// telles quelles — ce que ce bloc doit dire, sans quoi il inquiéterait pour
+/// rien.
+class CompatibilitesIllisibles extends StatelessWidget {
+  final Object erreur;
+
+  const CompatibilitesIllisibles({required this.erreur});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.errorContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.error_outline, size: 18, color: cs.onErrorContainer),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Compatibilités non relues',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: cs.onErrorContainer,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Elles n\'ont pas pu être chargées et ne sont donc pas modifiables '
+            'pour l\'instant. Elles seront conservées telles quelles : '
+            'enregistrer les autres champs ne leur fera rien. Rouvrez cet '
+            'écran une fois la connexion revenue pour y toucher.',
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: cs.onErrorContainer),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '$erreur',
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: cs.onErrorContainer.withValues(alpha: 0.75)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Compatibilités déclarées (lecture, staff) ─────────────────────────
+
+/// Les véhicules qu'une pièce ou un accessoire déclare, tels qu'enregistrés.
+///
+/// Le staff ne voyait rien : le seul bloc de compatibilité d'une fiche est
+/// réservé aux clients, et confronte l'article au garage de celui qui regarde.
+/// Impossible, donc, de savoir ce que l'article déclare — ni de vérifier ce
+/// qu'on venait d'y saisir.
+///
+/// Distinguer « déclarée » de « proposée » est le point de ce bloc. Le
+/// remplissage automatique du catalogue a fabriqué des compatibilités
+/// vraisemblables pour que la recherche par modèle rende quelque chose ; elles
+/// n'ont été vérifiées par personne, et rien ne les distinguait d'une
+/// compatibilité relue. Un client peut acheter la mauvaise pièce sur l'une
+/// d'elles.
+class CompatibilitesDeclarees extends StatelessWidget {
+  /// Les lignes brutes de l'API. `null` : la fiche n'a pas encore été relue en
+  /// entier — afficher « aucune » serait un mensonge, et un mensonge qui
+  /// invite à saisir en double.
+  final List<Map<String, dynamic>>? lignes;
+
+  /// Ce que l'article ne remonte pas s'il ne déclare rien.
+  final String rienDeclare;
+
+  final VoidCallback onModifier;
+
+  const CompatibilitesDeclarees({
+    super.key,
+    required this.lignes,
+    required this.onModifier,
+    this.rienDeclare =
+        'Aucune compatibilité déclarée. L\'article ne remonte pas dans une '
+        'recherche par véhicule.',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final brutes = lignes;
+
+    if (brutes == null) return const SizedBox.shrink();
+
+    final entrees = brutes.map(FitmentEntry.depuisJson).toList();
+    final proposees =
+        entrees.where((e) => e.origin == FitmentOrigin.proposee).length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Expanded(
+              child: Text('Véhicules compatibles',
+                  style: Theme.of(context).textTheme.titleSmall),
+            ),
+            TextButton.icon(
+              icon: const Icon(Icons.edit_outlined, size: 16),
+              label: const Text('Modifier'),
+              onPressed: onModifier,
+            ),
+          ],
+        ),
+        if (entrees.isEmpty)
+          Text(
+            rienDeclare,
+            style:
+                Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.outline),
+          )
+        else ...[
+          if (proposees > 0)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                proposees == entrees.length
+                    ? 'Toutes proposées automatiquement : aucune n\'a été vérifiée.'
+                    : '$proposees sur ${entrees.length} proposées automatiquement, '
+                        'non vérifiées.',
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: cs.error),
+              ),
+            ),
+          ...entrees.map(
+            (e) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    e.origin == FitmentOrigin.proposee
+                        ? Icons.help_outline
+                        : Icons.check_circle_outline,
+                    size: 15,
+                    color: e.origin == FitmentOrigin.proposee
+                        ? cs.outline
+                        : cs.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(e.label,
+                        style: Theme.of(context).textTheme.bodySmall),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
+      ],
     );
   }
 }

@@ -16,6 +16,11 @@ class Accessory extends Equatable {
   final bool    isActive;
   final String? coverUrl; // URL de la photo de couverture (null si aucune photo)
 
+  /// Voir `Part.fitments` : `null` signifie « la réponse ne le dit pas », pas
+  /// « aucune compatibilité ». La liste des accessoires ne charge pas cette
+  /// relation.
+  final List<Map<String, dynamic>>? fitments;
+
   const Accessory({
     required this.id,
     this.sku,
@@ -30,6 +35,7 @@ class Accessory extends Equatable {
     this.warrantyMonths,
     required this.isActive,
     this.coverUrl,
+    this.fitments,
   });
 
   factory Accessory.fromJson(Map<String, dynamic> json) {
@@ -57,6 +63,9 @@ class Accessory extends Equatable {
       warrantyMonths: json['warranty_months'] as int?,
       isActive:       json['is_active']       as bool? ?? true,
       coverUrl:       cover,
+      fitments: (json['fitments'] as List?)
+          ?.cast<Map<String, dynamic>>()
+          .toList(growable: false),
     );
   }
 

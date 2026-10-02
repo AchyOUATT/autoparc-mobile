@@ -18,6 +18,18 @@ class Part extends Equatable {
   final bool    isActive;
   final String? coverUrl; // URL de la photo de couverture (null si aucune photo)
 
+  /// Les compatibilités véhicules, telles que l'API les rend.
+  ///
+  /// `null` ne veut pas dire « aucune » : la liste des pièces ne charge pas
+  /// cette relation, et la clé est alors absente de la réponse. La distinction
+  /// est vitale pour l'écran de modification — confondre « je ne sais pas »
+  /// avec « il n'y en a pas » revient à effacer la liste à l'enregistrement.
+  ///
+  /// Les lignes restent sous forme brute à dessein : tout modèle intermédiaire
+  /// qui oublierait une clé la viderait silencieusement au premier
+  /// enregistrement, puisque le `PUT` remplace la liste entière.
+  final List<Map<String, dynamic>>? fitments;
+
   const Part({
     required this.id,
     this.sku,
@@ -34,6 +46,7 @@ class Part extends Equatable {
     this.warrantyMonths,
     required this.isActive,
     this.coverUrl,
+    this.fitments,
   });
 
   factory Part.fromJson(Map<String, dynamic> json) {
@@ -63,6 +76,10 @@ class Part extends Equatable {
       warrantyMonths: json['warranty_months'] as int?,
       isActive:       json['is_active']       as bool? ?? true,
       coverUrl:       cover,
+      // Clé absente → null, c'est-à-dire « la réponse ne le dit pas ».
+      fitments: (json['fitments'] as List?)
+          ?.cast<Map<String, dynamic>>()
+          .toList(growable: false),
     );
   }
 

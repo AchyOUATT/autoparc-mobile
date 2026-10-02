@@ -47,7 +47,11 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
   final _locationCtrl = TextEditingController();
   int? _selectedLocationId;
 
-  List<FitmentEntry> _fitments = [];
+  /// Voir `AddPartPage` : `null` veut dire « pas encore relues », et non
+  /// « aucune ». Enregistrer sans les connaître les effacerait, le `PUT`
+  /// remplaçant la liste entière.
+  List<FitmentEntry>? _fitments;
+  Object? _erreurFitments;
   bool _saving = false;
 
   Accessory? get _existing => (widget as AddAccessoryPage).existing;
@@ -56,17 +60,46 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
   void initState() {
     super.initState();
     final e = _existing;
-    if (e != null) {
-      _nameCtrl.text  = e.name;
-      _skuCtrl.text   = e.sku ?? '';
-      _category       = e.categoryValue;
-      _priceCtrl.text = e.pricing.sellingPrice.toStringAsFixed(0);
-      if (e.stock.quantity > 0) _stockCtrl.text = e.stock.quantity.toString();
-      if (e.stock.alertThreshold > 0)
-        _alertCtrl.text = e.stock.alertThreshold.toString();
-      if (e.stock.location != null)
-        _locationCtrl.text = e.stock.location!;
+    if (e == null) {
+      _fitments = [];
+      return;
     }
+
+    _nameCtrl.text  = e.name;
+    _skuCtrl.text   = e.sku ?? '';
+    _category       = e.categoryValue;
+    _priceCtrl.text = e.pricing.sellingPrice.toStringAsFixed(0);
+    if (e.stock.quantity > 0) _stockCtrl.text = e.stock.quantity.toString();
+    if (e.stock.alertThreshold > 0)
+      _alertCtrl.text = e.stock.alertThreshold.toString();
+    if (e.stock.location != null)
+      _locationCtrl.text = e.stock.location!;
+
+    _chargerCompatibilites(e);
+  }
+
+  /// Relit les compatibilités de l'accessoire avant de laisser y toucher.
+  Future<void> _chargerCompatibilites(Accessory e) async {
+    if (e.fitments != null) {
+      setState(() => _fitments = _versEntrees(e.fitments!));
+      return;
+    }
+
+    try {
+      final complet = await ref.read(catalogRepositoryProvider).getAccessory(e.id);
+      if (!mounted) return;
+      setState(() => _fitments = _versEntrees(complet.fitments ?? const []));
+    } catch (erreur) {
+      if (!mounted) return;
+      setState(() => _erreurFitments = erreur);
+    }
+  }
+
+  List<FitmentEntry> _versEntrees(List<Map<String, dynamic>> brutes) {
+    final refs = ref.read(catalogRefsProvider).valueOrNull;
+    return brutes
+        .map((j) => FitmentEntry.depuisJson(j, refs: refs))
+        .toList();
   }
 
   @override
@@ -87,6 +120,11 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
       return;
     }
 
+    // Voir AddPartPage._submit() : la clé n'est envoyée que si la liste est
+    // connue. Omise, l'API laisse les compatibilités intactes, ce qui libère
+    // le reste de la fiche au lieu d'en faire un cul-de-sac.
+    final compatibilites = _fitments;
+
     setState(() => _saving = true);
 
     final payload = <String, dynamic>{
@@ -102,8 +140,10 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
       if (_locationCtrl.text.isNotEmpty) 'storage_location': _locationCtrl.text.trim(),
       if (_selectedLocationId != null) 'location_id': _selectedLocationId,
       'is_active': true,
-      if (_fitments.isNotEmpty)
-        'fitments': _fitments.map((f) => f.toJson()).toList(),
+      // Envoyée même vide quand elle est connue : sans quoi retirer la
+      // dernière compatibilité d'un accessoire serait impossible.
+      if (compatibilites != null)
+        'fitments': compatibilites.map((f) => f.toJson()).toList(),
     };
 
     try {
@@ -321,16 +361,22 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
-            refsAsync.when(
-              loading: () => const LinearProgressIndicator(),
-              error: (e, _) => Text('Impossible de charger les modèles : $e',
-                  style: const TextStyle(color: Colors.red)),
-              data: (refs) => FitmentsSection(
-                refs: refs,
-                showPosition: false,
-                onChanged: (list) => setState(() => _fitments = list),
+            if (_erreurFitments != null)
+              CompatibilitesIllisibles(erreur: _erreurFitments!)
+            else if (_fitments == null)
+              const LinearProgressIndicator()
+            else
+              refsAsync.when(
+                loading: () => const LinearProgressIndicator(),
+                error: (e, _) => Text('Impossible de charger les modèles : $e',
+                    style: const TextStyle(color: Colors.red)),
+                data: (refs) => FitmentsSection(
+                  refs: refs,
+                  showPosition: false,
+                  initiales: _fitments!,
+                  onChanged: (list) => setState(() => _fitments = list),
+                ),
               ),
-            ),
 
             const SizedBox(height: 32),
           ],

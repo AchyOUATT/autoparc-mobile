@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/models/part.dart';
 import '../../data/catalog_repository.dart';
 import '../providers/catalog_providers.dart';
+import '../widgets/fitments_section.dart';
 import '../../../../features/garage/data/models/garage_compatibility.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../../core/utils/currency_format.dart';
@@ -194,6 +195,22 @@ class PartDetailPage extends ConsumerWidget {
 
                 // ── Compatibilité avec le garage (clients uniquement) ─
                 if (!isStaff) _GarageCompatibilitySection(partId: part.id),
+
+                // ── Compatibilités déclarées (staff uniquement) ───────
+                //
+                // Le staff ne voyait rien : le seul bloc de compatibilité de
+                // cette fiche est reserve aux clients, et confronte la piece
+                // au garage de celui qui regarde. Impossible, donc, de savoir
+                // ce que la piece declare — ni de verifier ce qu'on venait
+                // d'y saisir.
+                if (isStaff)
+                  CompatibilitesDeclarees(
+                    lignes: part.fitments,
+                    rienDeclare: 'Aucune compatibilité déclarée. La pièce ne '
+                        'remonte pas dans une recherche par véhicule.',
+                    onModifier: () => GoRouter.of(context)
+                        .push('/parts/${part.id}/edit', extra: part),
+                  ),
 
                 // ── Partenaires (visible staff uniquement) ────────────
                 PartPartnersSection(partId: part.id),

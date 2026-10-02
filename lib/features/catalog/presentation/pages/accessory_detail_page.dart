@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/models/accessory.dart';
 import '../../data/catalog_repository.dart';
 import '../providers/catalog_providers.dart';
+import '../widgets/fitments_section.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../features/cart/data/models/cart_item.dart';
@@ -168,6 +169,16 @@ class _AccessoryDetailView extends ConsumerWidget {
             Text(accessory.description!,
                 style: Theme.of(context).textTheme.bodyMedium),
           ],
+
+          // ── Compatibilités déclarées (staff uniquement) ───────
+          if (isStaff)
+            CompatibilitesDeclarees(
+              lignes: accessory.fitments,
+              rienDeclare: 'Aucune compatibilité déclarée. L\'accessoire ne '
+                  'remonte pas dans une recherche par véhicule.',
+              onModifier: () => GoRouter.of(context)
+                  .push('/accessories/${accessory.id}/edit', extra: accessory),
+            ),
 
           // ── Partenaires (visible staff uniquement) ────────────
           AccessoryPartnersSection(accessoryId: accessory.id),

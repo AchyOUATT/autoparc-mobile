@@ -64,8 +64,18 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
 
   // (description et garantie supprimées — gérées après création si besoin)
 
-  // Compatibilités véhicules
-  List<FitmentEntry> _fitments = [];
+  // Compatibilités véhicules.
+  //
+  // `null` signifie « pas encore connues », et c'est la distinction qui tient
+  // tout l'écran. En modification, la pièce arrive de la liste, qui ne charge
+  // pas cette relation : la liste était donc vide alors que la pièce en
+  // portait cinq. Ajouter une ligne et enregistrer envoyait une liste d'un
+  // seul élément, et le `PUT` remplaçant la liste entière, les quatre autres
+  // disparaissaient sans un mot.
+  List<FitmentEntry>? _fitments;
+
+  /// Pourquoi les compatibilités n'ont pas pu être relues, le cas échéant.
+  Object? _erreurFitments;
 
   bool _saving = false;
 
@@ -75,18 +85,51 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
   void initState() {
     super.initState();
     final e = _existing;
-    if (e != null) {
-      _nameCtrl.text = e.name;
-      _skuCtrl.text  = e.sku ?? '';
-      _type          = e.type;
-      _condition     = e.condition;
-      _priceCtrl.text = e.pricing.sellingPrice.toStringAsFixed(0);
-      if (e.stock.quantity > 0) _stockCtrl.text = e.stock.quantity.toString();
-      if (e.stock.alertThreshold > 0)
-        _alertCtrl.text = e.stock.alertThreshold.toString();
-      if (e.stock.location != null)
-        _locationCtrl.text = e.stock.location!;
+    if (e == null) {
+      _fitments = [];
+      return;
     }
+
+    _nameCtrl.text = e.name;
+    _skuCtrl.text  = e.sku ?? '';
+    _type          = e.type;
+    _condition     = e.condition;
+    _priceCtrl.text = e.pricing.sellingPrice.toStringAsFixed(0);
+    if (e.stock.quantity > 0) _stockCtrl.text = e.stock.quantity.toString();
+    if (e.stock.alertThreshold > 0)
+      _alertCtrl.text = e.stock.alertThreshold.toString();
+    if (e.stock.location != null)
+      _locationCtrl.text = e.stock.location!;
+
+    _chargerCompatibilites(e);
+  }
+
+  /// Relit les compatibilités de la pièce avant de laisser y toucher.
+  ///
+  /// La fiche complète les porte, la liste non. Tant qu'elles ne sont pas
+  /// connues, la section reste inaccessible : proposer un formulaire vide
+  /// revenait à proposer d'effacer.
+  Future<void> _chargerCompatibilites(Part e) async {
+    if (e.fitments != null) {
+      setState(() => _fitments = _versEntrees(e.fitments!));
+      return;
+    }
+
+    try {
+      final complete = await ref.read(catalogRepositoryProvider).getPart(e.id);
+      if (!mounted) return;
+      setState(() => _fitments = _versEntrees(complete.fitments ?? const []));
+    } catch (erreur) {
+      if (!mounted) return;
+      setState(() => _erreurFitments = erreur);
+    }
+  }
+
+  List<FitmentEntry> _versEntrees(List<Map<String, dynamic>> brutes) {
+    final refs = ref.read(catalogRefsProvider).valueOrNull;
+    return brutes
+        .map((j) => FitmentEntry.depuisJson(j, refs: refs))
+        .toList();
   }
 
   @override
@@ -107,6 +150,15 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
       return;
     }
 
+    // Les compatibilités ne partent que si elles sont connues.
+    //
+    // Envoyer une liste qu'on n'a pas relue l'effacerait, le `PUT` remplaçant
+    // la liste entière. Mais refuser tout l'enregistrement ferait de l'écran
+    // un cul-de-sac dès que le réseau flanche : plus moyen de corriger un
+    // prix. L'API ne touche aux compatibilités que si la clé est présente —
+    // l'omettre les laisse donc intactes et libère le reste de la fiche.
+    final compatibilites = _fitments;
+
     setState(() => _saving = true);
 
     final payload = <String, dynamic>{
@@ -124,8 +176,11 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
       if (_locationCtrl.text.isNotEmpty) 'storage_location': _locationCtrl.text.trim(),
       if (_selectedLocationId != null) 'location_id': _selectedLocationId,
       'is_active': true,
-      if (_fitments.isNotEmpty)
-        'fitments': _fitments.map((f) => f.toJson()).toList(),
+      // Envoyée même vide quand elle est connue : c'est la liste complète et
+      // voulue. L'omettre dans ce cas empêcherait de retirer la dernière
+      // compatibilité d'une pièce.
+      if (compatibilites != null)
+        'fitments': compatibilites.map((f) => f.toJson()).toList(),
     };
 
     try {
@@ -388,16 +443,22 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
-            refsAsync.when(
-              loading: () => const LinearProgressIndicator(),
-              error: (e, _) => Text('Impossible de charger les modèles : $e',
-                  style: const TextStyle(color: Colors.red)),
-              data: (refs) => FitmentsSection(
-                refs: refs,
-                showPosition: true,
-                onChanged: (list) => setState(() => _fitments = list),
+            if (_erreurFitments != null)
+              CompatibilitesIllisibles(erreur: _erreurFitments!)
+            else if (_fitments == null)
+              const LinearProgressIndicator()
+            else
+              refsAsync.when(
+                loading: () => const LinearProgressIndicator(),
+                error: (e, _) => Text('Impossible de charger les modèles : $e',
+                    style: const TextStyle(color: Colors.red)),
+                data: (refs) => FitmentsSection(
+                  refs: refs,
+                  showPosition: true,
+                  initiales: _fitments!,
+                  onChanged: (list) => setState(() => _fitments = list),
+                ),
               ),
-            ),
 
             const SizedBox(height: 32),
           ],
