@@ -469,9 +469,16 @@ class _VehicleGrid extends StatelessWidget {
           sliver: SliverGrid.builder(
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 220,
-              // 0.92 au lieu de 0.72 : sans photos réelles, le placeholder
-              // mangeait la moitié de l'écran pour une icône générique.
-              childAspectRatio: 0.92,
+              // Le ratio décide seul de la hauteur des cartes, le bloc de texte
+              // étant intrinsèque : tout ce qu'on ajoute ici va à la zone
+              // d'image, qui est la partie creuse.
+              //
+              // Il est passé de 0,72 à 0,92 quand les cartes n'avaient qu'une
+              // icône grise générique — le vide mangeait la moitié de l'écran.
+              // Depuis, elles portent le logo de la marque et accueilleront des
+              // photos : 0,82 leur rend une douzaine de points de hauteur sans
+              // revenir à l'ancien excès.
+              childAspectRatio: 0.82,
               crossAxisSpacing: 10,
               mainAxisSpacing: 10,
             ),
