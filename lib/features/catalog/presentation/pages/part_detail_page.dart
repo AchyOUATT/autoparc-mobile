@@ -435,7 +435,7 @@ class _GarageCompatibilitySection extends ConsumerWidget {
                   for (int i = 0; i < items.length; i++) ...[
                     if (i > 0)
                       const Divider(height: 1, indent: 56, endIndent: 0),
-                    _CompatibilityTile(item: items[i]),
+                    CompatibilityTile(item: items[i]),
                   ],
                 ],
               ),
@@ -448,17 +448,52 @@ class _GarageCompatibilitySection extends ConsumerWidget {
   }
 }
 
-class _CompatibilityTile extends StatelessWidget {
+class CompatibilityTile extends StatelessWidget {
   final GarageCompatibility item;
-  const _CompatibilityTile({required this.item});
+  const CompatibilityTile({super.key, required this.item});
 
   @override
   Widget build(BuildContext context) {
-    final (IconData icon, Color color, String label) = item.compatible
-        ? (Icons.check_circle, Colors.green, 'Compatible')
-        : item.compatibilityReady
-            ? (Icons.cancel, Colors.red, 'Non compatible')
-            : (Icons.help_outline, Colors.amber.shade700, 'Non déterminé');
+    // Quatre états, pas trois.
+    //
+    // Le cas « compatible, mais on ignore la motorisation » était affiché en
+    // vert comme une certitude : `compatible` court-circuitait le test, et
+    // `compatibilityReady` n'était consulté que sur la branche négative.
+    //
+    // Ce n'est pas un détail d'affichage. Une même génération reçoit plusieurs
+    // moteurs, et deux filtres différents : un Hilux AN10 existe en diesel 1KD
+    // et en V6 essence 1GR. Sans le code moteur du véhicule, la recherche les
+    // renvoie tous les deux — et les annonçait tous les deux en vert. L'un des
+    // deux ne se visse pas.
+    final (IconData icon, Color color, String label, String? detail) =
+        switch ((item.compatible, item.compatibilityReady)) {
+      (true, true) => (
+          Icons.check_circle,
+          Colors.green,
+          'Compatible',
+          null,
+        ),
+      (true, false) => (
+          Icons.help_outline,
+          Colors.amber.shade700,
+          'À confirmer',
+          'Compatible avec ce modèle, mais la motorisation de votre véhicule '
+              'n\'est pas renseignée. Complétez-la pour être sûr.',
+        ),
+      (false, true) => (
+          Icons.cancel,
+          Colors.red,
+          'Non compatible',
+          null,
+        ),
+      (false, false) => (
+          Icons.help_outline,
+          Colors.amber.shade700,
+          'Non déterminé',
+          'Renseignez la motorisation de votre véhicule pour obtenir une '
+              'réponse.',
+        ),
+    };
 
     return ListTile(
       dense: true,
@@ -467,6 +502,15 @@ class _CompatibilityTile extends StatelessWidget {
         '${item.displayName} (${item.year})',
         style: Theme.of(context).textTheme.bodyMedium,
       ),
+      subtitle: detail == null
+          ? null
+          : Text(
+              detail,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+            ),
+      isThreeLine: detail != null,
       trailing: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
