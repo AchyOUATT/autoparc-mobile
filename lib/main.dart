@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker_android/image_picker_android.dart';
@@ -7,6 +8,7 @@ import 'package:image_picker_platform_interface/image_picker_platform_interface.
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'core/widgets/navigation_bar_theme.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/catalog/data/models/accessory.dart';
@@ -365,25 +367,8 @@ class _AppShellState extends ConsumerState<_AppShell> {
       body: widget.child,
       bottomNavigationBar: Theme(
         data: Theme.of(context).copyWith(
-          navigationBarTheme: NavigationBarThemeData(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            indicatorColor:  Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.18),
-            iconTheme: WidgetStateProperty.resolveWith((states) => IconThemeData(
-              color: states.contains(WidgetState.selected)
-                  ? Theme.of(context).colorScheme.onPrimary
-                  : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.55),
-              size: 24,
-            )),
-            labelTextStyle: WidgetStateProperty.resolveWith((states) => TextStyle(
-              color: states.contains(WidgetState.selected)
-                  ? Colors.white
-                  : const Color(0xFFB0CCDE), // bleu clair doux pour non sélectionné
-              fontSize: 12,
-              fontWeight: states.contains(WidgetState.selected)
-                  ? FontWeight.w600
-                  : FontWeight.w400,
-            )),
-          ),
+          navigationBarTheme:
+              barreNavigationTheme(Theme.of(context).colorScheme),
         ),
         child: NavigationBar(
           selectedIndex: tabIndex,
