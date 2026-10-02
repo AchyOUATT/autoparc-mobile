@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -228,6 +229,90 @@ void main() {
 
     expect(find.text("Contrôle d'hivernage"), findsOneWidget);
     expect(find.textContaining("L'eau et la boue"), findsOneWidget);
+  });
+
+  testWidgets('on ne lance pas un contrôle avant de savoir lesquels sont proposés',
+      (tester) async {
+    // Sur une connexion lente, les cartes de choix arrivaient après coup : on
+    // pouvait choisir une distance et lancer un contrôle avant voyage sans avoir
+    // jamais vu l'option saisonnière. Et quand elles arrivaient enfin, elles
+    // poussaient tout l'écran vers le bas, sous le doigt.
+    // Une surface de telephone : la surface par defaut du test fait 800x600, et
+    // un ListView ne monte pas ses enfants hors champ — le bouton ne serait
+    // meme pas dans l'arbre.
+    await tester.binding.setSurfaceSize(const Size(400, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final attente = Completer<CheckTemplate>();
+    final depot = _FauxDepot(
+      liste: CheckTemplate(items: [point('pneus-etat', 'Pneus')]),
+      premiereReponse: () => attente.future,
+    );
+
+    await tester.pumpWidget(ecran(depot));
+    await tester.pumpAndSettle();
+
+    // Pendant l'attente : la place du choix est reservee, et le bouton retenu.
+    expect(find.byKey(const ValueKey('choix-en-attente')), findsNWidgets(2),
+        reason: 'La place des deux cartes doit être tenue.');
+
+    await tester.tap(find.text('Une autre région · 400 km'));
+    await tester.pumpAndSettle();
+
+    // Le bouton est retenu : taper dessus ne compose rien. On verifie l'effet
+    // plutot que l'etat du widget — c'est l'effet qui compte.
+    await tester.tap(find.text("Voir ce qu'il faut vérifier"));
+    await tester.pumpAndSettle();
+
+    expect(depot.distancesDemandees, hasLength(1),
+        reason: "Seul l'appel d'ouverture a eu lieu : choisir sans avoir vu le "
+            "choix, ce n'est pas choisir.");
+    expect(find.text('Kilométrage au compteur'), findsOneWidget,
+        reason: "On est reste a l'etape de depart.");
+
+    // La reponse arrive : le squelette cede la place aux vraies cartes.
+    attente.complete(CheckTemplate(
+      items: [point('pneus-etat', 'Pneus')],
+      availableReasons: const [
+        CheckReasonOption(value: 'trip', label: 'Avant un voyage', hint: ''),
+        CheckReasonOption(value: 'seasonal', label: "Contrôle d'hivernage", hint: '', season: 'pluies'),
+      ],
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('choix-en-attente')), findsNothing);
+    expect(find.text("Contrôle d'hivernage"), findsOneWidget);
+
+    // Et maintenant le bouton compose.
+    await tester.tap(find.text("Voir ce qu'il faut vérifier"));
+    await tester.pumpAndSettle();
+
+    expect(depot.distancesDemandees, hasLength(2));
+    expect(find.text('Pneus'), findsOneWidget);
+  });
+
+  testWidgets("sans réseau, l'écran reste utilisable", (tester) async {
+    // Laisser le bouton désactivé pour une requête qui ne reviendra pas rendrait
+    // inutilisable l'écran précisément là où il doit servir : dans une cour,
+    // sans réseau.
+    final depot = _FauxDepot(
+      liste: CheckTemplate(items: [point('pneus-etat', 'Pneus')]),
+      premiereReponse: () => Future.error(Exception('hors ligne')),
+    );
+
+    await tester.pumpWidget(ecran(depot));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('choix-en-attente')), findsNothing);
+
+    await tester.tap(find.text('Une autre région · 400 km'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text("Voir ce qu'il faut vérifier"));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pneus'), findsOneWidget,
+        reason: "Le contrôle avant voyage ne dépend d'aucun calendrier : il doit "
+            "rester lançable quand la demande des types a échoué.");
   });
 
   testWidgets("l'écran de choix ne porte le nom d'aucun des contrôles",
@@ -809,6 +894,7 @@ class _FauxDepot extends GarageRepository {
     VehicleCheck? reponse,
     this.echoueEnvoi = false,
     this.refus,
+    this.premiereReponse,
   })  : parDistanceKm = const {},
         reponse = reponse ??
             VehicleCheck(
@@ -840,6 +926,7 @@ class _FauxDepot extends GarageRepository {
         ),
         echoueEnvoi = false,
         refus = null,
+        premiereReponse = null,
         super(ApiClient());
 
   final CheckTemplate liste;
@@ -849,6 +936,12 @@ class _FauxDepot extends GarageRepository {
 
   /// Un refus du serveur, par opposition a une panne de transport.
   final ApiException? refus;
+
+  /// Reponse du PREMIER appel seulement — celui que l'ecran fait a l'ouverture
+  /// pour connaitre les controles proposes. Permet de le faire trainer, ou
+  /// echouer, sans toucher aux compositions suivantes.
+  final Future<CheckTemplate> Function()? premiereReponse;
+  bool _premierFait = false;
 
   final List<Map<String, dynamic>> envois = [];
   final List<int?> distancesDemandees = [];
@@ -862,6 +955,12 @@ class _FauxDepot extends GarageRepository {
   }) async {
     distancesDemandees.add(tripDistanceKm);
     motifsDemandes.add(reason);
+
+    if (premiereReponse != null && !_premierFait) {
+      _premierFait = true;
+      return premiereReponse!();
+    }
+
     return parDistanceKm[tripDistanceKm] ?? liste;
   }
 

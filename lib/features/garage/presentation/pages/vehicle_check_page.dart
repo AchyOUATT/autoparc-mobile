@@ -78,6 +78,15 @@ class _VehicleCheckPageState extends ConsumerState<VehicleCheckPage> {
   /// dépend de la saison, donc du calendrier, qui n'est pas ici.
   List<CheckReasonOption> _types = const [];
 
+  /// La demande des types est-elle encore en vol ?
+  ///
+  /// Tant qu'elle l'est, l'écran ne sait pas ce qu'il peut proposer. Il réserve
+  /// la place du choix plutôt que de la laisser vide — sans quoi la mise en page
+  /// saute quand la réponse arrive — et il retient le bouton : sur une connexion
+  /// lente, on pouvait choisir une distance et lancer un contrôle avant voyage
+  /// avant même que l'option saisonnière n'apparaisse.
+  bool _typesEnCours = true;
+
   String _titre = 'Avant de partir';
 
   int? _distanceKm;
@@ -180,7 +189,10 @@ class _VehicleCheckPageState extends ConsumerState<VehicleCheckPage> {
   /// le contrôle avant voyage est le seul qui ne dépende d'aucun calendrier, et
   /// c'est celui qu'on vient faire neuf fois sur dix.
   Future<void> _chargerTypes() async {
-    if (_types.isNotEmpty) return;
+    if (_types.isNotEmpty) {
+      if (mounted) setState(() => _typesEnCours = false);
+      return;
+    }
 
     try {
       final modele = await ref
@@ -191,12 +203,17 @@ class _VehicleCheckPageState extends ConsumerState<VehicleCheckPage> {
 
       setState(() {
         _types = modele.availableReasons;
+        _typesEnCours = false;
         if (_kilometrage.text.isEmpty && modele.mileageKm != null) {
           _kilometrage.text = modele.mileageKm.toString();
         }
       });
     } catch (_) {
-      // Silencieux : rien n'est perdu, et l'écran reste utilisable.
+      // Silencieux, mais pas bloquant : sans réseau on garde le contrôle avant
+      // voyage, le seul qui ne dépende d'aucun calendrier. Laisser le bouton
+      // désactivé pour une requête qui ne reviendra pas rendrait l'écran
+      // inutilisable hors ligne — précisément là où il doit servir.
+      if (mounted) setState(() => _typesEnCours = false);
     }
   }
 
@@ -245,6 +262,10 @@ class _VehicleCheckPageState extends ConsumerState<VehicleCheckPage> {
         _liste = liste;
         _titre = liste.title;
         if (liste.availableReasons.isNotEmpty) _types = liste.availableReasons;
+        // La composition rapporte aussi les types : un brouillon repris mène
+        // droit à la liste sans passer par _chargerTypes(), et revenir ensuite
+        // sur l'étape de choix laisserait sinon le bouton bloqué.
+        _typesEnCours = false;
         _totalPoints = liste.items.length;
         _chargement = false;
         _etape = _Etape.liste;
@@ -418,6 +439,7 @@ class _VehicleCheckPageState extends ConsumerState<VehicleCheckPage> {
         _Etape.depart => _Depart(
             nom: nom,
             types: _types,
+            typesEnCours: _typesEnCours,
             motif: _motif,
             onMotif: (motif) => setState(() => _motif = motif),
             distanceKm: _distanceKm,
@@ -481,6 +503,7 @@ String _uuidV4() {
 class _Depart extends StatelessWidget {
   final String nom;
   final List<CheckReasonOption> types;
+  final bool typesEnCours;
   final String motif;
   final ValueChanged<String> onMotif;
   final int? distanceKm;
@@ -494,6 +517,7 @@ class _Depart extends StatelessWidget {
   const _Depart({
     required this.nom,
     required this.types,
+    required this.typesEnCours,
     required this.motif,
     required this.onMotif,
     required this.distanceKm,
@@ -553,7 +577,18 @@ class _Depart extends StatelessWidget {
         // Un seul point d'entrée, et le choix ici plutôt que deux boutons sur
         // la fiche du garage : cinq boutons « faire un contrôle » sur une
         // carte, et aucun n'est utilisé.
-        if (types.length > 1) ...[
+        // La place du choix est réservée pendant le chargement : sans cela, les
+        // cartes surgissaient une fois la réponse arrivée et poussaient tout
+        // l'écran vers le bas, sous le doigt de celui qui était déjà en train de
+        // choisir une distance.
+        if (typesEnCours) ...[
+          for (var i = 0; i < 2; i++)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: _ChoixEnAttente(),
+            ),
+          const SizedBox(height: 12),
+        ] else if (types.length > 1) ...[
           for (final type in types)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -630,7 +665,13 @@ class _Depart extends StatelessWidget {
           // Sans distance, la liste d'un voyage ne serait pas composée mais
           // générique : le bouton attend donc ce choix. Un contrôle de saison,
           // lui, tient sa composition de la saison.
-          onPressed: (_voyage && distanceKm == null) || chargement ? null : onComposer,
+          //
+          // Il attend aussi de savoir ce qui est proposé : lancer un contrôle
+          // avant voyage pendant que l'option saisonnière est encore en vol,
+          // c'est choisir sans avoir vu le choix.
+          onPressed: (_voyage && distanceKm == null) || chargement || typesEnCours
+              ? null
+              : onComposer,
           icon: chargement
               ? const SizedBox(
                   width: 16,
@@ -883,6 +924,28 @@ class _PointDeControle extends StatelessWidget {
       ),
     );
   }
+}
+
+/// La place d'une carte de choix, le temps que le serveur réponde.
+///
+/// Sa hauteur est celle d'une carte à deux lignes d'explication : elle ne
+/// supprime pas tout décalage — l'explication fait deux ou trois lignes selon la
+/// saison — mais elle le ramène de deux cents pixels à quelques-uns.
+class _ChoixEnAttente extends StatelessWidget {
+  const _ChoixEnAttente();
+
+  /// Repère de test : la classe est privée, la clé ne l'est pas.
+  static const cle = ValueKey('choix-en-attente');
+
+  @override
+  Widget build(BuildContext context) => Container(
+    key: cle,
+    height: 92,
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(12),
+    ),
+  );
 }
 
 /// Une carte de choix du type de contrôle.
