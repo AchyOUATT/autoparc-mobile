@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_exception.dart';
@@ -70,9 +72,39 @@ class AuthRepository {
   // ── Client Firebase ───────────────────────────────────────────────
 
   /// Connexion Google (client mobile).
+  ///
+  /// Passe par le SDK natif, puis échange le jeton d'identité obtenu contre une
+  /// session Firebase. L'implémentation précédente appelait
+  /// `signInWithProvider(GoogleAuthProvider())`, qui est le flux OAuth
+  /// générique : sur Android il ouvre un onglet Chrome, et c'est le chemin que
+  /// Firebase documente pour Microsoft, GitHub ou Yahoo — jamais pour Google
+  /// sur mobile. Il avait deux défauts qui se cumulaient : Android tuait le
+  /// processus pendant l'onglet, si bien que la `Future` rendue ici mourait
+  /// avant d'avoir répondu ; et Google refusait l'application tant que
+  /// l'empreinte de sa clé de signature n'était pas enregistrée dans le projet
+  /// Firebase.
+  ///
+  /// Le SDK natif reste dans l'application : plus d'onglet, plus de processus
+  /// tué, et la `Future` tient jusqu'au bout.
   Future<User> signInWithGoogle() async {
-    final provider = GoogleAuthProvider();
-    final result   = await FirebaseAuth.instance.signInWithProvider(provider);
+    final compte = await GoogleSignIn.instance.authenticate();
+
+    // Seul le jeton d'identité est nécessaire : Firebase n'a pas besoin du
+    // jeton d'accès, que google_sign_in 7 n'expose d'ailleurs plus ici — il
+    // se demande séparément, par portée, via `authorizationClient`.
+    final identification = compte.authentication;
+    final jeton = identification.idToken;
+
+    if (jeton == null) {
+      throw FirebaseAuthException(
+        code: 'missing-google-id-token',
+        message: 'Google n\'a pas fourni de jeton d\'identité.',
+      );
+    }
+
+    final credential = GoogleAuthProvider.credential(idToken: jeton);
+    final result = await FirebaseAuth.instance.signInWithCredential(credential);
+
     return result.user!;
   }
 
@@ -94,8 +126,24 @@ class AuthRepository {
     return cred.user!;
   }
 
-  /// Déconnecte le client Firebase.
-  Future<void> signOutClient() => FirebaseAuth.instance.signOut();
+  /// Déconnecte le client, de Firebase et de Google.
+  ///
+  /// Déconnecter Firebase seul ne suffit pas : le SDK Google garde son propre
+  /// compte retenu, et la connexion suivante repartirait sur celui-ci sans
+  /// jamais proposer de choix. Sur un téléphone partagé, le deuxième
+  /// utilisateur se retrouverait dans le compte du premier.
+  Future<void> signOutClient() async {
+    await FirebaseAuth.instance.signOut();
+
+    // Le SDK Google peut n'avoir jamais été initialisé — connexion par email,
+    // ou `initialize()` en échec au démarrage. Ce n'est pas une raison pour
+    // faire échouer une déconnexion.
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (e) {
+      debugPrint('[Auth] Déconnexion Google ignorée : $e');
+    }
+  }
 
   /// Supprime le compte client et toutes ses données.
   ///

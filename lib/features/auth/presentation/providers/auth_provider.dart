@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -177,6 +178,29 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Extrait un message lisible en français depuis une exception.
   String _extractMessage(Object e) {
     // ── Erreurs Firebase Auth ──────────────────────────────────────
+    // ── Échecs du SDK Google ───────────────────────────────────────
+    //
+    // Ils surviennent AVANT Firebase et ne sont donc pas des
+    // `FirebaseAuthException`. Sans cette branche, fermer la fenêtre de choix
+    // du compte affichait « Une erreur est survenue », ce qui laisse chercher
+    // une panne là où l'utilisateur a simplement changé d'avis.
+    if (e is GoogleSignInException) {
+      return switch (e.code) {
+        GoogleSignInExceptionCode.canceled    => 'Connexion Google annulée.',
+        GoogleSignInExceptionCode.interrupted => 'Connexion Google interrompue.',
+        // Le cas d'une application mal déclarée côté Google : empreinte de
+        // signature absente du projet Firebase, le plus souvent.
+        GoogleSignInExceptionCode.clientConfigurationError =>
+          'La connexion Google n\'est pas correctement configurée pour cette '
+          'version de l\'application.',
+        GoogleSignInExceptionCode.providerConfigurationError =>
+          'La connexion Google n\'est pas disponible sur cet appareil.',
+        GoogleSignInExceptionCode.uiUnavailable =>
+          'Impossible d\'afficher la fenêtre de connexion Google.',
+        _ => 'Connexion Google impossible (${e.code.name}).',
+      };
+    }
+
     if (e is FirebaseAuthException) {
       return switch (e.code) {
         'user-not-found'       => 'Aucun compte trouvé pour cet email.',

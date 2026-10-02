@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker_android/image_picker_android.dart';
@@ -71,6 +72,19 @@ Future<void> main() async {
     await Firebase.initializeApp();
   } catch (e) {
     debugPrint('[AutoParc] Firebase.initializeApp() échoué : $e');
+  }
+
+  // Le SDK Google veut être initialisé une fois, et une seule, avant tout
+  // appel. Aucun identifiant n'est passé : `google-services.json` porte déjà
+  // le client web dont le greffon a besoin pour obtenir un jeton d'identité,
+  // et le renseigner ici en dupliquerait la source.
+  //
+  // Un échec n'arrête pas l'application : le catalogue se consulte sans
+  // compte, et la connexion par email reste disponible.
+  try {
+    await GoogleSignIn.instance.initialize();
+  } catch (e) {
+    debugPrint('[AutoParc] GoogleSignIn.initialize() échoué : $e');
   }
 
   // Vérifie si l'onboarding a déjà été vu.
