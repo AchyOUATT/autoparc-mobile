@@ -440,6 +440,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         // ── Carrosserie ───────────────────────────────────────────
         DropdownButtonFormField<String>(
           value: _bodyStyle,
+          // isExpanded, comme tous les autres menus de l'application : sans
+          // lui, le menu prend la largeur de son item le plus long —
+          // « Citadine / Hayon » ici — et deborde sur un petit ecran.
+          isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'Carrosserie *',
             hintText: 'Berline, SUV, Pickup…',

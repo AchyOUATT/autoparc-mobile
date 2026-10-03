@@ -34,28 +34,32 @@ class GaragePage extends ConsumerWidget {
     // ── Non connecté → CTA connexion ─────────────────────────────────
     if (!auth.isClient) {
       return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.garage_outlined, size: 72,
-                  color: Theme.of(context).colorScheme.outline),
-              const SizedBox(height: 16),
-              Text('Connectez-vous pour accéder à votre garage',
-                  style: Theme.of(context).textTheme.titleMedium,
-                  textAlign: TextAlign.center),
-              const SizedBox(height: 8),
-              const Text(
-                'Retrouvez rapidement les pièces\ncompatibles avec vos véhicules.',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: () => context.push('/login'),
-                icon: const Icon(Icons.login),
-                label: const Text('Se connecter / S\'inscrire'),
-              ),
-            ],
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.garage_outlined, size: 72,
+                    color: Theme.of(context).colorScheme.outline),
+                const SizedBox(height: 16),
+                Text('Connectez-vous pour accéder à votre garage',
+                    style: Theme.of(context).textTheme.titleMedium,
+                    textAlign: TextAlign.center),
+                const SizedBox(height: 8),
+                const Text(
+                  'Retrouvez rapidement les pièces compatibles '
+                  'avec vos véhicules.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                FilledButton.icon(
+                  onPressed: () => context.push('/login'),
+                  icon: const Icon(Icons.login),
+                  label: const Text('Se connecter / S\'inscrire'),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -980,30 +984,45 @@ class _EmptyGarage extends StatelessWidget {
   final VoidCallback onAdd;
   const _EmptyGarage({required this.onAdd});
 
+  // SingleChildScrollView autour du Center : l'état vide reste centré quand il
+  // tient, et devient défilable quand il ne tient plus. Sans lui, un écran de
+  // 320 points avec les caractères grossis débordait par le bas — le bouton
+  // « Ajouter un véhicule » passait sous le bord, et c'est la seule issue d'un
+  // garage vide.
+  //
+  // Le retour à la ligne de la phrase était posé à la main (« retrouver\n
+  // rapidement ») : il ignorait la largeur disponible. Laisser le texte se
+  // replier tout seul, avec de la marge, vaut mieux qu'une coupure décidée
+  // pour un écran qu'on ne connaît pas.
   @override
-  Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.garage_outlined, size: 80,
-            color: Theme.of(context).colorScheme.outline),
-        const SizedBox(height: 16),
-        Text(
-          'Votre garage est vide',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Ajoutez vos véhicules pour retrouver\nrapidement les pièces compatibles.',
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 24),
-        FilledButton.icon(
-          onPressed: onAdd,
-          icon: const Icon(Icons.add),
-          label: const Text('Ajouter un véhicule'),
-        ),
-      ],
+  Widget build(BuildContext context) => SingleChildScrollView(
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.garage_outlined, size: 80,
+              color: Theme.of(context).colorScheme.outline),
+          const SizedBox(height: 16),
+          Text(
+            'Votre garage est vide',
+            style: Theme.of(context).textTheme.titleLarge,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Ajoutez vos véhicules pour retrouver rapidement '
+            'les pièces compatibles.',
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          FilledButton.icon(
+            onPressed: onAdd,
+            icon: const Icon(Icons.add),
+            label: const Text('Ajouter un véhicule'),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -1013,17 +1032,24 @@ class _ErrorView extends StatelessWidget {
   final VoidCallback onRetry;
   const _ErrorView({required this.error, required this.onRetry});
 
+  // Défilable pour la même raison que l'état vide, et plus encore : la
+  // longueur du message n'est pas connue d'avance — c'est celui que le serveur
+  // ou la couche réseau a renvoyé. Un message bavard poussait « Réessayer »
+  // hors de l'écran, sur le seul écran où ce bouton est tout ce qui reste.
   @override
-  Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(Icons.wifi_off, size: 48),
-        const SizedBox(height: 12),
-        Text(error, textAlign: TextAlign.center),
-        const SizedBox(height: 16),
-        FilledButton(onPressed: onRetry, child: const Text('Réessayer')),
-      ],
+  Widget build(BuildContext context) => SingleChildScrollView(
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.wifi_off, size: 48),
+          const SizedBox(height: 12),
+          Text(error, textAlign: TextAlign.center),
+          const SizedBox(height: 16),
+          FilledButton(onPressed: onRetry, child: const Text('Réessayer')),
+        ],
+      ),
     ),
   );
 }

@@ -789,10 +789,14 @@ class _CriteriaCard extends StatelessWidget {
           children: [
             Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: 8),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+            // Flexible : un Text brut dans un Row reclame toute sa largeur
+            // naturelle et pousse l'etiquette « optionnel » hors de l'ecran.
+            Flexible(
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
             ),
             const SizedBox(width: 8),
             Container(

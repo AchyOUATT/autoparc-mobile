@@ -115,14 +115,18 @@ class _PartnersSection extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
           child: Row(
             children: [
-              Text(
-                'Partenaires',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w600),
+              // Expanded tient le rôle du Spacer qui suivait, et contraint en
+              // plus le titre : brut, il réclamait toute sa largeur naturelle
+              // et poussait le bouton hors de l'écran.
+              Expanded(
+                child: Text(
+                  'Partenaires',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
               ),
-              const Spacer(),
               if (canEdit)
                 TextButton.icon(
                   icon: const Icon(Icons.add, size: 18),
@@ -234,6 +238,11 @@ class _AttachPartnerDialogState extends State<_AttachPartnerDialog> {
           children: [
             DropdownButtonFormField<Partner>(
               initialValue: _selected,
+              // Le nom d'un partenaire peut etre long : sans isExpanded, le
+              // menu prend la largeur du plus long et deborde de la boite de
+              // dialogue. L'ellipse posee sur l'item ne s'applique qu'une fois
+              // la largeur contrainte.
+              isExpanded: true,
               decoration: const InputDecoration(
                 labelText: 'Partenaire *',
                 prefixIcon: Icon(Icons.handshake_outlined),

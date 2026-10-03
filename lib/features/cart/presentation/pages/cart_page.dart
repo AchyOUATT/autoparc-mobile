@@ -556,15 +556,20 @@ class _EmptyCart extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
-        Row(
-          mainAxisSize: MainAxisSize.min,
+        // Wrap et non Row : les deux boutons cote a cote ne tiennent pas sur
+        // un ecran de 320 points, et moins encore avec les caracteres grossis.
+        // Ils passent alors l'un sous l'autre, au lieu de sortir de l'ecran —
+        // ce sont les deux seules issues d'un panier vide.
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 12,
+          runSpacing: 8,
           children: [
             OutlinedButton.icon(
               onPressed: () => context.go('/accessories'),
               icon: const Icon(Icons.tune_outlined, size: 16),
               label: const Text('Accessoires'),
             ),
-            const SizedBox(width: 12),
             OutlinedButton.icon(
               onPressed: () => context.go('/parts'),
               icon: const Icon(Icons.settings_outlined, size: 16),
