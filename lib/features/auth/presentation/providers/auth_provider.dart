@@ -186,8 +186,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
     // une panne là où l'utilisateur a simplement changé d'avis.
     if (e is GoogleSignInException) {
       return switch (e.code) {
-        GoogleSignInExceptionCode.canceled    => 'Connexion Google annulée.',
-        GoogleSignInExceptionCode.interrupted => 'Connexion Google interrompue.',
+        // « Interrompue », et non « annulée ».
+        //
+        // La documentation du SDK présente ce code comme « canceled by the
+        // user », et le message disait donc « annulée ». C'était trop
+        // affirmatif : une coupure réseau pendant la connexion remonte le
+        // même code, et l'utilisateur lisait qu'il avait renoncé alors qu'il
+        // n'avait rien fait. Il cherchait son erreur au lieu de regarder sa
+        // connexion.
+        //
+        // On nomme donc le fait observé — la connexion ne s'est pas faite —
+        // sans lui en attribuer la cause, et on indique la seule chose
+        // vérifiable de son côté.
+        GoogleSignInExceptionCode.canceled =>
+          'Connexion Google interrompue. Si vous n\'avez pas fermé la fenêtre, '
+          'vérifiez votre connexion internet puis réessayez.',
+        GoogleSignInExceptionCode.interrupted =>
+          'Connexion Google interrompue. Vérifiez votre connexion internet '
+          'puis réessayez.',
         // Le cas d'une application mal déclarée côté Google : empreinte de
         // signature absente du projet Firebase, le plus souvent.
         GoogleSignInExceptionCode.clientConfigurationError =>
@@ -197,7 +213,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
           'La connexion Google n\'est pas disponible sur cet appareil.',
         GoogleSignInExceptionCode.uiUnavailable =>
           'Impossible d\'afficher la fenêtre de connexion Google.',
-        _ => 'Connexion Google impossible (${e.code.name}).',
+        // La description du SDK est jetée partout ailleurs, et c'est voulu :
+        // elle est en anglais et ne dit rien d'actionnable à qui ferme une
+        // fenêtre. Ici en revanche, le code est inconnu — c'est le seul
+        // endroit où elle a une chance d'expliquer quelque chose, et sans
+        // elle il ne resterait qu'un nom d'énumération.
+        //
+        // Cas concret : « aucun compte Google sur l'appareil » arrive sous le
+        // code `unknownError` avec la description « No credential available ».
+        // Sans la description, l'utilisateur lirait « Connexion Google
+        // impossible (unknownError) » et ne saurait pas qu'il lui manque
+        // simplement un compte.
+        _ => [
+            'Connexion Google impossible (${e.code.name}).',
+            if (e.description != null && e.description!.isNotEmpty) e.description!,
+          ].join(' '),
       };
     }
 
@@ -215,8 +245,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
         'operation-not-allowed'  => 'Cette méthode de connexion n\'est pas activée.',
         'account-exists-with-different-credential'
                                => 'Ce compte existe déjà avec un autre mode de connexion.',
-        'popup-closed-by-user' || 'cancelled-popup-request'
-                               => 'Connexion Google annulée.',
+        // Codes du Web. Sur Android, l'ancien flux par onglet Chrome rendait
+        // `web-context-canceled`, qui n'était pas traité : fermer l'onglet
+        // affichait « Erreur de connexion (web-context-canceled) », donc une
+        // hésitation ressemblait à une panne. Ce flux a disparu au profit du
+        // SDK natif, mais la version publiée l'emploie encore, et ces deux
+        // codes restent valables sur le web.
+        //
+        // Même prudence qu'avec le SDK natif : on ne dit pas « annulée », une
+        // coupure réseau produit le même résultat.
+        'popup-closed-by-user' || 'cancelled-popup-request' ||
+        'web-context-canceled'
+                               => 'Connexion Google interrompue. Si vous n\'avez '
+                                  'pas fermé la fenêtre, vérifiez votre connexion '
+                                  'internet puis réessayez.',
         _                      => 'Erreur de connexion (${e.code}).',
       };
     }

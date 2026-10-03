@@ -196,21 +196,28 @@ class PartDetailPage extends ConsumerWidget {
                 // ── Compatibilité avec le garage (clients uniquement) ─
                 if (!isStaff) _GarageCompatibilitySection(partId: part.id),
 
-                // ── Compatibilités déclarées (staff uniquement) ───────
+                // ── Véhicules compatibles ─────────────────────────────
                 //
-                // Le staff ne voyait rien : le seul bloc de compatibilité de
-                // cette fiche est reserve aux clients, et confronte la piece
-                // au garage de celui qui regarde. Impossible, donc, de savoir
-                // ce que la piece declare — ni de verifier ce qu'on venait
-                // d'y saisir.
-                if (isStaff)
-                  CompatibilitesDeclarees(
-                    lignes: part.fitments,
-                    rienDeclare: 'Aucune compatibilité déclarée. La pièce ne '
-                        'remonte pas dans une recherche par véhicule.',
-                    onModifier: () => GoRouter.of(context)
-                        .push('/parts/${part.id}/edit', extra: part),
-                  ),
+                // Pour tout le monde, et non plus pour le seul staff.
+                //
+                // Le bloc du dessus répond à une question étroite : « est-ce
+                // que ça va sur MES véhicules ». Utile, mais il ne dit rien à
+                // qui achète pour la voiture d'un proche, qui compare avant
+                // d'enregistrer son véhicule, ou dont le modèle n'est pas au
+                // référentiel. Ces trois cas lisaient une page muette sur la
+                // destination de la pièce.
+                //
+                // Les deux blocs se complètent : l'un confronte, l'autre
+                // énumère. Seul le bouton de modification reste au staff.
+                CompatibilitesDeclarees(
+                  lignes: part.fitments,
+                  rienDeclare: 'Aucune compatibilité déclarée. La pièce ne '
+                      'remonte pas dans une recherche par véhicule.',
+                  onModifier: isStaff
+                      ? () => GoRouter.of(context)
+                          .push('/parts/${part.id}/edit', extra: part)
+                      : null,
+                ),
 
                 // ── Partenaires (visible staff uniquement) ────────────
                 PartPartnersSection(partId: part.id),

@@ -650,12 +650,13 @@ class CompatibilitesDeclarees extends StatelessWidget {
   /// Ce que l'article ne remonte pas s'il ne déclare rien.
   final String rienDeclare;
 
-  final VoidCallback onModifier;
+  /// Null pour un client : il consulte, il ne modifie pas.
+  final VoidCallback? onModifier;
 
   const CompatibilitesDeclarees({
     super.key,
     required this.lignes,
-    required this.onModifier,
+    this.onModifier,
     this.rienDeclare =
         'Aucune compatibilité déclarée. L\'article ne remonte pas dans une '
         'recherche par véhicule.',
@@ -682,11 +683,15 @@ class CompatibilitesDeclarees extends StatelessWidget {
               child: Text('Véhicules compatibles',
                   style: Theme.of(context).textTheme.titleSmall),
             ),
-            TextButton.icon(
-              icon: const Icon(Icons.edit_outlined, size: 16),
-              label: const Text('Modifier'),
-              onPressed: onModifier,
-            ),
+            // Absent pour un client : il consulte la liste, il ne la modifie
+            // pas. Un bouton désactivé laisserait croire à un droit qu'il
+            // n'a pas.
+            if (onModifier != null)
+              TextButton.icon(
+                icon: const Icon(Icons.edit_outlined, size: 16),
+                label: const Text('Modifier'),
+                onPressed: onModifier,
+              ),
           ],
         ),
         if (entrees.isEmpty)

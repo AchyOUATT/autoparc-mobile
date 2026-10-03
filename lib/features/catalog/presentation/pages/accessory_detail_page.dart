@@ -170,15 +170,21 @@ class _AccessoryDetailView extends ConsumerWidget {
                 style: Theme.of(context).textTheme.bodyMedium),
           ],
 
-          // ── Compatibilités déclarées (staff uniquement) ───────
-          if (isStaff)
-            CompatibilitesDeclarees(
-              lignes: accessory.fitments,
-              rienDeclare: 'Aucune compatibilité déclarée. L\'accessoire ne '
-                  'remonte pas dans une recherche par véhicule.',
-              onModifier: () => GoRouter.of(context)
-                  .push('/accessories/${accessory.id}/edit', extra: accessory),
-            ),
+          // ── Véhicules compatibles ─────────────────────────────
+          //
+          // Pour tout le monde : qui achète pour la voiture d'un proche, ou
+          // compare avant d'enregistrer son véhicule, a besoin de savoir à
+          // quoi l'accessoire se destine. Seul le bouton de modification
+          // reste au staff. Voir part_detail_page.dart, même raisonnement.
+          CompatibilitesDeclarees(
+            lignes: accessory.fitments,
+            rienDeclare: 'Aucune compatibilité déclarée. L\'accessoire ne '
+                'remonte pas dans une recherche par véhicule.',
+            onModifier: isStaff
+                ? () => GoRouter.of(context)
+                    .push('/accessories/${accessory.id}/edit', extra: accessory)
+                : null,
+          ),
 
           // ── Partenaires (visible staff uniquement) ────────────
           AccessoryPartnersSection(accessoryId: accessory.id),
