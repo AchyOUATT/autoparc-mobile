@@ -602,9 +602,14 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
   void _applyCompatibleFilter(bool on) {
     setState(() => _onlyCompatible = on);
 
+    // Un véhicule au modèle tapé à la main n'a pas d'identifiant de catalogue
+    // à transmettre : le filtre resterait vide et la liste paraîtrait vide
+    // elle aussi. On ne l'applique pas — la bannière dit pourquoi.
+    final modelId = _selected?.vehicleModelId;
+
     final filter = ref.read(partFilterProvider);
-    ref.read(partFilterProvider.notifier).state = on && _selected != null
-        ? filter.copyWith(vehicleModelId: _selected!.vehicleModelId)
+    ref.read(partFilterProvider.notifier).state = on && modelId != null
+        ? filter.copyWith(vehicleModelId: modelId)
         : filter.copyWith(clearVehicleModel: true);
   }
 
@@ -701,11 +706,22 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
             // est déjà choisi ici, et la liste sait déjà quelles pièces lui
             // correspondent. Partir ailleurs faisait perdre la recherche, la
             // catégorie et la ville déjà saisies.
-            FilterChip(
-              label: const Text('Compatibles'),
-              selected: _onlyCompatible,
-              onSelected: (on) => _applyCompatibleFilter(on),
-              visualDensity: VisualDensity.compact,
+            // Désactivé pour un véhicule au modèle tapé à la main : le
+            // catalogue ne le connaît pas, et le filtre n'aurait rien à quoi
+            // se raccrocher. Grisé avec son motif plutôt qu'actif et sans
+            // effet — un bouton qui ne fait rien se lit comme une panne.
+            Tooltip(
+              message: _selected!.modeleHorsCatalogue
+                  ? 'Modèle hors catalogue : compatibilité indisponible'
+                  : 'Pièces compatibles avec ce véhicule',
+              child: FilterChip(
+                label: const Text('Compatibles'),
+                selected: _onlyCompatible && !_selected!.modeleHorsCatalogue,
+                onSelected: _selected!.modeleHorsCatalogue
+                    ? null
+                    : (on) => _applyCompatibleFilter(on),
+                visualDensity: VisualDensity.compact,
+              ),
             ),
           ],
         ),

@@ -40,18 +40,27 @@ class _AddVehicleToGaragePageState
   /// Optionnel — transmis tel quel au backend, non affiché dans le formulaire.
   String? _engineCode;
 
-  final _yearCtrl     = TextEditingController();
-  final _nicknameCtrl = TextEditingController();
-  final _plateCtrl    = TextEditingController();
-  final _mileageCtrl  = TextEditingController();
-  final _vinCtrl      = TextEditingController();
+  /// Le modèle est tapé à la main, faute de le trouver dans la liste.
+  ///
+  /// Le référentiel est bâti sur les flux d'occasion européens ; le parc vient
+  /// aussi des États-Unis, du Golfe et du Japon. Il manquera toujours des
+  /// modèles — un CX-9, jamais vendu en Europe, rendait l'enregistrement
+  /// impossible : le champ était obligatoire, et aucune autre voie n'existait.
+  bool _modeleHorsListe = false;
+
+  final _yearCtrl       = TextEditingController();
+  final _modelLibreCtrl = TextEditingController();
+  final _nicknameCtrl   = TextEditingController();
+  final _plateCtrl      = TextEditingController();
+  final _mileageCtrl    = TextEditingController();
+  final _vinCtrl        = TextEditingController();
 
   // Suivi des champs pré-remplis par le décodage VIN (pour le style visuel)
   final _prefilledFields = <String>{};
 
   @override
   void dispose() {
-    for (final c in [_yearCtrl, _nicknameCtrl, _plateCtrl, _mileageCtrl, _vinCtrl]) {
+    for (final c in [_yearCtrl, _modelLibreCtrl, _nicknameCtrl, _plateCtrl, _mileageCtrl, _vinCtrl]) {
       c.dispose();
     }
     super.dispose();
@@ -138,7 +147,13 @@ class _AddVehicleToGaragePageState
   }
 
   /// Vrai si le serveur pourra calculer la compatibilité de ce véhicule.
-  bool get _motorisationConnue => motorisationResolue(
+  ///
+  /// Un modèle hors référentiel l'empêche à lui seul : les compatibilités sont
+  /// déclarées par modèle. Annoncer le contraire parce que la motorisation est
+  /// connue promettrait un filtre qui ne rendra jamais rien.
+  bool get _motorisationConnue =>
+      _model != null &&
+      motorisationResolue(
         engineType: _engineType,
         trim:       _trim,
         engineCode: _engineCode,
@@ -149,7 +164,16 @@ class _AddVehicleToGaragePageState
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     if (_brand == null) { _snack('Veuillez sélectionner une marque.'); return; }
-    if (_model == null) { _snack('Veuillez sélectionner un modèle.'); return; }
+
+    // Le modèle vient de la liste ou de la saisie libre, et plus rien n'exige
+    // le premier : c'était l'impasse du formulaire — qui ne trouvait pas son
+    // modèle ne pouvait ni enregistrer, ni signaler le manque.
+    final modeleLibre = _modelLibreCtrl.text.trim();
+
+    if (_model == null && modeleLibre.isEmpty) {
+      _snack('Sélectionnez un modèle, ou tapez le vôtre.');
+      return;
+    }
 
     // Le compte n'est demandé qu'ici, une fois la saisie faite. Le réclamer
     // d'entrée fait renoncer avant d'avoir rien montré ; le réclamer après
@@ -165,7 +189,8 @@ class _AddVehicleToGaragePageState
 
     final payload = <String, dynamic>{
       'brand_id':           _brand!.id,
-      'vehicle_model_id':   _model!.id,
+      if (_model != null)        'vehicle_model_id': _model!.id,
+      if (_model == null)        'model_libre':      modeleLibre,
       'manufacturing_year': int.parse(_yearCtrl.text),
       if (_trim != null)        'trim_id':        _trim!.id,
       if (_engineType != null)  'engine_type_id': _engineType!.id,
@@ -352,28 +377,94 @@ class _AddVehicleToGaragePageState
               const SizedBox(height: 12),
 
               // Modèle
-              _PrefilledDropdown<ModelRef>(
-                prefilled: _prefilledFields.contains('model'),
-                child: DropdownButtonFormField<ModelRef>(
-                  value: _model,
-                  decoration: const InputDecoration(labelText: 'Modèle *'),
-                  isExpanded: true,
-                  hint: Text(_brand == null
-                      ? 'Choisir d\'abord une marque'
-                      : 'Sélectionner…'),
-                  items: models
-                      .map((m) => DropdownMenuItem(value: m, child: Text(m.displayName)))
-                      .toList(),
-                  onChanged: _brand == null
-                      ? null
-                      : (m) => setState(() {
-                            _model = m;
-                            _trim  = null;
-                            _prefilledFields.remove('model');
-                          }),
-                  validator: (v) => v == null ? 'Modèle obligatoire' : null,
+              if (!_modeleHorsListe)
+                _PrefilledDropdown<ModelRef>(
+                  prefilled: _prefilledFields.contains('model'),
+                  child: DropdownButtonFormField<ModelRef>(
+                    value: _model,
+                    decoration: const InputDecoration(labelText: 'Modèle *'),
+                    isExpanded: true,
+                    hint: Text(_brand == null
+                        ? 'Choisir d\'abord une marque'
+                        : 'Sélectionner…'),
+                    items: models
+                        .map((m) => DropdownMenuItem(value: m, child: Text(m.displayName)))
+                        .toList(),
+                    onChanged: _brand == null
+                        ? null
+                        : (m) => setState(() {
+                              _model = m;
+                              _trim  = null;
+                              _prefilledFields.remove('model');
+                            }),
+                    validator: (v) => v == null ? 'Modèle obligatoire' : null,
+                  ),
+                )
+              else
+                TextFormField(
+                  controller: _modelLibreCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Modèle *',
+                    hintText: 'CX-9, Tribute, Prado…',
+                    prefixIcon: Icon(Icons.edit_outlined),
+                  ),
+                  textCapitalization: TextCapitalization.words,
+                  maxLength: 80,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Indiquez le modèle'
+                      : null,
+                ),
+
+              // La sortie de secours.
+              //
+              // Elle est discrète à dessein : la liste reste la bonne voie,
+              // parce qu'elle seule rattache le véhicule aux compatibilités.
+              // Mais elle existe toujours — l'absence d'un modèle ne doit plus
+              // jamais empêcher un enregistrement.
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  icon: Icon(
+                    _modeleHorsListe ? Icons.list_alt : Icons.edit_outlined,
+                    size: 16,
+                  ),
+                  label: Text(
+                    _modeleHorsListe
+                        ? 'Revenir à la liste des modèles'
+                        : 'Mon modèle n\'est pas dans la liste',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () => setState(() {
+                    _modeleHorsListe = !_modeleHorsListe;
+
+                    // Un seul des deux champs vaut à la fois : garder l'autre
+                    // enverrait au serveur un modèle que la personne vient
+                    // justement d'abandonner.
+                    if (_modeleHorsListe) {
+                      _model = null;
+                      _trim  = null;
+                      _prefilledFields.remove('model');
+                    } else {
+                      _modelLibreCtrl.clear();
+                    }
+                  }),
                 ),
               ),
+
+              // Ce qu'un modèle hors liste coûte, dit avant l'enregistrement
+              // et non après : la recherche de pièces s'appuie sur le modèle du
+              // référentiel, et restera muette. Tout le reste du garage —
+              // kilométrage, échéances, contrôles, rappels d'entretien —
+              // fonctionne normalement.
+              if (_modeleHorsListe) ...[
+                const SizedBox(height: 4),
+                const _ModeleLibreHint(),
+              ],
+
               const SizedBox(height: 12),
 
               // Année
@@ -507,7 +598,10 @@ class _AddVehicleToGaragePageState
               // de dialogue au moment d'enregistrer arriverait après l'effort,
               // pour un reproche qu'on ne peut pas toujours satisfaire.
               const SizedBox(height: 8),
-              _CompatibiliteHint(resolue: _motorisationConnue),
+              _CompatibiliteHint(
+                resolue: _motorisationConnue,
+                modeleHorsReferentiel: _modeleHorsListe,
+              ),
 
               const SizedBox(height: 24),
 
@@ -610,13 +704,31 @@ class _AddVehicleToGaragePageState
 /// que ça ne l'est pas — sans le retour vert, on ne sait pas si choisir une
 /// finition a suffi, et on croit le champ toujours vide.
 class _CompatibiliteHint extends StatelessWidget {
-  const _CompatibiliteHint({required this.resolue});
+  const _CompatibiliteHint({
+    required this.resolue,
+    this.modeleHorsReferentiel = false,
+  });
 
   final bool resolue;
+
+  /// Le modèle a été tapé à la main : c'est lui, et non la motorisation, qui
+  /// empêche le calcul. Le dire évite de promettre qu'un carburant renseigné
+  /// débloquera un filtre qui ne rendra rien.
+  final bool modeleHorsReferentiel;
 
   @override
   Widget build(BuildContext context) {
     final couleur = resolue ? const Color(0xFF2E7D32) : const Color(0xFF8A5A00);
+
+    final message = resolue
+        ? 'Les pièces compatibles avec ce véhicule pourront être filtrées.'
+        : modeleHorsReferentiel
+            ? 'Votre modèle n\'étant pas au catalogue, la recherche de pièces '
+                'compatibles restera indisponible — même en renseignant le '
+                'carburant.'
+            : 'Sans cette information, la liste des pièces compatibles '
+                'restera vide. Vous pourrez la compléter plus tard depuis '
+                'votre garage.';
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -629,11 +741,7 @@ class _CompatibiliteHint extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            resolue
-                ? 'Les pièces compatibles avec ce véhicule pourront être filtrées.'
-                : 'Sans cette information, la liste des pièces compatibles '
-                    'restera vide. Vous pourrez la compléter plus tard depuis '
-                    'votre garage.',
+            message,
             style: Theme.of(context)
                 .textTheme
                 .bodySmall
@@ -641,6 +749,47 @@ class _CompatibiliteHint extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Ce qu'un modèle tapé à la main coûte, et ce qu'il ne coûte pas.
+///
+/// Dit ici, au moment du choix, et non à l'enregistrement : la personne a
+/// encore la liste sous les yeux et peut y revenir. Et dit entièrement — ne
+/// mentionner que la perte ferait renoncer à un enregistrement parfaitement
+/// utile, alors que l'essentiel du garage continue de fonctionner.
+class _ModeleLibreHint extends StatelessWidget {
+  const _ModeleLibreHint();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 16, color: cs.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Échéances, kilométrage, contrôles et rappels d\'entretien '
+              'fonctionneront normalement. Seule la recherche de pièces '
+              'compatibles restera indisponible : elle s\'appuie sur le '
+              'catalogue. Votre saisie nous aide à l\'enrichir.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -723,12 +872,19 @@ class _VinScanBlock extends StatelessWidget {
           children: [
             const Icon(Icons.qr_code_2, size: 20),
             const SizedBox(width: 8),
-            Text(
-              'Décodage automatique par VIN',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+            // Flexible, et non brut : un Text dans un Row réclame toute sa
+            // largeur naturelle. Sur un téléphone de 320 points, ou avec les
+            // caractères grossis au deuxième cran, ce titre poussait la ligne
+            // hors de l'écran — Flutter peignait alors sa bande rayée par
+            // dessus le bloc VIN tout entier.
+            Flexible(
+              child: Text(
+                'Décodage automatique par VIN',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
             ),
             const SizedBox(width: 8),
             Container(

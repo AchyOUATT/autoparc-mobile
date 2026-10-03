@@ -7,7 +7,18 @@ class OwnedVehicle extends Equatable {
   final String designation;
   final String? nickname;
   final int brandId;
-  final int vehicleModelId;
+
+  /// Le modèle du catalogue, quand il y était.
+  ///
+  /// Nul pour un véhicule dont le modèle a été tapé à la main — le référentiel
+  /// est bâti sur les flux d'occasion européens, et le parc vient aussi des
+  /// États-Unis, du Golfe et du Japon. `null as int` levait une exception sur
+  /// la liste entière du garage : un seul véhicule au modèle libre rendait
+  /// l'écran inutilisable.
+  final int? vehicleModelId;
+
+  /// Le modèle tel que le propriétaire l'a tapé, faute de l'avoir trouvé.
+  final String? modelLibre;
   final String? vin;
   /// Code moteur (ex: "1NZ", "K20", "OM651") — renseigné via décodage VIN
   /// ou saisi manuellement. Optionnel : améliore la précision de la recherche
@@ -51,7 +62,8 @@ class OwnedVehicle extends Equatable {
     required this.designation,
     this.nickname,
     required this.brandId,
-    required this.vehicleModelId,
+    this.vehicleModelId,
+    this.modelLibre,
     this.vin,
     this.engineCode,
     this.plateNumber,
@@ -77,7 +89,8 @@ class OwnedVehicle extends Equatable {
     designation:       json['designation']       as String,
     nickname:          json['nickname']          as String?,
     brandId:           json['brand_id']          as int,
-    vehicleModelId:    json['vehicle_model_id']  as int,
+    vehicleModelId:    json['vehicle_model_id']  as int?,
+    modelLibre:        json['model_libre']       as String?,
     vin:               json['vin']               as String?,
     engineCode:        json['engine_code']       as String?,
     plateNumber:       json['plate_number']      as String?,
@@ -109,7 +122,18 @@ class OwnedVehicle extends Equatable {
   List<Object?> get props => [id];
 
   /// Vrai si au moins une donnée technique est connue (moteur ou code moteur).
-  bool get hasEngineData => engineCode != null || identity.engineType != null;
+  ///
+  /// Un modèle hors catalogue l'emporte sur tout le reste : les compatibilités
+  /// sont déclarées par modèle, et aucune ne peut correspondre. Répondre vrai
+  /// ferait passer un « on ne sait pas » pour un résultat.
+  bool get hasEngineData =>
+      vehicleModelId != null &&
+      (engineCode != null || identity.engineType != null);
+
+  /// Vrai quand le modèle a été tapé à la main : la recherche de pièces
+  /// compatibles est indisponible pour ce véhicule, et rien ne la débloquera
+  /// tant que le modèle n'est pas entré au catalogue.
+  bool get modeleHorsCatalogue => vehicleModelId == null;
 
   /// Échéance la plus urgente, dépassée ou non. `null` si rien n'est suivi.
   VehicleDeadline? get nextDeadline =>

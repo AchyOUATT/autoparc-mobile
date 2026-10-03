@@ -92,11 +92,26 @@ Future<void> choisirMotorisation(
   WidgetRef ref,
   OwnedVehicle vehicle,
 ) async {
+  // Les cotes de consommation sont indexées par modèle du catalogue : sans
+  // lui, aucune source ne peut être interrogée. On le dit, plutôt que de
+  // laisser partir une requête sans identifiant.
+  final modelId = vehicle.vehicleModelId;
+
+  if (modelId == null) {
+    _dire(
+      context,
+      'Consommation indisponible : le modèle de ce véhicule n\'est pas '
+      'encore au catalogue.',
+      erreur: false,
+    );
+    return;
+  }
+
   List<Motorisation> options;
 
   try {
     options = await ref.read(garageRepositoryProvider).motorisations(
-          vehicleModelId: vehicle.vehicleModelId,
+          vehicleModelId: modelId,
           year: vehicle.year,
         );
   } catch (_) {
