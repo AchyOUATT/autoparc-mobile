@@ -158,6 +158,9 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
       if (mounted) {
         ref.invalidate(accessoryListProvider);
         ref.invalidate(accessoryDetailProvider(accessory.id));
+        // Le premier article d'une catégorie doit y faire apparaître sa
+        // pastille sans attendre une réouverture de l'application.
+        ref.invalidate(categoriesAccessoiresOccupeesProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(existing != null

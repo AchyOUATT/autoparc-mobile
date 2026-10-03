@@ -85,6 +85,9 @@ class PartDetailPage extends ConsumerWidget {
       try {
         await ref.read(catalogRepositoryProvider).deletePart(part.id);
         ref.invalidate(partListProvider);
+        // La dernière pièce d'une catégorie doit en retirer la pastille : sinon
+        // elle resterait proposée et ne renverrait plus rien.
+        ref.invalidate(categoriesAvecPiecesProvider);
         if (context.mounted) context.pop();
       } catch (e) {
         if (context.mounted) {

@@ -181,6 +181,35 @@ class _FilterBar extends ConsumerWidget {
           fn(ref.read(accessoryFilterProvider));
     }
 
+    // Les cinq catégories sont codées en dur ici, avec leur libellé et leur
+    // icône — l'API ne peut fournir ni l'un ni l'autre. Le serveur dit
+    // seulement lesquelles portent un article en vente, et seules celles-là
+    // sont proposées : le catalogue d'accessoires est vide en production, et
+    // les cinq pastilles ne renvoyaient rien.
+    final occupees = ref.watch(categoriesAccessoiresOccupeesProvider);
+    final categories = _categories
+        .where((c) => occupees.valueOrNull?.contains(c.value) ?? false)
+        .toList();
+
+    // Même garde que pour les pièces : la désélection passe par la pastille,
+    // donc un filtre posé sur une catégorie qui n'est plus proposée ne pourrait
+    // plus être retiré. Conditionné aux données reçues — pendant le chargement,
+    // l'ensemble est vide sans rien dire de l'occupation.
+    if (occupees.hasValue &&
+        filter.category != null &&
+        !occupees.requireValue.contains(filter.category)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        update((f) => f.copyWith(clearCategory: true));
+      });
+    }
+
+    // La rangée s'affichait inconditionnellement : 48 dp de vide quand il n'y
+    // avait ni catégorie occupée ni ville.
+    if (categories.isEmpty && cities.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return SizedBox(
       height: 48,
       child: ListView(
@@ -188,7 +217,7 @@ class _FilterBar extends ConsumerWidget {
         scrollDirection: Axis.horizontal,
         children: [
           // Chips de catégorie
-          ..._categories.map((cat) {
+          ...categories.map((cat) {
             final selected = filter.category == cat.value;
             return Padding(
               padding: const EdgeInsets.only(right: 8),

@@ -455,9 +455,33 @@ final partDetailProvider =
 });
 
 /// Catégories de pièces — chargées une fois.
+///
+/// L'arbre complet, et c'est voulu : ce provider alimente les menus où l'on
+/// CHOISIT une catégorie — ajout et modification d'une pièce, « Exprimer un
+/// besoin ». Y retirer les catégories vides interdirait de classer la première
+/// pièce d'une catégorie, et viderait le champ d'une pièce déjà rangée dans
+/// une catégorie devenue absente de la liste. Les pastilles de filtre, elles,
+/// lisent [categoriesAvecPiecesProvider].
 final partCategoriesProvider =
     FutureProvider<List<PartCategory>>((ref) async {
   return ref.read(catalogRepositoryProvider).getPartCategories();
+});
+
+/// Les catégories qui mènent à une pièce — pour les pastilles de filtre.
+///
+/// `autoDispose` à dessein : l'occupation suit le stock, et la liste est donc
+/// redemandée à chaque ouverture de l'écran plutôt que conservée pour la
+/// session. Elle n'est pas non plus mise en cache sur le disque, pour la même
+/// raison.
+final categoriesAvecPiecesProvider =
+    FutureProvider.autoDispose<List<PartCategory>>((ref) async {
+  return ref.read(catalogRepositoryProvider).getPartCategoriesNonVides();
+});
+
+/// Les catégories d'accessoires qui portent au moins un article en vente.
+final categoriesAccessoiresOccupeesProvider =
+    FutureProvider.autoDispose<Set<String>>((ref) async {
+  return ref.read(catalogRepositoryProvider).getAccessoryCategoriesOccupees();
 });
 
 /// Fabricants — chargés une fois.

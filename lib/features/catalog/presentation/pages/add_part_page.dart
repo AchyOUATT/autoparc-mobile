@@ -195,6 +195,11 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
       if (mounted) {
         ref.invalidate(partListProvider);
         ref.invalidate(partDetailProvider(part.id));
+        // La première pièce d'une catégorie doit y faire apparaître une
+        // pastille tout de suite. L'écran des pièces vit derrière ce
+        // formulaire : sans cette invalidation, il garderait l'occupation
+        // telle qu'elle était avant l'enregistrement.
+        ref.invalidate(categoriesAvecPiecesProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(existing != null

@@ -5,6 +5,7 @@ import 'package:auto/features/catalog/data/models/accessory.dart';
 import 'package:auto/features/catalog/data/models/part.dart';
 import 'package:auto/features/catalog/data/models/part_category.dart';
 import 'package:auto/features/catalog/data/models/vehicle.dart';
+import 'package:auto/features/catalog/presentation/widgets/niveau_categories.dart';
 import 'package:auto/features/garage/data/models/owned_vehicle.dart';
 import 'package:auto/features/vehicles/data/models/catalog_refs.dart';
 import 'package:auto/shared/models/paginated_response.dart';
@@ -111,8 +112,31 @@ void main() {
           .toList();
 
       expect(categories, isNotEmpty);
-      expect(categories.any((c) => c.isRoot), isTrue,
-          reason: 'La barre de filtres ne propose que les racines.');
+      expect(categories.any((c) => c.isRoot), isTrue);
+    });
+
+    /// L'arbre élagué alimente les pastilles de filtre, l'arbre complet les
+    /// menus de saisie. Deux réponses de même forme, aux lignes différentes :
+    /// c'est cette différence que l'application exploite, et `has_own_parts`
+    /// est ce qui lui permet de choisir le niveau des pastilles.
+    test('l\'arbre élagué porte le drapeau du niveau', () {
+      final elaguees = liste('part_categories_non_empty')
+          .map((e) => PartCategory.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      expect(elaguees, isNotEmpty);
+      expect(elaguees.any((c) => c.hasOwnParts), isTrue,
+          reason: 'Une catégorie élaguée au moins porte des pièces.');
+      expect(niveauDiscriminant(elaguees), isA<List<PartCategory>>());
+    });
+
+    test('les catégories d\'accessoires occupées se lisent', () {
+      final valeurs = liste('accessory_categories').cast<String>().toSet();
+
+      expect(valeurs, isNotEmpty);
+      // L'application garde ses libellés et ses icônes : le serveur ne doit
+      // rendre que des valeurs d'énumération, qu'elle recoupe avec sa liste.
+      expect(valeurs.every((v) => v == v.toLowerCase()), isTrue);
     });
 
     test('les pays se lisent', () {

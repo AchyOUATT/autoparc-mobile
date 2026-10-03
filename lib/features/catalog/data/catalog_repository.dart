@@ -132,6 +132,36 @@ class CatalogRepository {
     return _parseCategories(list);
   }
 
+  /// Les seules catégories qui mènent à une pièce, et leurs ancêtres.
+  ///
+  /// Délibérément hors cache, contrairement à l'arbre complet. L'arbre ne
+  /// change pratiquement jamais et se garde 24 h sans dommage ; l'occupation,
+  /// elle, suit le stock. Mise en cache, elle mentirait une journée entière :
+  /// une catégorie fraîchement remplie n'aurait pas de pastille, et la pastille
+  /// d'une catégorie vidée resterait proposée. Le cache ne se vide qu'à la main,
+  /// par « Rafraîchir le catalogue », et seul le personnel y a accès.
+  ///
+  /// Le coût est négligeable : l'arbre élagué du catalogue actuel tient en
+  /// trois lignes.
+  Future<List<PartCategory>> getPartCategoriesNonVides() async {
+    final list = await _client.getList(
+      Endpoints.catalogPartCategories,
+      params: const {'non_empty': 1},
+    );
+
+    return _parseCategories(list);
+  }
+
+  /// Les valeurs de catégorie d'accessoire qui portent au moins un article.
+  ///
+  /// Le serveur ne rend que des valeurs : libellés et icônes restent côté
+  /// application, qui les a en dur et que l'API ne peut pas fournir.
+  Future<Set<String>> getAccessoryCategoriesOccupees() async {
+    final list = await _client.getList(Endpoints.catalogAccessoryCategories);
+
+    return list.map((e) => e as String).toSet();
+  }
+
   List<PartCategory> _parseCategories(List<dynamic> list) => list
       .map((e) => PartCategory.fromJson(e as Map<String, dynamic>))
       .toList();

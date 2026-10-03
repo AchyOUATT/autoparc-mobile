@@ -6,6 +6,7 @@ import '../../data/catalog_repository.dart';
 import '../../data/models/part.dart';
 import '../../data/models/part_category.dart';
 import '../providers/catalog_providers.dart';
+import '../widgets/niveau_categories.dart';
 import '../../../../shared/models/paged_state.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/catalog_image.dart';
@@ -202,14 +203,34 @@ class _FilterBar extends ConsumerWidget {
     // references sans aucun moyen de les trier par nature. Les accessoires,
     // eux, ont leurs categories pour seulement 80 articles.
     //
-    // Seules les racines sont proposées : l'arbre compte 89 entrées sur trois
-    // niveaux, une barre de 89 puces serait interminable. Le serveur inclut
-    // les descendantes dans le filtre, donc « Freinage » couvre bien disques,
-    // plaquettes et flexibles — auxquels les pièces sont réellement rattachées.
-    final categories = (ref.watch(partCategoriesProvider).valueOrNull ??
-            const <PartCategory>[])
-        .where((c) => c.isRoot)
-        .toList();
+    // Les pastilles viennent de l'arbre ÉLAGUÉ, pas de l'arbre complet, et le
+    // niveau n'est plus figé sur les racines : neuf pastilles étaient proposées
+    // et une seule menait quelque part. `niveauDiscriminant` descend jusqu'au
+    // niveau qui partage réellement le catalogue, et ne rend rien quand aucun
+    // niveau ne le partage — mieux vaut pas de barre qu'une barre qui ne trie
+    // rien. Le serveur inclut les descendantes dans le filtre, donc une
+    // pastille de niveau intermédiaire couvre bien ses feuilles.
+    final elague = ref.watch(categoriesAvecPiecesProvider);
+    final categories = niveauDiscriminant(
+      elague.valueOrNull ?? const <PartCategory>[],
+    );
+
+    // Un filtre posé sur une catégorie qui n'est plus proposée ne pourrait
+    // plus être retiré : la désélection passe par la pastille elle-même, et
+    // elle a disparu. La liste resterait vide sans qu'aucun geste n'y change
+    // quoi que ce soit.
+    //
+    // Conditionné à `hasValue` : pendant le chargement, la liste est vide sans
+    // rien dire de l'occupation, et effacer là réinitialiserait le filtre à
+    // chaque ouverture de l'écran.
+    if (elague.hasValue &&
+        filter.categoryId != null &&
+        !categories.any((c) => c.id == filter.categoryId)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        update((f) => f.copyWith(clearCategory: true));
+      });
+    }
 
     if (categories.isEmpty && cities.isEmpty) {
       return const SizedBox.shrink();

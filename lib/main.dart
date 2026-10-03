@@ -460,6 +460,11 @@ class _AppDrawer extends ConsumerWidget {
                 ref.invalidate(catalogRefsProvider);
                 ref.invalidate(countriesProvider);
                 ref.invalidate(partCategoriesProvider);
+                // L'occupation des catégories n'est pas sur le disque — elle
+                // suit le stock — mais le provider peut être vivant derrière ce
+                // tiroir. Ce bouton doit tout rafraîchir, pas presque tout.
+                ref.invalidate(categoriesAvecPiecesProvider);
+                ref.invalidate(categoriesAccessoiresOccupeesProvider);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

@@ -48,6 +48,11 @@ class Endpoints {
   static const String catalogBrands         = '/catalog/brands';
   static const String catalogCountries      = '/catalog/countries';
   static const String catalogPartCategories = '/catalog/part-categories';
+
+  /// Les catégories d'accessoires qui portent au moins un article en vente.
+  /// Les libellés et icônes restent côté application : l'API ne rend que des
+  /// valeurs.
+  static const String catalogAccessoryCategories = '/catalog/accessory-categories';
   static const String catalogManufacturers  = '/catalog/manufacturers';
   static const String compatibleParts       = '/catalog/compatible-parts';
   static const String catalogMotorisations  = '/catalog/motorisations';

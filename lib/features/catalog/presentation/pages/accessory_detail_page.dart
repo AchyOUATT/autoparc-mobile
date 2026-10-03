@@ -78,6 +78,8 @@ class _AccessoryDetailView extends ConsumerWidget {
       try {
         await ref.read(catalogRepositoryProvider).deleteAccessory(accessory.id);
         ref.invalidate(accessoryListProvider);
+        // Le dernier article d'une catégorie doit en retirer la pastille.
+        ref.invalidate(categoriesAccessoiresOccupeesProvider);
         if (context.mounted) context.pop();
       } catch (e) {
         if (context.mounted) {
