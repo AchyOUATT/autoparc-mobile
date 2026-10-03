@@ -101,6 +101,35 @@ void main() {
       expect(e.isThrottled, isTrue);
       expect(e.userMessage, contains('Patientez'));
     });
+
+    /// Un envoi de photos trop volumineux. Le refus vient de `post_max_size`,
+    /// donc d'un middleware de Laravel : avant l'authentification, avant toute
+    /// validation, et sans rien savoir du metier. Son message est « The POST
+    /// data is too large. » — anglais, et muet sur la conduite a tenir.
+    test('un envoi trop volumineux dit quoi faire, en francais', () {
+      final e = ApiException.fromDioError(reponse(413, corps: {
+        'message': 'The POST data is too large.',
+        'request_id': 'c0ffee00',
+      }));
+
+      expect(e.isTooLarge, isTrue);
+      expect(e.userMessage, isNot(contains('POST')));
+      expect(e.userMessage.toLowerCase(), contains('volumineux'));
+      expect(e.userMessage.toLowerCase(), contains('photos'),
+          reason: 'Trop volumineux sans dire de quoi ne donne aucune prise.');
+    });
+
+    /// Le meme refus peut tomber d'un mandataire place devant l'application :
+    /// pas de JSON, donc aucun message a reprendre. Le cas par defaut rendait
+    /// alors la seule reference de requete.
+    test('un refus sans JSON exploitable dit la meme chose', () {
+      final e = ApiException.fromDioError(
+        reponse(413, corps: '<html>Request Entity Too Large</html>'),
+      );
+
+      expect(e.userMessage.toLowerCase(), contains('volumineux'));
+      expect(e.userMessage, isNot(contains('html')));
+    });
   });
 
   group('Référence de requête', () {
