@@ -238,6 +238,22 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
         title: Text(_existing != null ? 'Modifier la pièce' : 'Nouvelle pièce'),
         centerTitle: false,
         actions: [
+          // En modification seulement : a la creation, la piece n'a pas encore
+          // d'identifiant auquel rattacher une photo — l'ecran s'ouvre juste
+          // apres l'enregistrement.
+          if (_existing != null)
+            IconButton(
+              icon: const Icon(Icons.add_a_photo_outlined),
+              tooltip: 'Photos',
+              onPressed: () => context.push(
+                '/media-upload',
+                extra: MediaUploadConfig(
+                  type:  MediaOwnerType.part,
+                  id:    _existing!.id,
+                  title: _existing!.name,
+                ),
+              ),
+            ),
           FilledButton(
             onPressed: _saving ? null : _submit,
             child: _saving

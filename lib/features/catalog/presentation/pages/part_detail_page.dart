@@ -14,6 +14,8 @@ import '../../../../features/cart/presentation/pages/cart_page.dart';
 import '../../../../features/cart/presentation/providers/cart_provider.dart';
 import '../../../../features/partners/presentation/widgets/product_partners_section.dart';
 import '../../../../core/api/api_exception.dart';
+import '../../../../shared/data/media_repository.dart';
+import '../../../../shared/presentation/pages/media_upload_page.dart';
 
 const _typeLabels = {
   'oem':         'OEM — Constructeur d\'origine',
@@ -106,6 +108,27 @@ class PartDetailPage extends ConsumerWidget {
             expandedHeight: 160,
             pinned: true,
             actions: [
+              // Les photos s'ajoutaient uniquement dans la seconde qui suivait
+              // la creation : le formulaire basculait sur l'ecran de
+              // televersement, et plus rien n'y menait ensuite. Passer cette
+              // etape, ou publier autrement que par le formulaire — ce qui est
+              // le cas des dix filtres a huile du catalogue —, rendait les
+              // photos definitivement inaccessibles.
+              if (auth.canManageCatalog)
+                IconButton(
+                  icon: const Icon(Icons.add_a_photo_outlined),
+                  tooltip: 'Photos',
+                  onPressed: () => context
+                      .push('/media-upload', extra: MediaUploadConfig(
+                        type:  MediaOwnerType.part,
+                        id:    part.id,
+                        title: part.name,
+                      ))
+                      .then((_) {
+                        ref.invalidate(partDetailProvider(part.id));
+                        ref.invalidate(partListProvider);
+                      }),
+                ),
               if (auth.canManageCatalog)
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
@@ -290,16 +313,26 @@ class _PriceCard extends StatelessWidget {
           children: [
             Text('Prix', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 12),
+            // Les deux textes étaient posés bruts : chacun réclamait sa
+            // largeur naturelle, et la ligne débordait dès qu'un prix à sept
+            // chiffres rencontrait un petit écran ou des caractères grossis.
+            // Le prix reste entier — il passe à la ligne plutôt que d'être
+            // tronqué, un montant abrégé valant moins que pas de montant.
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Prix de vente',
-                    style: Theme.of(context).textTheme.bodyMedium),
-                Text(
-                  formatXof(pricing.sellingPrice),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: cs.primary,
+                Expanded(
+                  child: Text('Prix de vente',
+                      style: Theme.of(context).textTheme.bodyMedium),
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    formatXof(pricing.sellingPrice),
+                    textAlign: TextAlign.end,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: cs.primary,
+                    ),
                   ),
                 ),
               ],

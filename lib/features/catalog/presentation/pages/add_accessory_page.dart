@@ -200,6 +200,21 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
         title: Text(_existing != null ? 'Modifier l\'accessoire' : 'Nouvel accessoire'),
         centerTitle: false,
         actions: [
+          // En modification seulement : a la creation, l'accessoire n'a pas
+          // encore d'identifiant auquel rattacher une photo.
+          if (_existing != null)
+            IconButton(
+              icon: const Icon(Icons.add_a_photo_outlined),
+              tooltip: 'Photos',
+              onPressed: () => context.push(
+                '/media-upload',
+                extra: MediaUploadConfig(
+                  type:  MediaOwnerType.accessory,
+                  id:    _existing!.id,
+                  title: _existing!.name,
+                ),
+              ),
+            ),
           FilledButton(
             onPressed: _saving ? null : _submit,
             child: _saving

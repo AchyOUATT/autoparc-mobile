@@ -13,6 +13,8 @@ import '../../../../features/cart/presentation/pages/cart_page.dart';
 import '../../../../features/cart/presentation/providers/cart_provider.dart';
 import '../../../../features/partners/presentation/widgets/product_partners_section.dart';
 import '../../../../core/api/api_exception.dart';
+import '../../../../shared/data/media_repository.dart';
+import '../../../../shared/presentation/pages/media_upload_page.dart';
 
 class AccessoryDetailPage extends ConsumerWidget {
   final int accessoryId;
@@ -104,6 +106,23 @@ class _AccessoryDetailView extends ConsumerWidget {
             visualDensity: VisualDensity.compact,
           ),
           const SizedBox(width: 8),
+          // Voir la fiche piece : l'ecran de televersement n'etait atteignable
+          // qu'au moment de la creation, et plus jamais ensuite.
+          if (auth.canManageCatalog)
+            IconButton(
+              icon: const Icon(Icons.add_a_photo_outlined),
+              tooltip: 'Photos',
+              onPressed: () => context
+                  .push('/media-upload', extra: MediaUploadConfig(
+                    type:  MediaOwnerType.accessory,
+                    id:    accessory.id,
+                    title: accessory.name,
+                  ))
+                  .then((_) {
+                    ref.invalidate(accessoryDetailProvider(accessory.id));
+                    ref.invalidate(accessoryListProvider);
+                  }),
+            ),
           if (auth.canManageCatalog)
             IconButton(
               icon: const Icon(Icons.edit_outlined),
