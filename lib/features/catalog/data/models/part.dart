@@ -18,6 +18,18 @@ class Part extends Equatable {
   final bool    isActive;
   final String? coverUrl; // URL de la photo de couverture (null si aucune photo)
 
+  /// Toutes les photos de l'article, couverture en tête.
+  ///
+  /// `coverUrl` est simplement le premier élément de cette liste : la carte
+  /// n'a besoin que de lui, la fiche les montre toutes. L'API les renvoyait
+  /// déjà — `fromJson` les lisait pour en extraire la couverture, puis jetait
+  /// le reste. Les photos existaient donc sans qu'aucun écran ne puisse les
+  /// atteindre.
+  ///
+  /// Jamais `null`, contrairement à `fitments` : une liste vide dit « aucune
+  /// photo », et c'est vrai aussi bien dans la liste que sur la fiche.
+  final List<String> photoUrls;
+
   /// Les compatibilités véhicules, telles que l'API les rend.
   ///
   /// `null` ne veut pas dire « aucune » : la liste des pièces ne charge pas
@@ -46,12 +58,14 @@ class Part extends Equatable {
     this.warrantyMonths,
     required this.isActive,
     this.coverUrl,
+    this.photoUrls = const [],
     this.fitments,
   });
 
   factory Part.fromJson(Map<String, dynamic> json) {
     final mediaList = json['media'] as List?;
     String? cover;
+    var photos = const <String>[];
     if (mediaList != null && mediaList.isNotEmpty) {
       // Priorité : is_cover = true, sinon premier élément
       final coverItem = mediaList.firstWhere(
@@ -59,6 +73,19 @@ class Part extends Equatable {
         orElse: () => mediaList.first,
       );
       cover = coverItem['url'] as String?;
+
+      // La couverture d'abord, puis les autres par `position`. On écarte la
+      // couverture par identité et non par URL : deux médias peuvent porter
+      // la même adresse — le catalogue en a eu deux pointant sur « /0 » après
+      // une panne de stockage — et un filtre par URL les aurait tous perdus.
+      final autres = mediaList.where((m) => !identical(m, coverItem)).toList()
+        ..sort((a, b) => ((a['position'] as int?) ?? 0)
+            .compareTo((b['position'] as int?) ?? 0));
+
+      photos = <String>[
+        ?cover,
+        ...autres.map((m) => m['url'] as String?).whereType<String>(),
+      ];
     }
     return Part(
       id:             json['id']              as int,
@@ -76,6 +103,7 @@ class Part extends Equatable {
       warrantyMonths: json['warranty_months'] as int?,
       isActive:       json['is_active']       as bool? ?? true,
       coverUrl:       cover,
+      photoUrls:      photos,
       // Clé absente → null, c'est-à-dire « la réponse ne le dit pas ».
       fitments: (json['fitments'] as List?)
           ?.cast<Map<String, dynamic>>()
@@ -138,7 +166,14 @@ class PartStock extends Equatable {
     quantity:       json['quantity']        as int,
     alertThreshold: json['alert_threshold'] as int? ?? 0,
     isLow:          json['is_low']          as bool? ?? false,
-    location:       json['location']        as String?,
+    // Le texte libre du formulaire d'abord — c'est lui que l'ecran de saisie
+    // ecrit, sous la cle "storage_location". Tout le monde relisait "location",
+    // qui est la localite liee : un OBJET {id, name, city}, et seulement quand
+    // la relation est chargee. Resultat, l'emplacement saisi n'etait jamais
+    // reaffiche, ni sur la fiche, ni au pre-remplissage de l'edition — et le
+    // jour ou une localite aurait ete liee, le cast en String aurait leve.
+    location:       (json['storage_location'] as String?)
+                    ?? ((json['location'] as Map<String, dynamic>?)?['name'] as String?),
   );
 
   @override

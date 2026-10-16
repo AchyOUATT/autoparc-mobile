@@ -182,7 +182,19 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
           );
         }
       }
-    } catch (e) {
+    } catch (e, pile) {
+      // Ce catch avalait tout sans rien en dire, et le message affiche est le
+      // repli de messageFor — « Une erreur est survenue » —, celui qui ne se
+      // declenche ni pour une ApiException ni pour une DioException. Autrement
+      // dit : le serveur a repondu correctement, l'accessoire a bien ete cree,
+      // et quelque chose a leve ensuite, dans le bloc de succes ci-dessus.
+      //
+      // Quatre « Camera de recul » ont ete creees ainsi le 2026-10-16, l'une
+      // par tentative, chacune suivie d'un bandeau rouge. Sans cette trace, on
+      // ne peut que deviner — et deviner a deja coute assez cher.
+      debugPrint('[AddAccessory] echec : ${e.runtimeType} — $e');
+      debugPrintStack(stackTrace: pile, maxFrames: 12);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),

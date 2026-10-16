@@ -278,11 +278,17 @@ class _FilterBar extends ConsumerWidget {
 
 // ── Grille décalée ───────────────────────────────────────────────────
 
-// Hauteurs d'image qui alternent pour l'effet masonry
 // Hauteur unique : des vignettes de tailles differentes decalaient les deux
 // colonnes, si bien que les prix ne s'alignaient jamais d'une carte a l'autre.
 // Sur un catalogue ou l'on compare des prix, c'est une gene, pas un effet.
-const _imgHeight = 118.0;
+//
+// 140 et non 118 depuis le 2026-10-16. Sur deux colonnes, une carte fait
+// environ 170 points de large : a 118 l'image tenait dans un cadre nettement
+// plus large que haut, ce qui rogne en hauteur des photos de pieces presque
+// toujours cadrees droit. A 140 le cadre approche le carre et la piece occupe
+// davantage de la vignette. La place vient de la ligne de categorie retiree
+// des cartes, et du nom passe a labelSmall.
+const _imgHeight = 140.0;
 
 class _PartList extends StatelessWidget {
   final List<Part> parts;
@@ -469,23 +475,29 @@ class _PartCardState extends ConsumerState<_PartCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Le nom en entier, dans la typographie qu'occupait la
+                  // categorie.
+                  //
+                  // La categorie ne figure plus ici : elle redisait le filtre
+                  // deja actif en haut de l'ecran, et elle volait la ligne dont
+                  // le nom avait besoin. Les references de pieces se
+                  // distinguent souvent par leur fin — « Cartouche de filtre a
+                  // huile 04152-YZZA1 » — donc une troncature a deux lignes
+                  // coupait precisement ce qui permet de les reconnaitre.
+                  //
+                  // On reprend telle quelle la police de la categorie —
+                  // labelSmall, sans surcharge de graisse. Un cran plus petit
+                  // que bodySmall, ce qui laisse le nom tenir en entier sans
+                  // allonger la carte.
+                  //
+                  // Seule la couleur change : onSurface et non outline. Le nom
+                  // est le contenu principal de la carte ; en gris d'habillage
+                  // il passerait pour une mention secondaire.
                   Text(part.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: cs.onSurface,
                     ),
                   ),
-                  if (part.categoryName != null) ...[
-                    const SizedBox(height: 2),
-                    Text(part.categoryName!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelSmall
-                          ?.copyWith(color: cs.outline),
-                    ),
-                  ],
                   const SizedBox(height: 6),
                   Text(
                     formatXofShort(part.pricing.sellingPrice),
@@ -659,9 +671,31 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
     // chaque sortie de la page levait « Cannot use "ref" after the widget was
     // disposed ». `deactivate()` s'exécute juste avant, alors que `ref` est
     // encore valide.
-    ref.read(selectedGarageVehicleProvider.notifier).state = null;
-    ref.read(partFilterProvider.notifier).state =
-        ref.read(partFilterProvider).copyWith(clearVehicleModel: true);
+    //
+    // Mais écrire directement ici ne marche pas non plus : `deactivate()`
+    // s'exécute PENDANT la mise à jour de l'arbre, et Riverpod l'interdit.
+    // Passer à l'onglet Accessoires affichait « Tried to modify a provider
+    // while the widget tree was building », en rouge sur tout l'écran. Le
+    // déplacement de `dispose()` vers `deactivate()` avait corrigé une erreur
+    // et introduit l'autre.
+    //
+    // On lit donc les notifiers maintenant — `ref` est valide — et on écrit
+    // après la frame. Les deux sont des StateProvider simples, non
+    // autoDispose : leurs contrôleurs sont encore là au moment du rappel.
+    // L'état courant est relu dans le rappel plutôt que capturé ici, pour ne
+    // pas réécrire une valeur devenue obsolète entre-temps.
+    //
+    // L'assertion n'existe qu'en debug (flutter_riverpod framework.dart:309,
+    // sous `if (kDebugMode)`), donc rien de ceci n'était visible en
+    // production — mais la violation de cycle de vie, elle, était réelle.
+    final vehiculeSelectionne = ref.read(selectedGarageVehicleProvider.notifier);
+    final filtre              = ref.read(partFilterProvider.notifier);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      vehiculeSelectionne.state = null;
+      filtre.state = filtre.state.copyWith(clearVehicleModel: true);
+    });
+
     super.deactivate();
   }
 

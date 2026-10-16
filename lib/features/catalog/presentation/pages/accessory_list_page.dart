@@ -258,8 +258,10 @@ class _FilterBar extends ConsumerWidget {
 
 // ── Grille décalée ───────────────────────────────────────────────
 
-// Hauteur unique : voir la note identique sur la page des pieces.
-const _imgHeight = 118.0;
+// Hauteur unique, et 140 depuis le 2026-10-16 : voir la note detaillee sur la
+// page des pieces. Les deux valeurs doivent rester egales, les deux listes
+// etant cote a cote dans la meme barre d'onglets.
+const _imgHeight = 140.0;
 
 // Icônes par catégorie d'accessoire
 const _categoryIcons = <String, IconData>{
@@ -439,23 +441,20 @@ class _AccessoryCardState extends ConsumerState<_AccessoryCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Le nom en entier, dans la typographie qu'occupait la
+                  // categorie. Meme raisonnement que sur la carte des pieces,
+                  // et meme rendu : les deux listes se cotoient dans la meme
+                  // barre d'onglets, elles ne doivent pas diverger.
+                  //
+                  // On reprend telle quelle la police de la categorie —
+                  // labelSmall, sans surcharge de graisse. Seule la couleur
+                  // change : onSurface et non outline, le nom etant le contenu
+                  // principal de la carte.
                   Text(accessory.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: cs.onSurface,
                     ),
                   ),
-                  if (accessory.categoryLabel != null) ...[
-                    const SizedBox(height: 2),
-                    Text(accessory.categoryLabel!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelSmall
-                          ?.copyWith(color: cs.outline),
-                    ),
-                  ],
                   const SizedBox(height: 6),
                   Text(
                     formatXofShort(accessory.pricing.sellingPrice),

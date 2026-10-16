@@ -7,6 +7,7 @@ import '../../data/catalog_repository.dart';
 import '../providers/catalog_providers.dart';
 import '../widgets/fitments_section.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
+import '../../../../core/widgets/product_gallery.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../features/cart/data/models/cart_item.dart';
 import '../../../../features/cart/presentation/pages/cart_page.dart';
@@ -147,17 +148,23 @@ class _AccessoryDetailView extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         children: [
 
-          // ── Placeholder image ─────────────────────────────────
-          Container(
-            height: 180,
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              _categoryIcon(accessory.categoryValue),
-              size: 72,
-              color: cs.primary.withAlpha(180),
+          // ── Photo de couverture, icone de categorie a defaut ──
+          //
+          // Ce bloc affichait l'icone en dur : il ne consultait ni coverUrl ni
+          // media. Meme oubli que sur la fiche d'une piece.
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              height: 180,
+              width: double.infinity,
+              child: ProductGallery(
+                urls: accessory.photoUrls,
+                titre: accessory.name,
+                fallback: _AccessoryCover(
+                  iconeDeRepli: _categoryIcon(accessory.categoryValue),
+                  cs: cs,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -308,15 +315,34 @@ class _StockCard extends StatelessWidget {
         children: [
           Icon(inStock ? Icons.check_circle : Icons.cancel, color: color),
           const SizedBox(width: 12),
-          Text(
-            inStock ? '${stock.quantity} en stock' : 'Rupture de stock',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
+          // Colonne, et non plus un simple Text : l'emplacement se place
+          // dessous. La fiche d'une piece l'affichait deja, celle d'un
+          // accessoire ne le montrait nulle part — on le saisissait au
+          // formulaire et il disparaissait.
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  inStock ? '${stock.quantity} en stock' : 'Rupture de stock',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (stock.location != null)
+                  Text(
+                    'Emplacement : ${stock.location}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+              ],
             ),
           ),
+          // Plus de Spacer : l'Expanded ci-dessus pousse deja la pastille a
+          // droite. Les deux se partageraient l'espace libre, et la colonne de
+          // texte perdrait la moitie de sa largeur pour rien.
           if (stock.isLow && inStock) ...[
-            const Spacer(),
             Chip(
               label: const Text('Stock bas', style: TextStyle(fontSize: 11)),
               backgroundColor: Colors.orange.shade100,
@@ -356,5 +382,31 @@ class _InfoRow extends StatelessWidget {
         ),
       ],
     ),
+  );
+}
+
+/// Le repli du bandeau : l'icone de categorie, quand il n'y a aucune photo.
+///
+/// Il reprend exactement le bloc code en dur auparavant — hauteur, coins
+/// arrondis, teinte — pour qu'un accessoire sans photo garde l'allure qu'il
+/// avait. Le ClipRRect qui l'entoure vit chez l'appelant : il sert a la
+/// galerie, pas au repli, dont les coins sont deja arrondis.
+class _AccessoryCover extends StatelessWidget {
+  const _AccessoryCover({
+    required this.iconeDeRepli,
+    required this.cs,
+  });
+
+  final IconData    iconeDeRepli;
+  final ColorScheme cs;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 180,
+    decoration: BoxDecoration(
+      color: cs.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Icon(iconeDeRepli, size: 72, color: cs.primary.withAlpha(180)),
   );
 }

@@ -14,6 +14,7 @@ import '../../../../features/cart/presentation/pages/cart_page.dart';
 import '../../../../features/cart/presentation/providers/cart_provider.dart';
 import '../../../../features/partners/presentation/widgets/product_partners_section.dart';
 import '../../../../core/api/api_exception.dart';
+import '../../../../core/widgets/product_gallery.dart';
 import '../../../../shared/data/media_repository.dart';
 import '../../../../shared/presentation/pages/media_upload_page.dart';
 
@@ -149,21 +150,46 @@ class PartDetailPage extends ConsumerWidget {
               if (!isStaff) const CartIconButton(),
             ],
             flexibleSpace: FlexibleSpaceBar(
+              // Blanc, et pose sur un voile : le titre s'affiche par-dessus le
+              // bandeau, qui montre desormais une photo et non plus un aplat
+              // gris. En noir sur une boite de filtre claire, il etait
+              // illisible.
               title: Text(
                 part.name,
-                style: const TextStyle(fontSize: 14),
+                style: const TextStyle(fontSize: 14, color: Colors.white),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              background: Container(
-                color: cs.surfaceContainerHighest,
-                child: Center(
-                  child: Icon(
-                    Icons.settings_outlined,
-                    size: 72,
-                    color: cs.outline.withValues(alpha: 0.4),
+              // La photo de couverture, et l'engrenage seulement a defaut.
+              //
+              // Ce bandeau affichait l'icone en dur : il ne consultait ni
+              // coverUrl ni media. Les photos existaient, l'API les renvoyait,
+              // la carte de la liste les affichait — seule la fiche, ou on les
+              // cherche justement, n'en montrait aucune.
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ProductGallery(
+                    urls: part.photoUrls,
+                    titre: part.name,
+                    fallback: _PartCover(cs: cs),
                   ),
-                ),
+                  // Le voile qui rend le titre lisible quelle que soit la
+                  // photo. IgnorePointer, sinon il avalerait les appuis
+                  // destines a la galerie — le bas de l'image ne s'ouvrirait
+                  // plus en plein ecran.
+                  const IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.center,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.transparent, Colors.black54],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -563,4 +589,28 @@ class CompatibilityTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Le repli du bandeau : l'engrenage, quand la piece n'a aucune photo.
+///
+/// C'est volontairement l'icone qui etait codee en dur ici auparavant — un
+/// article sans photo garde donc exactement l'allure qu'il avait. Seuls ceux
+/// qui en ont une changent. Il sert aussi de repli a chaque image de la
+/// galerie : une URL qui echoue retombe dessus plutot que de laisser un trou.
+class _PartCover extends StatelessWidget {
+  const _PartCover({required this.cs});
+
+  final ColorScheme cs;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    color: cs.surfaceContainerHighest,
+    child: Center(
+      child: Icon(
+        Icons.settings_outlined,
+        size: 72,
+        color: cs.outline.withValues(alpha: 0.4),
+      ),
+    ),
+  );
 }

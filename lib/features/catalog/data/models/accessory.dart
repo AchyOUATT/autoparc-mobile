@@ -16,6 +16,10 @@ class Accessory extends Equatable {
   final bool    isActive;
   final String? coverUrl; // URL de la photo de couverture (null si aucune photo)
 
+  /// Toutes les photos, couverture en tête. Voir `Part.photoUrls` : même
+  /// raisonnement, même format, et jamais `null`.
+  final List<String> photoUrls;
+
   /// Voir `Part.fitments` : `null` signifie « la réponse ne le dit pas », pas
   /// « aucune compatibilité ». La liste des accessoires ne charge pas cette
   /// relation.
@@ -35,6 +39,7 @@ class Accessory extends Equatable {
     this.warrantyMonths,
     required this.isActive,
     this.coverUrl,
+    this.photoUrls = const [],
     this.fitments,
   });
 
@@ -42,12 +47,24 @@ class Accessory extends Equatable {
     final category  = json['category'] as Map<String, dynamic>;
     final mediaList = json['media'] as List?;
     String? cover;
+    var photos = const <String>[];
     if (mediaList != null && mediaList.isNotEmpty) {
       final coverItem = mediaList.firstWhere(
         (m) => m['is_cover'] == true,
         orElse: () => mediaList.first,
       );
       cover = coverItem['url'] as String?;
+
+      // Couverture en tête, le reste par `position`. Voir Part.fromJson pour
+      // le choix de l'identité plutôt que de l'URL.
+      final autres = mediaList.where((m) => !identical(m, coverItem)).toList()
+        ..sort((a, b) => ((a['position'] as int?) ?? 0)
+            .compareTo((b['position'] as int?) ?? 0));
+
+      photos = <String>[
+        ?cover,
+        ...autres.map((m) => m['url'] as String?).whereType<String>(),
+      ];
     }
     return Accessory(
       id:             json['id']              as int,
@@ -63,6 +80,7 @@ class Accessory extends Equatable {
       warrantyMonths: json['warranty_months'] as int?,
       isActive:       json['is_active']       as bool? ?? true,
       coverUrl:       cover,
+      photoUrls:      photos,
       fitments: (json['fitments'] as List?)
           ?.cast<Map<String, dynamic>>()
           .toList(growable: false),
@@ -121,7 +139,14 @@ class AccessoryStock extends Equatable {
     quantity:       json['quantity']        as int,
     alertThreshold: json['alert_threshold'] as int? ?? 0,
     isLow:          json['is_low']          as bool? ?? false,
-    location:       json['location']        as String?,
+    // Le texte libre du formulaire d'abord — c'est lui que l'ecran de saisie
+    // ecrit, sous la cle "storage_location". Tout le monde relisait "location",
+    // qui est la localite liee : un OBJET {id, name, city}, et seulement quand
+    // la relation est chargee. Resultat, l'emplacement saisi n'etait jamais
+    // reaffiche, ni sur la fiche, ni au pre-remplissage de l'edition — et le
+    // jour ou une localite aurait ete liee, le cast en String aurait leve.
+    location:       (json['storage_location'] as String?)
+                    ?? ((json['location'] as Map<String, dynamic>?)?['name'] as String?),
   );
 
   @override

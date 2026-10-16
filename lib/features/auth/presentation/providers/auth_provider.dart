@@ -148,9 +148,29 @@ class AuthNotifier extends StateNotifier<AuthState> {
         state = AuthState(type: AuthType.staff, staffUser: staff);
         return;
       }
-    } catch (_) {
-      // Token invalide ou erreur réseau → on efface
-      await ApiClient.deleteToken();
+    } on ApiException catch (e) {
+      // Seul un 401 prouve que le jeton ne vaut plus rien.
+      //
+      // Ce bloc effaçait le jeton sur *n'importe quelle* exception, erreur
+      // réseau comprise — son commentaire le disait. Or le service Render est
+      // sur le plan gratuit : il s'endort, et le premier appel doit le
+      // réveiller. Mesures du 2026-10-15 : 34,8 s sur /up à froid, et aucune
+      // réponse en 180 s le 11 octobre. `getMe()` dépassait donc le délai à
+      // chaque réouverture de l'application, tombait ici, et déconnectait
+      // l'utilisateur — pour une lenteur de serveur, pas pour un refus.
+      //
+      // Désormais une panne réseau, un délai dépassé ou un 500 laissent le
+      // jeton intact : le démarrage échoue, l'utilisateur reste simplement
+      // déconnecté pour cette session, et le lancement suivant — serveur
+      // réveillé — restaure son compte.
+      if (e.isUnauthorized) {
+        await ApiClient.deleteToken();
+      } else {
+        debugPrint('[Auth] session non vérifiée (${e.statusCode}), jeton conservé');
+      }
+    } catch (e) {
+      // Erreur inattendue : on ne touche surtout pas au jeton.
+      debugPrint('[Auth] erreur imprévue au démarrage, jeton conservé : $e');
     }
 
     if (!mounted) return;
