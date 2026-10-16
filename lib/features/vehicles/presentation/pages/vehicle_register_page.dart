@@ -80,6 +80,14 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   final _mileageCtrl         = TextEditingController();
   final _siteCtrl            = TextEditingController();
   LocationRef? _selectedLocation;   // agence / showroom structuré
+
+  /// Le pays d'origine d'un vehicule importe.
+  ///
+  /// Le serveur accepte `import.origin_country_id` depuis le debut, et la
+  /// colonne existe. Le formulaire ne l'a jamais demande : la fiche affichait
+  /// donc « Origine » vide sur tous les vehicules, et personne ne pouvait la
+  /// renseigner autrement qu'en base.
+  CountryRef? _paysOrigine;
   final _descriptionCtrl     = TextEditingController();
 
 
@@ -225,14 +233,25 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       }
     } on ApiException catch (e) {
       if (mounted) {
-        final msg = e.errors?.entries
-            .map((entry) => '${entry.key} : ${entry.value.first}')
-            .join('\n') ??
-            e.message;
-        _showErrors(msg);
+        // Les erreurs de validation restent detaillees champ par champ : avec
+        // une trentaine de champs dans ce formulaire, « Le champ sale price
+        // est obligatoire » seul n'indique pas ou regarder. Pour tout le
+        // reste, c'est userMessage qui parle — il traduit les codes et porte
+        // la reference, la ou e.message rendait le texte brut du serveur,
+        // parfois en anglais, parfois vide.
+        _showErrors(
+          titre: titreErreurEnregistrement(e),
+          message: e.errors != null && e.errors!.isNotEmpty
+              ? e.errors!.entries
+                  .map((entry) => '• ${entry.value.first}')
+                  .join('\n')
+              : e.userMessage,
+        );
       }
     } catch (e) {
-      if (mounted) _showErrors(messageFor(e));
+      if (mounted) {
+        _showErrors(titre: 'Enregistrement impossible', message: messageFor(e));
+      }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -242,8 +261,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     final bool forSale   = _availability == 'sale' || _availability == 'both';
     final bool forRent   = _availability == 'rent' || _availability == 'both';
     final bool hasPlate  = _plateCtrl.text.trim().isNotEmpty;
+    // On retire le separateur avant de lire : int.tryParse refuse « 85 000 »
+    // et rendrait null, c'est-a-dire un kilometrage silencieusement perdu.
     final int? mileage   = _mileageCtrl.text.isNotEmpty
-        ? int.tryParse(_mileageCtrl.text)
+        ? int.tryParse(_mileageCtrl.text.replaceAll(RegExp(r'\D'), ''))
         : null;
 
     return <String, dynamic>{
@@ -285,18 +306,24 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       // - sans plaque  : import     → import.odometer_at_import_km
       if (mileage != null && hasPlate)
         'registration': {'mileage_km': mileage},
-      if (mileage != null && !hasPlate)
-        'import': {'odometer_at_import_km': mileage},
+      // Le bloc import part des qu'il a quelque chose a dire : le compteur,
+      // le pays, ou les deux. Il etait conditionne au seul kilometrage, donc
+      // un pays choisi sans compteur saisi ne partait pas.
+      if (!hasPlate && (mileage != null || _paysOrigine != null))
+        'import': {
+          'odometer_at_import_km': ?mileage,
+          'origin_country_id': ?_paysOrigine?.id,
+        },
     };
   }
 
-  void _showErrors(String msg) {
+  void _showErrors({required String titre, required String message}) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        icon:    const Icon(Icons.error_outline, color: Colors.red),
-        title:   const Text('Erreur serveur'),
-        content: SingleChildScrollView(child: Text(msg)),
+        icon:     const Icon(Icons.error_outline, color: Colors.red),
+        title:    Text(titre),
+        content:  SingleChildScrollView(child: Text(message)),
         actions: [
           TextButton(
             onPressed: Navigator.of(context).pop,
@@ -617,8 +644,53 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
   // ── Step 3 — Technique ────────────────────────────────────────────
 
+  /// Ce qui a ete choisi a l'etape technique, sous son titre.
+  ///
+  /// Les etapes « Type de vehicule » et « Identite » affichaient leur
+  /// selection sous leur titre ; les deux suivantes n'affichaient rien. Une
+  /// fois l'etape repliee, plus rien ne disait ce qu'on venait d'y mettre, et
+  /// verifier sa motorisation imposait de rouvrir l'etape — donc de la
+  /// reparcourir en entier pour revenir ou l'on etait.
+  ///
+  /// Nul tant que rien n'est choisi : un sous-titre vide vaut mieux qu'une
+  /// ligne qui annonce des tirets.
+  Widget? _resumeTechnique() {
+    final parts = <String>[
+      if (_engineType != null) _engineType!.label,
+      switch (_transmission) {
+        'manual'  => 'manuelle',
+        'cvt'     => 'CVT',
+        _         => 'automatique',
+      },
+      if (_drivetrain != null) _drivetrain!.label,
+      if (_powerCtrl.text.trim().isNotEmpty) '${_powerCtrl.text.trim()} ch',
+    ];
+
+    // La transmission a toujours une valeur par defaut : seule, elle ne dit
+    // rien de ce que le proprietaire a reellement choisi.
+    if (_engineType == null) return null;
+
+    return Text(parts.join(' · '));
+  }
+
+  /// Le prix, et la nature de l'offre.
+  Widget? _resumeCommercial() {
+    final prix = _salePriceCtrl.text.trim();
+
+    final offre = switch (_availability) {
+      'rent' => 'location',
+      'both' => 'vente et location',
+      _      => 'vente',
+    };
+
+    if (prix.isEmpty) return Text(offre);
+
+    return Text('$offre · $prix FCFA');
+  }
+
   Step _buildStep3(CatalogRefs refs) => Step(
     title: const Text('Caractéristiques techniques'),
+    subtitle: _resumeTechnique(),
     isActive: _step >= 2,
     content: Column(
       children: [
@@ -756,6 +828,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
     return Step(
       title: const Text('Informations commerciales'),
+      subtitle: _resumeCommercial(),
       isActive: _step >= 3,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -790,12 +863,56 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                 prefixIcon: Icon(Icons.speed_outlined),
               ),
               keyboardType: TextInputType.number,
+              // Le meme formateur que les champs monetaires. Le texte d'aide
+              // de ce champ affiche « 85 000 » depuis toujours, mais la
+              // saisie etait en chiffres nus : l'exemple montrait une forme
+              // que le champ refusait, et un kilometrage a six chiffres se
+              // relit mal sans separateur — c'est precisement la ou se glisse
+              // le zero de trop.
               inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(7),
+                _ThousandsSeparatorFormatter(),
+                // 9 caracteres : 7 chiffres et leurs deux separateurs.
+                LengthLimitingTextInputFormatter(9),
               ],
             ),
             const SizedBox(height: 16),
+
+            // Pays d'origine — uniquement sans plaque d'immatriculation.
+            //
+            // C'est la seule branche ou la charge utile porte un bloc
+            // `import` : avec une plaque, le compteur part dans
+            // `registration`, et un pays envoye la serait ignore sans que
+            // rien ne le dise. Mieux vaut ne pas demander ce qu'on ne saurait
+            // pas enregistrer.
+            if (_plateCtrl.text.trim().isEmpty)
+              Consumer(
+                builder: (context, ref, _) {
+                  final pays = ref.watch(countriesProvider).valueOrNull
+                      ?? const <CountryRef>[];
+
+                  if (pays.isEmpty) return const SizedBox.shrink();
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: DropdownButtonFormField<CountryRef>(
+                      initialValue: _paysOrigine,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Pays d\'origine',
+                        helperText: 'Provenance du véhicule importé',
+                        prefixIcon: Icon(Icons.public_outlined),
+                      ),
+                      items: pays
+                          .map((c) => DropdownMenuItem(
+                                value: c,
+                                child: Text(c.name, overflow: TextOverflow.ellipsis),
+                              ))
+                          .toList(),
+                      onChanged: (c) => setState(() => _paysOrigine = c),
+                    ),
+                  );
+                },
+              ),
           ],
 
           // Disponibilité
@@ -1244,4 +1361,26 @@ class _LoadingError extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// Nomme la cause, au lieu de l'appeler « Erreur serveur ».
+///
+/// Ce titre etait ecrit en dur. Toute panne de cet ecran — un champ refuse,
+/// le reseau coupe, la session expiree — s'annoncait donc comme une panne du
+/// serveur. Le defaut n'est pas cosmetique : il envoie chercher du cote du
+/// serveur ce qui se repare a l'ecran, et il a reellement coute une enquete,
+/// menee jusqu'a sonder la route de production, avant qu'on s'apercoive que
+/// le titre ne disait rien de la cause.
+String titreErreurEnregistrement(ApiException e) {
+  if (e.isNetworkFailure) return 'Pas de connexion';
+
+  return switch (e.statusCode) {
+    401 => 'Session expirée',
+    403 => 'Action non autorisée',
+    422 => 'Formulaire incomplet',
+    413 => 'Envoi trop volumineux',
+    429 => 'Trop de tentatives',
+    final int c when c >= 500 => 'Erreur du serveur',
+    _ => 'Enregistrement impossible',
+  };
 }

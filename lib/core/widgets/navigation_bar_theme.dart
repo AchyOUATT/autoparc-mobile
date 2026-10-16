@@ -27,6 +27,14 @@ import 'package:flutter/material.dart';
 /// de l'œil ni de la luminosité de l'écran.
 NavigationBarThemeData barreNavigationTheme(ColorScheme couleurs) {
   return NavigationBarThemeData(
+    // 64 au lieu des 80 par defaut de Material 3. Cette barre est presente sur
+    // les quatre ecrans principaux : seize points repris, c'est seize points
+    // rendus au catalogue, sur chacun d'eux.
+    //
+    // On ne descend pas plus bas : en dessous de 64, l'etiquette et l'icone ne
+    // tiennent plus ensemble des que l'utilisateur agrandit le texte, et
+    // labelBehavior vaut alwaysShow.
+    height: 64,
     backgroundColor: couleurs.primary,
     indicatorColor: couleurs.onPrimary.withValues(alpha: 0.18),
     iconTheme: WidgetStateProperty.resolveWith(

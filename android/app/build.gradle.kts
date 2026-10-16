@@ -64,6 +64,60 @@ if (!signatureDisponible) {
     )
 }
 
+// -----------------------------------------------------------------------------
+// Plancher de versionCode
+// -----------------------------------------------------------------------------
+//
+// Le 20 septembre, un .aab construit sur un poste de developpement est parti
+// chez Play. Il portait le `+1` de pubspec.yaml, soit versionCode 1, et l'URL
+// de l'emulateur. Rien ne l'a signale : `flutter build appbundle` produit un
+// artefact d'apparence normale, et le refus arrive apres le televersement, par
+// des messages qui ne nomment ni le numero ni l'adresse.
+//
+// android/version_code_plancher.txt porte le plus haut versionCode que la CI
+// ait jamais produit. Rien au dessus n'a pu etre publie : un build release qui
+// le depasse est donc recevable, et un build qui ne le depasse pas s'arrete
+// ici, avant de produire l'artefact.
+//
+// La verification ne porte que sur le bundle, pas sur l'APK. Play ne controle
+// le versionCode que de ce qu'on lui televerse, et seul le .aab part chez lui ;
+// un APK release se partage de la main a la main, et `flutter run --release`
+// en construit un a chaque essai sur un telephone. Les bloquer n'eviterait
+// aucun refus, et ferait desactiver le garde-fou.
+val fichierPlancher = rootProject.file("version_code_plancher.txt")
+
+gradle.taskGraph.whenReady {
+    if (!fichierPlancher.exists()) return@whenReady
+
+    // Le chemin du projet compte autant que le nom. AGP cree dans chaque
+    // greffon Flutter des taches `bundleLibCompileToJarRelease` et
+    // `bundleReleaseLocalLintAar` : treize modules, donc trente-neuf taches qui
+    // commencent par « bundle » et finissent par « Release » dans n'importe
+    // quel graphe release, y compris celui d'un simple APK. Filtrer sur le nom
+    // seul declenchait le garde-fou sur `flutter run --release`. Seul `:app`
+    // produit un artefact televersable, et il le nomme `bundleRelease`
+    // (`bundle<Variante>Release` le jour ou des variantes apparaitraient).
+    val publiable = allTasks.any { tache ->
+        tache.project.path == ":app" && tache.name.startsWith("bundle")
+    }
+    if (!publiable) return@whenReady
+
+    val plancher = fichierPlancher.readText().trim().toIntOrNull() ?: return@whenReady
+    val code = flutter.versionCode
+
+    if (code <= plancher) {
+        throw GradleException(
+            "\n[AutoParc] versionCode $code <= plancher $plancher.\n" +
+                "           Google Play refuse tout bundle dont le code ne depasse\n" +
+                "           pas celui du dernier envoi. Ce build porte le numero de\n" +
+                "           pubspec.yaml, pas celui de la CI.\n\n" +
+                "           Construire par le workflow Build Android, qui passe\n" +
+                "           --build-number et l'URL de production. Pour un essai\n" +
+                "           local : --build-number=" + (plancher + 1) + " ou plus.\n"
+        )
+    }
+}
+
 dependencies {
     // Desugaring — requis par flutter_local_notifications (API Java 8+ sur Android < 26)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")

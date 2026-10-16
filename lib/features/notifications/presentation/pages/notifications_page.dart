@@ -168,6 +168,14 @@ class _NotificationTile extends ConsumerWidget {
       await ref.read(notificationsRepositoryProvider).markRead(notif.id);
       onRead();
     }
+
+    // Le `context.mounted` n'est pas une précaution de principe : `onRead()`
+    // invalide la liste, donc reconstruit la page et peut détruire cette
+    // tuile avant que l'aller-retour réseau soit fini. Tant que la navigation
+    // ne faisait rien pour la moitié des types, le défaut restait invisible ;
+    // il cesse de l'être dès que la tuile mène quelque part.
+    if (!context.mounted) return;
+
     // Navigation selon le type
     _navigate(context, notif);
   }
@@ -195,12 +203,43 @@ class _NotificationTile extends ConsumerWidget {
       case 'maintenance_technical_inspection':
       case 'maintenance_insurance':
         context.push('/garage');
+
+      // Surconsommation. Le cas existait dans l'aiguillage du push et pas ici,
+      // et c'est ici que l'alerte est lue le plus souvent : le push part à
+      // huit heures, le propriétaire ouvre l'application plus tard et touche
+      // la ligne « Consommation en hausse ». Elle était marquée lue et rien ne
+      // se passait, alors que le corps du message annonce des pièces au
+      // catalogue — l'alerte perdait sa raison d'être au seul endroit par où
+      // elle passe vraiment.
+      //
+      // Destination : l'historique des pleins du véhicule nommé, pas le garage
+      // entier. C'est là que le chiffre se vérifie, et là qu'une saisie fautive
+      // se supprime — la cause la plus fréquente d'une hausse soudaine.
+      //
+      // Nom distinct de `ownedId` plus haut : les cas d'un `switch` partagent
+      // une seule portée, et deux `final ownedId` dans le même aiguillage ne
+      // compilent pas.
+      case 'fuel_anomaly':
+        final vehiculeSuivi =
+            int.tryParse(data['owned_vehicle_id']?.toString() ?? '');
+        context.push(
+            vehiculeSuivi != null ? '/garage/$vehiculeSuivi/fuel' : '/garage');
+
       case 'new_order':
         // Selon order_type, on pourrait naviguer vers la commande
         // Pour l'instant, pas encore de page de détail commande
         break;
       case 'tip':
         // Pas de navigation spécifique
+        break;
+
+      // Rester sur place est le bon défaut ICI, contrairement à l'aiguillage
+      // du push qui, lui, doit mener quelque part : on est déjà dans la liste,
+      // et un type inconnu vient d'une version du serveur plus récente que
+      // celle de l'application. La branche est écrite plutôt que sous-entendue
+      // pour que l'absence de `fuel_anomaly` se relise comme un oubli — c'en
+      // était un.
+      default:
         break;
     }
   }

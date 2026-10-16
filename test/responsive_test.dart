@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:auto/core/update/ecran_mise_a_jour.dart';
 import 'package:auto/features/catalog/data/catalog_repository.dart';
 import 'package:auto/features/catalog/data/models/accessory.dart';
 import 'package:auto/features/catalog/data/models/part.dart';
@@ -13,7 +14,12 @@ import 'package:auto/features/catalog/presentation/pages/accessory_list_page.dar
 import 'package:auto/features/catalog/presentation/pages/add_part_page.dart';
 import 'package:auto/features/catalog/presentation/pages/part_list_page.dart';
 import 'package:auto/features/catalog/presentation/pages/vehicle_list_page.dart';
+import 'package:auto/features/garage/data/models/fuel_fill.dart';
+import 'package:auto/features/garage/data/models/owned_vehicle.dart';
+import 'package:auto/features/garage/presentation/pages/fuel_fills_page.dart';
 import 'package:auto/features/garage/presentation/pages/garage_page.dart';
+import 'package:auto/features/garage/presentation/providers/fuel_fills_provider.dart';
+import 'package:auto/features/garage/presentation/providers/garage_provider.dart';
 import 'package:auto/features/home/presentation/pages/home_page.dart';
 import 'package:auto/features/needs/presentation/pages/client_needs_page.dart';
 import 'package:auto/features/needs/presentation/pages/needs_list_page.dart';
@@ -414,6 +420,165 @@ void main() {
       }
     }
   });
+
+  // ── Les passages à la pompe ──────────────────────────────────────────────
+
+  /// L'écran le plus dense du garage : chaque ligne empile le compteur, les
+  /// litres et le montant sur un titre, puis la nature du passage, sa date, la
+  /// consommation de son intervalle et le motif de son écart sur trois
+  /// sous-titres — le tout entre une icône et un bouton de suppression. Il est
+  /// aussi le seul à porter un bouton flottant étendu, qui mange la largeur
+  /// restante en bas.
+  ///
+  /// Les deux états sont mesurés comme pour les photos d'un article : vide, il
+  /// n'a qu'un bloc d'explication centré ; rempli, il a tout le reste. Une
+  /// mise en page ne déborde pas de la même façon dans les deux.
+  group('Passages à la pompe', () {
+    Widget ecranCarburant(List<FuelFill> passages) => ProviderScope(
+          overrides: [
+            fuelFillsProvider.overrideWith(() => _Passages(passages)),
+            garageProvider.overrideWith(_GarageAvecCamry.new),
+          ],
+          child: const MaterialApp(home: FuelFillsPage(ownedVehicleId: 1)),
+        );
+
+    for (final format in formats.entries) {
+      for (final echelle in echelles) {
+        testWidgets('vide, en ${format.key}, texte x$echelle', (tester) async {
+          expect(
+            await debordeEnDefilant(
+              tester,
+              ecranCarburant(const []),
+              taille: format.value,
+              echelle: echelle,
+              marqueur: 'Aucun passage enregistré',
+            ),
+            isNull,
+          );
+        });
+
+        testWidgets('avec des passages, en ${format.key}, texte x$echelle',
+            (tester) async {
+          expect(
+            await debordeEnDefilant(
+              tester,
+              ecranCarburant(_passages()),
+              taille: format.value,
+              echelle: echelle,
+              // « Demi-plein » ne s'écrit que sur une ligne dessinée : le
+              // titre de la barre, lui, s'affiche même pendant le chargement
+              // et ne prouverait rien.
+              marqueur: 'Demi-plein',
+            ),
+            isNull,
+          );
+        });
+      }
+    }
+  });
+
+  // ── L'écran de mise à jour obligatoire ───────────────────────────────────
+
+  /// Celui-ci mérite le banc plus que les autres. Un débordement ailleurs se
+  /// contourne : on quitte l'écran. Ici il n'y a pas de sortie — c'est tout
+  /// l'objet de l'écran —, et la bande rayée se peindrait par-dessus la seule
+  /// commande disponible. L'application deviendrait un mur.
+  ///
+  /// Le message vient du serveur, donc sa longueur n'est pas un paramètre que
+  /// l'application maîtrise : on mesure avec une phrase longue, puisque c'est
+  /// elle qui décide si ça tient.
+  group('Mise à jour obligatoire', () {
+    Widget ecranBloquant() => const MaterialApp(
+          home: EcranMiseAJour(
+            message: "Cette version de l'application ne peut plus lire les "
+                'prix du catalogue depuis le serveur. Installez la dernière '
+                'version pour continuer à consulter vos véhicules.',
+            urlStore:
+                'https://play.google.com/store/apps/details?id=bf.autoparc',
+          ),
+        );
+
+    for (final format in formats.entries) {
+      for (final echelle in echelles) {
+        testWidgets('tient en ${format.key}, texte x$echelle', (tester) async {
+          expect(
+            await debordeEnDefilant(
+              tester,
+              ecranBloquant(),
+              taille: format.value,
+              echelle: echelle,
+              marqueur: 'Mettre à jour',
+            ),
+            isNull,
+          );
+        });
+      }
+    }
+  });
+}
+
+/// Trois passages, dont le pire cas de ligne : un plein dont l'intervalle a
+/// été écarté, qui porte donc à la fois sa consommation, sa distance, la
+/// mention « écarté » et le motif rédigé. Le motif retenu est
+/// `anormalement_bas`, le plus long des trois libellés — c'est lui qui pousse
+/// le sous-titre, et la mesure de débordement ne vaut que sur le pire texte.
+///
+/// Dans l'ordre du serveur, compteur DÉCROISSANT : la page n'inverse plus la
+/// liste, et un jeu posé à l'envers la ferait mesurer sur une mise en page que
+/// personne ne voit.
+List<FuelFill> _passages() => const [
+      FuelFill(
+        id: 3,
+        isFull: true,
+        mileageKm: 197400,
+        litres: 41.2,
+        amountFcfa: 130000,
+        l100km: 4.0,
+        distanceKm: 1000,
+        retenu: false,
+        motifEcart: 'anormalement_bas',
+      ),
+      FuelFill(
+          id: 2,
+          isFull: false,
+          mileageKm: 95600,
+          litres: 13.7,
+          amountFcfa: 10000),
+      FuelFill(
+          id: 1,
+          isFull: true,
+          mileageKm: 95000,
+          litres: 40.0,
+          amountFcfa: 29000),
+    ];
+
+class _Passages extends FuelFillsNotifier {
+  _Passages(this.liste);
+
+  final List<FuelFill> liste;
+
+  @override
+  Future<List<FuelFill>> build(int ownedVehicleId) async => liste;
+}
+
+/// Le véhicule que la page retrouve dans le garage : sans lui, ni titre
+/// complet ni bouton flottant, et c'est précisément ce qui charge l'écran.
+/// Le surnom est long à dessein — c'est lui qui pousse la barre de titre.
+class _GarageAvecCamry extends GarageNotifier {
+  @override
+  Future<List<OwnedVehicle>> build() async => const [
+        OwnedVehicle(
+          id: 1,
+          designation: 'Toyota Camry 2013 2,5 l boîte automatique',
+          nickname: 'La Camry de la famille',
+          brandId: 1,
+          vehicleModelId: 7,
+          year: 2013,
+          mileageKm: 197400,
+          identity: OwnedVehicleIdentity(brand: 'Toyota', model: 'Camry'),
+          compatibilityReady: true,
+        ),
+      ];
 }
 
 Accessory _accessoire() => Accessory.fromJson({

@@ -63,6 +63,26 @@ class Vehicle extends Equatable {
   /// pour un véhicule immatriculé, odomètre relevé à l'import sinon.
   final int? mileageKm;
 
+  /// Le reste du bloc `technical`, qui n'était pas lu du tout.
+  ///
+  /// Le formulaire d'enregistrement demande la boîte, la puissance, les
+  /// places et les portes ; l'API les renvoyait fidèlement ; le modèle ne
+  /// retenait que le kilométrage, et la fiche ne pouvait donc rien en
+  /// montrer. Un vendeur saisissait sept places sur un CX-9 et ne les
+  /// revoyait jamais — ni lui, ni l'acheteur.
+  ///
+  /// Nullables jusqu'au dernier : ces champs sont facultatifs à la saisie, et
+  /// un zéro affiché à la place d'un vide dirait quelque chose de faux.
+  final String? transmission; // 'manual' | 'automatic' | 'cvt'
+  final int? powerHp;
+  final int? seats;
+  final int? doors;
+  final int? cylinders;
+  final int? engineDisplacementCc;
+  final int? torqueNm;
+  final int? gearCount;
+  final String? engineCode;
+
   /// Consommation mixte, en L/100 km.
   final double? combinedL100km;
 
@@ -103,6 +123,15 @@ class Vehicle extends Equatable {
     required this.mediaUrls,
     this.features = const [],
     this.mileageKm,
+    this.transmission,
+    this.powerHp,
+    this.seats,
+    this.doors,
+    this.cylinders,
+    this.engineDisplacementCc,
+    this.torqueNm,
+    this.gearCount,
+    this.engineCode,
     this.combinedL100km,
     this.officialConsumption,
     this.optionalFeatureCount,
@@ -110,6 +139,8 @@ class Vehicle extends Equatable {
   });
 
   factory Vehicle.fromJson(Map<String, dynamic> json) {
+    final technique = json['technical'] as Map<String, dynamic>?;
+
     final status = json['registration_status'];
     return Vehicle(
       id:                 json['id'] as int,
@@ -134,7 +165,16 @@ class Vehicle extends Equatable {
                               ?.map((f) => VehicleFeature.fromJson(f as Map<String, dynamic>))
                               .toList() ??
                           [],
-      mileageKm:          _asInt((json['technical'] as Map<String, dynamic>?)?['mileage_km']),
+      mileageKm:          _asInt(technique?['mileage_km']),
+      transmission:        technique?['transmission'] as String?,
+      powerHp:             _asInt(technique?['power_hp']),
+      seats:               _asInt(technique?['seats']),
+      doors:               _asInt(technique?['doors']),
+      cylinders:           _asInt(technique?['cylinders']),
+      engineDisplacementCc: _asInt(technique?['engine_displacement_cc']),
+      torqueNm:            _asInt(technique?['torque_nm']),
+      gearCount:           _asInt(technique?['gear_count']),
+      engineCode:          technique?['engine_code'] as String?,
       combinedL100km:     _asDouble(
                               (json['consumption'] as Map<String, dynamic>?)?['combined_l_100km']),
       officialConsumption: OfficialConsumption.depuisJson(

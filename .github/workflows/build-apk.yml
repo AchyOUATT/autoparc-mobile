@@ -144,6 +144,24 @@ jobs:
       # `github.run_number` ne fait que croître pour ce workflow : chaque bundle
       # dépasse le précédent sans que personne ait à y penser. Le nom de version
       # affiché (1.0.0) reste celui de pubspec.yaml.
+      # `github.run_number` est attache au FICHIER de workflow. Renommer
+      # build-apk.yml, ou le supprimer puis le recreer, remet le compteur a 1 —
+      # et chaque envoi suivant serait refuse par Play, avec les memes messages
+      # qui ne nomment pas le numero. Le fichier plancher enregistre le plus
+      # haut versionCode que ce workflow ait jamais produit : rien au dessus
+      # n'a pu etre publie, donc le depasser suffit a garantir l'envoi.
+      #
+      # A relever apres chaque publication acceptee.
+      - name: Verifier que le versionCode depasse ce qui est publie
+        run: |
+          plancher=$(tr -dc '0-9' < android/version_code_plancher.txt)
+          code=${{ github.run_number }}
+          echo "versionCode de ce build : $code — plancher : $plancher"
+          if [ "$code" -le "$plancher" ]; then
+            echo "::error::versionCode $code <= plancher $plancher. Play refuserait ce bundle : le compteur d'executions a ete remis a zero (workflow renomme ou recree). Passer --build-number a la main, au dessus du plancher, et relever android/version_code_plancher.txt."
+            exit 1
+          fi
+
       - name: Construire l'App Bundle (Play Store)
         run: |
           echo "versionCode de ce build : ${{ github.run_number }}"

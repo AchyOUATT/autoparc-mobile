@@ -1,7 +1,7 @@
 name: auto
 description: "AutoParc – vente et location de véhicules, pièces et accessoires."
 publish_to: 'none'
-version: 1.1.0+1
+version: 1.2.0+1
 
 environment:
   sdk: ^3.11.5
@@ -71,6 +71,16 @@ dependencies:
 
   # Persistance légère (onboarding vu, préférences UI)
   shared_preferences: ^2.3.2
+
+  # Lecture du versionCode réellement installé, pour le plancher de version
+  # servi par l'API (voir core/update/version_minimale.dart).
+  #
+  # Une constante Dart ne pouvait pas faire l'affaire : le versionCode n'est
+  # pas dans ce fichier à l'exécution. La CI le passe par `--build-number`, et
+  # le `version:` ci-dessus n'est que le repli quand personne ne le fournit.
+  # Seule la plateforme connaît donc le numéro embarqué dans l'APK — côté
+  # Android il se lit dans le PackageManager, pas dans le code.
+  package_info_plus: ^8.3.1
 
 dev_dependencies:
   flutter_test:

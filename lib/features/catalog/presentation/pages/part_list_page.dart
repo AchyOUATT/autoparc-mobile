@@ -111,10 +111,14 @@ class _PartListPageState extends ConsumerState<PartListPage> {
           ],
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
+          // 48 au lieu de 56, et la SearchBar bornee a 40 : son minHeight par
+          // defaut vaut 56, donc la contraindre est necessaire — reduire la
+          // seule PreferredSize aurait rogne la barre sans l'amincir.
+          preferredSize: const Size.fromHeight(48),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
             child: SearchBar(
+              constraints: const BoxConstraints(minHeight: 40, maxHeight: 40),
               controller: _searchCtrl,
               hintText: 'Nom, SKU, référence OEM…',
               leading: const Icon(Icons.search),
@@ -720,9 +724,9 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         decoration: BoxDecoration(
           color: cs.primaryContainer.withValues(alpha: 0.35),
           borderRadius: BorderRadius.circular(8),
@@ -730,14 +734,20 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
         ),
         child: Row(
           children: [
-            Icon(Icons.directions_car_outlined, size: 18, color: cs.primary),
-            const SizedBox(width: 8),
+            Icon(Icons.directions_car_outlined, size: 16, color: cs.primary),
+            const SizedBox(width: 6),
             Expanded(
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<OwnedVehicle>(
                   value: _selected,
                   isExpanded: true,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  // itemHeight non nul vaut kMinInteractiveDimension (48) :
+                  // c'etait lui, et non les marges, qui fixait la hauteur du
+                  // bandeau. A null, le bouton se contente de son contenu, et
+                  // la cible tactile reste celle de la ligne entiere.
+                  itemHeight: null,
+                  iconSize: 20,
+                  style: Theme.of(context).textTheme.bodySmall,
                   items: vehicles
                       .map((v) => DropdownMenuItem(
                             value: v,
@@ -757,7 +767,7 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             // Filtrer sur place plutôt qu'ouvrir un second écran : le véhicule
             // est déjà choisi ici, et la liste sait déjà quelles pièces lui
             // correspondent. Partir ailleurs faisait perdre la recherche, la
@@ -777,6 +787,12 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
                     ? null
                     : (on) => _applyCompatibleFilter(on),
                 visualDensity: VisualDensity.compact,
+                // Meme motif que le menu deroulant : le chip reservait 48
+                // points de cible tactile au milieu d'un bandeau qui n'en
+                // fait plus 48.
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                labelStyle: Theme.of(context).textTheme.labelMedium,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 4),
               ),
             ),
           ],

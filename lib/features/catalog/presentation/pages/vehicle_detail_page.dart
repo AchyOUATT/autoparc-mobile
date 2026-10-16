@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/widgets/product_gallery.dart';
 import '../../../../core/api/api_exception.dart';
 
 import 'package:go_router/go_router.dart';
@@ -11,7 +12,6 @@ import '../providers/catalog_providers.dart';
 import '../../../../core/utils/contact_info.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/brand_logo.dart';
-import '../../../../core/widgets/catalog_image.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../../vehicles/data/vehicle_admin_repository.dart';
@@ -123,8 +123,14 @@ class _VehicleDetailView extends ConsumerWidget {
         slivers: [
           // ── Photo hero ─────────────────────────────────────────
           SliverAppBar(
-            expandedHeight: 260,
+            // 320 au lieu de 260, et la photo sortie de dessous la barre.
+            // Meme traitement que la fiche d'une piece, pour la meme raison :
+            // l'image etait collee au bord superieur, a moitie masquee par
+            // les icones d'action.
+            expandedHeight: 320,
             pinned: true,
+            backgroundColor: cs.surface,
+            surfaceTintColor: Colors.transparent,
             // La suppression est plus restreinte que la modification : elle ne
             // se rattrape pas depuis l'application.
             actions: [
@@ -145,16 +151,45 @@ class _VehicleDetailView extends ConsumerWidget {
                 ),
             ],
             flexibleSpace: FlexibleSpaceBar(
+              titlePadding:
+                  const EdgeInsetsDirectional.only(start: 16, end: 16, bottom: 10),
               title: Text(
                 id.fullName,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              background: vehicle.mediaUrls.isEmpty
-                  ? _CoverPlaceholder(slug: id.brandSlug)
-                  : CatalogImage(
-                      url: vehicle.mediaUrls.first,
-                      fallback: _CoverPlaceholder(slug: id.brandSlug),
-                    ),
+              // La galerie, et non plus la seule photo de couverture.
+              //
+              // Ce bandeau affichait mediaUrls.first et rien d'autre : les
+              // autres photos du vehicule existaient, l'API les renvoyait
+              // toutes, et aucune n'etait atteignable. Les fiches de pieces
+              // et d'accessoires utilisaient deja ProductGallery — la fiche
+              // vehicule, celle ou l'on regarde le plus de photos avant
+              // d'acheter, etait la seule restee sur une image fixe.
+              //
+              // Les marges la sortent de dessous la barre, comme sur la fiche
+              // d'une piece.
+              background: Padding(
+                padding: EdgeInsets.only(
+                  top: MediaQuery.paddingOf(context).top + 48,
+                  bottom: 44,
+                  left: 12,
+                  right: 12,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: ProductGallery(
+                    urls: vehicle.mediaUrls,
+                    titre: id.fullName,
+                    fallback: _CoverPlaceholder(slug: id.brandSlug),
+                  ),
+                ),
+              ),
             ),
           ),
 
@@ -184,7 +219,23 @@ class _VehicleDetailView extends ConsumerWidget {
                     if (id.year     != null) ('Année',        '${id.year}'),
                     if (id.trim     != null) ('Finition',     id.trim!),
                     if (id.engineType != null) ('Motorisation', id.engineType!),
-                    if (id.drivetrain != null) ('Transmission', id.drivetrain!),
+                    if (id.drivetrain != null) ('Roues motrices', id.drivetrain!),
+                    // Tout ce que le formulaire demande et que la fiche
+                    // n'affichait pas : le modele ne lisait du bloc technique
+                    // que le kilometrage, et jetait le reste.
+                    if (vehicle.bodyStyle != null)
+                      ('Carrosserie', _libelleCarrosserie(vehicle.bodyStyle!)),
+                    if (vehicle.transmission != null)
+                      ('Boîte', _libelleTransmission(vehicle.transmission!)),
+                    if (vehicle.powerHp != null) ('Puissance', '${vehicle.powerHp} ch'),
+                    if (vehicle.engineDisplacementCc != null)
+                      ('Cylindrée', '${vehicle.engineDisplacementCc} cm³'),
+                    if (vehicle.cylinders != null) ('Cylindres', '${vehicle.cylinders}'),
+                    if (vehicle.torqueNm != null) ('Couple', '${vehicle.torqueNm} Nm'),
+                    if (vehicle.gearCount != null) ('Rapports', '${vehicle.gearCount}'),
+                    if (vehicle.seats != null) ('Places', '${vehicle.seats}'),
+                    if (vehicle.doors != null) ('Portes', '${vehicle.doors}'),
+                    if (vehicle.engineCode != null) ('Code moteur', vehicle.engineCode!),
                     if (vehicle.combinedL100km != null)
                       ('Consommation', '${_decimal.format(vehicle.combinedL100km)} L/100 km'),
                   ]),
@@ -478,8 +529,12 @@ class _ImportSection extends StatelessWidget {
           _InfoRow('Origine', import_.originCountry!),
         if (import_.portOfEntry != null)
           _InfoRow('Port d\'entrée', import_.portOfEntry!),
-        if (import_.odometerAtImportKm != null)
-          _InfoRow('Kilométrage import', '${import_.odometerAtImportKm} km'),
+        // Le kilométrage d'import ne s'affiche plus ici : c'est deux fois le
+        // même nombre sur la même fiche. L'API résout déjà `mileage_km` sur
+        // l'odomètre relevé à l'import quand le véhicule n'est pas
+        // immatriculé — la ligne « Kilométrage » plus haut le porte donc
+        // déjà, et la répéter sous « Import » laissait croire à deux relevés
+        // distincts.
         _InfoRow(
           'Dédouané',
           import_.customsCleared ? '✓ Oui' : '⏳ En attente',
@@ -1049,3 +1104,29 @@ class _ConsommationOfficielle extends StatelessWidget {
     );
   }
 }
+
+/// « automatic » ne se montre pas a un acheteur.
+String _libelleTransmission(String code) => switch (code) {
+      'manual'    => 'Manuelle',
+      'cvt'       => 'CVT',
+      'automatic' => 'Automatique',
+      _           => code,
+    };
+
+/// Les memes libelles que le formulaire d'enregistrement : une carrosserie
+/// saisie « Berline » doit se relire « Berline », pas « sedan ».
+String _libelleCarrosserie(String code) => switch (code) {
+      'sedan'       => 'Berline',
+      'hatchback'   => 'Citadine / Hayon',
+      'suv'         => 'SUV / 4×4',
+      'estate'      => 'Break',
+      'coupe'       => 'Coupé',
+      'convertible' => 'Cabriolet',
+      'pickup'      => 'Pickup',
+      'van'         => 'Fourgonnette',
+      'minibus'     => 'Minibus',
+      'bus'         => 'Bus / Car',
+      'truck'       => 'Camion',
+      'other'       => 'Autre',
+      _             => code,
+    };

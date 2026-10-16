@@ -47,10 +47,14 @@ class _PartnerListPageState extends ConsumerState<PartnerListPage> {
       appBar: AppBar(
         title: const Text('Partenaires'),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
+          preferredSize: const Size.fromHeight(48),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
             child: SearchBar(
+              // 40 au lieu des 56 par defaut de Material 3. Sans contrainte
+              // explicite la SearchBar se fixe a 56, et le PreferredSize
+              // reduit ne ferait que la rogner.
+              constraints: const BoxConstraints(minHeight: 40, maxHeight: 40),
               controller: _searchCtrl,
               hintText: 'Nom, contact, téléphone…',
               leading: const Icon(Icons.search),

@@ -98,14 +98,20 @@ class _ProductGalleryState extends State<ProductGallery> {
                   width: actif ? 18 : 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    // Blanc, et non une couleur du theme : ces points reposent
-                    // sur des photos, pas sur une surface de l'application.
-                    // Une teinte claire en theme clair disparaissait sur une
-                    // boite de piece blanche.
-                    color: Colors.white.withValues(alpha: actif ? 0.95 : 0.45),
+                    // Sombres, et non blanches. Le raisonnement precedent
+                    // etait inverse : il disait eviter « une teinte claire,
+                    // qui disparaissait sur une boite de piece blanche », et
+                    // retenait le blanc. Or les photos de produit sont
+                    // justement sur fond blanc presque a chaque fois — c'est
+                    // la que ces points devenaient invisibles, leur seule
+                    // ombre portee ne suffisant pas a les detacher.
+                    //
+                    // Le halo clair sous les points sombres fait le travail
+                    // symetrique sur les rares photos foncees.
+                    color: Colors.black.withValues(alpha: actif ? 0.70 : 0.28),
                     borderRadius: BorderRadius.circular(3),
                     boxShadow: const [
-                      BoxShadow(color: Colors.black26, blurRadius: 2),
+                      BoxShadow(color: Colors.white54, blurRadius: 3),
                     ],
                   ),
                 );

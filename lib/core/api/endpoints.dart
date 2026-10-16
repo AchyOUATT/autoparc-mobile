@@ -40,6 +40,14 @@ class Endpoints {
   static const String me     = '/me';
   static const String logout = '/logout';
 
+  // ── Plancher de version (public) ─────────────────────────────────
+  /// Le versionCode minimal encore accepté, servi par le serveur.
+  ///
+  /// Route publique et volontairement sans authentification : le contrôle a
+  /// lieu au démarrage, avant que l'on sache qui est connecté, et une version
+  /// périmée doit être arrêtée même chez un visiteur sans compte.
+  static const String appVersion = '/app/version';
+
   // ── Catalogue public ────────────────────────────────────────────
   static const String catalogVehicles       = '/catalog/vehicles';
   static const String catalogParts          = '/catalog/parts';
@@ -77,6 +85,20 @@ class Endpoints {
   /// Historique des contrôles (GET) et enregistrement d'un passage (POST).
   static String myChecks(int ownedVehicleId) =>
       '/my/vehicles/$ownedVehicleId/checks';
+
+  /// Passages à la pompe d'un véhicule : historique (GET) et enregistrement
+  /// d'un passage (POST), comme [myChecks].
+  ///
+  /// Le calcul de consommation reste entier côté serveur : il trie les pleins
+  /// par kilométrage, pas par date, pour qu'un passage saisi en retard
+  /// s'insère au bon endroit de la chaîne. Refaire ce tri ici donnerait deux
+  /// chiffres pour la même voiture.
+  static String myFuelFills(int ownedVehicleId) =>
+      '/my/vehicles/$ownedVehicleId/fuel-fills';
+
+  /// Suppression d'un passage, hors de la route du véhicule : une saisie
+  /// fautive doit pouvoir disparaître pour que la moyenne redevienne juste.
+  static String myFuelFill(int fuelFillId) => '/my/fuel-fills/$fuelFillId';
 
   /// Suppression du compte et de toutes ses données.
   ///

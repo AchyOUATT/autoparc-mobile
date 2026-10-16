@@ -6,6 +6,7 @@ import 'package:auto/features/catalog/data/models/part.dart';
 import 'package:auto/features/catalog/data/models/part_category.dart';
 import 'package:auto/features/catalog/data/models/vehicle.dart';
 import 'package:auto/features/catalog/presentation/widgets/niveau_categories.dart';
+import 'package:auto/features/garage/data/models/fuel_fill.dart';
 import 'package:auto/features/garage/data/models/owned_vehicle.dart';
 import 'package:auto/features/vehicles/data/models/catalog_refs.dart';
 import 'package:auto/shared/models/paginated_response.dart';
@@ -191,6 +192,121 @@ void main() {
       expect(v.identity.brand, isNotEmpty);
       expect(v.deadlines, isNotEmpty,
           reason: 'Les échéances alimentent les rappels d\'entretien.');
+    });
+
+    /// La clé doit être là même quand elle n'a rien à dire : c'est ainsi que
+    /// l'application sépare « aucun passage » — compteurs à zéro — de « pas
+    /// demandé », où la tuile s'en tient à la cote constructeur et ne propose
+    /// aucune saisie. Si le serveur ne la rendait qu'à l'index, ou qu'après un
+    /// premier passage, l'écran serait juste à un endroit et faux ailleurs
+    /// sans qu'aucune erreur ne le signale.
+    test('le suivi carburant est présent et se lit entièrement', () {
+      final brut = (objet('my_vehicles')['data'] as List).first
+          as Map<String, dynamic>;
+
+      expect(brut.containsKey('fuel_tracking'), isTrue,
+          reason: 'OwnedVehicleResource doit toujours porter « fuel_tracking ».');
+
+      final suivi = OwnedVehicle.fromJson(brut).fuelTracking;
+
+      expect(suivi, isNotNull);
+      expect(suivi!.totalFills, greaterThan(0),
+          reason: 'La fixture doit porter des passages, sinon elle ne mesure '
+              'que le cas vide.');
+      expect(suivi.fullFills, greaterThan(0));
+      expect(suivi.l100km, isNotNull);
+      expect(suivi.basedOnFills, greaterThan(0));
+      // Les faits bruts sont rendus même quand aucun intervalle n'est retenu :
+      // c'est l'écran du propriétaire qui ne fait jamais le plein.
+      expect(suivi.totals.litres, greaterThan(0));
+      expect(suivi.totals.distanceKm, greaterThan(0));
+
+      // Les deux clés que la tuile lit en plus du chiffre : celle du verdict
+      // et celle du compteur remplacé. Toujours présentes, même nulle et
+      // fausse — leur absence et leur valeur de repos se confondraient, et
+      // l'écran se tairait sur un serveur qui a quelque chose à dire.
+      final tracking = brut['fuel_tracking'] as Map<String, dynamic>;
+      expect(tracking.containsKey('alerte_l_100km'), isTrue);
+      expect(tracking.containsKey('series_rompue'), isTrue);
+    });
+
+    /// Les quatre champs de mesure ne décrivent pas le passage mais
+    /// l'intervalle qui finit sur lui. Un demi-plein n'en porte aucun : il
+    /// apporte ses litres au calcul sans jamais borner un intervalle. La
+    /// fixture doit contenir les deux natures, sinon elle ne prouve rien de
+    /// cette distinction.
+    test('les passages à la pompe se lisent, pleins et demi-pleins', () {
+      final page =
+          PaginatedResponse.fromJson(objet('my_fuel_fills'), FuelFill.fromJson);
+
+      expect(page.data, isNotEmpty);
+      expect(page.data.any((p) => p.isFull), isTrue);
+      expect(page.data.any((p) => !p.isFull), isTrue,
+          reason: 'Sans demi-plein, la fixture ne couvre que la moitié du cas.');
+
+      for (final p in page.data) {
+        expect(p.mileageKm, greaterThan(0));
+        expect(p.litres, greaterThan(0));
+        if (!p.isFull) {
+          expect(p.l100km, isNull,
+              reason: 'Un demi-plein ne ferme jamais d\'intervalle.');
+        }
+      }
+
+      final mesure = page.data.firstWhere((p) => p.l100km != null);
+      expect(mesure.isFull, isTrue);
+      expect(mesure.distanceKm, isNotNull);
+    });
+
+    /// Ce que la suppression d'une ligne détruirait, et la seule donnée dont
+    /// la confirmation ait besoin. Elle ne se déduit PAS de la ligne : un
+    /// passage peut ne fermer aucun intervalle retenu — `retenu` faux, pas de
+    /// `l_100km` — et pourtant en OUVRIR un, qui disparaîtrait avec lui. La
+    /// fixture porte ce cas (94 800 km, premier plein de la série), et c'est
+    /// lui qui interdit de remplacer la clé par un `retenu ? 1 : 0`.
+    ///
+    /// Sans ce nombre, la confirmation retombe sur son texte générique et
+    /// laisse supprimer un passage correct qui divise le chiffre par deux :
+    /// 90 000/40 L, 90 600/48 L, 91 200/50 L affichent 8,2 l/100 km, et 4,2
+    /// une fois celui du milieu effacé.
+    test('chaque passage dit combien d\'intervalles retenus il borne', () {
+      final brut = (objet('my_fuel_fills')['data'] as List)
+          .cast<Map<String, dynamic>>();
+
+      for (final e in brut) {
+        expect(e.containsKey('bornes_intervalles'), isTrue,
+            reason: 'FuelFillResource doit toujours porter '
+                '« bornes_intervalles », même à zéro.');
+      }
+
+      final lus = brut.map(FuelFill.fromJson).toList();
+
+      expect(lus.any((p) => p.bornesIntervalles == 2), isTrue,
+          reason: 'Sans un passage qui borne DEUX intervalles, la fixture ne '
+              'couvre pas l\'avertissement de fusion.');
+      expect(lus.any((p) => !p.retenu && p.bornesIntervalles > 0), isTrue,
+          reason: 'C\'est le cas qui prouve que « retenu » ne peut pas tenir '
+              'lieu de ce nombre.');
+    });
+
+    /// L'incident cité en tête de ce fichier, sur la table des pleins :
+    /// `litres` et `price_per_litre` sont des colonnes `decimal`, donc des
+    /// chaînes dans la réponse. Un `as num?` ici ferait tomber l'historique
+    /// entier, pas la ligne fautive.
+    test('litres et prix au litre arrivent en chaînes, et sont convertis', () {
+      final brut = (objet('my_fuel_fills')['data'] as List)
+          .cast<Map<String, dynamic>>();
+
+      expect(brut.first['litres'], isA<String>(),
+          reason: 'La fixture doit conserver la forme réelle du serveur.');
+      expect(brut.map((e) => e['price_per_litre']).whereType<String>(),
+          isNotEmpty);
+
+      for (final e in brut) {
+        final p = FuelFill.fromJson(e);
+        expect(p.litres, isA<double>());
+        expect(p.litres, greaterThan(0));
+      }
     });
   });
 }

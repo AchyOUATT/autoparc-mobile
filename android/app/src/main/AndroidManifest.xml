@@ -76,10 +76,33 @@
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="https"/>
         </intent>
-        <!-- url_launcher : liens tel: -->
+        <!-- url_launcher : liens tel:
+             DIAL seul ne suffit pas. Le greffon interroge la visibilite avec
+             ACTION_VIEW (voir le bloc <queries> de son README), et sur
+             Android 11 une requete qui ne correspond a aucune declaration
+             rend simplement « aucune application » — sans erreur. -->
         <intent>
             <action android:name="android.intent.action.DIAL"/>
             <data android:scheme="tel"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="tel"/>
+        </intent>
+
+        <!-- url_launcher : liens mailto:
+             Absent jusqu'ici, et c'est ce qui rendait « Nous contacter »
+             muet sur le courriel : depuis Android 11, sans cette
+             declaration l'application ne voit AUCUNE messagerie installee.
+             Le lien ne partait pas, et comme l'appel n'etait pas garde,
+             rien ne s'affichait a l'ecran. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="mailto"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SENDTO"/>
+            <data android:scheme="mailto"/>
         </intent>
     </queries>
 </manifest>

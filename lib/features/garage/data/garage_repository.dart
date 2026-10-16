@@ -4,6 +4,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/api/endpoints.dart';
 import '../../../shared/models/paginated_response.dart';
 import '../../catalog/data/models/part.dart';
+import 'models/fuel_fill.dart';
 import 'models/motorisation.dart';
 import 'models/owned_vehicle.dart';
 import 'models/garage_compatibility.dart';
@@ -93,6 +94,51 @@ class GarageRepository {
     final json = await _client.get(Endpoints.myChecks(ownedVehicleId));
     final page = PaginatedResponse.fromJson(json, VehicleCheck.fromJson);
     return page.data;
+  }
+
+  /// Les passages à la pompe d'un véhicule, dans l'ordre que le serveur
+  /// impose.
+  ///
+  /// La liste n'est pas retriée ici : les intervalles sont chaînés par
+  /// kilométrage croissant côté serveur, et chaque passage porte déjà le
+  /// résultat de l'intervalle qu'il ferme. Un tri local par date remettrait
+  /// un passage saisi en retard à la mauvaise place et contredirait les
+  /// chiffres qu'il affiche.
+  Future<List<FuelFill>> fuelFills(int ownedVehicleId) async {
+    final json = await _client.get(
+      Endpoints.myFuelFills(ownedVehicleId),
+      params: {'per_page': 100},
+    );
+
+    return (json['data'] as List)
+        .map((f) => FuelFill.fromJson(f as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Enregistre un passage à la pompe et renvoie la ligne du serveur.
+  ///
+  /// La charge porte une `client_reference`, comme un contrôle : on saisit à
+  /// la station, où le réseau est mauvais, et l'envoi sera rejoué. Le serveur
+  /// retrouve alors le passage déjà enregistré au lieu d'en créer un second —
+  /// un doublon fausserait les litres de l'intervalle, donc la consommation.
+  ///
+  /// `is_full` n'est jamais deviné : c'est la saisie qui tranche.
+  Future<FuelFill> addFuelFill(
+    int ownedVehicleId,
+    Map<String, dynamic> payload,
+  ) async {
+    final json = await _client.post(
+      Endpoints.myFuelFills(ownedVehicleId),
+      data: payload,
+    );
+
+    return FuelFill.fromJson(json['data'] as Map<String, dynamic>);
+  }
+
+  /// Efface un passage. Suppression définitive, sans corbeille : une ligne
+  /// masquée que le calcul oublierait fausserait la moyenne en silence.
+  Future<void> deleteFuelFill(int fillId) async {
+    await _client.delete(Endpoints.myFuelFill(fillId));
   }
 
   /// Retire un véhicule du garage.

@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import 'fuel_fill.dart';
 import 'vehicle_check.dart';
 
 class OwnedVehicle extends Equatable {
@@ -39,6 +40,16 @@ class OwnedVehicle extends Equatable {
   final int? motorisationId;
   final VehicleConsumption? consumption;
 
+  /// La consommation réellement mesurée aux passages à la pompe, à côté de la
+  /// cote d'homologation que porte [consumption]. Les deux ne se remplacent
+  /// pas : l'une est le chiffre du laboratoire, l'autre celui de la piste.
+  ///
+  /// Nulle quand la réponse ne porte pas la clé — un serveur pas encore
+  /// déployé. Le serveur à jour la rend toujours, compteurs à zéro quand
+  /// aucun passage n'a été saisi : c'est ainsi que l'écran distingue « aucun
+  /// passage » de « pas demandé », et `null` doit rester réservé au second.
+  final FuelTracking? fuelTracking;
+
   /// Le dernier contrôle avant voyage, en résumé. Nul tant qu'aucun n'a été
   /// fait : la fiche propose alors d'en faire un, plutôt que d'afficher un
   /// état qu'elle ne connaît pas.
@@ -73,6 +84,7 @@ class OwnedVehicle extends Equatable {
     required this.compatibilityReady,
     this.motorisationId,
     this.consumption,
+    this.fuelTracking,
     this.lastCheck,
     this.deadlines = const [],
     this.technicalInspectionExpiry,
@@ -104,6 +116,10 @@ class OwnedVehicle extends Equatable {
                            ? null
                            : VehicleConsumption.fromJson(
                                json['consumption'] as Map<String, dynamic>),
+    fuelTracking:      json['fuel_tracking'] == null
+                           ? null
+                           : FuelTracking.fromJson(
+                               json['fuel_tracking'] as Map<String, dynamic>),
     lastCheck:         json['last_check'] == null
                            ? null
                            : LastCheck.fromJson(

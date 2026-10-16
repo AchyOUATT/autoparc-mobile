@@ -109,8 +109,17 @@ class PartDetailPage extends ConsumerWidget {
         slivers: [
           // ── AppBar ─────────────────────────────────────────────────
           SliverAppBar(
-            expandedHeight: 160,
+            // 300 au lieu de 160. A 160, et avec la photo qui passait SOUS la
+            // barre, il restait une bande ou l'on ne distinguait pas une
+            // cartouche de filtre d'un carton. Une fiche produit se juge
+            // d'abord sur sa photo.
+            expandedHeight: 300,
             pinned: true,
+            // La barre prend la couleur de la surface plutot que celle du
+            // theme : le bandeau n'est plus un aplat colore mais un cadre
+            // autour d'une photo, et le titre y est desormais sombre.
+            backgroundColor: cs.surface,
+            surfaceTintColor: Colors.transparent,
             actions: [
               // Les photos s'ajoutaient uniquement dans la seconde qui suivait
               // la creation : le formulaire basculait sur l'ecran de
@@ -150,13 +159,24 @@ class PartDetailPage extends ConsumerWidget {
               if (!isStaff) const CartIconButton(),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              // Blanc, et pose sur un voile : le titre s'affiche par-dessus le
-              // bandeau, qui montre desormais une photo et non plus un aplat
-              // gris. En noir sur une boite de filtre claire, il etait
-              // illisible.
+              // Sombre, sur la surface, et non plus blanc sur un voile noir.
+              //
+              // Le voile etait une rustine : il assombrissait le bas de la
+              // photo pour qu'un titre blanc y survive. Or les photos de
+              // produit sont presque toujours sur fond BLANC — une boite de
+              // filtre, un carton — et le voile devait alors lutter contre
+              // l'image entiere. Le titre descend maintenant sous la photo,
+              // sur la surface de l'application, ou son contraste est garanti
+              // quelle que soit l'image.
+              titlePadding:
+                  const EdgeInsetsDirectional.only(start: 16, end: 16, bottom: 10),
               title: Text(
                 part.name,
-                style: const TextStyle(fontSize: 14, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -166,30 +186,25 @@ class PartDetailPage extends ConsumerWidget {
               // coverUrl ni media. Les photos existaient, l'API les renvoyait,
               // la carte de la liste les affichait — seule la fiche, ou on les
               // cherche justement, n'en montrait aucune.
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  ProductGallery(
+              //
+              // Les marges sortent la photo de dessous la barre : elle etait
+              // collee au bord superieur, a moitie masquee par les icones
+              // d'action, et le peu qui restait visible touchait l'encoche.
+              background: Padding(
+                padding: EdgeInsets.only(
+                  top: MediaQuery.paddingOf(context).top + 48,
+                  bottom: 44,
+                  left: 12,
+                  right: 12,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: ProductGallery(
                     urls: part.photoUrls,
                     titre: part.name,
                     fallback: _PartCover(cs: cs),
                   ),
-                  // Le voile qui rend le titre lisible quelle que soit la
-                  // photo. IgnorePointer, sinon il avalerait les appuis
-                  // destines a la galerie — le bas de l'image ne s'ouvrirait
-                  // plus en plein ecran.
-                  const IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.center,
-                          end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Colors.black54],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),

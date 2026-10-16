@@ -148,6 +148,25 @@ qui ne nomment pas la cause — « cette release ne permet pas d'ajouter ni de
 supprimer des app bundles », « aucun utilisateur actuel ne peut effectuer une
 mise à jour ».
 
+Cette phrase était la seule protection, et elle n'a pas suffi : un bundle en
+versionCode 1 est bel et bien parti le 20 septembre. Deux garde-fous la
+doublent désormais, tous deux adossés à
+[`android/version_code_plancher.txt`](android/version_code_plancher.txt), qui
+enregistre le plus haut versionCode que la CI ait jamais produit :
+
+- **à la construction** — `android/app/build.gradle.kts` arrête `bundleRelease`
+  si le code ne dépasse pas le plancher. L'APK et les builds debug ne sont pas
+  concernés : Play ne contrôle le numéro que du `.aab` qu'on lui téléverse, et
+  `flutter run --release` doit rester possible ;
+- **dans la CI** — le workflow compare `github.run_number` au plancher avant de
+  construire. Ce compteur est attaché au *fichier* de workflow : renommer
+  `build-apk.yml`, ou le supprimer puis le recréer, le remettrait à 1 et chaque
+  envoi suivant serait refusé. Le garde-fou le dirait au lieu de produire un
+  bundle irrecevable.
+
+**Relever le plancher après chaque publication acceptée.** Rien au-dessus de sa
+valeur n'a pu être publié : le dépasser suffit donc à garantir l'envoi.
+
 ## iOS
 
 Voir [`ios/README.md`](ios/README.md). Il manque encore un Mac ou une CI macOS,

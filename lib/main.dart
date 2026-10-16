@@ -2,12 +2,16 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker_android/image_picker_android.dart';
 import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'core/update/ecran_mise_a_jour.dart';
+import 'core/update/version_minimale.dart';
+import 'core/utils/lien_externe.dart';
 import 'core/widgets/navigation_bar_theme.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
@@ -24,6 +28,7 @@ import 'features/home/presentation/pages/home_page.dart';
 import 'features/garage/data/models/owned_vehicle.dart';
 import 'features/garage/presentation/pages/add_vehicle_to_garage_page.dart';
 import 'features/garage/presentation/pages/compatible_parts_page.dart';
+import 'features/garage/presentation/pages/fuel_fills_page.dart';
 import 'features/garage/presentation/pages/vehicle_check_page.dart';
 import 'features/garage/presentation/pages/garage_page.dart';
 import 'features/cart/presentation/pages/cart_page.dart';
@@ -216,6 +221,18 @@ GoRouter _buildRouter({required bool onboardingDone}) => GoRouter(
       },
     ),
 
+    // Passages à la pompe. L'écran sert surtout à corriger : une faute de
+    // frappe sur le compteur fausse les deux intervalles qui l'encadrent, et
+    // seule la suppression de la ligne rend la moyenne juste.
+    GoRoute(
+      path: '/garage/:id/fuel',
+      builder: (_, state) {
+        final id      = int.parse(state.pathParameters['id']!);
+        final vehicle = state.extra as OwnedVehicle?;
+        return FuelFillsPage(ownedVehicleId: id, vehicle: vehicle);
+      },
+    ),
+
     // ── Pages de détail (sans NavigationBar) ────────────────────────
     GoRoute(
       path: '/vehicles/:id/edit',
@@ -273,26 +290,100 @@ class AutoParcApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'AutoParc',
-      debugShowCheckedModeBanner: false,
-      routerConfig: _buildRouter(onboardingDone: onboardingDone),
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF8AAFC8), // bleu ardoise pâle — très doux
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF8AAFC8),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
+    return _PorteMiseAJour(
+      enfant: MaterialApp.router(
+        title: 'AutoParc',
+        debugShowCheckedModeBanner: false,
+        routerConfig: _buildRouter(onboardingDone: onboardingDone),
+        theme: _theme(Brightness.light),
+        darkTheme: _theme(Brightness.dark),
       ),
     );
   }
+}
+
+/// Interpose l'écran bloquant au-dessus de tout, routeur compris.
+///
+/// Trois façons de brancher ce contrôle se présentaient : une redirection
+/// `go_router`, une route poussée sur le navigateur, ou le remplacement pur
+/// et simple de l'arbre. C'est la troisième qui est retenue, parce que c'est
+/// la seule qui ne laisse aucune prise : une redirection se contourne dès
+/// qu'une route n'y passe pas — les boîtes de dialogue et les feuilles
+/// modales sont déjà empilées quand elle s'évalue —, et une route poussée se
+/// dépile. Ici le routeur n'est pas masqué, il n'existe plus : il n'y a
+/// littéralement plus d'écran dessous.
+///
+/// C'est aussi pourquoi `ref.watch` est ici et non dans [AutoParcApp] : le
+/// verdict ne doit pas faire reconstruire le parent, dont le `build`
+/// fabrique un `GoRouter` neuf à chaque passage.
+///
+/// Tant que le verdict n'est pas tombé — et c'est le cas de tout démarrage,
+/// le serveur mettant couramment vingt-cinq secondes à se réveiller —
+/// l'application fonctionne normalement. On ne fait patienter personne
+/// devant un écran vide pour un contrôle de version : `asData` est nul
+/// pendant le chargement comme en cas d'erreur, et les deux laissent passer.
+class _PorteMiseAJour extends ConsumerWidget {
+  final Widget enfant;
+  const _PorteMiseAJour({required this.enfant});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final verdict = ref.watch(verdictMiseAJourProvider).asData?.value;
+
+    if (verdict == null || !verdict.exigee) return enfant;
+
+    return MaterialApp(
+      title: 'AutoParc',
+      debugShowCheckedModeBanner: false,
+      theme: _theme(Brightness.light),
+      darkTheme: _theme(Brightness.dark),
+      home: EcranMiseAJour(
+        message: verdict.message,
+        urlStore: verdict.urlStore,
+      ),
+    );
+  }
+}
+
+/// Le theme de l'application, clair et sombre.
+///
+/// Les deux ne differaient que par leur Brightness : une fonction evite de
+/// repeter chaque reglage de densite dans les deux copies, et surtout evite
+/// qu'ils divergent.
+///
+/// Densite reduite le 2026-10-16. Les reglages par defaut de Material 3 sont
+/// genereux — pensés pour des ecrans larges —, et sur un telephone ils
+/// mangeaient de la hauteur utile a chaque ecran : une barre de titre de 56
+/// points, des icones de 24, un titre de 22.
+ThemeData _theme(Brightness brightness) {
+  final base = ThemeData(
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: const Color(0xFF8AAFC8), // bleu ardoise pâle — très doux
+      brightness: brightness,
+    ),
+    useMaterial3: true,
+  );
+
+  return base.copyWith(
+    appBarTheme: base.appBarTheme.copyWith(
+      // 48 au lieu des 56 par defaut (kToolbarHeight), et un titre a 18
+      // au lieu de 22. On ne descend pas sous 48 : les IconButton de la
+      // barre imposent une cible tactile de 48 points, et la barre les
+      // rognerait. Le titre est construit a partir de titleLarge et non
+      // ecrit de zero — sans cela il perdrait sa couleur, et deviendrait
+      // illisible sur les barres colorees.
+      toolbarHeight: 48,
+      titleTextStyle: base.textTheme.titleLarge?.copyWith(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+      ),
+      // Cloche, panier, retour : 20 au lieu de 24. iconTheme couvre le
+      // bouton de navigation a gauche, actionsIconTheme ceux de droite —
+      // les deux sont necessaires, l'un ne retombe pas sur l'autre.
+      iconTheme: const IconThemeData(size: 20),
+      actionsIconTheme: const IconThemeData(size: 20),
+    ),
+  );
 }
 
 // Coordonnées de contact : voir core/utils/contact_info.dart.
@@ -345,6 +436,25 @@ class _AppShellState extends ConsumerState<_AppShell> {
               case 'maintenance_insurance':
                 context.push('/garage');
 
+              // Surconsommation : directement l'historique des pleins du
+              // véhicule nommé, et non le garage entier. Le payload porte
+              // `owned_vehicle_id` en entier, il était ignoré ; sur un parc de
+              // quatre voitures, le propriétaire atterrissait sur une liste et
+              // devait retrouver lui-même celle dont l'alerte parlait. C'est
+              // aussi l'écran où une saisie fautive se supprime, cause la plus
+              // fréquente d'une hausse soudaine, et d'où l'on rejoint le
+              // catalogue de pièces que le message annonce.
+              //
+              // Nom distinct de `ownedId` plus haut : les cas d'un `switch`
+              // partagent une seule portée, et deux `final ownedId` dans le
+              // même aiguillage ne compilent pas.
+              case 'fuel_anomaly':
+                final vehiculeSuivi =
+                    int.tryParse(data['owned_vehicle_id']?.toString() ?? '');
+                context.push(vehiculeSuivi != null
+                    ? '/garage/$vehiculeSuivi/fuel'
+                    : '/garage');
+
               default:
                 context.push('/notifications');
             }
@@ -355,30 +465,97 @@ class _AppShellState extends ConsumerState<_AppShell> {
     });
   }
 
+  /// Vrai tant que la demande de confirmation est affichee.
+  ///
+  /// Sans ce verrou, deux appuis rapides sur Retour empilent deux boites de
+  /// dialogue : la premiere reponse n'en ferme qu'une, et l'application a
+  /// l'air bloquee derriere la seconde.
+  bool _sortieEnCours = false;
+
+  /// Demande confirmation avant de fermer l'application.
+  ///
+  /// Les quatre onglets sont navigues avec `go`, qui remplace la destination
+  /// au lieu de l'empiler : depuis n'importe lequel d'entre eux il n'y a rien
+  /// a depiler, et le Retour d'Android fermait l'application d'un coup, sans
+  /// rien demander. Un panier a moitie rempli disparaissait sur un appui
+  /// involontaire.
+  Future<void> _confirmerSortie() async {
+    if (_sortieEnCours) return;
+    _sortieEnCours = true;
+
+    final quitter = await showDialog<bool>(
+      context: context,
+      builder: (contexteDialogue) => AlertDialog(
+        title: const Text('Quitter AutoParc ?'),
+        content: const Text('Voulez-vous fermer l\'application ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(contexteDialogue, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(contexteDialogue, true),
+            child: const Text('Quitter'),
+          ),
+        ],
+      ),
+    );
+
+    _sortieEnCours = false;
+    if (quitter == true) await SystemNavigator.pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final scaffoldKey = ref.watch(shellScaffoldKeyProvider);
     final location    = GoRouterState.of(context).uri.path;
     final tabIndex    = _tabs.indexWhere((t) => t.path == location).clamp(0, _tabs.length - 1);
 
-    return Scaffold(
-      key: scaffoldKey,
-      drawer: const _AppDrawer(),
-      body: widget.child,
-      bottomNavigationBar: Theme(
-        data: Theme.of(context).copyWith(
-          navigationBarTheme:
-              barreNavigationTheme(Theme.of(context).colorScheme),
-        ),
-        child: NavigationBar(
-          selectedIndex: tabIndex,
-          onDestinationSelected: (i) => context.go(_tabs[i].path),
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          destinations: _tabs.map((t) => NavigationDestination(
-            icon:        Icon(t.icon),
-            selectedIcon: Icon(t.icon),
-            label:       t.label,
-          )).toList(),
+    // canPop: false intercepte le Retour systeme pour tout le shell.
+    //
+    // Le tiroir lateral doit etre traite a la main. Il s'ouvre en posant une
+    // entree d'historique locale sur la route, et on pourrait croire que
+    // Flutter la depile en premier ; c'est l'inverse. ModalRoute.popDisposition
+    // consulte les PopScope avant d'appeler super, donc notre canPop: false
+    // gagne : mesure faite, le Retour affichait « Quitter AutoParc ? » par
+    // dessus le tiroir reste ouvert. On referme donc le tiroir nous-memes, et
+    // on ne propose de quitter que s'il etait deja ferme.
+    //
+    // Les boites de dialogue et les feuilles modales, elles, sont de vraies
+    // routes empilees au dessus du shell : leur Retour ne descend jamais
+    // jusqu'ici.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+
+        final etatScaffold = scaffoldKey.currentState;
+        if (etatScaffold != null && etatScaffold.isDrawerOpen) {
+          etatScaffold.closeDrawer();
+          return;
+        }
+
+        _confirmerSortie();
+      },
+      child: Scaffold(
+        key: scaffoldKey,
+        drawer: const _AppDrawer(),
+        body: widget.child,
+        bottomNavigationBar: Theme(
+          data: Theme.of(context).copyWith(
+            navigationBarTheme:
+                barreNavigationTheme(Theme.of(context).colorScheme),
+          ),
+          child: NavigationBar(
+            selectedIndex: tabIndex,
+            onDestinationSelected: (i) => context.go(_tabs[i].path),
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            destinations: _tabs.map((t) => NavigationDestination(
+              icon:        Icon(t.icon),
+              selectedIcon: Icon(t.icon),
+              label:       t.label,
+            )).toList(),
+          ),
         ),
       ),
     );
@@ -569,7 +746,12 @@ class _AppDrawer extends ConsumerWidget {
               icon: Icons.phone_outlined,
               label: 'Téléphone',
               value: kContactPhoneDisplay,
-              onTap: () => launchUrl(Uri.parse('tel:$kContactPhone')),
+              onTap: () => ouvrirLien(
+                context,
+                Uri.parse('tel:$kContactPhone'),
+                valeurACopier: kContactPhoneDisplay,
+                ceQuiNePeutPasSOuvrir: 'le composeur',
+              ),
             ),
             const SizedBox(height: 12),
             _ContactTile(
@@ -577,15 +759,24 @@ class _AppDrawer extends ConsumerWidget {
               iconColor: const Color(0xFF25D366),
               label: 'WhatsApp',
               value: kContactPhoneDisplay,
-              onTap: () =>
-                  launchUrl(Uri.parse('https://wa.me/$kContactWhatsApp')),
+              onTap: () => ouvrirLien(
+                context,
+                Uri.parse('https://wa.me/$kContactWhatsApp'),
+                valeurACopier: kContactPhoneDisplay,
+                ceQuiNePeutPasSOuvrir: 'WhatsApp',
+              ),
             ),
             const SizedBox(height: 12),
             _ContactTile(
               icon: Icons.email_outlined,
               label: 'Email',
               value: kContactEmail,
-              onTap: () => launchUrl(Uri.parse('mailto:$kContactEmail')),
+              onTap: () => ouvrirLien(
+                context,
+                Uri.parse('mailto:$kContactEmail'),
+                valeurACopier: kContactEmail,
+                ceQuiNePeutPasSOuvrir: 'la messagerie',
+              ),
             ),
           ],
         ),

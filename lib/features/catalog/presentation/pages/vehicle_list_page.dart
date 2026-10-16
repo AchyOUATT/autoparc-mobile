@@ -59,8 +59,17 @@ class _VehicleListPageState extends ConsumerState<VehicleListPage> {
       floatingActionButton: auth.canManageCatalog
           ? FloatingActionButton.extended(
               onPressed: () async {
-                final added = await context.push<bool>('/vehicles/new');
-                if (added == true) {
+                // On rafraichit au retour, sans condition.
+                //
+                // Le test `added == true` ne se verifiait jamais apres un
+                // enregistrement reussi : la page d'enregistrement ne revient
+                // pas ici, elle fait pushReplacement vers l'envoi des photos.
+                // C'est donc cet ecran-la qui se depile, et il ne rend pas
+                // true. La liste restait telle qu'avant, et le vehicule tout
+                // juste cree y apparaissait sans sa photo — alors que le
+                // serveur la renvoyait deja.
+                await context.push<bool>('/vehicles/new');
+                if (context.mounted) {
                   ref.read(vehicleListProvider.notifier).refresh();
                 }
               },
@@ -87,10 +96,14 @@ class _VehicleListPageState extends ConsumerState<VehicleListPage> {
             ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
+          preferredSize: const Size.fromHeight(48),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
             child: SearchBar(
+              // 40 au lieu des 56 par defaut de Material 3. Sans contrainte
+              // explicite la SearchBar se fixe a 56, et le PreferredSize
+              // reduit ne ferait que la rogner.
+              constraints: const BoxConstraints(minHeight: 40, maxHeight: 40),
               controller: _searchCtrl,
               hintText: 'Marque, modèle, référence…',
               leading: const Icon(Icons.search),
@@ -609,36 +622,13 @@ class VehicleCard extends StatelessWidget {
                       child: _DealBadge(commercial: c),
                     ),
 
-                  if (vehicle.isImported && vehicle.import_ != null)
-                    Positioned(
-                      top: 8, right: 8,
-                      // Statut douanier : information d'une autre nature que
-                      // la disponibilité commerciale. Style ajouré plutôt que
-                      // plein, pour ne pas se confondre avec le badge de
-                      // gauche quand les deux cohabitent sur une même carte.
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.92),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: vehicle.import_!.customsCleared
-                                ? const Color(0xFF2E6F6B)
-                                : const Color(0xFFB26A00),
-                          ),
-                        ),
-                        child: Text(
-                          vehicle.import_!.customsCleared ? 'Dédouané' : 'En attente',
-                          style: TextStyle(
-                            color: vehicle.import_!.customsCleared
-                                ? const Color(0xFF2E6F6B)
-                                : const Color(0xFFB26A00),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
+                  // Le statut douanier a ete retire de la carte. Il repondait
+                  // a une question que personne ne se pose en parcourant une
+                  // liste — on y cherche un modele, un prix, un etat — et il
+                  // occupait le coin oppose au badge de disponibilite, donc
+                  // le peu de place qui restait sur la photo. Il reste sur la
+                  // fiche du vehicule, ou il a sa place : c'est la qu'on
+                  // s'engage.
                 ],
               ),
             ),
