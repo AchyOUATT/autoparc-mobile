@@ -163,7 +163,14 @@ class PartStock extends Equatable {
 
   factory PartStock.fromJson(Map<String, dynamic> json) => PartStock(
     isAvailable:    json['is_available']    as bool? ?? true,
-    quantity:       json['quantity']        as int,
+    // Tolerant, comme alert_threshold juste dessous. Laravel ne rafraichit pas
+    // le modele apres create() : un champ absent de la requete reste null en
+    // memoire, meme quand la colonne porte un default(0) que la base applique.
+    // La reponse de creation rendait donc quantity: null, le cast levait un
+    // _TypeError — ni ApiException ni DioException —, et l'ecran affichait
+    // « Une erreur est survenue » sur un enregistrement pourtant reussi.
+    // Reproduit en test le 2026-10-16.
+    quantity:       json['quantity']        as int? ?? 0,
     alertThreshold: json['alert_threshold'] as int? ?? 0,
     isLow:          json['is_low']          as bool? ?? false,
     // Le texte libre du formulaire d'abord — c'est lui que l'ecran de saisie

@@ -118,6 +118,20 @@ void main() {
         data: MediaQueryData(
           size: taille,
           textScaler: TextScaler.linear(echelle),
+          // Les creux du systeme, que ce banc ignorait.
+          //
+          // Sans eux, MediaQueryData les laisse a zero : on mesurait un
+          // appareil sans barre d'etat ni barre de navigation, c'est-a-dire
+          // aucun appareil reel. Environ 72 points de hauteur etaient offerts
+          // gratuitement a chaque ecran, et un debordement qui se voit sur un
+          // telephone passait ici au vert.
+          //
+          // 48 en bas : la barre a trois boutons — retour, accueil, applis
+          // ouvertes. C'est le cas le plus contraignant, et donc le bon a
+          // tenir : un ecran qui passe avec elle passe aussi en navigation
+          // gestuelle, ou le creux n'est que d'une vingtaine de points.
+          padding: const EdgeInsets.only(top: 24, bottom: 48),
+          viewPadding: const EdgeInsets.only(top: 24, bottom: 48),
         ),
         child: ecran,
       ),
