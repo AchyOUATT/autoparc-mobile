@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_exception.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -300,7 +301,7 @@ class _AddVehicleToGaragePageState
             children: [
               const Icon(Icons.cloud_off, size: 48),
               const SizedBox(height: 12),
-              Text('Impossible de charger les références : $e'),
+              Text('Impossible de charger les références : ${messageFor(e)}'),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => ref.invalidate(catalogRefsProvider),

@@ -386,7 +386,7 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
             else
               refsAsync.when(
                 loading: () => const LinearProgressIndicator(),
-                error: (e, _) => Text('Impossible de charger les modèles : $e',
+                error: (e, _) => Text('Impossible de charger les modèles : ${messageFor(e)}',
                     style: const TextStyle(color: Colors.red)),
                 data: (refs) => FitmentsSection(
                   refs: refs,

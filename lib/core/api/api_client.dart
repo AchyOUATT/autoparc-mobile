@@ -33,8 +33,18 @@ class ApiClient {
   ApiClient() {
     _dio = Dio(BaseOptions(
       baseUrl:        Endpoints.baseUrl,
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
+      // 60 s et non 30 : le service Render est sur le plan gratuit, il s'endort
+      // après inactivité et son réveil est lent. Mesuré le 2026-10-15 depuis un
+      // poste : 34,8 s sur /up à froid — soit au-delà des 30 s précédentes. Le
+      // 11 octobre, aucune réponse en 180 s. À 30 s, tout utilisateur ouvrant
+      // l'application alors que le service dormait dépassait le délai, sans
+      // aucun moyen de comprendre pourquoi.
+      //
+      // Il n'y a volontairement pas de sendTimeout : l'envoi de photos sur un
+      // réseau mobile lent le dépasserait. Son absence a un coût connu — un
+      // envoi vers un serveur muet reste suspendu indéfiniment.
+      connectTimeout: const Duration(seconds: 60),
+      receiveTimeout: const Duration(seconds: 60),
       headers: {
         'Accept':       'application/json',
         'Content-Type': 'application/json',

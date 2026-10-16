@@ -8,6 +8,7 @@ import '../providers/catalog_providers.dart';
 import '../../../../shared/models/paged_state.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/catalog_image.dart';
+import '../../../../core/api/api_exception.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../../features/cart/presentation/pages/cart_page.dart';
 import '../../../../features/notifications/presentation/widgets/notification_icon_button.dart';
@@ -146,7 +147,7 @@ class _Body extends ConsumerWidget {
     }
     if (paged.hasError) {
       return _ErrorView(
-        error: paged.error.toString(),
+        error: messageFor(paged.error),
         onRetry: () => ref.read(accessoryListProvider.notifier).refresh(),
       );
     }

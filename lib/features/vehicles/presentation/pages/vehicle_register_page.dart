@@ -232,7 +232,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         _showErrors(msg);
       }
     } catch (e) {
-      if (mounted) _showErrors('Erreur inattendue : $e');
+      if (mounted) _showErrors(messageFor(e));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

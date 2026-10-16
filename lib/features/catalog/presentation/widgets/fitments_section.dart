@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/api/api_exception.dart';
 import 'package:flutter/services.dart';
 
 import '../../../vehicles/data/models/catalog_refs.dart';
@@ -616,7 +617,7 @@ class CompatibilitesIllisibles extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '$erreur',
+            messageFor(erreur),
             style: Theme.of(context).textTheme.bodySmall
                 ?.copyWith(color: cs.onErrorContainer.withValues(alpha: 0.75)),
           ),

@@ -8,6 +8,7 @@ import '../../../../shared/models/paged_state.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/brand_logo.dart';
 import '../../../../core/widgets/catalog_image.dart';
+import '../../../../core/api/api_exception.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
@@ -138,7 +139,7 @@ class _Body extends ConsumerWidget {
     }
     if (paged.hasError) {
       return _ErrorView(
-        error: paged.error.toString(),
+        error: messageFor(paged.error),
         onRetry: () => ref.read(vehicleListProvider.notifier).refresh(),
       );
     }
