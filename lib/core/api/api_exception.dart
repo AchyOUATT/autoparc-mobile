@@ -61,6 +61,14 @@ class ApiException implements Exception {
   bool get isUnauthorized => statusCode == 401;
   bool get isForbidden    => statusCode == 403;
   bool get isNotFound     => statusCode == 404;
+
+  /// Le corps de la requete depasse ce que le serveur accepte.
+  ///
+  /// Sur un envoi de photos, c'est `post_max_size` : le refus tombe dans un
+  /// middleware de Laravel, avant l'authentification et avant toute
+  /// validation. Il peut aussi venir d'un mandataire place devant
+  /// l'application, qui ne renvoie alors aucun JSON.
+  bool get isTooLarge     => statusCode == 413;
   bool get isValidation   => statusCode == 422;
   bool get isServerError  => statusCode != null && statusCode! >= 500;
 
@@ -92,6 +100,14 @@ class ApiException implements Exception {
       // cette action »), on le préfère au nôtre.
       403 => message,
       404 => 'Introuvable. L\'élément a peut-être été supprimé.',
+      // Tombait jusqu'ici dans le cas par defaut, qui rend le message du
+      // serveur : « The POST data is too large. » — en anglais, et sans dire
+      // quoi faire. Derriere un mandataire, il arrive meme qu'il n'y ait
+      // aucun JSON a rendre, et l'utilisateur lisait alors la seule
+      // reference de requete. Ce refus-la se repare a l'ecran : il vaut
+      // mieux dire comment.
+      413 => 'Envoi trop volumineux. Retirez quelques photos ou '
+             'réduisez-les, puis réessayez.',
       422 => _validationMessage(),
       // Le serveur dit combien de temps patienter et pourquoi : son message
       // est plus utile que « trop de requêtes ».

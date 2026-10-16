@@ -81,6 +81,9 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
     List<XFile> files;
 
     if (source == ImageSource.gallery) {
+      // Ce 10 est celui du serveur : MediaController::MAX_PHOTOS plafonne
+      // l'envoi, et post_max_size est dimensionne dessus. Le relever ici
+      // sans toucher aux deux autres ferait refuser l'envoi entier.
       files = await _picker.pickMultiImage(imageQuality: 85, limit: 10);
     } else {
       final f = await _picker.pickImage(source: source, imageQuality: 85);
