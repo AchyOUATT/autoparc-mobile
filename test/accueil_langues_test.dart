@@ -22,6 +22,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/echelles.dart';
 import 'support/langues.dart';
 import 'support/mesures.dart';
 import 'support/polices.dart';
@@ -68,6 +69,13 @@ import 'support/polices.dart';
 /// DANS SA COQUE, avec la barre de navigation qui lui prend ses 112 points,
 /// parce qu'une page mesurée sans son chrome mesure un téléphone qui n'existe
 /// pas.
+///
+/// LES QUATRE ÉCHELLES SONT MESURÉES, TROIS SONT ASSERTÉES. La frontière et son
+/// raisonnement sont dans `support/echelles.dart` ; ce fichier n'en recopie
+/// rien. Jusqu'à 1,5 on exige qu'aucune chaîne de l'application ne se coupe ;
+/// à 2,0 on imprime le relevé et on n'exige que les quatre points non
+/// négociables, dont celui qui compte : aucun paragraphe portant un CHIFFRE ne
+/// se coupe ni ne se replie dans un mot.
 void main() {
   setUpAll(() => chargerPolices());
 
@@ -82,9 +90,9 @@ void main() {
     '411x923': Size(411, 923),
   };
 
-  /// 1,0 est le réglage par défaut, 1,3 le deuxième cran d'Android (« Grande
-  /// police »), 1,5 le troisième, 2,0 le dernier.
-  const echelles = <double>[1.0, 1.3, 1.5, 2.0];
+  /// Les quatre échelles, MESURÉES. Ce que chacune autorise à exiger est décidé
+  /// par [tenue], et la décision est écrite dans `support/echelles.dart`.
+  const echelles = echellesMesurees;
 
   // ── Le pire contenu que l'accueil puisse recevoir ─────────────────────────
 
@@ -151,22 +159,33 @@ void main() {
     'Filtre à huile moteur cartouche 04152-YZZA1',
   };
 
-  /// LES DEUX PARAGRAPHES DU BANDEAU DE MOTORISATION QUI DÉBORDENT, nommés un
-  /// par un — et c'est la correction d'une exclusion trop large.
+  /// LES DEUX PARAGRAPHES DU BANDEAU DE MOTORISATION, QUI NE SONT PLUS ÉCARTÉS
+  /// DE RIEN.
   ///
-  /// Le tableau écartait `find.byType(MissingEngineBanner)`, donc le sous-arbre
-  /// entier : quatre paragraphes, dont DEUX débordent et DEUX n'ont jamais eu
-  /// de raison d'être écartés. Le test dédié ci-dessous ne mesurait que le
-  /// premier, et le second a vécu non chiffré jusqu'à ce qu'un relecteur ouvre
-  /// le sous-arbre.
+  /// ── CE QU'ILS ÉTAIENT, ET CE QUI A CHANGÉ ──────────────────────────────────
   ///
-  /// Les chaînes sont RECOPIÉES, et c'est volontaire : `engine_prompt.dart` les
-  /// écrit en dur parce que ce bandeau n'est pas traduit par ce lot — il est
-  /// partagé avec `garage_page.dart`. Les mesures le confirment, elles sont
+  /// Ils étaient exclus du tableau, avec un test dédié qui VERROUILLAIT leur
+  /// débordement. Le bandeau posait l'icône, les deux phrases et « Compléter »
+  /// dans une seule rangée ; « Compléter » n'est pas repliable, donc
+  /// l'`Expanded` des phrases encaissait tout le grossissement du texte et
+  /// descendait à 101,07 points reçus à 320 × 1,5, où le seul mot
+  /// « Motorisation » en réclame 123,51.
+  ///
+  /// La règle de `support/echelles.dart` a tranché : 320 × 1,5 est EN DEÇÀ de
+  /// la frontière, donc ce n'était pas une dégradation acceptable mais un
+  /// défaut à corriger. `engine_prompt.dart` fait maintenant descendre le
+  /// bouton sous le texte quand les mots ne tiennent plus — le seuil y est
+  /// mesuré, pas deviné. Les deux paragraphes repassent donc sous la règle
+  /// générale, aux DOUZE cases, et le test ci-dessous verrouille la correction
+  /// au lieu du défaut.
+  ///
+  /// Les chaînes restent nommées ici parce que le test de la correction les
+  /// cherche : `engine_prompt.dart` les écrit en dur, ce bandeau n'étant pas
+  /// traduit — il est partagé avec `garage_page.dart`. Les mesures sont
   /// identiques au centième dans les deux langues. Le jour où le bandeau
   /// passera aux `.arb`, ces deux chaînes devront être lues dans
   /// `AppLocalizations` comme le reste du fichier.
-  const bandeauDeborde = <String>{
+  const bandeau = <String>{
     'Motorisation non renseignée',
     'Sans elle, impossible de savoir quelles pièces vont sur ce véhicule.',
   };
@@ -329,49 +348,24 @@ void main() {
   /// jour plutôt qu'un assouplissement général : le jour où une chaîne de
   /// l'application se coupe, il faut qu'elle tombe, et non qu'elle glisse dans
   /// une exception écrite pour quelqu'un d'autre.
+  /// ── ET CE QUE L'ÉCHELLE CHANGE ─────────────────────────────────────────────
+  ///
+  /// [echelle] décide de la SÉVÉRITÉ, pas de ce qui est mesuré : tout est
+  /// mesuré à toutes les échelles, et le relevé des défauts est IMPRIMÉ dans
+  /// tous les cas. Jusqu'à 1,5 un défaut fait tomber le test. À 2,0 il ne fait
+  /// plus tomber que s'il rend une information FAUSSE — voir [porteUnNombre] et
+  /// `support/echelles.dart` pour la raison de cette frontière-là.
   void aucuneTroncature(
     WidgetTester tester, {
     required Finder racine,
     required String ou,
+    required double echelle,
     Set<String> valeursSansBorne = const {},
-    List<Finder> horsChamp = const [],
-
-    /// Les textes dont la troncature est un DÉFAUT MESURÉ, antérieur à ce lot,
-    /// verrouillé par un test qui lui est propre.
-    ///
-    /// Distinct de [valeursSansBorne], et la distinction compte : une valeur
-    /// sans borne a le DROIT de s'ellipser, un défaut connu ne l'a pas — il est
-    /// seulement déjà chiffré ailleurs, pour ne pas faire tomber le tableau sur
-    /// quelque chose que ce lot n'a ni causé ni le mandat de corriger. Chaque
-    /// entrée doit avoir son test nommé, sinon c'est une assertion relâchée
-    /// déguisée.
-    Set<String> defautsConnus = const {},
   }) {
-    // Les paragraphes exclus sont écartés PAR IDENTITÉ de leur objet de rendu,
-    // et non par leur texte : un `Finder` de paragraphe est plus étroit qu'une
-    // chaîne, qui pourrait réapparaître ailleurs dans la page.
-    //
-    // MAIS IL DOIT DÉSIGNER DES PARAGRAPHES, ET JAMAIS UN SOUS-ARBRE, et c'est
-    // la correction du relecteur. Ce paramètre recevait
-    // `find.byType(MissingEngineBanner)` : tout le bandeau, c'est-à-dire
-    // QUATRE paragraphes dont DEUX débordent, quand le test censé les
-    // verrouiller n'en mesurait qu'un. Le second — la phrase explicative, dont
-    // le mot « impossible » réclame 120,59 points à l'échelle 2,0 — n'était
-    // chiffré nulle part et sortait du champ sans que rien ne le dise. Les
-    // deux autres, le libellé du bouton et le glyphe de l'icône, étaient
-    // écartés sans raison : ils passent la règle générale et y sont revenus.
-    final exclus = <RenderParagraph>{
-      for (final f in horsChamp)
-        ...tester.renderObjectList<RenderParagraph>(
-          find.descendant(of: f, matching: find.byType(RichText)),
-        ),
-    };
-
     final paragraphes = tester
         .renderObjectList<RenderParagraph>(
           find.descendant(of: racine, matching: find.byType(RichText)),
         )
-        .where((p) => !exclus.contains(p))
         .toList();
 
     expect(
@@ -382,29 +376,70 @@ void main() {
           'indicateur de chargement, et ce test ne mesure rien.',
     );
 
+    // Le relevé, construit pour TOUTES les échelles et imprimé dès qu'il n'est
+    // pas vide. C'est lui qui remplace l'assertion à 2,0 : on ne compte plus
+    // ces défauts comme des échecs, on continue de les voir.
+    final releve = <String>[];
+
     for (final p in paragraphes) {
       final texte = texteDe(p);
+      // Les valeurs sans borne sont écartées AVANT tout le reste, y compris
+      // avant la règle du chiffre : un nom de pièce qui porte une référence
+      // — « Filtre à huile moteur cartouche 04152-YZZA1 » — contient des
+      // chiffres sans être un nombre, et sa longueur n'est pas la nôtre.
       if (valeursSansBorne.any(texte.contains)) continue;
-      if (defautsConnus.contains(texte)) continue;
 
-      expect(
-        p.didExceedMaxLines,
-        isFalse,
-        reason:
-            '$ou : « $texte » est COUPÉ — '
-            '${voulue(p).toStringAsFixed(1)} points voulus pour '
-            '${recue(p).toStringAsFixed(1)} reçus, et il n\'en reste peint '
-            'que « ${peint(p, recue(p))} ».',
+      final coupe = p.didExceedMaxLines;
+      final deborde = motLePlusLarge(p) > recue(p) + 0.01;
+      if (!coupe && !deborde) continue;
+
+      releve.add(
+        '«$texte» '
+        '${voulue(p).toStringAsFixed(1)} voulus / '
+        '${recue(p).toStringAsFixed(1)} reçus, '
+        'mot ${motLePlusLarge(p).toStringAsFixed(1)}'
+        '${coupe ? ", COUPÉ peint «${peint(p, recue(p))}»" : ""}'
+        '${deborde ? ", DÉBORDE sans ellipse" : ""}'
+        '${porteUnNombre(texte) ? ", PORTE UN CHIFFRE" : ""}',
       );
 
-      expect(
-        motLePlusLarge(p),
-        lessThanOrEqualTo(recue(p) + 0.01),
-        reason:
-            '$ou : un mot de « $texte » fait '
-            '${motLePlusLarge(p).toStringAsFixed(1)} points pour '
-            '${recue(p).toStringAsFixed(1)} reçus. Il sera rogné sans ellipse, '
-            'donc en silence : `didExceedMaxLines` ne voit pas ce cas.',
+      // Un paragraphe qui porte un chiffre est tenu à la règle stricte À TOUTE
+      // ÉCHELLE : « 18 000 FC » se lit comme un prix entier, et comme un autre
+      // prix que celui du serveur. C'est le seul défaut que 2,0 ne rachète pas.
+      if (tenue(echelle) || porteUnNombre(texte)) {
+        expect(
+          coupe,
+          isFalse,
+          reason:
+              '$ou : « $texte » est COUPÉ — '
+              '${voulue(p).toStringAsFixed(1)} points voulus pour '
+              '${recue(p).toStringAsFixed(1)} reçus, et il n\'en reste peint '
+              'que « ${peint(p, recue(p))} ».'
+              '${tenue(echelle) ? "" : " Ce paragraphe porte un CHIFFRE : la "
+                  "règle de l’échelle 2,0 ne l’exempte pas, parce qu’un "
+                  "nombre coupé est FAUX et non seulement incomplet."}',
+        );
+
+        expect(
+          motLePlusLarge(p),
+          lessThanOrEqualTo(recue(p) + 0.01),
+          reason:
+              '$ou : un mot de « $texte » fait '
+              '${motLePlusLarge(p).toStringAsFixed(1)} points pour '
+              '${recue(p).toStringAsFixed(1)} reçus. Il sera rogné sans '
+              'ellipse, donc en silence : `didExceedMaxLines` ne voit pas ce '
+              'cas.',
+        );
+      }
+    }
+
+    if (releve.isNotEmpty) {
+      // ignore: avoid_print
+      print(
+        '@@RELEVÉ $ou — ${releve.length} paragraphe(s) en défaut sur '
+        '${paragraphes.length}'
+        '${tenue(echelle) ? " (ÉCHELLE ASSERTÉE : le test tombe)" : " (échelle 2,0 : dégradation acceptée, voir support/echelles.dart)"}'
+        '\n   ${releve.join('\n   ')}',
       );
     }
   }
@@ -456,6 +491,16 @@ void main() {
               // vert sans l'avoir regardée une seule fois. Le défaut a été vu
               // parce que le test de non-vacuité, lui, la cherchait par son
               // texte et ne la trouvait pas.
+              // NI `horsChamp` NI `defautsConnus`, et c'est le résultat de ce
+              // lot. Le bandeau de motorisation était écarté — deux
+              // paragraphes, un débordement verrouillé par un test dédié — et
+              // le titre de la vitrine était déclaré « défaut connu ». Les
+              // deux sont corrigés : `engine_prompt.dart` fait descendre son
+              // bouton quand les mots ne tiennent plus, et `_SectionTitle` ne
+              // perd plus la famille de police de son « Tout voir ». TOUS les
+              // paragraphes de l'accueil passent désormais sous la règle
+              // générale, aux quatre échelles, à la sévérité que [tenue]
+              // décide.
               for (var pas = 0; pas < 10; pas++) {
                 aucuneTroncature(
                   tester,
@@ -463,24 +508,8 @@ void main() {
                   ou:
                       'Accueil ${ecran.key} x$echelle ${langue.key}, '
                       'défilement $pas',
+                  echelle: echelle,
                   valeursSansBorne: valeursSansBorne,
-                  // `MissingEngineBanner` porte DEUX défauts ANTÉRIEURS à ce
-                  // lot, indépendants de la langue, et son propre test
-                  // ci-dessous en verrouille les deux chiffres. On écarte les
-                  // DEUX PARAGRAPHES nommément, et non le bandeau : écarter le
-                  // sous-arbre entier cachait le second, et c'est exactement le
-                  // reproche qui a valu cette correction.
-                  horsChamp: [
-                    for (final texte in bandeauDeborde)
-                      find.descendant(
-                        of: find.byType(MissingEngineBanner),
-                        matching: find.text(texte),
-                      ),
-                  ],
-                  // Le titre de la vitrine. Voir « le titre de section se
-                  // coupe déjà » ci-dessous, qui en porte les chiffres dans
-                  // les deux langues.
-                  defautsConnus: {titreVitrine[langue.key]!},
                 );
 
                 final defilable = find.descendant(
@@ -502,6 +531,40 @@ void main() {
                       '${langue.key}.',
                 );
               }
+
+              // ÇA DÉFILE, ET C'EST NON NÉGOCIABLE À TOUTE ÉCHELLE. C'est le
+              // troisième des quatre points de `support/echelles.dart` : à 2,0
+              // la page est moins dense, donc une part plus grande de son
+              // contenu passe sous le pli — ce qui ne tient plus doit rester
+              // ATTEIGNABLE. Un écran moins dense reste utilisable ; un écran
+              // dont le bas est inaccessible ne l'est pas.
+              //
+              // Lu sur la position du `Scrollable` APRÈS les dix glissements :
+              // `pixels > 0` dit que la page a réellement bougé, là où
+              // l'absence d'exception ne dit rien.
+              final position = tester
+                  .state<ScrollableState>(
+                    find
+                        .descendant(
+                          of: find.byType(HomePage),
+                          matching: find.byType(Scrollable),
+                        )
+                        .first,
+                  )
+                  .position;
+
+              expect(
+                position.pixels,
+                greaterThan(0.0),
+                reason:
+                    'L\'accueil n\'a pas défilé d\'un seul point après dix '
+                    'glissements en ${ecran.key} à l\'échelle $echelle, en '
+                    '${langue.key} : son contenu tient-il vraiment dans '
+                    '${position.viewportDimension.toStringAsFixed(1)} points, '
+                    'ou le défilement est-il bloqué ? Si le contenu tient, '
+                    'c\'est la fixture qui a maigri ; s\'il est bloqué, '
+                    'l\'écran est inutilisable au-delà du pli.',
+              );
             },
           );
         }
@@ -562,39 +625,58 @@ void main() {
       }
     });
 
-    testWidgets('le titre de section se coupe déjà, et la traduction '
+    testWidgets('le titre de section tient jusqu\'à 1,5, et la traduction '
         'n\'aggrave rien', (tester) async {
-      // CE TEST NE PRÉTEND PAS QUE LE DÉFAUT A DISPARU. Même forme que celui
-      // du bandeau de motorisation, et que « il recouvrait la deuxième carte,
-      // et c'est mesuré » dans bandes_filtres_test.dart : on verrouille le
-      // chiffre pour que personne ne croie le contraire sur la foi du lot.
+      // ── CE TEST A CHANGÉ DE SENS, ET C'EST LE CŒUR DU LOT ──────────────────
       //
-      // LE DÉFAUT. `_SectionTitle` pose son libellé dans un `Expanded` qui
-      // partage sa rangée avec le lien « Tout voir », et le borne à UNE ligne
-      // avec ellipse. À 320 points d'écran et à l'échelle 2,0 il ne reçoit que
-      // 103,0 points. « Bonnes affaires » en réclame 200,1 ; même replié sur
-      // deux lignes, le seul mot « affaires » en demanderait environ 106. La
-      // correction n'est donc pas un `maxLines: 2` : il faut décider où va
-      // « Tout voir » quand la place manque, et c'est une décision de mise en
-      // page sur un widget partagé par toutes les sections de l'accueil — pas
-      // une décision de lot de traduction.
+      // Il VERROUILLAIT un défaut : « le titre de section se coupe déjà », avec
+      // 103,0 points reçus à 320 × 2,0 pour 200,1 demandés. Il verrouille
+      // maintenant la CORRECTION, parce que le défaut n'en était pas un là où
+      // on le croyait.
       //
-      // CE QUE CE LOT DOIT GARANTIR, EN REVANCHE, C'EST DE NE PAS L'AGGRAVER,
-      // et c'est ce que ce test mesure. Le résultat va à l'encontre de
-      // l'intuition : c'est le FRANÇAIS le plus large. À 320 × 2,0,
-      // « Bonnes affaires » demande 200,1 points et « Good deals » 142,2 —
-      // l'anglais en réclame 57,9 de MOINS. La traduction améliore donc cette
-      // case au lieu de la dégrader, et la seule chose à surveiller est qu'un
-      // futur libellé anglais ne repasse pas devant.
+      // CE QUI A ÉTÉ TROUVÉ EN REMESURANT. Le « Tout voir » de `_SectionTitle`
+      // recevait `textStyle: const TextStyle(fontSize: 12.5)`, qui REMPLACE le
+      // `labelLarge` du bouton et emporte sa famille de police. Le bouton
+      // rendait donc la police de repli, presque deux fois plus large :
+      //
+      //              bouton « Tout voir »      titre reçu, à 320
+      //   avant  x1,0        136,50                  157,50
+      //          x1,3        167,85                  126,15   ← COUPÉ
+      //          x1,5        188,75                  105,25   ← COUPÉ
+      //          x2,0        241,00                   53,00   ← COUPÉ + débordé
+      //   après  x1,0         73,34                  220,66
+      //          x1,3         85,48                  208,52
+      //          x1,5         93,57                  200,43
+      //          x2,0        113,79                  180,21   ← coupé seulement
+      //
+      // Le défaut touchait donc TROIS cases en deçà de 1,5 — 320×1,3, 320×1,5
+      // et 360×1,5 — et il était déclaré « connu, à arbitrer » alors qu'il
+      // n'était qu'un style mal composé. La règle de `support/echelles.dart`
+      // l'a sorti de l'ombre : 1,3 et 1,5 sont du côté où l'on exige.
+      //
+      // CE QUI RESTE À 2,0, ET QUI EST ACCEPTÉ : à 320 points, « Bonnes
+      // affaires » demande 200,07 pour 180,21 reçus et s'ellipse. UNE case sur
+      // douze, et c'est une ellipse HONNÊTE — le mot « affaires » (97,80) tient
+      // dans la largeur reçue, donc plus rien n'est rogné en silence. À 360 et
+      // 411 le titre tient entier même à 2,0.
+      //
+      // ET LA TRADUCTION N'AGGRAVE RIEN, ce qui va contre l'intuition : c'est
+      // le FRANÇAIS le plus large. « Bonnes affaires » demande 200,07 points à
+      // 320 × 2,0, « Good deals » 142,2 — l'anglais en réclame 57,9 de MOINS.
+      // La seule chose à surveiller est qu'un futur libellé anglais ne repasse
+      // pas devant.
       final demandes = <String, double>{};
 
-      for (final langue in langues.entries) {
+      Future<RenderParagraph> titreA(
+        MapEntry<String, Locale> langue,
+        double echelle,
+      ) async {
         await poser(
           tester,
           page: const HomePage(),
           ongletActif: 0,
           ecran: const Size(320, 640),
-          echelle: 2.0,
+          echelle: echelle,
           locale: langue.value,
         );
 
@@ -612,22 +694,62 @@ void main() {
           await tester.pump(const Duration(milliseconds: 50));
         }
 
-        final titre = tester.renderObject<RenderParagraph>(
+        return tester.renderObject<RenderParagraph>(
           find.text(titreVitrine[langue.key]!),
         );
+      }
 
-        demandes[langue.key] = voulue(titre);
+      for (final langue in langues.entries) {
+        // 320 × 1,5 : LA CASE DE LA CORRECTION. C'est le pire cas de largeur à
+        // l'échelle la plus haute que ce dépôt garantit, et le titre y était
+        // coupé avant ce lot.
+        final a15 = await titreA(langue, echelleTenue);
 
         expect(
-          titre.didExceedMaxLines,
-          isTrue,
+          a15.didExceedMaxLines,
+          isFalse,
           reason:
-              'Le titre de la vitrine ne se coupe plus en ${langue.key} à '
-              '320 points et à l\'échelle 2,0 : '
-              '${voulue(titre).toStringAsFixed(1)} points voulus pour '
-              '${recue(titre).toStringAsFixed(1)} reçus. S\'il a été corrigé, '
-              'retirez ce test ET l\'entrée `defautsConnus` du tableau, pour '
-              'que le titre repasse sous la règle générale.',
+              'Le titre de la vitrine est de nouveau COUPÉ en ${langue.key} à '
+              '320 points et à l\'échelle $echelleTenue : '
+              '${voulue(a15).toStringAsFixed(2)} points voulus pour '
+              '${recue(a15).toStringAsFixed(2)} reçus, il n\'en reste que '
+              '« ${peint(a15, recue(a15))} ». Le « Tout voir » a-t-il reperdu '
+              'la famille de police de son style — voir `_SectionTitle` — ou '
+              'le libellé a-t-il grandi ?',
+        );
+
+        // 320 × 2,0 : la dégradation ACCEPTÉE. On la mesure et on l'imprime,
+        // on ne l'asserte pas — ni dans un sens ni dans l'autre. L'exiger
+        // rendrait ce test rouge le jour où quelqu'un l'améliore, et exiger
+        // qu'elle disparaisse serait optimiser pour un cas que le propriétaire
+        // a sorti du compte.
+        final a20 = await titreA(langue, 2.0);
+        demandes[langue.key] = voulue(a20);
+
+        // ignore: avoid_print
+        print(
+          '@@TITRE VITRINE 320 x2.0 ${langue.key} : '
+          '${voulue(a20).toStringAsFixed(2)} voulus / '
+          '${recue(a20).toStringAsFixed(2)} reçus, '
+          'mot ${motLePlusLarge(a20).toStringAsFixed(2)}, '
+          '${a20.didExceedMaxLines ? "ellipsé en «${peint(a20, recue(a20))}»" : "entier"}',
+        );
+
+        // CE QUI RESTE NON NÉGOCIABLE À 2,0 : l'ellipse. Un titre ellipsé est
+        // incomplet et l'œil le voit ; un mot plus large que sa ligne est
+        // ROGNÉ par le `clipBehavior`, sans ellipse et sans que rien
+        // n'avertisse. C'est la différence entre une dégradation et un
+        // mensonge, et le mot « affaires » est repassé du bon côté avec la
+        // correction du style.
+        expect(
+          motLePlusLarge(a20),
+          lessThanOrEqualTo(recue(a20) + 0.01),
+          reason:
+              'Un mot du titre de la vitrine fait '
+              '${motLePlusLarge(a20).toStringAsFixed(2)} points pour '
+              '${recue(a20).toStringAsFixed(2)} reçus en ${langue.key} à '
+              '320 × 2,0 : il sera rogné SANS ellipse. À 2,0 on accepte un '
+              'titre incomplet, jamais un titre rogné en silence.',
         );
       }
 
@@ -643,50 +765,62 @@ void main() {
       );
     });
 
-    testWidgets('le bandeau de motorisation déborde déjà, par DEUX '
-        'paragraphes, et les deux chiffres sont verrouillés', (tester) async {
-      // CE TEST NE PRÉTEND PAS QUE LE DÉFAUT A DISPARU. Il n'a pas disparu, et
-      // c'est écrit ici plutôt que caché derrière une assertion relâchée —
-      // même forme que « il recouvrait la deuxième carte, et c'est mesuré »
-      // dans bandes_filtres_test.dart.
+    testWidgets('le bandeau de motorisation fait descendre son bouton quand '
+        'les mots ne tiennent plus', (tester) async {
+      // ── CE TEST VERROUILLE UNE CORRECTION, LÀ OÙ IL VERROUILLAIT UN DÉFAUT ──
       //
-      // LE DÉFAUT, ET SA FORME. Dans `engine_prompt.dart`, le bandeau pose une
-      // icône, un `Expanded` de deux paragraphes et un bouton « Compléter »
-      // dans la même rangée. L'`Expanded` reçoit ce que l'icône et le bouton
-      // laissent : 101,07 points à l'échelle 1,5 sur un écran de 320, et 72,40
-      // à l'échelle 2,0. Un mot plus large que sa ligne est posé seul et
-      // déborde HORIZONTALEMENT, sans que le paragraphe se déclare tronqué —
-      // `didExceedMaxLines` reste faux, et les glyphes passent sous le bouton.
+      // L'ÉTAT D'AVANT. `engine_prompt.dart` posait l'icône, les deux phrases
+      // et « Compléter » dans une seule rangée. Le bouton n'est pas repliable,
+      // donc l'`Expanded` des phrases encaissait tout le grossissement du
+      // texte, et un mot plus large que sa ligne était posé seul et débordait
+      // HORIZONTALEMENT : `didExceedMaxLines` restait FAUX, aucune ellipse
+      // n'apparaissait, et les glyphes passaient sous le bouton.
       //
-      // LES DEUX PARAGRAPHES, ET C'EST LA CORRECTION DU RELECTEUR. Ce test
-      // n'en mesurait qu'un, pendant que l'exclusion du tableau écartait le
-      // sous-arbre entier : le second a donc vécu sans chiffre.
+      // LES SIX CASES, SUR DOUZE, REMESURÉES AVANT LA CORRECTION — les mots
+      // contre ce que l'`Expanded` recevait, accueil monté dans sa coque :
       //
-      //   « Motorisation non renseignée »   mot « Motorisation »
-      //       123,51 pt à l'échelle 1,5, 163,69 à 2,0
-      //       → déborde en 320×1,5 (101,07 reçus), puis aux TROIS largeurs à
-      //         2,0 : 72,40 reçus à 320, 112,40 à 360, 163,40 à 411 — cette
-      //         dernière case ne manque que de 0,29 point.
-      //       → QUATRE cases sur douze.
+      //   « Motorisation » : 83,34 à x1,0 · 107,45 à x1,3 · 123,51 à x1,5 ·
+      //                      163,69 à x2,0
+      //   « impossible »   : 62,29 · 79,78 · 91,44 · 120,59
       //
-      //   « Sans elle, impossible de … »    mot « impossible »
-      //       91,44 pt à l'échelle 1,5, 120,59 à 2,0
-      //       → tient en 320×1,5 (91,44 pour 101,07) ; déborde à 2,0 en 320
-      //         (72,40 reçus) et en 360 (112,40), pas en 411 (163,40).
-      //       → DEUX cases sur douze.
+      //            reçus    Motorisation   impossible
+      //   320 x1,0 129,75        —              —
+      //   320 x1,3 112,54        —              —
+      //   320 x1,5 101,07      DÉBORDE          —        ← la seule case ≤ 1,5
+      //   320 x2,0  72,40      DÉBORDE       DÉBORDE
+      //   360 x1,5 141,07        —              —
+      //   360 x2,0 112,40      DÉBORDE       DÉBORDE
+      //   411 x1,5 192,07        —              —
+      //   411 x2,0 163,40      DÉBORDE (de 0,29)  —
       //
-      // IL EST ANTÉRIEUR À LA TRADUCTION ET INDÉPENDANT D'ELLE : les mêmes
-      // chiffres au centième dans les deux langues, parce que le bandeau n'est
-      // pas traduit par ce lot — c'est un widget du garage, employé aussi par
-      // `garage_page.dart`. Les deux paragraphes ont la MÊME cause et donc la
-      // même correction : décider où va le bouton quand la place manque. Ce
-      // n'est pas une décision de lot de traduction, et un `maxLines` posé sur
-      // la phrase ne corrigerait rien — il couperait une chaîne de
-      // l'application, ce que ce dépôt refuse.
+      // CE QUE LA RÈGLE A TRANCHÉ. Une seule de ces six cases est en deçà de
+      // 1,5 : 320 × 1,5, sur « Motorisation ». C'est elle qui obligeait à
+      // corriger — `support/echelles.dart` ne laisse aucune latitude de ce
+      // côté-ci de la frontière. « impossible », lui, ne débordait QU'À 2,0 :
+      // sous la règle seule, il serait devenu une dégradation acceptée.
       //
-      // Le jour où le bandeau sera corrigé, ce test tombera — et c'est voulu :
-      // il faudra alors le retirer et rendre les deux paragraphes à la règle
-      // générale, en vidant `bandeauDeborde` au-dessus.
+      // LA CORRECTION LES RÈGLE TOUS LES SIX, et ce n'est pas un hasard : la
+      // cause était unique — le bouton qui prend sa largeur sur le texte — donc
+      // la corriger une fois les corrige tous. Empilé, le bloc de texte reçoit
+      // 220,00 points à 320, 260,00 à 360 et 311,00 à 411, pour un mot le plus
+      // large de 163,69 au dernier cran d'Android.
+      //
+      // ET LE BANDEAU Y A GAGNÉ DE LA HAUTEUR, ce qui est le contraire de ce
+      // qu'on attend d'un empilement : les mots qui débordaient forçaient le
+      // paragraphe sur six à treize lignes. Mesuré à 320 points, en trois
+      // états — avant la correction, après le seuil de débordement, puis après
+      // le seuil de lisibilité que le propriétaire a demandé sur capture :
+      //
+      //           origine   débordement   lisibilité
+      //   x1,0      126,0       126,0        126,0   (côte à côte)
+      //   x1,3      205,0       205,0        185,0   (empilé au 3e état)
+      //   x1,5      310,0       202,0        202,0   (empilé au 2e)
+      //   x2,0      678,0       310,0        310,0   (empilé au 2e)
+      //
+      // Le bandeau ne coûte donc AUCUNE hauteur au réglage par défaut, qui est
+      // ce que presque tout le monde voit, et il en rend partout ailleurs.
+      // `engine_prompt.dart` porte le relevé des douze cases et nomme la
+      // seconde qui a basculé, 360 × 1,5, que personne n'avait demandée.
 
       /// Le paragraphe de [texte] du bandeau, sur l'écran monté.
       RenderParagraph duBandeau(String texte) =>
@@ -697,75 +831,69 @@ void main() {
             ),
           );
 
-      /// Les deux lectures que ce défaut demande, sur un paragraphe donné.
+      /// Les deux lectures que la correction demande, sur un paragraphe donné.
       ///
-      /// La seconde n'est pas décorative : si le paragraphe se déclarait
-      /// tronqué, le texte se perdrait d'une AUTRE façon et la mesure du
-      /// segment insécable n'en rendrait plus compte.
-      void deborde(RenderParagraph p, String ou) {
+      /// La seconde n'est pas décorative : un paragraphe qui se déclarerait
+      /// tronqué perdrait du texte d'une AUTRE façon, que la mesure du segment
+      /// insécable ne voit pas.
+      void tient(RenderParagraph p, String ou) {
         expect(
           motLePlusLarge(p),
-          greaterThan(recue(p)),
+          lessThanOrEqualTo(recue(p) + 0.01),
           reason:
-              'Le bandeau de motorisation ne déborde plus en $ou, sur '
+              'Le bandeau de motorisation déborde de nouveau en $ou, sur '
               '« ${texteDe(p)} » : ${motLePlusLarge(p).toStringAsFixed(2)} '
               'points de segment insécable pour '
-              '${recue(p).toStringAsFixed(2)} reçus. S\'il a été corrigé, '
-              'retirez ce test ET l\'entrée de `bandeauDeborde` ci-dessus, '
-              'pour que le paragraphe repasse sous la règle générale.',
+              '${recue(p).toStringAsFixed(2)} reçus. Le seuil de '
+              '`engine_prompt.dart` ne fait plus descendre le bouton — le '
+              'libellé a-t-il changé, ou la réserve de largeur du bouton '
+              'est-elle devenue trop courte ?',
         );
 
         expect(
           p.didExceedMaxLines,
           isFalse,
           reason:
-              '$ou : « ${texteDe(p)} » se déclare maintenant tronqué. C\'est '
-              'une AUTRE façon de perdre le texte, et la mesure du segment '
-              'insécable n\'en rend plus compte. Remesurez.',
+              '$ou : « ${texteDe(p)} » se déclare tronqué. Un `maxLines` a-t-il '
+              'été posé sur une chaîne de l\'application ? Ce dépôt refuse de '
+              'couper son propre texte.',
         );
       }
 
-      // 320 × 1,5 : le titre déborde, la phrase NON. C'est la case qui montre
-      // que les deux paragraphes ne tombent pas ensemble, donc qu'un seul
-      // chiffre ne pouvait pas décrire le bandeau.
-      await poser(
-        tester,
-        page: const HomePage(),
-        ongletActif: 0,
-        ecran: const Size(320, 640),
-        echelle: 1.5,
-        locale: localeFr,
-      );
+      /// Les DOUZE cases, et le relevé imprimé. Le bandeau n'est pas traduit —
+      /// il est partagé avec `garage_page.dart` et ses chaînes sont en dur —
+      /// donc une seule langue suffit, et les mesures sont identiques au
+      /// centième dans l'autre.
+      for (final ecran in ecrans.entries) {
+        for (final echelle in echelles) {
+          await poser(
+            tester,
+            page: const HomePage(),
+            ongletActif: 0,
+            ecran: ecran.value,
+            echelle: echelle,
+            locale: localeFr,
+          );
 
-      deborde(duBandeau('Motorisation non renseignée'), '320×1,5');
+          final ps = [for (final texte in bandeau) duBandeau(texte)];
 
-      final phraseA15 = duBandeau(
-        'Sans elle, impossible de savoir quelles pièces vont sur ce véhicule.',
-      );
-      expect(
-        motLePlusLarge(phraseA15),
-        lessThanOrEqualTo(recue(phraseA15) + 0.01),
-        reason:
-            'La phrase du bandeau déborde maintenant dès l\'échelle 1,5 : '
-            '${motLePlusLarge(phraseA15).toStringAsFixed(2)} points pour '
-            '${recue(phraseA15).toStringAsFixed(2)} reçus. Le défaut s\'est '
-            'AGGRAVÉ — il ne touchait que l\'échelle 2,0 — et le compte de '
-            'cases du commentaire ci-dessus est devenu faux.',
-      );
+          // ignore: avoid_print
+          print(
+            '@@BANDEAU MOTORISATION ${ecran.key} x$echelle : '
+            'haut ${tester.renderObject<RenderBox>(find.byType(MissingEngineBanner)).size.height.toStringAsFixed(1)}, '
+            '${ps.map((p) => "«${texteDe(p).split(" ").first}…» mot ${motLePlusLarge(p).toStringAsFixed(2)} / ${recue(p).toStringAsFixed(2)} reçus").join(" ; ")}',
+          );
 
-      // 320 × 2,0 : les DEUX débordent. C'est la case du second chiffre, celle
-      // que l'exclusion par sous-arbre dissimulait.
-      await poser(
-        tester,
-        page: const HomePage(),
-        ongletActif: 0,
-        ecran: const Size(320, 640),
-        echelle: 2.0,
-        locale: localeFr,
-      );
-
-      for (final texte in bandeauDeborde) {
-        deborde(duBandeau(texte), '320×2,0');
+          // ASSERTÉ AUX QUATRE ÉCHELLES, 2,0 COMPRISE, et c'est volontaire. La
+          // règle de `support/echelles.dart` AUTORISE à ne plus exiger au-delà
+          // de 1,5 ; elle n'oblige pas à relâcher ce qui tient. Ici la
+          // correction tient aux douze cases, donc on le verrouille aux douze :
+          // relâcher une assertion verte, c'est abandonner la seule chose qui
+          // dira qu'elle a cessé de l'être.
+          for (final p in ps) {
+            tient(p, '${ecran.key}×$echelle');
+          }
+        }
       }
     });
 
@@ -804,6 +932,14 @@ void main() {
   /// On ne mesure donc ici que ce qui a changé, et on le dit : mesurer leur
   /// corps « en anglais » mesurerait du français et donnerait une couverture
   /// imaginaire.
+  ///
+  /// CES ASSERTIONS RESTENT STRICTES AUX QUATRE ÉCHELLES, 2,0 comprise, et il
+  /// faut dire pourquoi puisque la règle de `support/echelles.dart` autoriserait
+  /// à les relâcher. Elle AUTORISE, elle n'oblige pas : une barre de titre est
+  /// une rangée avec un seul texte et deux icônes, elle tient aux vingt-quatre
+  /// cases, et relâcher une assertion verte revient à jeter la seule chose qui
+  /// dira qu'elle a cessé de l'être. On ne relâche que là où le défaut EXISTE et
+  /// qu'on a décidé de ne plus le payer.
   group('Les barres de titre du catalogue', () {
     final pages = <String, (Widget, int, String Function(AppLocalizations))>{
       'Véhicules': (const VehicleListPage(), 1, (l) => l.commonVehicles),

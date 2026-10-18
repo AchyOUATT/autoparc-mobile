@@ -19,7 +19,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:auto/core/utils/currency_format.dart';
 import 'package:auto/l10n/app_localizations.dart';
 
+import 'support/echelles.dart';
 import 'support/langues.dart';
+import 'support/mesures.dart';
 import 'support/polices.dart';
 
 /// La GÉOMÉTRIE des fiches du catalogue : ce qui est peint, pas ce qui est
@@ -59,14 +61,17 @@ import 'support/polices.dart';
 ///    chiffres étaient FAUX et tous deux trop généreux : la liste vit dans une
 ///    `ShellRoute` dont la `NavigationBar` et le creux système prennent 112
 ///    points en bas, et la page porte en plus une barre de titre, une barre de
-///    recherche, une bande de puces et un en-tête « N résultats ». Mesuré sur
-///    la page montée dans sa coque, la liste dispose de 360,0 points à 320
-///    points d'écran, 440,0 à 360 et 643,0 à 411 — et ces chiffres sont LUS dans
-///    la hauteur du `Viewport`, jamais posés.
+///    recherche, DEUX bandes de puces et un en-tête « N résultats ». Les
+///    chiffres sont LUS dans la hauteur du `Viewport`, jamais posés.
 ///
-///    LES TROIS CHIFFRES ONT MONTÉ DE 40,0 POINTS avec la bande unique : la
-///    page portait DEUX rangées de puces de 44 points, elle n'en porte plus
-///    qu'une, de 48. Ils valaient 320,0 / 400,0 / 603,0 avant ce lot.
+///    CE PARAGRAPHE ANNONÇAIT 360,0 / 440,0 / 643,0, ET C'ÉTAIT FAUX DE 48
+///    POINTS chaque fois : la page porte DEUX bandes de puces de 48 points
+///    depuis que les carrosseries ont repris leur ligne, et une seule était
+///    déduite. L'exécution donne 312,0 points de liste à 320 points d'écran,
+///    392,0 à 360 et 595,0 à 411. Le garde-fou de la coque, lui, verrouillait
+///    déjà le 392,0 et disait vrai : c'est le commentaire qui avait dérivé, et
+///    c'est le genre de dérive qu'un chiffre recopié à trois endroits produit.
+///    Le tableau de densité en porte désormais le détail case par case.
 ///
 /// ── CE QUE CE FICHIER VERROUILLE ────────────────────────────────────────────
 ///
@@ -182,76 +187,25 @@ void main() {
 
   /// 1,0 est le réglage par défaut — et c'est là que le défaut d'origine vivait.
   /// 1,3 est le deuxième cran des réglages Android, « Grande police ». 1,5 est
-  /// le troisième. 2,0 EST LE DERNIER, et c'est le cran qu'aucun lot avant
-  /// l'avant-dernier n'avait mesuré.
-  const echelles = <double>[1.0, 1.3, 1.5, 2.0];
+  /// le troisième et LE DERNIER QUE CE DÉPÔT GARANTIT. 2,0 est mesuré et
+  /// imprimé, plus asserté : la frontière et son raisonnement sont dans
+  /// `support/echelles.dart`, et rien n'en est recopié ici.
+  const echelles = echellesMesurees;
 
   const modes = <String, Brightness>{
     'clair': Brightness.light,
     'sombre': Brightness.dark,
   };
 
-  // ── Les outils de mesure ──────────────────────────────────────────────────
-
-  /// La largeur que ce paragraphe DEMANDE, remis en page sans borne et sur une
-  /// seule ligne.
-  double voulue(RenderParagraph p) => (TextPainter(
-    text: p.text,
-    textDirection: p.textDirection,
-    textScaler: p.textScaler,
-    maxLines: 1,
-  )..layout()).width;
-
-  /// La largeur que ce paragraphe a REÇUE.
-  ///
-  /// Lue dans la contrainte de l'objet de rendu, et non recalculée depuis la
-  /// largeur de la case : c'est la seule valeur qui compte toutes les marges
-  /// intermédiaires sans qu'on ait à les connaître — celle du `Card`, celle du
-  /// `Padding` du bloc de texte, et les 14 points que l'icône de localisation
-  /// retirait à la ligne de ville.
-  double recue(RenderParagraph p) => p.constraints.maxWidth;
-
-  /// Le paragraphe remis en page à la largeur qu'il a REÇUE.
-  TextPainter pose(RenderParagraph p) => TextPainter(
-    text: p.text,
-    textDirection: p.textDirection,
-    textScaler: p.textScaler,
-  )..layout(maxWidth: p.constraints.maxWidth);
-
-  /// La largeur du plus long segment INSÉCABLE du paragraphe.
-  ///
-  /// C'est la mesure qui attrape ce que `didExceedMaxLines` laisse passer : un
-  /// mot plus large que la ligne est posé seul sur sa ligne et dépasse
-  /// horizontalement, sans que le paragraphe se déclare tronqué. Le `Card` le
-  /// rogne alors en silence.
-  double motLePlusLarge(RenderParagraph p) => pose(p).minIntrinsicWidth;
-
-  /// Combien de lignes le paragraphe occupe réellement à la largeur reçue.
-  int lignesPosees(RenderParagraph p) => pose(p).computeLineMetrics().length;
-
-  /// Le plus long préfixe du texte qui tienne dans [dispo] AVEC son ellipse.
-  ///
-  /// C'est-à-dire ce que l'œil voit réellement. `didExceedMaxLines` dit QU'IL
-  /// manque des signes ; ceci dit LESQUELS restent.
-  String peint(RenderParagraph p, double dispo) {
-    final texte = (p.text as TextSpan).toPlainText();
-    if (voulue(p) <= dispo) return texte;
-    var garde = '';
-    for (var n = 1; n <= texte.length; n++) {
-      final tp = TextPainter(
-        text: TextSpan(
-          text: '${texte.substring(0, n)}…',
-          style: (p.text as TextSpan).style,
-        ),
-        textDirection: p.textDirection,
-        textScaler: p.textScaler,
-        maxLines: 1,
-      )..layout();
-      if (tp.width > dispo) break;
-      garde = texte.substring(0, n);
-    }
-    return garde;
-  }
+  // ── Les outils de mesure, LUS DANS `support/mesures.dart` ─────────────────
+  //
+  // Ils étaient copiés ici. Le commentaire d'en-tête de `mesures.dart` posait
+  // la condition de leur migration — « le lot qui ouvrira ce fichier-là pour
+  // une autre raison devra les faire passer ici » — et la règle des échelles de
+  // texte l'a ouvert. Les deux récits que ces copies portaient en propre sont
+  // partis avec elles, sur `recue` et sur `pose` : les 14 points de l'icône de
+  // localisation, et le `maxLines` retiré de `pose` qui dénonçait
+  // « Motorisation non renseignée » comme un mot de 123,5 points.
 
   // ── LA COQUE, et c'est elle que le relecteur réclamait ────────────────────
 
@@ -614,8 +568,28 @@ void main() {
               '\n   ${rapport.join('\n   ')}',
             );
 
-            // 1. AUCUNE LIGNE N'EST TRONQUÉE.
+            // ── 1 ET 2 : LA SÉVÉRITÉ DÉPEND DE L'ÉCHELLE, PAS LA MESURE ─────
+            //
+            // Tout est mesuré aux quatre échelles et le rapport ci-dessus est
+            // imprimé dans les quatre cas. Jusqu'à 1,5 un défaut fait tomber le
+            // test ; à 2,0 il ne le fait tomber que s'il rend une information
+            // FAUSSE — et sur cette carte, ce sont les lignes qui portent un
+            // CHIFFRE : le prix et les caractéristiques, dont le kilométrage.
+            // `support/echelles.dart` porte la décision et sa raison, et
+            // `porteUnNombre` l'implémentation de « faux » contre
+            // « incomplet ».
+            //
+            // CE TABLEAU EST VERT À 2,0 AUJOURD'HUI, aux vingt-quatre cases, et
+            // c'est précisément ce que la carte a coûté : elle a été dessinée
+            // pour ne jamais tronquer au dernier cran d'Android, et son tableau
+            // de densité rend ZÉRO annonce entière à 320 points dès l'échelle
+            // 1,3. La règle ne retire donc rien ici — elle rend seulement
+            // possible d'accepter une dégradation future à 2,0 sans toucher au
+            // banc, ce qui est exactement la décision du propriétaire.
             mesures.forEach((nom, p) {
+              if (!tenue(echelle) && !porteUnNombre(texteDe(p))) return;
+
+              // 1. AUCUNE LIGNE N'EST TRONQUÉE.
               expect(
                 p.didExceedMaxLines,
                 isFalse,
@@ -624,14 +598,15 @@ void main() {
                     '(thème ${mode.key}) : ${voulue(p).toStringAsFixed(1)} '
                     'points voulus pour ${recue(p).toStringAsFixed(1)} '
                     'reçus. Il n\'en reste peint que '
-                    '« ${peint(p, recue(p))} ».',
+                    '« ${peint(p, recue(p))} ».'
+                    '${tenue(echelle) ? "" : " Cette ligne porte un CHIFFRE : "
+                        "l’échelle 2,0 ne l’exempte pas, parce qu’un nombre "
+                        "coupé se lit comme un AUTRE nombre."}',
               );
-            });
 
-            // 2. AUCUN MOT NE DÉBORDE DE SA LIGNE. C'est la troncature que
-            //    `didExceedMaxLines` ne voit pas, et que le `Card` coupe sans
-            //    rien signaler.
-            mesures.forEach((nom, p) {
+              // 2. AUCUN MOT NE DÉBORDE DE SA LIGNE. C'est la troncature que
+              //    `didExceedMaxLines` ne voit pas, et que le `Card` coupe
+              //    sans rien signaler.
               expect(
                 motLePlusLarge(p),
                 lessThanOrEqualTo(recue(p) + 0.01),
@@ -641,6 +616,36 @@ void main() {
                     '${recue(p).toStringAsFixed(1)} reçus en ${ecran.key} à '
                     'l\'échelle $echelle : il sera rogné par le `Card` sans '
                     'ellipse, donc en silence.',
+              );
+
+              // 3. ET LE NOMBRE NE SE REPLIE PAS DANS LE MOT. C'est la
+              //    troncature qu'aucun des deux détecteurs ci-dessus ne voit :
+              //    un montant est un seul segment insécable — U+202F entre les
+              //    milliers, U+00A0 devant la devise —, et quand il ne tient
+              //    pas, le moteur se rabat sur une coupure CARACTÈRE PAR
+              //    CARACTÈRE. `didExceedMaxLines` reste faux faute de
+              //    `maxLines`, et `minIntrinsicWidth` retombe à la largeur
+              //    d'UN caractère, soit 17,74 points sur la carte d'une pièce.
+              //    Seul le nombre de LIGNES POSÉES le voit.
+              //
+              //    La carte d'un véhicule ne l'a jamais eu — `_PrixAjuste`
+              //    réduit le corps plutôt que de laisser couper — et cette
+              //    assertion est là pour que ça reste vrai : c'est le défaut
+              //    que les cartes de pièce et d'accessoire portent, chiffré
+              //    dans `bandes_filtres_test.dart`.
+              expect(
+                coupeDansLeMot(p),
+                isFalse,
+                reason:
+                    '$nom est coupé DANS LE MOT en ${ecran.key} à l\'échelle '
+                    '$echelle : son plus long segment insécable fait '
+                    '${motLePlusLargeLibre(p).toStringAsFixed(2)} points '
+                    'libre et retombe à '
+                    '${motLePlusLarge(p).toStringAsFixed(2)} à la largeur '
+                    'reçue (${recue(p).toStringAsFixed(2)}), sur '
+                    '${lignesPosees(p)} lignes. « ${texteDe(p)} » se lit '
+                    'désormais comme une AUTRE valeur — et `_PrixAjuste` est '
+                    'là pour l\'empêcher.',
               );
             });
 
@@ -1690,39 +1695,57 @@ void main() {
     ///    RENDU ─────────────────────────────────────────────────────────────
     ///
     /// Le lot de densité des filtres a fusionné les deux rangées de puces de 44
-    /// points en une seule de 48 : +40,0 points de liste, aux trois largeurs.
-    /// Remesuré ici, case par case, le compte d'annonces ENTIÈRES est le MÊME
-    /// dans les DOUZE, et le tableau ci-dessous n'a donc pas changé d'une
-    /// valeur. Il faut le dire plutôt que de laisser croire au gain :
+    /// points en une seule de 48. Remesuré ici, case par case, le compte
+    /// d'annonces ENTIÈRES est le MÊME dans les DOUZE, et le tableau ci-dessous
+    /// n'a donc pas changé d'une valeur. Il faut le dire plutôt que de laisser
+    /// croire au gain.
     ///
-    ///   320x640  x1,0  rangée 231,9  première à 44,0  liste 360,0 (320,0)  2
-    ///   320x640  x1,3  rangée 266,9  première à 50,0  liste 360,0 (320,0)  2
-    ///   320x640  x1,5  rangée 317,9  première à 54,0  liste 360,0 (320,0)  0
-    ///   320x640  x2,0  rangée 525,9  première à 64,0  liste 356,0 (320,0)  0
-    ///   360x720  x1,0  rangée 207,2  première à 44,0  liste 440,0 (400,0)  2
-    ///   360x720  x1,3  rangée 282,2  première à 50,0  liste 440,0 (400,0)  2
-    ///   360x720  x1,5  rangée 303,2  première à 54,0  liste 440,0 (400,0)  2
-    ///   360x720  x2,0  rangée 509,2  première à 64,0  liste 436,0 (400,0)  0
-    ///   411x923  x1,0  rangée 221,5  première à 44,0  liste 643,0 (603,0)  4
-    ///   411x923  x1,3  rangée 270,5  première à 50,0  liste 643,0 (603,0)  4
-    ///   411x923  x1,5  rangée 321,5  première à 54,0  liste 643,0 (603,0)  2
-    ///   411x923  x2,0  rangée 376,5  première à 64,0  liste 639,0 (603,0)  2
+    /// ── LE TABLEAU, REMESURÉ APRÈS LA RÈGLE DES ÉCHELLES ────────────────────
     ///
-    /// LA RAISON EST ARITHMÉTIQUE : une rangée mesure de 207 à 526 points, et
-    /// 40 points n'en font pas une. Le cas qui s'en approche est 320 × 640 à
-    /// l'échelle 1,5 — la deuxième annonce demande 54,0 + 317,9 = 371,9 points
-    /// pour 360,0 de liste. Il manque 11,9 points ; il en manquait 51,9 avant
-    /// ce lot. CE SONT EXACTEMENT CES 11,9 POINTS QUE LE PLANCHER DE 48 POINTS
-    /// DE CIBLE TACTILE COÛTE : une bande de 36 points les rendrait, et la
-    /// zone tapable des puces tomberait avec elle. On ne l'a pas fait.
+    /// LES TROIS HAUTEURS DE LISTE ÉTAIENT FAUSSES ICI, et du côté généreux :
+    /// ce bloc annonçait 360,0 / 440,0 / 643,0 points. L'exécution en donne
+    /// 312,0 / 392,0 / 595,0 — 48 points de moins, soit exactement la seconde
+    /// bande de puces, qui était comptée deux fois. Le garde-fou de la coque,
+    /// lui, mesurait 392,0 et disait vrai : c'est ce commentaire qui avait
+    /// dérivé. Les comptes d'annonces, eux, étaient justes.
     ///
-    /// Ce que les 40 points rendent vraiment est plus modeste et se voit :
-    /// 40 points de la rangée suivante qui dépassent du pli, c'est à dire un
-    /// « il y en a d'autres en dessous » qui ne se devine plus.
+    ///              rangée   première   liste    annonces entières
+    ///   320  x1,0   231,9     44,0     312,0          2
+    ///        x1,3   266,9     50,0     312,0          0
+    ///        x1,5   317,9     54,0     312,0          0
+    ///       (x2,0)  525,9     64,0     304,0         (0)
+    ///   360  x1,0   207,2     44,0     392,0          2
+    ///        x1,3   282,2     50,0     392,0          2
+    ///        x1,5   303,2     54,0     392,0          2
+    ///       (x2,0)  509,2     64,0     384,0         (0)
+    ///   411  x1,0   221,5     44,0     595,0          4
+    ///        x1,3   270,5     50,0     595,0          2
+    ///        x1,5   321,5     54,0     595,0          2
+    ///       (x2,0)  376,5     64,0     587,0         (2)
     ///
-    /// À l'échelle 2,0 la liste ne gagne que 36,0 points : la bande y mesure
-    /// 52,0 au lieu de 48,0 parce qu'elle prend la taille de ses puces plutôt
-    /// que de les écraser — ce que les 44 points faisaient dès l'échelle 1,5.
+    /// L'ÉCHELLE 2,0 EST ENTRE PARENTHÈSES, et c'est la décision du
+    /// propriétaire : on la mesure, on l'imprime, on la verrouille même — rien
+    /// n'oblige à relâcher une assertion verte —, mais elle ne fait PLUS partie
+    /// du chiffre qu'il regarde. Voir `support/echelles.dart`. Ce qu'il regarde,
+    /// c'est la colonne de droite sur les trois premières lignes de chaque
+    /// largeur : 2 / 0 / 0 à 320, 2 / 2 / 2 à 360, 4 / 2 / 2 à 411.
+    ///
+    /// LA CASE QUI FAIT MAL EST 320 × 1,3, et elle est EN DEÇÀ de la frontière :
+    /// 50,0 + 266,9 = 316,9 points pour 312,0 de liste. Il manque 4,9 POINTS
+    /// pour une deuxième annonce entière, sur l'écran le plus petit au deuxième
+    /// cran d'Android. À 1,5 il en manque 59,9, ce qui est hors de portée de
+    /// tout réglage de marge.
+    ///
+    /// CES 4,9 POINTS SONT CE QUE LE PLANCHER DE CIBLE TACTILE COÛTE, en partie :
+    /// les deux bandes de puces prennent 96 points de liste, et 48 est le
+    /// plancher Material — les 44 points d'origine l'enfreignaient déjà. Les
+    /// refusionner rendrait 48 points et donc cette case ; cela remettrait les
+    /// onze carrosseries derrière un défilement horizontal. C'est une décision
+    /// de produit, pas de banc, et elle est désormais chiffrée à 4,9 points.
+    ///
+    /// À l'échelle 2,0 la liste perd 8 points de plus : la bande y mesure 52,0
+    /// au lieu de 48,0 parce qu'elle prend la taille de ses puces plutôt que de
+    /// les écraser — ce que les 44 points faisaient dès l'échelle 1,5.
     ///
     /// LES DEUX ÉTATS PRÉCÉDENTS, remesurés dans la même coque pour que la
     /// comparaison veuille dire quelque chose :
@@ -1784,6 +1807,13 @@ void main() {
     ///
     /// La clé du tableau porte donc la langue, pour que la case qui bougera se
     /// nomme.
+    ///
+    /// LES CASES DE 2,0 Y SONT, ET ELLES Y RESTENT ASSERTÉES. La règle des
+    /// échelles les sort du COMPTE que le propriétaire regarde ; elle ne
+    /// demande pas de cesser de les verrouiller. Un compte d'annonces n'est pas
+    /// un défaut, c'est une mesure : la laisser dériver en silence serait perdre
+    /// la seule chose qui dira, le jour où quelqu'un y touche, combien il a
+    /// coûté.
     final attendu = <String, int>{
       '320x640-1.0-fr': 2, '320x640-1.0-en': 2,
       '320x640-1.3-fr': 0, '320x640-1.3-en': 0,

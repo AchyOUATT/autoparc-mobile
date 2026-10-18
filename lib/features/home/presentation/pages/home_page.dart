@@ -994,8 +994,14 @@ class _NeedPrompt extends ConsumerWidget {
           onPressed: () => context.push('/needs/new'),
           icon: const Icon(Icons.help_outline, size: 18),
           label: Text(AppLocalizations.of(context).homeNeedPrompt),
+          // Le style est MODIFIÉ et non remplacé — voir `_SectionTitle`
+          // ci-dessous, qui porte la mesure : un `const TextStyle(fontSize:
+          // 12.5)` emporte la famille de police du thème, et l'invitation est
+          // la ligne la plus longue de la page.
           style: TextButton.styleFrom(
-            textStyle: const TextStyle(fontSize: 12.5),
+            textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+              fontSize: 12.5,
+            ),
           ),
         ),
       ),
@@ -1031,7 +1037,32 @@ class _SectionTitle extends StatelessWidget {
               onPressed: onSeeAll,
               style: TextButton.styleFrom(
                 visualDensity: VisualDensity.compact,
-                textStyle: const TextStyle(fontSize: 12.5),
+                // LE CORPS SEUL NE SUFFIT PAS : IL FAUT PARTIR DU STYLE DU
+                // THÈME.
+                //
+                // `const TextStyle(fontSize: 12.5)` REMPLACE le `labelLarge` du
+                // bouton au lieu de le modifier, et emporte avec lui la FAMILLE
+                // DE POLICE que `Typography.blackMountainView` y pose. Le
+                // bouton rendait donc la police de repli de la plateforme.
+                //
+                // CE QUE ÇA COÛTAIT, MESURÉ SUR L'ACCUEIL MONTÉ DANS SA COQUE :
+                // « Tout voir » occupait 136,50 points de bouton à l'échelle
+                // 1,0 au lieu de 84,0, et jusqu'à 241,00 à l'échelle 2,0. Le
+                // titre de section, qui partage la rangée dans un `Expanded`,
+                // ne recevait plus que 126,15 points à 320 × 1,3 pour les
+                // 130,57 que « Bonnes affaires » réclame : il se coupait, et le
+                // défaut était déclaré « connu, à arbitrer » dans
+                // `accueil_langues_test.dart` alors qu'il n'était qu'un style
+                // mal composé. Trois cases sur douze en dessous de 1,5 —
+                // 320×1,3, 320×1,5 et 360×1,5 — toutes rendues au titre.
+                //
+                // C'est le même piège que `ligne_compatibilite.dart` raconte
+                // pour son `TextPainter`, et que `test/support/polices.dart`
+                // raconte pour les bancs : une police de repli presque deux
+                // fois plus large, et rien pour s'en plaindre.
+                textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontSize: 12.5,
+                ),
               ),
               child: Text(AppLocalizations.of(context).homeSeeAll),
             ),

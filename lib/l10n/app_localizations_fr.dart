@@ -21,6 +21,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonParts => 'Pièces';
 
   @override
+  String get partageMentionBoutique => 'sur AutoParc';
+
+  @override
   String get commonCancel => 'Annuler';
 
   @override

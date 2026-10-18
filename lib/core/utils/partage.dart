@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../l10n/app_localizations.dart';
+
+// `currency_format.dart` n'est plus importé : plus aucun prix ne traverse ce
+// fichier depuis que la vignette de la page publique le porte.
 import 'contact_info.dart';
-import 'currency_format.dart';
 
 /// [TypeArticle] voyage avec `partagerArticle` : une fiche nomme ce qu'elle
 /// partage sans avoir à connaître le fichier où vivent les adresses.
@@ -16,51 +19,59 @@ export 'contact_info.dart' show TypeArticle;
 /// teste en une ligne. Et c'est le texte qui porte tout le travail — c'est lui
 /// qui arrive dans la conversation.
 ///
-/// Le message doit se suffire à lui-même. Il atterrit sur le WhatsApp de
-/// quelqu'un qui n'a probablement pas l'application : il lui faut le nom, le
-/// prix, de quoi reconnaître l'article, et un moyen de revenir vers nous, sans
-/// avoir à redemander quoi que ce soit.
+/// LE MESSAGE NE REDIT PLUS CE QUE L'APERÇU PORTE, et c'est le propriétaire
+/// qui a vu le défaut : « le partage duplique les informations de l'article ».
+///
+/// Il avait raison, et la faute est de conception. Tant que le lien menait au
+/// magasin d'applications, le texte devait tout porter — le destinataire
+/// n'avait que lui. Depuis que le lien mène à la page publique de l'article,
+/// WhatsApp va chercher ses balises Open Graph et affiche une vignette qui dit
+/// DÉJÀ le nom, le prix et les caractéristiques. Brancher le lien sans alléger
+/// le texte a produit, dans chaque partage réussi :
+///
+///     *Mazda CX-9 (2018)*              ← le texte
+///     9 500 000 FCFA
+///     111 000 km · Automatique · Essence
+///     Disponible sur AutoParc :
+///     https://…/v/86
+///     ┌──────────────────────────────┐
+///     │ [photo]                      │ ← la vignette, juste en dessous
+///     │ Mazda CX-9 2018 — 9 500 000 FCFA
+///     │ 2018 · D'occasion · 111 000 km · Automatique · Essence
+///     └──────────────────────────────┘
+///
+/// Vérifié sur les trois types : la page en dit PLUS que le message dans
+/// chacun — elle ajoute le fabricant, la garantie et la ville pour une pièce,
+/// l'année et l'état pour un véhicule. Le texte n'apportait donc rien.
+///
+/// CE QU'ON PERD, et c'est assumé : quand l'instance Render dort, son robot
+/// abandonne avant d'avoir lu la page — 35 secondes mesurées au réveil — et le
+/// destinataire ne voit que ce texte. Il a alors le nom et un lien, plus le
+/// prix. Le compromis penche du bon côté : la duplication se voyait à chaque
+/// partage réussi, l'absence de prix ne gêne que quand le serveur dort.
+///
+/// [mentionBoutique] est passée par l'appelant plutôt que lue ici : cette
+/// fonction est PURE — c'est ce qui la rend testable sans MethodChannel — et
+/// n'a donc pas de `BuildContext` pour atteindre les traductions.
 ///
 /// [type] et [id] donnent l'adresse de la page publique de l'article, et non
-/// plus celle du magasin d'applications — voir `adresseArticle`, où est écrit
+/// celle du magasin d'applications — voir `adresseArticle`, où est écrit
 /// pourquoi ce lien-là est le seul qui mène quelque part.
 ///
 /// Les astérisques autour du titre sont la mise en gras de WhatsApp. Ailleurs —
 /// SMS, Facebook, presse-papier — ils s'affichent tels quels : deux caractères
 /// inoffensifs. C'est le seul balisage qui ne dégrade rien nulle part.
-///
-/// [precisions] est jointe par « · », et toute entrée nulle ou vide disparaît
-/// plutôt que de laisser un séparateur orphelin ou un « null » dans le message.
-/// Les trois types d'article n'ont pas les mêmes champs renseignés : un
-/// accessoire n'a pas de référence constructeur, une pièce n'a pas de
-/// kilométrage.
-///
-/// Un [prix] nul disparaît pour la même raison. Un véhicule en location seule
-/// n'a pas de `sale_price`, et `formatXof(null)` rendrait un tiret cadratin
-/// seul sur sa ligne — le destinataire y lirait une panne. Au besoin, le tarif
-/// de location passe par [precisions].
 String composerMessagePartage({
   required String titre,
+  required String mentionBoutique,
   required TypeArticle type,
   required int id,
-  double? prix,
-  List<String?> precisions = const [],
 }) {
-  final details = precisions
-      .whereType<String>()
-      .map((p) => p.trim())
-      .where((p) => p.isNotEmpty)
-      .join(' · ');
-
   return [
-    '*${titre.trim()}*',
-    if (prix != null) formatXof(prix),
-    if (details.isNotEmpty) details,
-    '',
-    'Disponible sur AutoParc :',
+    '*${titre.trim()}* — ${mentionBoutique.trim()}',
     // L'adresse de l'article, et non celle du magasin : c'est elle que le robot
     // d'aperçu de WhatsApp va chercher. Sans elle, les balises Open Graph du
-    // serveur ne sont lues par personne.
+    // serveur ne sont lues par personne, et tout ce lot n'aurait servi à rien.
     adresseArticle(type, id),
   ].join('\n');
 }
@@ -108,20 +119,25 @@ String composerMessagePartage({
 /// quoi, pas qu'elle a échoué. Les traiter en échec afficherait un avertissement
 /// après un partage réussi. Seule une exception signale une vraie impasse :
 /// c'est ce que lève `ACTION_SEND` quand aucune application ne sait recevoir.
+/// `prix` et `precisions` ont DISPARU de cette signature, et c'est volontaire :
+/// les laisser en paramètres ignorés aurait laissé croire aux trois fiches
+/// qu'elles servaient encore à quelque chose. La vignette de l'aperçu les
+/// porte — voir [composerMessagePartage].
 Future<bool> partagerArticle(
   BuildContext context, {
   required String titre,
   required TypeArticle type,
   required int id,
-  double? prix,
-  List<String?> precisions = const [],
 }) async {
   final texte = composerMessagePartage(
     titre: titre,
+    // Lue ici, où le contexte existe, et passée à la fonction pure.
+    // Sans `!` : `l10n.yaml` pose `nullable-getter: false`, et un `!` de plus
+    // était signalé par l'analyse — un `MaterialApp` sans délégué doit lever
+    // au premier écran, pas se faire rattraper ici.
+    mentionBoutique: AppLocalizations.of(context).partageMentionBoutique,
     type: type,
     id: id,
-    prix: prix,
-    precisions: precisions,
   );
 
   try {

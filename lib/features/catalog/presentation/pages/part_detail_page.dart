@@ -149,27 +149,23 @@ class PartDetailPage extends ConsumerWidget {
                 IconButton(
                   icon: const Icon(Icons.share_outlined),
                   tooltip: 'Partager',
-                  // Les mêmes champs que ceux affichés plus bas, et pas d'autres :
-                  // un message qui annoncerait un prix ou un état que l'écran ne
-                  // montre pas ferait rappeler le magasin pour un article qui
-                  // n'existe pas sous cette forme.
-                  //
-                  // La référence est le SKU : le modèle n'en porte pas d'autre, et
-                  // la puce « OEM » de la fiche n'est que la lecture de `type`.
+                  // LE NOM ET L'ADRESSE, RIEN D'AUTRE. Le prix, la catégorie,
+                  // l'état et la référence partaient encore dans le texte ; la
+                  // page `/p/{id}` les porte dans ses balises Open Graph, et
+                  // WhatsApp les affiche dans sa vignette sous le message. Le
+                  // destinataire lisait donc tout deux fois dans la même bulle
+                  // — « le partage duplique les informations de l'article »,
+                  // signalé par le propriétaire. Voir `composerMessagePartage`,
+                  // et la garde de `partage_bouton_test.dart`, qui est le seul
+                  // endroit où cette duplication se mesure.
                   onPressed: () => partagerArticle(
                     context,
                     titre: part.name,
                     // `id` et non `sku` : c'est la clef primaire que la route
-                    // publique `/p/{id}` attend. Le SKU reste une précision
-                    // lisible dans le message, pas une adresse.
+                    // publique `/p/{id}` attend. Le SKU, lui, ne part plus du
+                    // tout — il n'était qu'une précision parmi les autres.
                     type: TypeArticle.piece,
                     id: part.id,
-                    prix: part.pricing.sellingPrice,
-                    precisions: [
-                      part.categoryName,
-                      _conditionLabels[part.condition] ?? part.condition,
-                      if (part.sku != null) 'Réf. ${part.sku!}',
-                    ],
                   ),
                 ),
               // Les photos s'ajoutaient uniquement dans la seconde qui suivait

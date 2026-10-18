@@ -122,6 +122,12 @@ abstract class AppLocalizations {
   /// **'Pièces'**
   String get commonParts;
 
+  /// Mention qui suit le nom de l article dans un message partage : « Mazda CX-9 (2018) — sur AutoParc ». Elle est tout ce qui reste du texte depuis que la page publique porte le prix et les caracteristiques dans sa vignette ; elle sert quand l apercu echoue, pour que le destinataire sache d ou vient le lien au lieu de lire une adresse nue.
+  ///
+  /// In fr, this message translates to:
+  /// **'sur AutoParc'**
+  String get partageMentionBoutique;
+
   /// Bouton qui ferme une boîte de dialogue sans rien appliquer. 15 fichiers de lib/ l'écrivent aujourd'hui en dur : la clé est commune parce que le seuil de trois sites dans deux zones est franchi, pas par anticipation.
   ///
   /// In fr, this message translates to:

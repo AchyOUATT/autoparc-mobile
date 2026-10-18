@@ -156,11 +156,13 @@ class _AccessoryDetailView extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.share_outlined),
               tooltip: 'Partager',
-              // La catégorie seule en précision. La consigne demandait aussi
-              // l'état, mais `Accessory` n'a pas de champ `condition` — ni le
-              // modèle, ni l'API, ni le formulaire de saisie — et la fiche
-              // n'affiche donc aucun état. L'inventer ici ferait dire au message
-              // ce que l'écran ne dit pas.
+              // LE NOM ET L'ADRESSE, RIEN D'AUTRE. Le prix et la catégorie
+              // partaient encore dans le texte ; la page `/a/{id}` les porte
+              // dans ses balises Open Graph, et WhatsApp les affiche dans sa
+              // vignette sous le message — le destinataire les lisait deux fois
+              // dans la même bulle. Voir `composerMessagePartage`, et la garde
+              // de `partage_bouton_test.dart` : la duplication ne se voit que
+              // dans une conversation, jamais à l'écran de l'application.
               onPressed: () => partagerArticle(
                 context,
                 titre: accessory.name,
@@ -168,8 +170,6 @@ class _AccessoryDetailView extends ConsumerWidget {
                 // attend. Le partage ne fabrique aucune autre adresse.
                 type: TypeArticle.accessoire,
                 id: accessory.id,
-                prix: accessory.pricing.sellingPrice,
-                precisions: [accessory.categoryLabel],
               ),
             ),
           // Voir la fiche piece : l'ecran de televersement n'etait atteignable

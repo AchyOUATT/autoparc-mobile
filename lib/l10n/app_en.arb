@@ -5,6 +5,10 @@
   "commonVehicles": "Vehicles",
   "commonAccessories": "Accessories",
   "commonParts": "Parts",
+  "partageMentionBoutique": "on AutoParc",
+  "@partageMentionBoutique": {
+    "description": "Mention following the article name in a shared message."
+  },
   "commonCancel": "Cancel",
   "commonRetry": "Retry",
   "commonMenuTooltip": "Menu",

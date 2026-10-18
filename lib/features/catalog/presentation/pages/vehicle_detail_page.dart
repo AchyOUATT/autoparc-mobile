@@ -161,16 +161,17 @@ class _VehicleDetailView extends ConsumerWidget {
                 IconButton(
                   icon: const Icon(Icons.share_outlined),
                   tooltip: 'Partager',
-                  // Les valeurs telles que la fiche les affiche, aux mêmes
-                  // libellés : `_libelleCarrosserie` et `libelleTransmission`
-                  // sont ceux du bloc « Véhicule » juste dessous, et le
-                  // kilométrage garde le séparateur de milliers de `_integer` —
-                  // « 246 965 km », pas « 246965 ».
-                  //
-                  // Le prix de vente ne part que si le véhicule est à vendre :
-                  // `_PriceSection` le masque sur une location seule, où
-                  // `salePrice` est nul. Un prix nul disparaît du message plutôt
-                  // que d'y laisser un tiret — voir `composerMessagePartage`.
+                  // LA DÉSIGNATION ET L'ADRESSE, RIEN D'AUTRE. Le prix de
+                  // vente, le kilométrage, la carrosserie, la boîte et la
+                  // motorisation partaient encore dans le texte ; la page
+                  // `/v/{id}` les porte dans ses balises Open Graph, et la
+                  // vignette de WhatsApp les affiche sous le message. Le
+                  // destinataire lisait tout deux fois dans la même bulle —
+                  // « le partage duplique les informations de l'article »,
+                  // signalé par le propriétaire. Voir
+                  // `composerMessagePartage`, et la garde de
+                  // `partage_bouton_test.dart` : c'est la seule mesure de
+                  // cette duplication, qui ne se voit nulle part à l'écran.
                   onPressed: () => partagerArticle(
                     context,
                     titre: id.fullName,
@@ -179,16 +180,6 @@ class _VehicleDetailView extends ConsumerWidget {
                     // « VH-… » n'existe que pour les humains du parc.
                     type: TypeArticle.vehicule,
                     id: vehicle.id,
-                    prix: c.isForSale ? c.salePrice : null,
-                    precisions: [
-                      if (vehicle.mileageKm != null)
-                        '${_integer.format(vehicle.mileageKm)} km',
-                      if (vehicle.bodyStyle != null)
-                        _libelleCarrosserie(vehicle.bodyStyle!),
-                      id.engineType,
-                      if (vehicle.transmission != null)
-                        libelleTransmission(vehicle.transmission!),
-                    ],
                   ),
                 ),
               if (auth.canManageCatalog)

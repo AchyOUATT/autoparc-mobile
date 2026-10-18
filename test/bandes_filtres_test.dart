@@ -28,6 +28,7 @@ import 'package:auto/core/utils/currency_format.dart';
 import 'package:auto/features/catalog/presentation/widgets/ligne_compatibilite.dart';
 import 'package:auto/l10n/app_localizations.dart';
 
+import 'support/echelles.dart';
 import 'support/langues.dart';
 import 'support/mesures.dart';
 import 'support/polices.dart';
@@ -134,9 +135,10 @@ void main() {
     '411x923': Size(411, 923),
   };
 
-  /// 1,0 est le réglage par défaut, 1,3 le deuxième cran d'Android (« Grande
-  /// police »), 1,5 le troisième, 2,0 le dernier.
-  const echelles = <double>[1.0, 1.3, 1.5, 2.0];
+  /// Les quatre échelles, MESURÉES. 1,5 est la dernière ASSERTÉE ; la frontière
+  /// et son raisonnement sont dans `support/echelles.dart`, et rien n'en est
+  /// recopié ici.
+  const echelles = echellesMesurees;
 
   /// La hauteur à laquelle la bande est verrouillée tant que la cible tactile
   /// la domine. Lue dans Flutter plutôt qu'écrite : c'est `kMinInteractiveDimension`
@@ -501,7 +503,10 @@ void main() {
     for (final ecran in ecrans.entries) {
       testWidgets('${ecran.key} : 48,0 jusqu\'à l\'échelle 1,5, puis elle '
           'grandit', (tester) async {
-        for (final echelle in [1.0, 1.3, 1.5]) {
+        // Les trois échelles ASSERTÉES, lues dans `support/echelles.dart` : ce
+        // test posait la même liste en dur, et la coïncidence n'en était pas
+        // une — c'est la même frontière, pour la même raison.
+        for (final echelle in echellesAssertees) {
           await poserVehicules(
             tester,
             ecran: ecran.value,
@@ -804,6 +809,14 @@ void main() {
               .toList();
           expect(paragraphes, isNotEmpty);
 
+          // LA BANDE DÉFILE HORIZONTALEMENT, donc une puce n'est jamais à
+          // l'étroit : sa largeur est celle de son libellé, et c'est pourquoi
+          // ces assertions tiennent jusqu'à 2,0 — vérifié, aux vingt-quatre
+          // cases. On ne les relâche donc pas : `support/echelles.dart`
+          // AUTORISE à ne plus exiger au-delà de 1,5, il n'oblige pas à jeter
+          // ce qui tient. Les libellés des puces viennent des `.arb` et du
+          // référentiel ; le jour où l'un d'eux cessera de tenir à 2,0, c'est
+          // ICI qu'il faudra arbitrer, avec le chiffre sous les yeux.
           for (final p in paragraphes) {
             final texte = (p.text as TextSpan).toPlainText();
             // `didExceedMaxLines` est l'état que le `TextPainter` a réellement
@@ -1557,7 +1570,7 @@ void main() {
   ///   360x720  x1,0  2 → 2    x1,3  2 → 2    x1,5  2 → 2    x2,0  2 → 2
   ///   411x923  x1,0  4 → 4    x1,3  4 → 4    x1,5  4 → 4    x2,0  4 → 2
   ///
-  /// ── TROIS CASES PERDENT UNE RANGÉE, ET LE MODÈLE SEUL N'EN A REPRIS AUCUNE
+  /// ── TROIS CASES PERDENT UNE RANGÉE, ET LES TROIS SONT HORS DU COMPTE ──────
   ///
   /// Sur trente-six cases mesurées, TRENTE-TROIS ne bougent pas. Trois perdent
   /// une rangée entière, c'est-à-dire DEUX annonces, et les trois sont au
@@ -1574,6 +1587,32 @@ void main() {
   ///     de marge + 324,0 = 704,0 pour 639,0 de liste, soit 65,0 points de
   ///     trop, et 73,0 pour le client.
   ///
+  /// CE QUE LA RÈGLE DES ÉCHELLES EN FAIT, et c'est le point de ce lot : ces
+  /// trois cases sont des DÉGRADATIONS ACCEPTÉES. Elles sont toutes à 2,0,
+  /// c'est-à-dire du côté où le propriétaire a décidé de ne plus payer — voir
+  /// `support/echelles.dart`. Elles restent mesurées, imprimées et bornées à une
+  /// rangée ; elles ne sont plus un coût à arbitrer.
+  ///
+  /// CE QUE LA LIGNE COÛTE RÉELLEMENT, 2,0 HORS DU COMPTE : RIEN. Vingt-sept
+  /// cases — trois listes, trois largeurs, les échelles 1,0 / 1,3 / 1,5 — et
+  /// VINGT-SEPT comptes inchangés. Le relevé de l'exécution, carte avant →
+  /// après :
+  ///
+  ///                      320          360          411
+  ///   pièces       x1,0  207→222 =2   207→222 =2   207→222 =4
+  ///                x1,3  217→252 =2   217→236 =2   217→236 =4
+  ///                x1,5  224→263 =2   224→263 =2   224→245 =4
+  ///   accessoires  x1,0  207→222 =2   207→222 =2   207→222 =4
+  ///                x1,3  238→273 =2   217→236 =2   217→236 =4
+  ///                x1,5  248→287 =2   224→263 =2   224→245 =4
+  ///   acc. client  x1,0  211→226 =2   211→226 =2   211→226 =4
+  ///                x1,3  242→277 =2   221→240 =2   221→240 =4
+  ///                x1,5  252→291 =2   228→267 =2   228→249 =4
+  ///
+  /// La ligne grandit la carte de 15,0 à 39,0 points selon la case, et pas une
+  /// de ces hauteurs ne franchit un pli. C'est le chiffre que le propriétaire
+  /// regarde, et il est nul.
+  ///
   /// CE SONT LES MÊMES TROIS CASES QU'AVANT LE PASSAGE AU MODÈLE SEUL, et il
   /// faut le dire parce qu'on pouvait espérer le contraire : des noms plus
   /// courts ne rendent une rangée que s'ils font tomber la mention de deux
@@ -1587,15 +1626,14 @@ void main() {
   /// tiennent maintenant là où un seul tenait. Le compte d'annonces entières,
   /// lui, y était déjà tombé à 2 et n'a pas bougé.
   ///
-  /// CE N'EST PAS UNE DÉCISION DE BANC. Le propriétaire a demandé la ligne en
-  /// sachant qu'elle prend de la place ; ce qu'il ne pouvait pas savoir, c'est
-  /// qu'elle coûte une rangée au dernier cran de « Grande police ». Les leviers
-  /// existent et aucun n'est gratuit : une seule ligne au lieu de deux rendrait
-  /// 24,0 points à l'échelle 2,0 mais perdrait le deuxième nom dans les trois
-  /// cases concernées ; borner l'échelle de texte de la ligne, comme
-  /// `BarreNavigationPrincipale` borne la sienne, rendrait autant mais figerait
-  /// une mention à 10 points pour quelqu'un qui a demandé du texte deux fois
-  /// plus grand. Les deux sont des décisions de produit.
+  /// LES LEVIERS SONT DONC DEVENUS SANS OBJET, et c'est une dette fermée. Une
+  /// seule ligne au lieu de deux rendrait 24,0 points à l'échelle 2,0 mais
+  /// perdrait le deuxième nom dans les trois cases concernées ; borner l'échelle
+  /// de texte de la ligne rendrait autant mais figerait une mention à 10 points
+  /// pour quelqu'un qui a demandé du texte deux fois plus grand — et la règle
+  /// EXCLUT cette borne-là, parce qu'elle passerait outre un réglage
+  /// d'accessibilité. On ne tire ni l'un ni l'autre : les trois cases qu'ils
+  /// répareraient ne sont plus comptées.
   group('La ligne de compatibilité', () {
     /// La maquette du propriétaire : trois noms courts, douze modèles au total.
     Map<String, dynamic> maquette() => {
@@ -2186,98 +2224,168 @@ void main() {
       }
     }
 
-    // ── LE PRIX SE REPLIE DÉJÀ À L'ÉCHELLE 2,0, ET C'EST ANTÉRIEUR ──────────
+    // ── LE PRIX : UNE LIGNE JUSQU'À 1,5, UN REPLI ACCEPTÉ À 2,0 ─────────────
 
-    /// CE TEST NE PRÉTEND PAS QUE LE DÉFAUT A DISPARU, et il n'est pas de ce
-    /// lot — il est écrit ici parce que les captures de la ligne de
-    /// compatibilité le montrent, et qu'une capture livrée sans explication
-    /// fait corriger le mauvais objet.
+    /// CE BLOC A CHANGÉ DE FORME, ET LA VÉRIFICATION ÉTAIT LE POINT. Il
+    /// verrouillait TROIS cases nommément — un test par case, chacun exigeant
+    /// que le prix se replie. La règle de `support/echelles.dart` demandait
+    /// d'abord de VÉRIFIER qu'aucune de ces trois n'était en deçà de 1,5 : un
+    /// prix faux est le défaut que ce dépôt refuse le plus durement, et une
+    /// case à 1,5 aurait dû être corrigée et non requalifiée.
     ///
-    /// LE DÉFAUT. Le prix d'une carte de PIÈCE ou d'ACCESSOIRE est un `Text`
-    /// nu : pas de `FittedBox`, contrairement à la carte d'un véhicule, où
-    /// `_PrixAjuste` réduit le corps plutôt que de laisser couper. Or un prix
-    /// est un seul segment insécable — U+202F entre les milliers et U+00A0
-    /// devant « FCFA » interdisent la coupure, et c'est voulu. Quand il ne
-    /// tient pas, Flutter se rabat sur une coupure CARACTÈRE PAR CARACTÈRE :
-    /// « 109 500 FCFA » devient « 109 500 FCF » puis « A » seul sur la
-    /// deuxième ligne.
+    /// La vérification ne pouvait pas se faire sur trois cases choisies. Le
+    /// tableau parcourt donc les VINGT-QUATRE — deux listes, trois largeurs,
+    /// quatre échelles — imprime le relevé de chacune, et asserte selon
+    /// l'échelle. C'est la forme qui répond à la question posée au lieu de
+    /// répéter la réponse qu'on avait déjà.
     ///
-    /// LES TROIS CASES, sur vingt-quatre, toutes au dernier cran d'Android :
+    /// LE DÉFAUT, ET SA FORME. Le prix d'une carte de PIÈCE ou d'ACCESSOIRE est
+    /// un `Text` nu : pas de `FittedBox`, contrairement à la carte d'un
+    /// véhicule, où `_PrixAjuste` réduit le corps plutôt que de laisser couper.
+    /// Or un prix est un seul segment insécable — U+202F entre les milliers et
+    /// U+00A0 devant « FCFA » interdisent la coupure, et c'est voulu. Quand il
+    /// ne tient pas, Flutter se rabat sur une coupure CARACTÈRE PAR CARACTÈRE :
+    /// « 109 500 FCFA » devient « 109 500 FCF » puis « A » seul sur la deuxième
+    /// ligne. Un prix ainsi coupé est FAUX, pas seulement incomplet — « 18 000
+    /// FC » se lit comme un autre prix.
+    ///
+    /// AUCUN DES DEUX DÉTECTEURS HABITUELS NE LE VOIT. `didExceedMaxLines`
+    /// reste FAUX — le paragraphe n'a pas de `maxLines`, donc il se replie au
+    /// lieu de se déclarer tronqué. Et `motLePlusLarge` rend 17,74, c'est-à-dire
+    /// la largeur d'UN CARACTÈRE : une fois le mot cassé, la largeur minimale du
+    /// paragraphe devient celle d'une lettre, et la comparaison « segment
+    /// insécable contre largeur reçue » passe au vert sur un prix en deux
+    /// morceaux. C'est pour lui que `mesures.dart` porte `coupeDansLeMot`, qui
+    /// compare cette largeur minimale à celle du même paragraphe remis en page
+    /// SANS BORNE.
+    ///
+    /// CE QUE LA VÉRIFICATION A DONNÉ, et c'est le résultat attendu : les TROIS
+    /// cases en défaut sont bien les trois déjà nommées, et les trois sont à
+    /// 2,0. Aucune case à 1,0, 1,3 ou 1,5 ne replie son prix, sur aucune des
+    /// deux listes, à aucune des trois largeurs. Les trois passent donc en
+    /// DÉGRADATION ACCEPTÉE.
     ///
     ///   pièces      320 × 2,0   « 4 500 FCFA »     132,44 voulus / 129,0 reçus
     ///   accessoires 320 × 2,0   « 109 500 FCFA »   162,77 voulus / 129,0 reçus
     ///   accessoires 360 × 2,0   « 109 500 FCFA »   162,77 voulus / 149,0 reçus
     ///
-    /// AUCUN DES DEUX DÉTECTEURS HABITUELS NE LE VOIT, et c'est la raison
-    /// d'être de ce test. `didExceedMaxLines` reste FAUX — le paragraphe n'a
-    /// pas de `maxLines`, donc il se replie au lieu de se déclarer tronqué. Et
-    /// `minIntrinsicWidth` rend 17,74 dans deux des trois cases, c'est-à-dire
-    /// la largeur d'UN CARACTÈRE : une fois que le moteur a coupé dans le mot,
-    /// la largeur minimale du paragraphe devient celle d'une lettre, et la
-    /// comparaison « segment insécable contre largeur reçue » passe au vert
-    /// sur un prix cassé en deux. Seul le nombre de LIGNES POSÉES le voit.
+    /// LA MARGE QUI RESTE À 1,5, et c'est elle qu'il faut surveiller : la case
+    /// la plus serrée est « 109 500 FCFA » sur un accessoire à 320 points, qui
+    /// réclame 122,83 points pour 129,00 reçus. SIX POINTS ET DEMI. Un montant à
+    /// sept chiffres, une devise d'un signe de plus, ou deux points de marge
+    /// rognés sur la carte, et le repli descend à 1,5 — où il faudra le
+    /// corriger. Les autres cases ont de 26 à 107 points de marge.
     ///
-    /// CE N'EST PAS CE LOT QUI L'A CAUSÉ : le test « la carte entière, avant
-    /// et après » mesure les mêmes 129,0 et 149,0 points reçus avec et sans la
-    /// ligne de compatibilité, et le même nombre de lignes. La correction est
+    /// LA FORME DU REPLI VARIE, ce qui est un détail utile : la coupure tombe
+    /// après « FCF » sur l'accessoire à 320 — le segment posé mesure alors
+    /// 145,03 points pour 162,77 libres — et le paragraphe s'effondre à 17,74,
+    /// soit UN caractère, dans les deux autres cases. C'est la même cause et
+    /// deux relevés différents : raison de plus pour comparer les deux largeurs
+    /// minimales plutôt que de guetter un chiffre.
+    ///
+    /// CE N'EST PAS LA LIGNE DE COMPATIBILITÉ QUI L'A CAUSÉ : le test « la
+    /// carte entière, avant et après » mesure les mêmes 129,0 et 149,0 points
+    /// reçus avec et sans elle, et le même nombre de lignes. La correction est
     /// la même que pour les véhicules — un `FittedBox` sur le prix — et elle
-    /// demande son propre lot de mesures sur les deux cartes.
-    for (final cas in <(String, Size, String)>[
-      ('pièces', Size(320, 640), '4 500 FCFA'),
-      ('accessoires', Size(320, 640), '109 500 FCFA'),
-      ('accessoires', Size(360, 720), '109 500 FCFA'),
-    ]) {
-      testWidgets(
-        '${cas.$1} en ${cas.$2.width.toInt()}x${cas.$2.height.toInt()}, texte '
-        'x2.0 : le prix se replie déjà, et le chiffre est verrouillé',
-        (tester) async {
-          await poseurs[cas.$1]!(
-            tester,
-            ecran: cas.$2,
-            echelle: 2.0,
-            locale: localeFr,
-            compat: maquette(),
-          );
+    /// demande son propre lot de mesures sur les deux cartes. Elle n'est plus
+    /// urgente : la règle dit qu'on ne paie plus pour 2,0.
+    ///
+    /// ET L'ASSERTION À 1,5 N'EST PAS DÉCORATIVE. C'est elle qui transforme ce
+    /// bloc d'un constat en une garde : si un libellé de devise s'allonge, si le
+    /// corps du prix monte d'un point, ou si la carte perd de la largeur, le
+    /// repli descendra sous 2,0 — et il faudra alors le corriger, pas le
+    /// requalifier.
+    for (final poseur in poseurs.entries) {
+      for (final ecran in ecrans.entries) {
+        for (final echelle in echelles) {
+          testWidgets(
+            '${poseur.key} en ${ecran.key}, texte x$echelle : le prix tient '
+            'sur une ligne tant qu\'on l\'exige',
+            (tester) async {
+              await poseur.value(
+                tester,
+                ecran: ecran.value,
+                echelle: echelle,
+                locale: localeFr,
+                compat: maquette(),
+              );
 
-          final prix = tester.renderObject<RenderParagraph>(
-            find
-                .descendant(
-                  of: find.byType(Card).first,
-                  matching: find.text(cas.$3),
-                )
-                .first,
-          );
+              // LE PRIX EST TROUVÉ PAR SA FORME ET NON PAR SA CHAÎNE. Les deux
+              // listes n'ont pas le même montant — 4 500 pour la pièce,
+              // 109 500 pour l'accessoire — et les recopier ferait de ce
+              // tableau deux tableaux. `textContaining` sur la devise suffit :
+              // c'est le seul paragraphe de la carte qui la porte.
+              final prix = tester
+                  .renderObjectList<RenderParagraph>(
+                    find.descendant(
+                      of: find.byType(Card).first,
+                      matching: find.textContaining('FCFA'),
+                    ),
+                  )
+                  .first;
 
-          expect(
-            lignesPosees(prix),
-            2,
-            reason:
-                'Le prix « ${cas.$3} » n\'occupe plus deux lignes : '
-                '${voulue(prix).toStringAsFixed(2)} points voulus pour '
-                '${recue(prix).toStringAsFixed(2)} reçus. S\'il a été corrigé '
-                '— un `FittedBox` comme sur la carte d\'un véhicule —, '
-                'retirez ce test.',
-          );
+              final casse = coupeDansLeMot(prix);
 
-          expect(
-            voulue(prix),
-            greaterThan(recue(prix)),
-            reason:
-                'Le prix tient maintenant sur sa ligne : '
-                '${voulue(prix).toStringAsFixed(2)} pour '
-                '${recue(prix).toStringAsFixed(2)}. Remesurez.',
-          );
+              // ignore: avoid_print
+              print(
+                '@@PRIX ${poseur.key} ${ecran.key} x$echelle : '
+                '«${texteDe(prix)}» '
+                '${voulue(prix).toStringAsFixed(2)} voulus / '
+                '${recue(prix).toStringAsFixed(2)} reçus, '
+                '${lignesPosees(prix)} ligne(s), '
+                'mot ${motLePlusLarge(prix).toStringAsFixed(2)} posé pour '
+                '${motLePlusLargeLibre(prix).toStringAsFixed(2)} libre'
+                '${casse ? " — COUPÉ DANS LE MOT" : ""}',
+              );
 
-          expect(
-            prix.didExceedMaxLines,
-            isFalse,
-            reason:
-                'Le prix se déclare maintenant tronqué : c\'est une AUTRE '
-                'façon de le perdre, et un prix coupé est un prix FAUX là où '
-                'un prix replié reste vrai. Remesurez.',
+              if (tenue(echelle)) {
+                expect(
+                  casse,
+                  isFalse,
+                  reason:
+                      'Le prix « ${texteDe(prix)} » est coupé DANS LE MOT en '
+                      '${ecran.key} à l\'échelle $echelle, sur les '
+                      '${poseur.key} : ${voulue(prix).toStringAsFixed(2)} '
+                      'points voulus pour ${recue(prix).toStringAsFixed(2)} '
+                      'reçus, sur ${lignesPosees(prix)} lignes. UN PRIX COUPÉ '
+                      'EST UN PRIX FAUX, et cette échelle est en deçà de la '
+                      'frontière de $echelleTenue : il faut le CORRIGER — un '
+                      '`FittedBox` comme sur la carte d\'un véhicule — et non '
+                      'l\'accepter. Le repli ne touchait que l\'échelle 2,0 ; '
+                      'il est descendu.',
+                );
+
+                expect(
+                  lignesPosees(prix),
+                  1,
+                  reason:
+                      'Le prix « ${texteDe(prix)} » occupe '
+                      '${lignesPosees(prix)} lignes en ${ecran.key} à '
+                      'l\'échelle $echelle : '
+                      '${voulue(prix).toStringAsFixed(2)} points voulus pour '
+                      '${recue(prix).toStringAsFixed(2)} reçus. Même replié '
+                      'proprement, un montant sur deux lignes se lit mal ; et '
+                      'la coupure la plus probable tombe dans le mot.',
+                );
+              }
+
+              // NON NÉGOCIABLE À TOUTE ÉCHELLE : le prix ne se DÉCLARE pas
+              // tronqué. C'est une AUTRE façon de le perdre — l'ellipse mange
+              // la fin du montant — et aucune mesure de repli n'en rendrait
+              // compte.
+              expect(
+                prix.didExceedMaxLines,
+                isFalse,
+                reason:
+                    'Le prix « ${texteDe(prix)} » se déclare TRONQUÉ en '
+                    '${ecran.key} à l\'échelle $echelle : un `maxLines` a-t-il '
+                    'été posé dessus ? Un montant ellipsé est faux comme un '
+                    'montant coupé, et à 2,0 comme à 1,0.',
+              );
+            },
           );
-        },
-      );
+        }
+      }
     }
 
     // ── LE TABLEAU DE DENSITÉ, avant et après, dans la COQUE COMPLÈTE ───────

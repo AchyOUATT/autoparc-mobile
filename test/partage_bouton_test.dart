@@ -14,6 +14,9 @@ import 'package:auto/features/catalog/data/models/vehicle.dart';
 import 'package:auto/features/catalog/presentation/pages/accessory_detail_page.dart';
 import 'package:auto/features/catalog/presentation/pages/part_detail_page.dart';
 import 'package:auto/features/catalog/presentation/pages/vehicle_detail_page.dart';
+import 'package:auto/l10n/app_localizations.dart';
+
+import 'support/langues.dart';
 
 /// Le bouton « Partager » sur les trois fiches : quand il est là, quand il
 /// n'y est pas, et ce qu'il envoie.
@@ -37,6 +40,29 @@ import 'package:auto/features/catalog/presentation/pages/vehicle_detail_page.dar
 /// l'application lui a réellement passé. C'est le seul moyen de vérifier le
 /// message tel qu'il part de la fiche, et non tel qu'on aurait aimé qu'il
 /// soit composé.
+///
+/// ── LE MESSAGE EST COURT, ET C'EST ICI QUE ÇA SE GARDE ─────────────────────
+///
+/// Il tient en deux lignes :
+///
+///     *Hyundai Tucson (2023)* — sur AutoParc
+///     https://<racine>/v/305
+///
+/// Il en portait six. Le propriétaire a signalé que « le partage duplique les
+/// informations de l'article » : depuis que le lien mène à la page publique et
+/// non plus au magasin d'applications, WhatsApp lit les balises Open Graph de
+/// cette page et affiche sous le message une vignette qui dit DÉJÀ le nom, le
+/// prix et les caractéristiques. Le prix et les précisions arrivaient donc deux
+/// fois dans la même bulle.
+///
+/// **C'est le seul fichier où cette duplication se mesure pour de vrai**, et
+/// c'est ce qui rend ses assertions d'absence indispensables : les valeurs
+/// interdites ne sont pas choisies par le test, elles sont lues sur les modèles
+/// que les fiches affichent. Si quelqu'un trouve le message trop maigre et
+/// rebranche le prix, le groupe « le message ne redit ni le prix ni les
+/// caractéristiques » tombe. Sans lui, la duplication revient EN SILENCE :
+/// aucun écran de l'application ne la montre, elle ne se voit que dans la
+/// conversation du destinataire.
 ///
 /// C'est aussi le seul endroit où l'absence de pièce jointe se vérifie. Sur
 /// WhatsApp, une image jointe produit un message IMAGE dont le texte devient
@@ -75,17 +101,35 @@ void main() {
   });
 
   /// Pose une fiche avec la session demandée, sans réseau ni Firebase.
+  ///
+  /// [locale] a une valeur par défaut, mais la coque NOMME toujours la sienne à
+  /// `MaterialApp` : sans `locale:`, la résolution part de
+  /// `platformDispatcher.locales`, qui vaut `[en_US]` dans un banc, et
+  /// `supportedLocales` commence par `Locale('en')`. Le message serait composé
+  /// en anglais pendant que les assertions parlent français — une mesure fausse
+  /// et verte. Voir test/support/langues.dart.
   Future<void> poser(
     WidgetTester tester,
     Widget fiche, {
     required AuthState session,
+    Locale locale = localeFr,
   }) async {
     await tester.pumpWidget(ProviderScope(
       overrides: [
         authProvider.overrideWith((_) => _FauxAuth(session)),
         catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
       ],
-      child: MaterialApp(home: fiche),
+      child: MaterialApp(
+        locale: locale,
+        // Les délégués sont nécessaires au PARTAGE lui-même, pas seulement à
+        // l'affichage : la mention du message vient de
+        // `partageMentionBoutique`, et `partagerArticle` est le seul maillon de
+        // ce chemin à disposer d'un `BuildContext` — la composition, elle, est
+        // pure. Sans eux, `AppLocalizations.of` lève au moment du tap.
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: fiche,
+      ),
     ));
 
     // Plusieurs passes avec du temps qui s'écoule, et non un simple `pump()`.
@@ -319,11 +363,14 @@ void main() {
 
   /// Ce qui arrive réellement dans la conversation WhatsApp du destinataire.
   ///
-  /// La désignation et le prix sont les deux seules informations sans
-  /// lesquelles le message ne sert à rien : « Hyundai Tucson » sans prix fait
-  /// rappeler l'agence pour rien, et un prix sans désignation ne désigne
-  /// aucun véhicule du parc.
-  testWidgets('le message d\'un véhicule porte sa désignation et son prix',
+  /// La désignation est désormais la SEULE information du message, et elle
+  /// suffit : la vignette que WhatsApp construit sur les balises Open Graph de
+  /// `/v/{id}` porte la photo, le prix et les caractéristiques, et elle en dit
+  /// plus que le texte n'en disait — elle ajoute l'année et l'état. Ce test
+  /// fige donc la forme en entier, deux lignes comprises : c'est l'égalité du
+  /// nombre de lignes qui fait tomber le test le jour où une information
+  /// revient, quelle qu'elle soit.
+  testWidgets('le message d\'un véhicule porte sa désignation, et rien de plus',
       (tester) async {
     await poser(tester, fiches['véhicule']!, session: _client());
 
@@ -338,19 +385,143 @@ void main() {
     // La désignation telle que le bandeau de la fiche l'affiche : marque,
     // modèle, année. Le message ne peut pas contredire l'écran.
     expect(texte, contains('Hyundai Tucson (2023)'));
-    // Le prix passe par `formatXof` plutôt que par un montant écrit en dur :
-    // la locale fr_FR sépare les milliers par un espace insécable étroit, et
-    // la comparaison aurait échoué sur un caractère invisible.
-    expect(texte, contains(formatXof(2450000)));
+    expect(texte, endsWith(adressesAttendues['véhicule']!));
+    expect(texte.split('\n'), hasLength(2));
 
-    // Les précisions demandées à la fiche véhicule, aux libellés de l'écran :
-    // « automatic » ou « suv » ne se montrent pas à un acheteur.
-    expect(texte, contains('SUV / 4×4'));
-    expect(texte, contains('Automatique'));
-    expect(texte, contains('Diesel'));
-    expect(texte, matches(RegExp(r'62\s400 km')));
-
+    // Les champs du modèle rendent `null` quand ils manquent ; les interpoler
+    // sans les filtrer écrivait « null » dans la conversation. Le message n'en
+    // porte plus aucun, mais l'assertion reste : c'est le titre qui en vient
+    // maintenant, et une désignation sans année passe par le même chemin.
     expect(texte.toLowerCase(), isNot(contains('null')));
+  });
+
+  // ── La garde : ce que la vignette dit déjà ne part plus dans le texte ─────
+
+  /// **Le point de ce lot, et la seule mesure qui l'atteste.** Les valeurs
+  /// interdites sont celles des trois modèles de ce fichier, aux libellés que
+  /// l'écran affiche — « SUV / 4×4 » et non « suv », « Automatique » et non
+  /// « automatic ». Ce sont exactement les champs que le message portait avant,
+  /// et que la vignette de la page publique porte maintenant.
+  ///
+  /// Vérifié sur les trois types : la page en dit PLUS que le message n'en
+  /// disait dans chacun — elle ajoute le fabricant, la garantie et la ville
+  /// pour une pièce, l'année et l'état pour un véhicule. Le texte n'apportait
+  /// donc rien, il redoublait.
+  ///
+  /// Ce qu'on perd est assumé : quand l'instance gratuite de Render dort, son
+  /// robot d'aperçu abandonne avant d'avoir lu la page, et le destinataire ne
+  /// voit que les deux lignes. Il garde le nom, la provenance et un lien qui
+  /// marche. La duplication, elle, se voyait à chaque partage réussi.
+  group('le message ne redit ni le prix ni les caractéristiques', () {
+    final dejaDansLaVignette = <String, List<String>>{
+      // Le prix, la catégorie, l'état et la référence de la pièce. Le SKU est
+      // dans le NOM de cet article — c'est le cas des dix filtres à huile du
+      // catalogue —, donc c'est la précision « Réf. … » qui doit manquer et
+      // non la suite de caractères : l'interdire ferait tomber le test sur le
+      // titre lui-même.
+      'pièce': ['Filtration', 'Neuf', 'Réf.'],
+      'accessoire': ['Confort'],
+      // « km » et non « 62 400 km » : la fiche ponctue les milliers avec
+      // l'espace insécable étroit de `fr_FR`, et une absence assertée sur
+      // l'espace qu'on tape passerait sans rien mesurer. L'unité suffit à
+      // identifier la ligne de kilométrage, et aucune désignation ne la porte.
+      'véhicule': ['SUV / 4×4', 'Automatique', 'Diesel', 'km'],
+    };
+
+    /// Les trois prix des trois modèles, interdits sur les trois fiches : un
+    /// prix rebranché par erreur sur le mauvais article serait tout aussi
+    /// faux. Ils passent par `formatXof` plutôt que par un montant écrit en
+    /// dur, parce que la locale fr_FR sépare les milliers par un espace
+    /// insécable étroit — une absence assertée sur un caractère invisible
+    /// différent serait verte sans rien mesurer.
+    final prix = [formatXof(3000), formatXof(12000), formatXof(2450000)];
+
+    for (final fiche in fiches.entries) {
+      testWidgets('fiche d\'une ${fiche.key}', (tester) async {
+        await poser(tester, fiche.value, session: _client());
+
+        await tester.tap(find.byTooltip('Partager'));
+        await tester.pumpAndSettle();
+
+        final texte = envois.single['text'] as String;
+
+        for (final valeur in [...prix, ...dejaDansLaVignette[fiche.key]!]) {
+          expect(
+            texte,
+            isNot(contains(valeur)),
+            reason: '« $valeur » part déjà dans la vignette que WhatsApp '
+                'construit sur la page publique. Le remettre dans le texte, '
+                'c\'est la duplication signalée par le propriétaire : elle '
+                'n\'apparaît sur aucun écran de l\'application, seulement dans '
+                'la conversation du destinataire.',
+          );
+        }
+
+        // Le symbole seul : un prix rebranché autrement — arrondi, abrégé,
+        // formaté à la main — garderait au moins « FCFA ».
+        expect(texte, isNot(contains('FCFA')));
+        // Le séparateur de l'ancienne ligne de précisions.
+        expect(texte, isNot(contains('·')));
+
+        // Deux lignes, et pas une de plus : toute information rebranchée en
+        // ajouterait une, où qu'on l'insère.
+        expect(texte.split('\n'), hasLength(2));
+        expect(texte.split('\n').last, adressesAttendues[fiche.key]!);
+      });
+    }
+  });
+
+  // ── La mention, dans la langue de l'écran ─────────────────────────────────
+
+  /// La mention est tout ce qui reste du texte autour du lien, et elle sert
+  /// précisément quand l'aperçu échoue : l'instance gratuite de Render s'endort
+  /// au bout de quinze minutes, et le robot d'aperçu abandonne avant la fin de
+  /// son réveil. Le destinataire lit alors ces deux lignes et rien d'autre —
+  /// une adresse nue ne dirait pas d'où vient le lien.
+  ///
+  /// Elle est lue dans `partagerArticle`, seul maillon de ce chemin à disposer
+  /// d'un `BuildContext` : la composition est pure, et reçoit la chaîne déjà
+  /// traduite. C'est donc ici, et nulle part ailleurs, que l'on vérifie que la
+  /// langue de l'écran arrive bien jusqu'au message qui part.
+  group('la mention du message suit la langue de l\'application', () {
+    /// Les deux chaînes attendues, écrites en clair : c'est le CONTRAT des deux
+    /// `.arb`. Une assertion qui se contenterait de relire la clé resterait
+    /// verte le jour où l'anglais rendrait le texte français.
+    const mentions = <String, String>{
+      'fr': 'sur AutoParc',
+      'en': 'on AutoParc',
+    };
+
+    langues.forEach((nom, locale) {
+      for (final fiche in fiches.entries) {
+        testWidgets('fiche d\'une ${fiche.key}, en $nom', (tester) async {
+          await poser(tester, fiche.value, session: _client(), locale: locale);
+
+          await tester.tap(find.byTooltip('Partager'));
+          await tester.pumpAndSettle();
+
+          final texte = envois.single['text'] as String;
+          final attendue = mentions[nom]!;
+
+          // Le tiret est dans l'assertion : c'est lui qui prouve que la mention
+          // est bien à sa place, collée au titre, et non ajoutée ailleurs.
+          expect(texte, contains('— $attendue'));
+          // La clé relue, pour que l'assertion ne survive pas à un `.arb` qui
+          // dirait autre chose.
+          expect(texte,
+              contains((await chargerTextes(locale)).partageMentionBoutique));
+
+          for (final autre in mentions.entries.where((e) => e.key != nom)) {
+            expect(
+              texte,
+              isNot(contains(autre.value)),
+              reason: 'La mention est restée en ${autre.key} : le message ne '
+                  'suit pas la langue de l\'écran.',
+            );
+          }
+        });
+      }
+    });
   });
 
   // ── L'adresse qui part réellement ─────────────────────────────────────────
@@ -360,7 +531,8 @@ void main() {
   /// recevait le titre, le prix, puis un lien Play Store — à lui d'installer
   /// l'application et de retrouver l'article. Les pages publiques existent et
   /// portent les balises Open Graph ; c'est leur adresse qui doit partir,
-  /// faute de quoi aucun robot d'aperçu n'a rien à aller chercher.
+  /// faute de quoi aucun robot d'aperçu n'a rien à aller chercher — et le
+  /// texte allégé ne laisse plus rien à la place.
   group('le message porte l\'adresse de l\'article', () {
     for (final fiche in fiches.entries) {
       testWidgets('fiche d\'une ${fiche.key}', (tester) async {
@@ -385,7 +557,8 @@ void main() {
   /// couverture ferait de l'envoi un message IMAGE dont le texte devient la
   /// légende, et WhatsApp ne rend pas d'aperçu de lien dans une légende. Tous
   /// les aperçus disparaîtraient d'un coup — photo, titre, prix, lien
-  /// cliquable — sans qu'aucune assertion sur le texte ne bouge.
+  /// cliquable — sans qu'aucune assertion sur le texte ne bouge. Le coût serait
+  /// pire depuis que le texte est court : il ne reste plus rien pour compenser.
   ///
   /// `paths` et `mimeTypes` n'apparaissent dans la carte d'arguments que si
   /// `ShareParams.files` est renseigné : on mesure donc leur absence, et non
@@ -469,6 +642,12 @@ Accessory _accessoire({bool actif = true, bool disponible = true}) =>
 
 /// Un véhicule à vendre, dont tous les champs du message sont renseignés :
 /// c'est le cas qui permet de vérifier la forme complète.
+///
+/// Les champs que le message ne porte PLUS restent renseignés, et c'est tout
+/// l'intérêt : prix, kilométrage, carrosserie, boîte et motorisation sont les
+/// valeurs dont le groupe « le message ne redit ni le prix ni les
+/// caractéristiques » mesure l'absence. Un modèle dépouillé rendrait ces
+/// assertions vertes sans rien prouver.
 ///
 /// `media` était vide pour une raison qui n'a plus cours : le partage puisait
 /// alors la photo de couverture dans le cache d'images, lequel réclame un

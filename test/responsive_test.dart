@@ -40,6 +40,7 @@ import 'package:auto/shared/data/media_repository.dart';
 import 'package:auto/shared/presentation/pages/media_upload_page.dart';
 import 'package:auto/l10n/app_localizations.dart';
 
+import 'support/echelles.dart';
 import 'support/langues.dart';
 
 /// Les écrans tiennent-ils sur un petit téléphone, et avec de gros caractères ?
@@ -99,7 +100,41 @@ void main() {
 
   /// Les échelles de texte du système. 1,3 correspond au deuxième cran des
   /// réglages Android ; au-delà, Flutter autorise jusqu'à 2.
+  ///
+  /// ── POURQUOI CETTE LISTE S'ARRÊTE AVANT LES AUTRES BANCS ────────────────
+  ///
+  /// `support/echelles.dart` asserte jusqu'à 1,5. Ce banc s'arrête à 1,3, et ce
+  /// n'est ni un oubli ni un relâchement : il ne charge PAS Roboto. Le banc
+  /// d'essai de Flutter peint alors chaque caractère comme un carré du corps du
+  /// texte — « 95 000 km • Essence » y mesure 228,0 points contre 117,1 avec
+  /// Roboto, presque le DOUBLE. L'échelle 1,3 sous cette police vaut donc à peu
+  /// près 2,6 sous Roboto, soit bien au-delà de la frontière que ces échelles
+  /// nomment. Monter à 1,5 ici n'éprouverait aucun téléphone réel ; ce serait
+  /// exiger qu'un écran tienne à l'échelle 3.
+  ///
+  /// CE QUI EST VÉRIFIÉ, EN REVANCHE, c'est que cette liste reste DANS le
+  /// domaine asserté — le test de cohérence ci-dessous. Si le propriétaire
+  /// déplaçait la frontière sous 1,3, ce banc exigerait plus que la règle, et il
+  /// faut qu'il le dise au lieu de le faire en silence.
   const echelles = <double>[1.0, 1.3];
+
+  test('les échelles de ce banc sont dans le domaine ASSERTÉ', () {
+    // Non-vacuité de la règle partagée, vue d'ici. Ce banc porte la police de
+    // repli et sa propre liste ; il doit au moins garantir qu'il n'exige pas
+    // au-delà de ce que `support/echelles.dart` autorise à exiger.
+    for (final echelle in echelles) {
+      expect(
+        tenue(echelle),
+        isTrue,
+        reason:
+            'Ce banc exige l\'absence de débordement à l\'échelle $echelle, '
+            'alors que la règle partagée ne garantit que jusqu\'à '
+            '$echelleTenue. Soit la frontière a bougé — et il faut retirer '
+            'cette échelle d\'ici —, soit cette liste a grandi sans qu\'on '
+            'relise `support/echelles.dart`.',
+      );
+    }
+  });
 
   Future<void> poser(WidgetTester tester) async {
     for (var i = 0; i < 5; i++) {

@@ -669,17 +669,23 @@ void main() {
   /// d'œil — d'où sa place dans la première rangée, à côté d'une carte qui
   /// porte la ligne.
   ///
-  /// CE QUI SE VOIT SUR CES CAPTURES ET QUI N'EST PAS DE CE LOT. À l'échelle
-  /// 2,0, le PRIX se replie sur deux lignes et la coupure tombe au milieu du
-  /// mot : « 109 500 FCF » puis « A ». Le prix d'une carte de pièce ou
+  /// CE QUI SE VOIT SUR CES CAPTURES ET QUI EST UNE DÉGRADATION ACCEPTÉE. À
+  /// l'échelle 2,0, le PRIX se replie sur deux lignes et la coupure tombe au
+  /// milieu du mot : « 109 500 FCF » puis « A ». Le prix d'une carte de pièce ou
   /// d'accessoire est un `Text` nu, sans le `FittedBox` que porte celui d'un
-  /// véhicule, et un prix est un seul segment insécable. Trois cases sur
-  /// vingt-quatre, toutes à 2,0 ; `bandes_filtres_test.dart` en porte les
-  /// chiffres et dit pourquoi ni `didExceedMaxLines` ni `minIntrinsicWidth` ne
-  /// le voient. La ligne de compatibilité n'y est pour rien — la largeur reçue
-  /// par le prix est la même avec et sans elle —, mais elle est sur la même
-  /// capture, et une capture livrée sans explication fait corriger le mauvais
-  /// objet.
+  /// véhicule, et un prix est un seul segment insécable.
+  ///
+  /// TROIS CASES SUR VINGT-QUATRE, ET LES VINGT-QUATRE ONT ÉTÉ VÉRIFIÉES : les
+  /// trois sont à 2,0, aucune à 1,0, 1,3 ou 1,5. C'est ce qui les fait passer en
+  /// dégradation acceptée plutôt qu'en défaut à corriger — voir
+  /// `support/echelles.dart` pour la règle, et `bandes_filtres_test.dart` pour
+  /// le relevé des vingt-quatre cases et la marge de 6,5 points qui reste à
+  /// 1,5. Un prix faux est le défaut que ce dépôt refuse le plus durement ;
+  /// c'est pour cela qu'on a compté avant d'accepter.
+  ///
+  /// La ligne de compatibilité n'y est pour rien — la largeur reçue par le prix
+  /// est la même avec et sans elle —, mais elle est sur la même capture, et une
+  /// capture livrée sans explication fait corriger le mauvais objet.
   for (final cas in <(String, double, double, double)>[
     // Le réglage par défaut, c'est-à-dire ce que presque tout le monde voit.
     // Les trois modèles y tiennent sur UNE ligne depuis que la marque est
@@ -697,6 +703,13 @@ void main() {
     // mécanisme du « +N » calculé sur ce qui est peint change encore le
     // chiffre affiché.
     ('360-x20', 360, 720, 2.0),
+
+    // Le plus petit écran au dernier cran, qui est le pire cas de largeur
+    // pour le prix. Un banc affirme que « 109 500 FCFA » s'y replie EN
+    // COUPANT DANS LE MOT ; aucune capture ne le montrait, et le propriétaire
+    // en doute. Une mesure qu'on ne peut pas regarder ne vaut pas qu'on la
+    // croie sur parole.
+    ('320-x20', 320, 640, 2.0),
   ]) {
     testWidgets('pièces, ${cas.$1}, ligne de compatibilité', (tester) async {
       await monterPieces(

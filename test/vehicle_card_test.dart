@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/echelles.dart';
+
 /// Tenue des fiches du catalogue, à la largeur près.
 ///
 /// CE FICHIER A CHANGÉ DE PRÉMISSE AVEC CE LOT, et il faut le dire en face. Il
@@ -112,7 +114,13 @@ void main() {
       // Les quatre crans d'Android, et non le seul 1,3 : c'est à 2,0 que le
       // titre se replie sur six lignes, et une borne de repli trop basse y
       // ellipserait au lieu de grandir.
-      for (final echelle in const <double>[1.0, 1.3, 1.5, 2.0]) {
+      //
+      // ET 2,0 RESTE ASSERTÉE ICI, bien que la règle de `support/echelles.dart`
+      // autorise à la relâcher : ce test ne mesure aucune troncature, il vérifie
+      // que RIEN NE JETTE. C'est le deuxième des quatre points non négociables,
+      // et il ne connaît pas de frontière — une bande rayée de `RenderFlex`
+      // rend le contenu illisible et parfois intouchable, à 2,0 comme à 1,0.
+      for (final echelle in echellesMesurees) {
         await tester.pumpWidget(
             carte(page.data.first, echelleTexte: echelle));
         await tester.pump();
@@ -453,7 +461,10 @@ void main() {
   /// `carte_geometrie_test.dart`, qui charge Roboto et monte la page entière.
   group('La largeur réelle de la carte', () {
     for (final cas in largeurs.entries) {
-      for (final echelle in const <double>[1.0, 1.3, 1.5, 2.0]) {
+      // Les quatre échelles, 2,0 comprise et assertée : voir le groupe du
+      // dessus — ce qu'on exige ici est « rien ne jette », qui n'a pas de
+      // frontière.
+      for (final echelle in echellesMesurees) {
         testWidgets('${cas.key}, texte x$echelle', (tester) async {
           for (final v in <Vehicle>[
             vehicule(),
