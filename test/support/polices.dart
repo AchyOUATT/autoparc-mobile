@@ -36,8 +36,8 @@ import 'package:flutter/services.dart';
 /// `Platform.resolvedExecutable` vaut
 /// `<racine>/bin/cache/artifacts/engine/<plateforme>/flutter_tester`, donc la
 /// racine se déduit du binaire lui-même. On essaie les deux.
-Directory? dossierDesPolices() {
-  final candidats = <String>[
+List<Directory> dossiersDesPolices() {
+  final racines = <String>[
     if (Platform.environment['FLUTTER_ROOT'] case final r?) r,
     // bin/cache/artifacts/engine/<plateforme>/<binaire> → six crans au-dessus
     Directory(
@@ -45,11 +45,28 @@ Directory? dossierDesPolices() {
     ).parent.parent.parent.parent.parent.parent.path,
   ];
 
-  for (final racine in candidats) {
-    final d = Directory('$racine/bin/cache/artifacts/material_fonts');
-    if (d.existsSync()) return d;
-  }
-  return null;
+  return [
+    // LE DÉPÔT D'ABORD, et c'est la correction qui a tout réglé. Le SDK ne
+    // livre PLUS Roboto sous Linux : sur la CI, le dossier material_fonts
+    // existe et ne contient que les icônes. Mesuré par l'erreur que ce
+    // fichier lève désormais :
+    //
+    //   Le dossier /opt/hostedtoolcache/flutter/stable-3.47.2-x64/flutter/
+    //   bin/cache/artifacts/material_fonts existe mais ne contient aucun
+    //   fichier Roboto.
+    //
+    // Le cache Windows de ce poste en gardait une copie héritée, d'où des
+    // mesures justes en local et fausses en CI — 376,5 points contre 617,5.
+    // `flutter precache --universal` n'y change rien : la police n'est plus
+    // dans l'artefact.
+    //
+    // 500 ko de binaires dans l'historique, donc, et le fichier voisin de ce
+    // commentaire explique pourquoi le projet les avait refusés. Ce refus a
+    // coûté une publication : des mesures au dixième de point ne peuvent pas
+    // dépendre de ce que la machine veut bien fournir.
+    Directory('test/fonts'),
+    for (final r in racines) Directory('$r/bin/cache/artifacts/material_fonts'),
+  ].where((d) => d.existsSync()).toList();
 }
 
 /// Charge Roboto et les icônes Material, ou lève.
@@ -60,20 +77,7 @@ Directory? dossierDesPolices() {
 /// la mauvaise police ne produit pas une mesure approximative mais une mesure
 /// qui ne décrit aucun téléphone.
 Future<void> chargerPolices({bool exigerRoboto = true}) async {
-  final dossier = dossierDesPolices();
-
-  if (dossier == null) {
-    if (!exigerRoboto) return;
-    throw StateError(
-      'Les polices du SDK sont introuvables : ni FLUTTER_ROOT '
-      '(${Platform.environment['FLUTTER_ROOT'] ?? 'non défini'}) ni la racine '
-      'déduite de ${Platform.resolvedExecutable} ne portent '
-      'bin/cache/artifacts/material_fonts.\n'
-      'Ce banc mesure des largeurs de texte au dixième de point : sans Roboto '
-      'il mesurerait la police de repli, presque deux fois plus large.\n'
-      'Sur une machine neuve ou en CI : `flutter precache --universal`.',
-    );
-  }
+  final dossiers = dossiersDesPolices();
 
   const fontes = {
     'Roboto': ['roboto-regular.ttf', 'roboto-medium.ttf', 'roboto-bold.ttf'],
@@ -82,23 +86,35 @@ Future<void> chargerPolices({bool exigerRoboto = true}) async {
 
   for (final entree in fontes.entries) {
     final chargeur = FontLoader(entree.key);
-    var trouvee = false;
+    var trouvees = 0;
 
+    // Chaque FICHIER est cherché dans chaque dossier, et non le dossier
+    // entier dans l'ordre : le dépôt porte Roboto, le SDK porte les icônes.
+    // Chercher « le premier dossier qui existe » aurait pris le dépôt et
+    // perdu les icônes.
     for (final nom in entree.value) {
-      final fichier = File('${dossier.path}/$nom');
-      if (!fichier.existsSync()) continue;
-      chargeur.addFont(
-        Future.value(fichier.readAsBytesSync().buffer.asByteData()),
-      );
-      trouvee = true;
+      for (final d in dossiers) {
+        final fichier = File('${d.path}/$nom');
+        if (!fichier.existsSync()) continue;
+        chargeur.addFont(
+          Future.value(fichier.readAsBytesSync().buffer.asByteData()),
+        );
+        trouvees++;
+        break;
+      }
     }
 
-    if (trouvee) {
+    if (trouvees > 0) {
       await chargeur.load();
     } else if (entree.key == 'Roboto' && exigerRoboto) {
       throw StateError(
-        'Le dossier ${dossier.path} existe mais ne contient aucun fichier '
-        'Roboto. Installation incomplète : `flutter precache --universal`.',
+        'Aucun fichier Roboto trouvé. Cherché dans :\n'
+        '${dossiers.map((d) => '  ${d.path}').join('\n')}\n'
+        'Le dépôt en porte normalement une copie dans test/fonts — '
+        'a-t-elle été supprimée ? Ce banc mesure des largeurs au dixième de '
+        'point : sans Roboto il mesurerait la police de repli, presque deux '
+        'fois plus large, et rendrait des chiffres qui ne décrivent aucun '
+        'téléphone.',
       );
     }
   }
