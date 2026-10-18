@@ -16,6 +16,8 @@ import '../../../../features/cart/presentation/pages/cart_page.dart';
 import '../../../../features/notifications/presentation/widgets/notification_icon_button.dart';
 import '../../../../features/vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../../../core/providers/shell_scaffold_provider.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../widgets/ligne_compatibilite.dart';
 
 const _categories = [
   (value: 'esthetique',  label: 'Esthétique',  icon: Icons.auto_awesome),
@@ -83,12 +85,12 @@ class _AccessoryListPageState extends ConsumerState<AccessoryListPage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          tooltip: 'Menu',
+          tooltip: AppLocalizations.of(context).commonMenuTooltip,
           onPressed: () =>
               ref.read(shellScaffoldKeyProvider).currentState?.openDrawer(),
         ),
         titleSpacing: 0,
-        title: const Text('Accessoires'),
+        title: Text(AppLocalizations.of(context).commonAccessories),
         actions: [
           const NotificationIconButton(),
           if (!isStaff) ...[
@@ -471,6 +473,12 @@ class _AccessoryCardState extends ConsumerState<_AccessoryCard> {
                       color: cs.onSurface,
                     ),
                   ),
+                  // LES MODÈLES AUXQUELS L'ACCESSOIRE SE DESTINE, à la même
+                  // place et avec le même widget que sur la carte des pièces.
+                  // Les deux listes se côtoient dans la même barre d'onglets :
+                  // deux formes de la même ligne se seraient mises à diverger,
+                  // et c'est l'écran qui l'aurait montré.
+                  LigneCompatibilite(resume: accessory.compatibility),
                   const SizedBox(height: 6),
                   Text(
                     formatXofShort(accessory.pricing.sellingPrice),

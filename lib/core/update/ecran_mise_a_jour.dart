@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../utils/lien_externe.dart';
 
 /// L'écran qui s'interpose quand la version installée est passée sous le
@@ -61,6 +62,10 @@ class EcranMiseAJour extends StatelessWidget {
                     color: theme.colorScheme.primary,
                   ),
                   const SizedBox(height: 24),
+                  // LE MESSAGE VIENT DU SERVEUR, et reste donc en français quelle
+                  // que soit la langue choisie : il est composé par l'API, pas
+                  // ici. C'est la vague serveur qui le traduira — le bouton
+                  // ci-dessous, lui, est du texte de l'application.
                   Text(
                     message,
                     textAlign: TextAlign.center,
@@ -79,11 +84,12 @@ class EcranMiseAJour extends StatelessWidget {
                               context,
                               lien,
                               valeurACopier: lien.toString(),
-                              ceQuiNePeutPasSOuvrir: 'la fiche de '
-                                  "l'application",
+                              ceQuiNePeutPasSOuvrir:
+                                  AppLocalizations.of(context)
+                                      .updateStoreTarget,
                             ),
                     icon: const Icon(Icons.download_outlined),
-                    label: const Text('Mettre à jour'),
+                    label: Text(AppLocalizations.of(context).updateAction),
                   ),
                 ],
               ),

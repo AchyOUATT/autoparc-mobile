@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../l10n/app_localizations.dart';
+
 /// Ouvre un lien hors de l'application, et le dit quand ça échoue.
 ///
 /// Les appels se faisaient jusqu'ici en `onTap: () => launchUrl(...)`, sans
@@ -24,6 +26,14 @@ Future<void> ouvrirLien(
   BuildContext context,
   Uri lien, {
   required String valeurACopier,
+
+  /// Ce que l'appareil n'a pas su ouvrir, DÉJÀ TRADUIT par l'appelant.
+  ///
+  /// Un fragment et non une phrase : il s'insère dans `commonLinkUnavailable`
+  /// (« Impossible d'ouvrir le composeur sur cet appareil. »), d'où l'article
+  /// et la minuscule. Les quatre valeurs servies ont leur clé — voir
+  /// `shellContactDialerTarget` et ses voisines ; seul « WhatsApp », nom de
+  /// marque, reste en dur.
   required String ceQuiNePeutPasSOuvrir,
 }) async {
   var ouvert = false;
@@ -47,8 +57,10 @@ Future<void> ouvrirLien(
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(
-        'Impossible d\'ouvrir $ceQuiNePeutPasSOuvrir sur cet appareil. '
-        '$valeurACopier a été copié.',
+        AppLocalizations.of(context).commonLinkUnavailable(
+          ceQuiNePeutPasSOuvrir,
+          valeurACopier,
+        ),
       ),
       behavior: SnackBarBehavior.floating,
       duration: const Duration(seconds: 5),

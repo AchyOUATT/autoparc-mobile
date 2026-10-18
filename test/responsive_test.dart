@@ -38,6 +38,9 @@ import 'package:auto/features/vehicles/data/models/catalog_refs.dart';
 import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provider.dart';
 import 'package:auto/shared/data/media_repository.dart';
 import 'package:auto/shared/presentation/pages/media_upload_page.dart';
+import 'package:auto/l10n/app_localizations.dart';
+
+import 'support/langues.dart';
 
 /// Les écrans tiennent-ils sur un petit téléphone, et avec de gros caractères ?
 ///
@@ -424,7 +427,17 @@ void main() {
                     catalogRefsProvider.overrideWith((_) async => refs),
                     ...?surcharges[entree.key],
                   ],
-                  child: MaterialApp(home: entree.value.$1),
+                  // Les quatorze écrans du tableau passent par ici. Voir
+                  // test/support/langues.dart : sans `locale:`, ceux qui sont
+                  // traduits auraient été mesurés en anglais, et le marqueur
+                  // français de la barre de titre les aurait fait tomber.
+                  child: MaterialApp(
+                    locale: localeFr,
+                    localizationsDelegates:
+                        AppLocalizations.localizationsDelegates,
+                    supportedLocales: AppLocalizations.supportedLocales,
+                    home: entree.value.$1,
+                  ),
                 ),
                 taille: format.value,
                 echelle: echelle,
@@ -559,6 +572,12 @@ void main() {
   /// elle qui décide si ça tient.
   group('Mise à jour obligatoire', () {
     Widget ecranBloquant() => const MaterialApp(
+          // Le bouton de cet écran est traduit depuis le lot de langue. Voir
+          // test/support/langues.dart : sans `locale:`, la coque mesurerait
+          // l'anglais.
+          locale: localeFr,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: EcranMiseAJour(
             message: "Cette version de l'application ne peut plus lire les "
                 'prix du catalogue depuis le serveur. Installez la dernière '

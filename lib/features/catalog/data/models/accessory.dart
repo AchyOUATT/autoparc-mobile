@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'compatibility_summary.dart';
+
 /// Accessoire (esthétique, confort, sécurité, multimédia, utilitaire).
 class Accessory extends Equatable {
   final int     id;
@@ -26,9 +28,23 @@ class Accessory extends Equatable {
   final List<String> photoUrls;
 
   /// Voir `Part.fitments` : `null` signifie « la réponse ne le dit pas », pas
-  /// « aucune compatibilité ». La liste des accessoires ne charge pas cette
-  /// relation.
+  /// « aucune compatibilité ».
+  ///
+  /// La liste du catalogue la charge DEPUIS la ligne de compatibilité des
+  /// cartes : `AccessoryController::catalog` fait
+  /// `with('fitments.vehicleModel.brand')`. Le commentaire sur place dit
+  /// pourquoi ce chargement est la moitié du travail — « sans ce chargement la
+  /// clé DISPARAÎT du JSON et la ligne reste vide sur chaque carte, sans
+  /// erreur ». Les réponses de création et de modification, elles, ne
+  /// rechargent que `manufacturer` et `fitments`.
   final List<Map<String, dynamic>>? fitments;
+
+  /// Le résumé des modèles compatibles, pour la LIGNE DE LA CARTE.
+  ///
+  /// Voir `Part.compatibility` : même clé, même structure, même classe. Le
+  /// serveur la compose par une méthode jumelle dont le commentaire dit
+  /// pourquoi les deux cartes doivent afficher la même ligne.
+  final CompatibilitySummary? compatibility;
 
   const Accessory({
     required this.id,
@@ -46,6 +62,7 @@ class Accessory extends Equatable {
     this.coverUrl,
     this.photoUrls = const [],
     this.fitments,
+    this.compatibility,
   });
 
   factory Accessory.fromJson(Map<String, dynamic> json) {
@@ -88,6 +105,13 @@ class Accessory extends Equatable {
       fitments: (json['fitments'] as List?)
           ?.cast<Map<String, dynamic>>()
           .toList(growable: false),
+      // Voir `Part.fromJson` : la clé absente reste `null`, parce qu'un résumé
+      // vide affirmerait « aucun modèle compatible ».
+      compatibility: (json['compatibility'] as Map<String, dynamic>?) == null
+          ? null
+          : CompatibilitySummary.fromJson(
+              json['compatibility'] as Map<String, dynamic>,
+            ),
     );
   }
 

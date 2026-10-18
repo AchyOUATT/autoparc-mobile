@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../data/models/vehicle.dart';
 import '../providers/catalog_providers.dart';
@@ -18,6 +17,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
 import '../../../../core/providers/shell_scaffold_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class VehicleListPage extends ConsumerStatefulWidget {
   const VehicleListPage({super.key});
@@ -89,12 +89,12 @@ class _VehicleListPageState extends ConsumerState<VehicleListPage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          tooltip: 'Menu',
+          tooltip: AppLocalizations.of(context).commonMenuTooltip,
           onPressed: () =>
               ref.read(shellScaffoldKeyProvider).currentState?.openDrawer(),
         ),
         titleSpacing: 0,
-        title: const Text('Véhicules'),
+        title: Text(AppLocalizations.of(context).commonVehicles),
         actions: [
           const NotificationIconButton(),
           if (!isStaff)
@@ -752,14 +752,23 @@ class _Colonne extends StatelessWidget {
 
 // ── Ligne de caractéristiques ───────────────────────────────────
 
-/// Séparateur de milliers à la française : « 95 000 km », pas « 95000 ».
-///
-/// Le même format que celui de `vehicle_detail_page.dart`, et il doit le
-/// rester : la liste et la fiche écrivent le même kilométrage, et un acheteur
-/// qui passe de l'une à l'autre ne doit pas voir le nombre changer de forme.
-/// Le séparateur n'est pas une espace ordinaire mais une espace fine
-/// insécable (U+202F) — c'est ce que rend la locale `fr_FR`.
-final _entier = NumberFormat.decimalPattern('fr_FR');
+// Le séparateur de milliers du kilométrage passe désormais par
+// `formatEntier`, dans core/utils/currency_format.dart, qui suit la langue
+// active : « 95 000 km » en français — espace fine insécable U+202F, et non une
+// espace ordinaire —, « 95,000 km » en anglais. Il était écrit ici sur
+// `NumberFormat.decimalPattern('fr_FR')` en dur, à côté d'un prix qui, lui,
+// basculait : la même carte aurait affiché « 95 000 km » sous
+// « 99,999,999 FCFA ».
+//
+// DIVERGENCE CONNUE, ET DÉCLARÉE PLUTÔT QUE TAIRE : `vehicle_detail_page.dart`
+// garde ses propres `NumberFormat(..., 'fr_FR')` écrits en dur. En anglais, la
+// liste écrit donc « 95,000 km » et la fiche « 95 000 km » pour le même
+// véhicule. La règle d'avant — « la liste et la fiche écrivent le même
+// kilométrage, un acheteur qui passe de l'une à l'autre ne doit pas voir le
+// nombre changer de forme » — vaut toujours ; c'est la fiche qui doit suivre,
+// au lot qui la traduira. La corriger ici aurait voulu dire toucher un écran
+// que ce lot ne traduit pas, et laisser la liste en `fr_FR` aurait mis
+// « 95 000 km » sous « 99,999,999 FCFA » sur la MÊME carte.
 
 /// La ligne de caractéristiques : « 95 000 km • Essence ».
 ///
@@ -790,7 +799,7 @@ final _entier = NumberFormat.decimalPattern('fr_FR');
 /// la fiche détaillée les affiche tels quels sous « Motorisation ».
 String? _ligneSpecs(Vehicle vehicle) {
   final specs = <String>[
-    if (vehicle.mileageKm != null) '${_entier.format(vehicle.mileageKm)} km',
+    if (vehicle.mileageKm != null) '${formatEntier(vehicle.mileageKm!)} km',
     if (vehicle.identity.engineType != null) vehicle.identity.engineType!,
   ];
   return specs.isEmpty ? null : specs.join(' • ');
@@ -1449,7 +1458,20 @@ class _PriceRow extends StatelessWidget {
       );
     } else if (commercial.isForRent && commercial.rentalDailyRate != null) {
       prix = _PrixAjuste(
-        texte: '${formatXofShort(commercial.rentalDailyRate)}/j',
+        // LE SUFFIXE SUIT LA LANGUE, ET IL NE LA SUIVAIT PAS. `formatXofShort`
+        // est passé à la locale active au lot de traduction ; le « /j » est
+        // resté en dur juste derrière. Un anglophone lisait donc
+        // « 25,000 FCFA/j » — le nombre traduit, l'unité non. La clé existait
+        // déjà et la tuile de la vitrine l'employait depuis le même lot : ce
+        // site-ci avait seulement été oublié.
+        //
+        // Aucune espace avant, et c'est la raison d'être de la clé : le
+        // suffixe doit rester dans le MÊME segment insécable que le montant,
+        // sinon il part seul à la ligne. `_PrixAjuste` réduit le corps de
+        // toute la chaîne, suffixe compris.
+        texte:
+            '${formatXofShort(commercial.rentalDailyRate)}'
+            '${AppLocalizations.of(context).commonPerDaySuffix}',
         style: style,
       );
     } else {

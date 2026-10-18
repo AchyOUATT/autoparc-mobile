@@ -50,11 +50,21 @@ import 'package:auto/features/auth/data/auth_repository.dart';
 import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
 import 'package:auto/features/catalog/data/catalog_repository.dart';
 import 'package:auto/core/theme/app_theme.dart';
+import 'package:auto/features/catalog/data/models/accessory.dart';
+import 'package:auto/features/catalog/data/models/part.dart';
+import 'package:auto/features/catalog/data/models/part_category.dart';
 import 'package:auto/features/catalog/data/models/vehicle.dart';
+import 'package:auto/features/catalog/presentation/pages/accessory_list_page.dart';
+import 'package:auto/features/catalog/presentation/pages/part_list_page.dart';
 import 'package:auto/features/catalog/presentation/pages/vehicle_list_page.dart';
+import 'package:auto/features/catalog/presentation/providers/catalog_providers.dart';
+import 'package:auto/features/catalog/presentation/widgets/ligne_compatibilite.dart';
 import 'package:auto/features/vehicles/data/models/catalog_refs.dart';
 import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provider.dart';
 import 'package:auto/shared/models/paginated_response.dart';
+import 'package:auto/l10n/app_localizations.dart';
+
+import 'support/langues.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -303,6 +313,12 @@ void main() {
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
+          // Les délégués ET la locale : voir test/support/langues.dart. Sans
+          // `locale:`, ce banc mesurerait l'ANGLAIS — la liste des locales du
+          // banc vaut `[en_US]` et `supportedLocales` commence par `en`.
+          locale: localeFr,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: themeAutoParc(mode),
           home: MediaQuery(
             data: MediaQueryData(
@@ -355,6 +371,186 @@ void main() {
       find.byType(VehicleCard),
       findsWidgets,
       reason: 'La capture serait vide : la grille a rendu zéro carte.',
+    );
+    if (!ecrireCaptures) return;
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('../build/captures/$nom.png'),
+    );
+  }
+
+  // ── Les deux autres catalogues : pièces et accessoires ────────────────────
+
+  /// Quatre pièces plausibles, dont UNE SANS COMPATIBILITÉ.
+  ///
+  /// Les noms sont des MODÈLES SEULS, sans la marque, parce que c'est ce que
+  /// le serveur compose depuis que le propriétaire l'a tranché — voir
+  /// `PartResource::resumeCompatibilite`. Les fixtures portaient
+  /// « Toyota Corolla » et « Mercedes-Benz Classe C 220 d » ; une capture faite
+  /// sur une chaîne que l'API ne peut plus envoyer montrerait une ligne que
+  /// personne ne verra.
+  ///
+  /// Leur longueur reste le sujet : « Grand Cherokee Trackhawk » est le plus
+  /// long modèle du référentiel, et c'est lui qui dit si la ligne tient encore
+  /// à trois noms. Les totaux à deux chiffres sont ceux d'une pièce courante —
+  /// un filtre à huile va sur des dizaines de modèles, et c'est précisément ce
+  /// que le « +N » existe pour dire.
+  List<Part> pieces() => [
+    _piece(
+      nom: 'Filtre à huile moteur cartouche 04152-YZZA1',
+      prix: '4500.00',
+      compatibilite: {
+        'count': 12,
+        'vehicles': ['Corolla', 'Tucson', 'Rio'],
+      },
+    ),
+    // AUCUNE COMPATIBILITÉ, ET EN DEUXIÈME POSITION. La carte doit n'avoir ni
+    // ligne vide ni séparateur orphelin, et la place compte : deuxième, elle
+    // est dans la PREMIÈRE RANGÉE, donc visible entière sur les six captures,
+    // à côté d'une carte qui porte la ligne. Mise en quatrième, elle passait
+    // sous le pli dans toutes et le commentaire aurait promis une vérification
+    // que personne ne pouvait faire.
+    _piece(
+      nom: 'Bidon d\'huile moteur 5W30 — 5 l',
+      prix: '18000.00',
+      compatibilite: {'count': 0, 'vehicles': <String>[]},
+    ),
+    _piece(
+      nom: 'Plaquettes de frein avant',
+      prix: '28000.00',
+      compatibilite: {
+        'count': 37,
+        'vehicles': [
+          'Grand Cherokee Trackhawk',
+          'Range Rover Sport',
+          'Classe C 220 d',
+        ],
+      },
+    ),
+    // TROIS MODÈLES EN TOUT, TROIS AFFICHÉS : aucun compte, parce qu'il n'y a
+    // rien à compter. C'est l'autre moitié de la règle, et elle se voit sur la
+    // capture 360 × 1,0, où cette carte ouvre la deuxième rangée.
+    _piece(
+      nom: 'Amortisseur arrière gauche',
+      prix: '62500.00',
+      compatibilite: {
+        'count': 3,
+        'vehicles': ['Alto', 'Yaris', 'Picanto'],
+      },
+    ),
+  ];
+
+  /// Quatre accessoires, même composition et pour les mêmes raisons.
+  List<Accessory> accessoires() => [
+    _accessoire(
+      nom: 'Coffre de toit 350 l',
+      prix: '109500.00',
+      compatibilite: {
+        'count': 12,
+        'vehicles': ['Corolla', 'Tucson', 'Rio'],
+      },
+    ),
+    // Sans compatibilité, en deuxième position. Voir [pieces].
+    _accessoire(
+      nom: 'Chargeur allume-cigare double USB',
+      prix: '4000.00',
+      compatibilite: {'count': 0, 'vehicles': <String>[]},
+    ),
+    _accessoire(
+      nom: 'Tapis de sol caoutchouc sur mesure',
+      prix: '22000.00',
+      compatibilite: {
+        'count': 37,
+        'vehicles': [
+          'Grand Cherokee Trackhawk',
+          'Range Rover Sport',
+          'Classe C 220 d',
+        ],
+      },
+    ),
+    // Deux modèles, deux affichés, aucun compte.
+    _accessoire(
+      nom: 'Attelage démontable',
+      prix: '185000.00',
+      compatibilite: {
+        'count': 2,
+        'vehicles': ['Hilux', 'Ranger'],
+      },
+    ),
+  ];
+
+  /// Monte la liste des pièces DANS SA COQUE, comme [monter] le fait pour les
+  /// véhicules — barre de titre, barre de recherche, bande de filtres et barre
+  /// de navigation du bas comprises.
+  ///
+  /// La session est celle du PERSONNEL, qui est aussi celle de la capture des
+  /// véhicules : elle ajoute le bouton flottant et la bascule de
+  /// disponibilité, donc c'est la carte la plus chargée des deux. Ce qu'elle ne
+  /// montre pas est le badge « Disponible » du client ; `bandes_filtres_test`
+  /// en porte la hauteur, et dit pourquoi un client ne se monte pas sur la
+  /// liste des pièces.
+  Future<void> monterPieces(
+    WidgetTester tester, {
+    required double largeur,
+    required double hauteur,
+    required double echelle,
+    required Brightness mode,
+  }) => _monterArticles(
+    tester,
+    largeur: largeur,
+    hauteur: hauteur,
+    echelle: echelle,
+    mode: mode,
+    onglet: 3,
+    page: const PartListPage(),
+    depot: _DepotArticles(pieces: pieces()),
+    surcharges: [
+      partCategoriesProvider.overrideWith((_) async => _branches),
+      categoriesAvecPiecesProvider.overrideWith((_) async => _branches),
+    ],
+  );
+
+  /// Monte la liste des accessoires dans sa coque. Voir [monterPieces].
+  Future<void> monterAccessoires(
+    WidgetTester tester, {
+    required double largeur,
+    required double hauteur,
+    required double echelle,
+    required Brightness mode,
+  }) => _monterArticles(
+    tester,
+    largeur: largeur,
+    hauteur: hauteur,
+    echelle: echelle,
+    mode: mode,
+    onglet: 2,
+    page: const AccessoryListPage(),
+    depot: _DepotArticles(accessoires: accessoires()),
+    surcharges: [
+      categoriesAccessoiresOccupeesProvider.overrideWith(
+        (_) async => {'esthetique', 'confort', 'utilitaire'},
+      ),
+    ],
+  );
+
+  /// La capture d'une liste d'articles.
+  ///
+  /// La non-vacuité porte sur la LIGNE DE COMPATIBILITÉ et pas seulement sur la
+  /// carte : une capture où la ligne n'aurait pas été rendue — clé absente de
+  /// la fixture, widget oublié — montrerait des cartes correctes et ne dirait
+  /// rien de ce qu'on vient voir.
+  Future<void> capturerArticles(WidgetTester tester, String nom) async {
+    expect(
+      find.byType(Card),
+      findsWidgets,
+      reason: 'La capture serait vide : la liste a rendu zéro carte.',
+    );
+    expect(
+      find.byType(LigneCompatibilite),
+      findsWidgets,
+      reason:
+          'Aucune `LigneCompatibilite` dans l\'arbre : la capture montrerait '
+          'des cartes sans la ligne que ce test existe pour regarder.',
     );
     if (!ecrireCaptures) return;
     await expectLater(
@@ -442,6 +638,115 @@ void main() {
   // la colonne de droite n'est plus en face de celle de gauche. Les cinq
   // captures ci-dessus le montrent déjà ; celle-ci n'existe pas en plus, et
   // c'est dit ici pour que personne ne la cherche.
+
+  // ── LES CARTES DE PIÈCE ET D'ACCESSOIRE, pour la ligne de compatibilité ───
+
+  /// LE PROPRIÉTAIRE A DEMANDÉ CES DEUX CAPTURES, et ce banc ne les avait pas :
+  /// il ne montait que la liste des véhicules. La ligne des modèles compatibles
+  /// est une décision qui se juge à l'œil — « police très petite, couleur
+  /// sobre » n'est pas un chiffre —, et les bancs de géométrie ne répondent
+  /// qu'à « est-ce coupé ? ».
+  ///
+  /// CE QU'IL FAUT REGARDER SUR CES CAPTURES, dans cet ordre :
+  ///
+  ///  1. LE « +N » EST-IL LISIBLE ? Il est à 10 points, en demi-gras, dans le
+  ///     gris d'habillage, collé au bord droit de la carte. S'il se confond
+  ///     avec les noms, c'est la graisse qui ne suffit pas.
+  ///  2. LA LIGNE SE LIT-ELLE COMME UNE MENTION et non comme un second titre ?
+  ///     Elle est d'un cran sous le nom de l'article, et dans une encre plus
+  ///     claire.
+  ///  3. LES DEUX LIGNES SONT-ELLES PLEINES ? Aux réglages où un seul nom
+  ///     tient, la ligne n'occupe qu'une ligne et le « +11 » reste à droite : à
+  ///     vérifier que cela n'a pas l'air d'un vide.
+  ///  4. L'ÉCART AVEC LE NOM AU-DESSUS ET LE PRIX EN DESSOUS. Trois points
+  ///     au-dessus, six en dessous.
+  ///
+  /// LES DONNÉES NE SONT PAS DE FANTAISIE, pour la raison déjà écrite en tête
+  /// de ce fichier : des noms de modèle composés et des totaux à deux chiffres
+  /// sont exactement ce qui remplit la ligne. Le DEUXIÈME article n'a AUCUNE
+  /// compatibilité, et c'est voulu : sa carte doit n'avoir ni ligne vide ni
+  /// séparateur orphelin, et c'est sur une capture que ça se voit d'un coup
+  /// d'œil — d'où sa place dans la première rangée, à côté d'une carte qui
+  /// porte la ligne.
+  ///
+  /// CE QUI SE VOIT SUR CES CAPTURES ET QUI N'EST PAS DE CE LOT. À l'échelle
+  /// 2,0, le PRIX se replie sur deux lignes et la coupure tombe au milieu du
+  /// mot : « 109 500 FCF » puis « A ». Le prix d'une carte de pièce ou
+  /// d'accessoire est un `Text` nu, sans le `FittedBox` que porte celui d'un
+  /// véhicule, et un prix est un seul segment insécable. Trois cases sur
+  /// vingt-quatre, toutes à 2,0 ; `bandes_filtres_test.dart` en porte les
+  /// chiffres et dit pourquoi ni `didExceedMaxLines` ni `minIntrinsicWidth` ne
+  /// le voient. La ligne de compatibilité n'y est pour rien — la largeur reçue
+  /// par le prix est la même avec et sans elle —, mais elle est sur la même
+  /// capture, et une capture livrée sans explication fait corriger le mauvais
+  /// objet.
+  for (final cas in <(String, double, double, double)>[
+    // Le réglage par défaut, c'est-à-dire ce que presque tout le monde voit.
+    // Les trois modèles y tiennent sur UNE ligne depuis que la marque est
+    // tombée, et la carte ne grandit que de 15,0 points.
+    ('360-x10', 360, 720, 1.0),
+    // « Grande police » sur le plus petit téléphone. Les trois noms tiennent
+    // encore, mais il leur faut DEUX lignes : c'est la seule des trois
+    // captures où la mention se replie à ce cran-là, et la carte y prend 35,0
+    // points. Le compte d'annonces entières ne bouge pas pour autant — 2 avant
+    // comme après.
+    ('320-x13', 320, 640, 1.3),
+    // Le dernier cran d'Android, où il ne tient plus que DEUX noms sur trois.
+    // C'est la capture qui dit si « Corolla · Tucson  +10 » a l'air d'une
+    // information ou d'un reste — et c'est le seul des trois réglages où le
+    // mécanisme du « +N » calculé sur ce qui est peint change encore le
+    // chiffre affiché.
+    ('360-x20', 360, 720, 2.0),
+  ]) {
+    testWidgets('pièces, ${cas.$1}, ligne de compatibilité', (tester) async {
+      await monterPieces(
+        tester,
+        largeur: cas.$2,
+        hauteur: cas.$3,
+        echelle: cas.$4,
+        mode: Brightness.light,
+      );
+      await capturerArticles(tester, 'pieces-${cas.$1}-clair');
+    });
+
+    testWidgets('accessoires, ${cas.$1}, ligne de compatibilité', (
+      tester,
+    ) async {
+      await monterAccessoires(
+        tester,
+        largeur: cas.$2,
+        hauteur: cas.$3,
+        echelle: cas.$4,
+        mode: Brightness.light,
+      );
+      await capturerArticles(tester, 'accessoires-${cas.$1}-clair');
+    });
+  }
+
+  // Le mode sombre, sur une seule largeur : la ligne de compatibilité est la
+  // seule surface de ces cartes qui emploie `outline`, et c'est en sombre qu'un
+  // gris d'habillage disparaît dans le fond.
+  testWidgets('pièces, 360x720, texte normal, sombre', (tester) async {
+    await monterPieces(
+      tester,
+      largeur: 360,
+      hauteur: 720,
+      echelle: 1.0,
+      mode: Brightness.dark,
+    );
+    await capturerArticles(tester, 'pieces-360-x10-sombre');
+  });
+
+  testWidgets('accessoires, 360x720, texte normal, sombre', (tester) async {
+    await monterAccessoires(
+      tester,
+      largeur: 360,
+      hauteur: 720,
+      echelle: 1.0,
+      mode: Brightness.dark,
+    );
+    await capturerArticles(tester, 'accessoires-360-x10-sombre');
+  });
 }
 
 /// Charge Roboto et les icônes Material depuis le cache du SDK.
@@ -449,6 +754,236 @@ void main() {
 /// Lues là plutôt que copiées dans le dépôt : deux fichiers binaires de plus
 /// dans l'historique pour des métriques de test ne se justifient pas, et
 /// `captures_controle_test.dart` fait déjà ainsi.
+
+// ── Les gabarits des deux autres catalogues ─────────────────────────────────
+
+/// Deux branches peuplées, pour que la bande de filtres des pièces propose
+/// quelque chose : `niveauDiscriminant` ne rend rien quand aucun niveau de
+/// l'arbre n'est partagé. Même jeu que `bandes_filtres_test.dart`.
+final _branches = [
+  const PartCategory(id: 1, name: 'Moteur', parentId: null, hasOwnParts: false),
+  const PartCategory(id: 2, name: 'Filtres', parentId: 1, hasOwnParts: false),
+  const PartCategory(
+    id: 3,
+    name: 'Filtre à huile',
+    parentId: 2,
+    hasOwnParts: true,
+  ),
+  const PartCategory(
+    id: 24,
+    name: 'Freinage',
+    parentId: null,
+    hasOwnParts: false,
+  ),
+  const PartCategory(
+    id: 26,
+    name: 'Plaquettes avant',
+    parentId: 24,
+    hasOwnParts: true,
+  ),
+];
+
+/// Une pièce bâtie sur le gabarit du serveur, nom, prix et compatibilité
+/// remplacés.
+///
+/// Le gabarit est relu et recopié à chaque appel : `jsonDecode` rend des
+/// structures MUTABLES, et quatre pièces construites sur la même carte auraient
+/// partagé leurs sous-objets — la quatrième aurait écrasé la compatibilité de
+/// la première.
+Part _piece({
+  required String nom,
+  required String prix,
+  required Map<String, dynamic> compatibilite,
+}) {
+  final json = _gabarit('test/fixtures/parts_list.json');
+  json['name'] = nom;
+  (json['pricing'] as Map<String, dynamic>)['selling_price'] = prix;
+  json['compatibility'] = compatibilite;
+  json['media'] = <dynamic>[];
+  return Part.fromJson(json);
+}
+
+/// Un accessoire bâti sur le gabarit du serveur. Voir [_piece].
+Accessory _accessoire({
+  required String nom,
+  required String prix,
+  required Map<String, dynamic> compatibilite,
+}) {
+  final json = _gabarit('test/fixtures/accessories_list.json');
+  json['name'] = nom;
+  (json['pricing'] as Map<String, dynamic>)['selling_price'] = prix;
+  json['compatibility'] = compatibilite;
+  json['media'] = <dynamic>[];
+  return Accessory.fromJson(json);
+}
+
+Map<String, dynamic> _gabarit(String chemin) =>
+    jsonDecode(
+          jsonEncode(
+            (jsonDecode(File(chemin).readAsStringSync())
+                as Map<String, dynamic>)['data'][0],
+          ),
+        )
+        as Map<String, dynamic>;
+
+/// Monte une liste d'articles dans la coque de l'application.
+///
+/// Même coque que `monter()` pour les véhicules, et pour la même raison : une
+/// capture faite sur une page nue lui donne 112 points de plus que ce que
+/// l'application lui laisse, et on y juge une densité que l'écran ne produit
+/// pas. L'en-tête de ce fichier raconte ce que cette erreur a coûté.
+Future<void> _monterArticles(
+  WidgetTester tester, {
+  required double largeur,
+  required double hauteur,
+  required double echelle,
+  required Brightness mode,
+  required int onglet,
+  required Widget page,
+  required CatalogRepository depot,
+  required List<Override> surcharges,
+}) async {
+  final taille = Size(largeur, hauteur);
+  tester.view.physicalSize = taille;
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+  await tester.binding.setSurfaceSize(taille);
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+
+  await tester.pumpWidget(
+    ProviderScope(
+      key: UniqueKey(),
+      overrides: [
+        authProvider.overrideWith(
+          (_) => _FauxAuth(
+            const AuthState(
+              type: AuthType.staff,
+              staffUser: StaffUser(
+                id: 1,
+                name: 'Administrateur',
+                email: 'admin@autoparc.bf',
+                role: 'admin',
+              ),
+            ),
+          ),
+        ),
+        catalogRepositoryProvider.overrideWithValue(depot),
+        catalogRefsProvider.overrideWith(
+          (_) async => const CatalogRefs(
+            brands: [],
+            vehicleModels: [],
+            trims: [],
+            engineTypes: [],
+            drivetrains: [],
+            colors: [],
+            features: [],
+            locations: [],
+          ),
+        ),
+        ...surcharges,
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        locale: localeFr,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: themeAutoParc(mode),
+        home: MediaQuery(
+          data: MediaQueryData(
+            size: taille,
+            textScaler: TextScaler.linear(echelle),
+            padding: const EdgeInsets.only(top: 24, bottom: 48),
+            viewPadding: const EdgeInsets.only(top: 24, bottom: 48),
+          ),
+          child: Builder(
+            builder: (context) {
+              final l10n = AppLocalizations.of(context);
+              return Scaffold(
+                body: page,
+                bottomNavigationBar: BarreNavigationPrincipale(
+                  selectedIndex: onglet,
+                  destinations: [
+                    NavigationDestination(
+                      icon: const Icon(Icons.home_outlined),
+                      label: l10n.commonHome,
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(Icons.directions_car_outlined),
+                      label: l10n.commonVehicles,
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(Icons.tune_outlined),
+                      label: l10n.commonAccessories,
+                    ),
+                    NavigationDestination(
+                      icon: const Icon(Icons.settings_outlined),
+                      label: l10n.commonParts,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    ),
+  );
+  for (var i = 0; i < 5; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
+/// Un dépôt qui rend des pièces et des accessoires fixés, sans réseau.
+class _DepotArticles implements CatalogRepository {
+  _DepotArticles({this.pieces = const [], this.accessoires = const []});
+  final List<Part> pieces;
+  final List<Accessory> accessoires;
+
+  @override
+  Future<PaginatedResponse<Part>> getParts({
+    int page = 1,
+    int perPage = 20,
+    String? search,
+    String? oem,
+    int? categoryId,
+    String? type,
+    String? condition,
+    bool inStockOnly = false,
+    double? priceMax,
+    int? vehicleModelId,
+    int? year,
+    String? city,
+    int? locationId,
+  }) async => PaginatedResponse<Part>(
+    data: pieces,
+    currentPage: 1,
+    lastPage: 1,
+    total: pieces.length,
+    perPage: perPage,
+  );
+
+  @override
+  Future<PaginatedResponse<Accessory>> getAccessories({
+    int page = 1,
+    int perPage = 20,
+    String? search,
+    String? category,
+    String? manufacturerId,
+    double? priceMax,
+    int? vehicleModelId,
+    String? city,
+    int? locationId,
+  }) async => PaginatedResponse<Accessory>(
+    data: accessoires,
+    currentPage: 1,
+    lastPage: 1,
+    total: accessoires.length,
+    perPage: perPage,
+  );
+
+  @override
+  Object? noSuchMethod(Invocation invocation) => null;
+}
 
 /// Un dépôt qui rend le parc d'échantillon, sans réseau.
 class _Depot implements CatalogRepository {

@@ -210,13 +210,19 @@ void main() {
         ),
         'Hyundai Tucson',
       ),
-      'véhicule jamais publié': (
-        VehicleDetailPage(
-          vehicleId: _idVehicule,
-          initialVehicle: _vehicule(publie: false),
-        ),
-        'Hyundai Tucson',
-      ),
+      // « véhicule jamais publié » A ÉTÉ RETIRÉ DE CETTE LISTE, et le cas
+      // inverse est asserté plus bas : un véhicule non publié DOIT porter le
+      // bouton.
+      //
+      // Ce cas-là était le défaut, pas la garde. Personne ne pose jamais
+      // `published_at` — l'action existe côté serveur mais aucun écran ne
+      // l'appelle —, donc exiger ce champ masquait le bouton sur TOUS les
+      // véhicules. Trouvé par le propriétaire en testant le partage sur la
+      // production : sa seule annonce, une Mazda `in_stock` et à vendre,
+      // n'avait pas de bouton et rendait 404.
+      //
+      // Le serveur a bougé le premier : `catalogueMontre()` ne regarde plus
+      // que le statut.
       'pièce désactivée': (
         PartDetailPage(partId: _idPiece, initialPart: _piece(actif: false)),
         'Filtre à huile',
@@ -256,6 +262,40 @@ void main() {
         expect(find.byIcon(Icons.share_outlined), findsNothing);
       });
     }
+
+    testWidgets('mais un véhicule JAMAIS PUBLIÉ garde le sien',
+        (tester) async {
+      // Le cas qui a coûté la fonction entière, retourné en garde.
+      //
+      // Exiger `published_at` masquait le bouton sur TOUS les véhicules,
+      // puisque rien ne pose jamais ce champ. Si quelqu'un remet un jour
+      // cette condition — elle a l'air raisonnable, et c'est ce qui la rend
+      // dangereuse —, ce test tombe au lieu de laisser la fonction mourir en
+      // silence une seconde fois.
+      await poser(
+        tester,
+        VehicleDetailPage(
+          vehicleId: _idVehicule,
+          initialVehicle: _vehicule(publie: false),
+        ),
+        session: _client(),
+      );
+
+      expect(
+        find.textContaining('Hyundai Tucson', findRichText: true),
+        findsWidgets,
+        reason: 'La fiche ne s\'est pas dessinée : rien n\'a été mesuré.',
+      );
+
+      expect(
+        find.byTooltip('Partager'),
+        findsOneWidget,
+        reason: 'Le bouton a de nouveau disparu sur un véhicule non publié. '
+            'Sa page existe — `catalogueMontre()` ne regarde que le statut — '
+            'et aucun écran de cette application ne sait publier quoi que ce '
+            'soit : exiger ce champ rend le partage mort pour tout le parc.',
+      );
+    });
   });
 
   /// Le pendant du groupe ci-dessus, sur le seul cas qui lui ressemble sans en

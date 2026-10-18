@@ -16,6 +16,10 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:auto/core/utils/currency_format.dart';
+import 'package:auto/l10n/app_localizations.dart';
+
+import 'support/langues.dart';
 import 'support/polices.dart';
 
 /// La GÉOMÉTRIE des fiches du catalogue : ce qui est peint, pas ce qui est
@@ -282,7 +286,16 @@ void main() {
     required double echelle,
     required Brightness mode,
     required List<Vehicle> vehicules,
+    Locale locale = localeFr,
   }) async {
+    // Le format des montants est un réglage de module, posé par
+    // `AutoParcApp.build` dans l'application. Une coque de banc doit donc le
+    // poser elle-même : sans cette ligne, le tableau mesurerait une page
+    // anglaise avec des prix français, et le prix est la ligne la plus large
+    // de la carte. Le groupe « Le prix suit la langue » de
+    // `bandes_filtres_test.dart` refuse qu'on l'oublie.
+    definirLocaleMontants(locale);
+
     tester.view.physicalSize = ecran;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -329,6 +342,9 @@ void main() {
         ],
         child: MaterialApp(
           theme: themeAutoParc(mode),
+          locale: locale,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: MediaQuery(
             data: MediaQueryData(
               size: ecran,
@@ -336,31 +352,39 @@ void main() {
               padding: const EdgeInsets.only(top: 24, bottom: 48),
               viewPadding: const EdgeInsets.only(top: 24, bottom: 48),
             ),
+            // Les quatre intitulés sont LUS dans `AppLocalizations`, comme
+            // `_AppShell` les lit : une copie en dur serait restée française
+            // dans la coque anglaise, et la barre — qui est le chrome dont on
+            // retire les 112 points — n'aurait pas été celle de
+            // l'application.
             child: Builder(
-              builder: (context) => const Scaffold(
-                body: VehicleListPage(),
-                bottomNavigationBar: BarreNavigationPrincipale(
-                  selectedIndex: 1,
-                  destinations: [
-                    NavigationDestination(
-                      icon: Icon(Icons.home_outlined),
-                      label: 'Accueil',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.directions_car_outlined),
-                      label: 'Véhicules',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.tune_outlined),
-                      label: 'Accessoires',
-                    ),
-                    NavigationDestination(
-                      icon: Icon(Icons.settings_outlined),
-                      label: 'Pièces',
-                    ),
-                  ],
-                ),
-              ),
+              builder: (context) {
+                final l10n = AppLocalizations.of(context);
+                return Scaffold(
+                  body: const VehicleListPage(),
+                  bottomNavigationBar: BarreNavigationPrincipale(
+                    selectedIndex: 1,
+                    destinations: [
+                      NavigationDestination(
+                        icon: const Icon(Icons.home_outlined),
+                        label: l10n.commonHome,
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.directions_car_outlined),
+                        label: l10n.commonVehicles,
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.tune_outlined),
+                        label: l10n.commonAccessories,
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.settings_outlined),
+                        label: l10n.commonParts,
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -487,7 +511,11 @@ void main() {
 
   // ── Le garde-fou de la coque ──────────────────────────────────────────────
 
-  testWidgets('la coque retire bien ses 112 points à la liste', (tester) async {
+  for (final langue in langues.entries) {
+  testWidgets(
+      'la coque retire bien ses 112 points à la liste, en ${langue.key}', (
+    tester,
+  ) async {
     // LE DÉFAUT QUE LE RELECTEUR A RELEVÉ, rendu impossible à reconduire. La
     // version précédente comptait les annonces contre 512,0 points à 360
     // d'écran ; la liste n'en a que 400,0. L'écart venait d'ici.
@@ -501,6 +529,7 @@ void main() {
       echelle: 1.0,
       mode: Brightness.light,
       vehicules: [vehicule()],
+      locale: langue.value,
     );
 
     final barre = tester.renderObject<RenderBox>(find.byType(NavigationBar));
@@ -541,6 +570,7 @@ void main() {
           'les réécrire.',
     );
   });
+  }
 
   // ── LE TABLEAU DE TRONCATURE, remesuré à chaque exécution ─────────────────
 
@@ -548,7 +578,9 @@ void main() {
     for (final ecran in ecrans.entries) {
       for (final echelle in echelles) {
         for (final mode in modes.entries) {
-          testWidgets('${ecran.key}, texte x$echelle, ${mode.key}', (
+          for (final langue in langues.entries) {
+          testWidgets(
+              '${ecran.key}, texte x$echelle, ${mode.key}, ${langue.key}', (
             tester,
           ) async {
             final exception = await poserPage(
@@ -557,6 +589,7 @@ void main() {
               echelle: echelle,
               mode: mode.value,
               vehicules: List.generate(4, (_) => vehicule()),
+              locale: langue.value,
             );
 
             final mesures = lignes(tester);
@@ -576,7 +609,8 @@ void main() {
 
             // ignore: avoid_print
             print(
-              '── troncature ${ecran.key}, x$echelle, ${mode.key} ──'
+              '── troncature ${ecran.key}, x$echelle, ${mode.key}, '
+              '${langue.key} ──'
               '\n   ${rapport.join('\n   ')}',
             );
 
@@ -653,9 +687,10 @@ void main() {
               isNull,
               reason:
                   'Débordement en ${ecran.key} à l\'échelle $echelle, '
-                  'thème ${mode.key}.',
+                  'thème ${mode.key}, en ${langue.key}.',
             );
           });
+          }
         }
       }
     }
@@ -1164,6 +1199,16 @@ void main() {
       Vehicle v,
       String quoi,
     ) async {
+      // LES DEUX LANGUES, et c'est ce que le lot de traduction ajoute ici. La
+      // carte elle-même n'est pas encore traduite — son badge dit toujours
+      // « Vente & Location » —, mais SON PRIX, LUI, CHANGE DE PONCTUATION :
+      // « 99 999 999 FCFA » en français, où les milliers sont séparés par une
+      // espace fine insécable U+202F, devient « 99,999,999 FCFA » en anglais.
+      // Or le prix est la ligne la plus large de la carte et celle qui ne doit
+      // JAMAIS se couper — « 9 500 000 FCFA » rogné en « 9 500 00… » se lit
+      // comme un autre prix. Mesurer une seule langue laissait l'autre
+      // ponctuation sans aucun banc.
+      for (final langue in langues.values) {
       for (final echelle in [1.0, 2.0]) {
         final exception = await poserPage(
           tester,
@@ -1171,6 +1216,7 @@ void main() {
           echelle: echelle,
           mode: Brightness.light,
           vehicules: [v],
+          locale: langue,
         );
 
         expect(exception, isNull, reason: '$quoi fait déborder la carte.');
@@ -1201,6 +1247,7 @@ void main() {
                 'et sera rogné en silence.',
           );
         }
+      }
       }
     }
 
@@ -1408,6 +1455,26 @@ void main() {
         ProviderScope(
           child: MaterialApp(
             theme: themeAutoParc(Brightness.light),
+            // LES DÉLÉGUÉS ET LA LOCALE, et cette coque s'en passait.
+            //
+            // Elle a tenu tant que `VehicleCard` n'avait aucune chaîne
+            // traduite. Le jour où le suffixe du tarif de location est passé à
+            // `commonPerDaySuffix` — « /j » était resté en dur derrière un
+            // montant qui, lui, suivait déjà la langue —, `_PriceRow` a appelé
+            // `AppLocalizations.of(context)`, qui rend un objet NON NUL par
+            // réglage de `l10n.yaml` : sans délégué, le `!` du code généré lève
+            // « Null check operator used on a null value » et la carte ne se
+            // construit plus du tout.
+            //
+            // C'est le bon sens de l'échec — une coque sans délégué est un
+            // défaut de câblage, pas un cas d'exécution —, et c'est aussi
+            // pourquoi `test/support/langues.dart` pose la règle : toute coque
+            // qui monte un écran traduit NOMME sa locale. Le français ici,
+            // parce que les chiffres de ce groupe sont mesurés sur la
+            // ponctuation française.
+            locale: localeFr,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: MediaQuery(
               data: MediaQueryData(textScaler: TextScaler.linear(echelle)),
               child: Scaffold(
@@ -1692,24 +1759,52 @@ void main() {
     /// Si on veut récupérer ces deux cases, le seul levier est de refusionner
     /// les bandes — pas de les amincir : 48 est le plancher de cible tactile,
     /// et les 44 points d'origine l'enfreignaient déjà.
+    /// LES DEUX LANGUES, DOUZE CASES CHACUNE.
+    ///
+    /// Le lot de traduction a rendu la ponctuation des prix dépendante de la
+    /// langue : « 99 999 999 FCFA » en français — espace fine insécable U+202F
+    /// entre les milliers — devient « 99,999,999 FCFA » en anglais. Le prix est
+    /// la ligne la plus large de la carte et celle que `_PrixAjuste` réduit
+    /// quand elle ne tient pas, donc une largeur différente peut changer le
+    /// corps retenu, donc la HAUTEUR de la rangée, donc le compte d'annonces
+    /// entières. Rien ne permettait de le supposer : il fallait le mesurer.
+    ///
+    /// CE QUE LA MESURE DONNE, et les deux choses ne doivent pas être
+    /// confondues :
+    ///
+    /// — les douze COMPTES sont identiques dans les deux langues, et c'est ce
+    ///   que le tableau ci-dessous verrouille ;
+    /// — les HAUTEURS DE RANGÉE, elles, ne le sont pas tout à fait. Trois cases
+    ///   sur douze rendent un point de moins en anglais : 360 × 1,3 passe de
+    ///   282,2 à 281,2, 360 × 1,5 de 303,2 à 302,2, et 411 × 2,0 de 376,5 à
+    ///   375,5. Les neuf autres sont au centième près. L'écart ne franchit
+    ///   aucun seuil — il faudrait de 11 à 54 points pour gagner une annonce —
+    ///   mais il est réel, et il dit que la coïncidence des comptes n'est pas
+    ///   une identité de mise en page.
+    ///
+    /// La clé du tableau porte donc la langue, pour que la case qui bougera se
+    /// nomme.
     final attendu = <String, int>{
-      '320x640-1.0': 2,
-      '320x640-1.3': 0,
-      '320x640-1.5': 0,
-      '320x640-2.0': 0,
-      '360x720-1.0': 2,
-      '360x720-1.3': 2,
-      '360x720-1.5': 2,
-      '360x720-2.0': 0,
-      '411x923-1.0': 4,
-      '411x923-1.3': 2,
-      '411x923-1.5': 2,
-      '411x923-2.0': 2,
+      '320x640-1.0-fr': 2, '320x640-1.0-en': 2,
+      '320x640-1.3-fr': 0, '320x640-1.3-en': 0,
+      '320x640-1.5-fr': 0, '320x640-1.5-en': 0,
+      '320x640-2.0-fr': 0, '320x640-2.0-en': 0,
+      '360x720-1.0-fr': 2, '360x720-1.0-en': 2,
+      '360x720-1.3-fr': 2, '360x720-1.3-en': 2,
+      '360x720-1.5-fr': 2, '360x720-1.5-en': 2,
+      '360x720-2.0-fr': 0, '360x720-2.0-en': 0,
+      '411x923-1.0-fr': 4, '411x923-1.0-en': 4,
+      '411x923-1.3-fr': 2, '411x923-1.3-en': 2,
+      '411x923-1.5-fr': 2, '411x923-1.5-en': 2,
+      '411x923-2.0-fr': 2, '411x923-2.0-en': 2,
     };
 
     for (final ecran in ecrans.entries) {
       for (final echelle in echelles) {
-        testWidgets('${ecran.key}, texte x$echelle : la rangée et le compte', (
+        for (final langue in langues.entries) {
+        testWidgets(
+            '${ecran.key}, texte x$echelle, ${langue.key} : la rangée et le '
+            'compte', (
           tester,
         ) async {
           await poserPage(
@@ -1718,6 +1813,7 @@ void main() {
             echelle: echelle,
             mode: Brightness.light,
             vehicules: List.generate(8, (_) => vehicule()),
+            locale: langue.value,
           );
 
           final hauteurListe = utile(tester);
@@ -1771,7 +1867,7 @@ void main() {
 
           // ignore: avoid_print
           print(
-            '── densité ${ecran.key}, x$echelle : '
+            '── densité ${ecran.key}, x$echelle, ${langue.key} : '
             'rangée ${hauteurRangee.toStringAsFixed(1)}, '
             'pas ${(hauteurRangee + ecart).toStringAsFixed(1)}, '
             'première à ${r.first.haut.toStringAsFixed(1)}, '
@@ -1781,16 +1877,17 @@ void main() {
 
           expect(
             n,
-            attendu['${ecran.key}-$echelle'],
+            attendu['${ecran.key}-$echelle-${langue.key}'],
             reason:
                 'La densité a changé en ${ecran.key} à l\'échelle '
-                '$echelle : rangée de ${hauteurRangee.toStringAsFixed(1)} '
+                '$echelle, en ${langue.key} : rangée de ${hauteurRangee.toStringAsFixed(1)} '
                 'points, première à ${r.first.haut.toStringAsFixed(1)}, pour '
                 '${hauteurListe.toStringAsFixed(1)} de liste. C\'est le '
                 'chiffre que ce lot avait pour objet — s\'il baisse, '
                 'dites-le avant de le livrer.',
           );
         });
+        }
       }
     }
   });

@@ -7,6 +7,7 @@ import '../../../../core/providers/shell_scaffold_provider.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/brand_logo.dart';
 import '../../../../core/widgets/catalog_image.dart';
+import '../../../../core/widgets/navigation_bar_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../catalog/data/models/part.dart';
 import '../../../catalog/data/models/vehicle.dart';
@@ -16,6 +17,7 @@ import '../../../garage/presentation/widgets/engine_prompt.dart';
 import '../../../garage/presentation/widgets/mileage_dialog.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
 import '../providers/home_providers.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Accueil.
 ///
@@ -38,12 +40,12 @@ class HomePage extends ConsumerWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          tooltip: 'Menu',
+          tooltip: AppLocalizations.of(context).commonMenuTooltip,
           onPressed: () =>
               ref.read(shellScaffoldKeyProvider).currentState?.openDrawer(),
         ),
         titleSpacing: 0,
-        title: const Text('Accueil'),
+        title: Text(AppLocalizations.of(context).commonHome),
         actions: const [NotificationIconButton()],
       ),
       body: RefreshIndicator(
@@ -207,7 +209,38 @@ class _VehicleCard extends ConsumerWidget {
                     ),
                     if (vehicle.mileageKm != null)
                       Text(
-                        '${_fmtKm(vehicle.mileageKm!)} km',
+                        // Le compteur passe par le formateur de la locale
+                        // active. Il était ponctué ici par une expression
+                        // régulière et une espace ORDINAIRE U+0020, quand le
+                        // catalogue employait l'espace fine insécable U+202F
+                        // de `decimalPattern('fr_FR')` : le même kilométrage
+                        // changeait de forme entre l'accueil et la fiche.
+                        //
+                        // LE FRANÇAIS A DONC BOUGÉ, AU RÉGLAGE PAR DÉFAUT, ET
+                        // EN GÉOMÉTRIE. Ce n'est pas qu'un changement de
+                        // caractère : U+202F est plus étroite que l'espace
+                        // ordinaire. « 246 965 km » réclame 65,49 points avec
+                        // la nouvelle ponctuation contre 66,97 avec
+                        // l'ancienne, soit 1,49 point RENDU — et 1,93 au
+                        // deuxième cran d'Android, 2,23 au troisième, 2,97 au
+                        // dernier. Les quatre écarts sont identiques à 320,
+                        // 360 et 411 points de large, parce que ce paragraphe
+                        // n'est pas borné : il est posé nu dans la rangée,
+                        // donc il prend sa largeur naturelle et c'est
+                        // l'`Expanded` du surnom qui encaisse la différence.
+                        // Celui-ci reçoit 154,51 points à 320, 194,51 à 360 et
+                        // 245,51 à 411, au réglage par défaut.
+                        //
+                        // Le surnom s'ellipse par construction, donc 1,49
+                        // point de plus ne se voit pas comme un gain ; il est
+                        // écrit ici pour que personne ne découvre l'écart en
+                        // cherchant autre chose. Le sens du changement est la
+                        // COHÉRENCE : U+202F est la ponctuation française des
+                        // milliers, et c'est déjà celle du reste de
+                        // l'application.
+                        AppLocalizations.of(context).commonMileageKm(
+                          formatEntier(vehicle.mileageKm!),
+                        ),
                         style: Theme.of(context).textTheme.bodySmall
                             ?.copyWith(color: cs.onSurfaceVariant),
                       ),
@@ -239,7 +272,7 @@ class _VehicleCard extends ConsumerWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            _libelle(d),
+                            _libelle(AppLocalizations.of(context), d),
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: d.overdue ? cs.error : cs.onSurfaceVariant,
                               fontWeight:
@@ -265,7 +298,7 @@ class _VehicleCard extends ConsumerWidget {
                 OutlinedButton.icon(
                   onPressed: () => showMileageDialog(context, ref, vehicle),
                   icon: const Icon(Icons.speed_outlined, size: 18),
-                  label: const Text('Mettre à jour le kilométrage'),
+                  label: Text(AppLocalizations.of(context).homeUpdateMileage),
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(38),
                   ),
@@ -310,7 +343,7 @@ class _UrgentDeadline extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              _libelle(deadline),
+              _libelle(AppLocalizations.of(context), deadline),
               style: TextStyle(
                 color: encre,
                 fontSize: 13,
@@ -349,7 +382,7 @@ class _NoDeadline extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Renseignez vos échéances pour être prévenu à temps',
+                AppLocalizations.of(context).homeNoDeadlinePrompt,
                 style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant),
               ),
             ),
@@ -388,7 +421,7 @@ class _GarageUnavailable extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Votre garage n\'a pas pu être chargé',
+                    AppLocalizations.of(context).homeGarageUnavailable,
                     style: Theme.of(context).textTheme.bodyMedium
                         ?.copyWith(fontWeight: FontWeight.w500),
                   ),
@@ -401,7 +434,10 @@ class _GarageUnavailable extends StatelessWidget {
                 ],
               ),
             ),
-            TextButton(onPressed: onRetry, child: const Text('Réessayer')),
+            TextButton(
+              onPressed: onRetry,
+              child: Text(AppLocalizations.of(context).commonRetry),
+            ),
           ],
         ),
       ),
@@ -430,14 +466,13 @@ class _AddVehicleCard extends StatelessWidget {
             Icon(Icons.directions_car_outlined, size: 34, color: cs.primary),
             const SizedBox(height: 10),
             Text(
-              'Enregistrez votre véhicule',
+              AppLocalizations.of(context).homeAddVehicleTitle,
               style: Theme.of(context).textTheme.titleSmall
                   ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
             Text(
-              'Visite technique, assurance, vidange : nous vous prévenons '
-                  'avant l\'échéance.',
+              AppLocalizations.of(context).homeAddVehicleBody,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall
                   ?.copyWith(color: cs.onSurfaceVariant),
@@ -446,7 +481,7 @@ class _AddVehicleCard extends StatelessWidget {
             FilledButton(
               onPressed: () => context.push('/garage/add'),
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44)),
-              child: const Text('Ajouter ma voiture'),
+              child: Text(AppLocalizations.of(context).homeAddVehicleCta),
             ),
           ],
         ),
@@ -464,6 +499,7 @@ class _CompatiblePartsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final parts = ref.watch(homeCompatiblePartsProvider(vehicle.id));
+    final l10n  = AppLocalizations.of(context);
 
     return parts.maybeWhen(
       // Une bande vide ou en erreur disparaît : mieux vaut rien qu'un cadre
@@ -474,17 +510,70 @@ class _CompatiblePartsSection extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _SectionTitle(
-                  'Pièces pour ${vehicle.identity.model ?? 'votre véhicule'}',
+                  l10n.homeCompatiblePartsSection(
+                    vehicle.identity.model ??
+                        l10n.homeCompatiblePartsFallbackModel,
+                  ),
                   onSeeAll: () => context.push('/garage/${vehicle.id}/parts',
                       extra: vehicle),
                 ),
-                SizedBox(
-                  height: 132,
-                  child: ListView.separated(
+                // LA HAUTEUR VIENT DU CONTENU, et plus d'un nombre écrit ici.
+                //
+                // `SizedBox(height: 132)` DÉBORDAIT, dans dix-huit
+                // configurations sur vingt-quatre. La bande réclame 142,00
+                // points à l'échelle de texte 1,3, 152,00 à 1,5 et 174,00 à
+                // 2,0, soit 10,0, 20,0 et 42,0 points de débordement — aux
+                // trois largeurs d'écran du parc, et à l'identique dans les
+                // deux langues. Flutter peignait sa bande rayée en travers du
+                // prix de la pièce.
+                //
+                // LE CHIFFRE DE 2,0 ÉTAIT FAUX ICI, et il penchait du côté qui
+                // justifiait le changement : ce commentaire annonçait 76
+                // points de débordement. Remesuré sur la bande montée dans sa
+                // coque, c'est 42,0 — 174,00 réclamés contre 132 posés. Le
+                // relecteur avait raison, et les deux autres crans (10,0 et
+                // 20,0) se reproduisent au centième.
+                //
+                // ET ELLE RÉTRÉCIT AU RÉGLAGE PAR DÉFAUT, ce qui n'était dit
+                // nulle part : à l'échelle 1,0 le contenu ne réclame que
+                // 127,00 points, donc `IntrinsicHeight` REND 5,0 points aux
+                // sections du dessous, aux trois largeurs. Rien n'est coupé
+                // pour autant — c'est le `SizedBox` qui était trop généreux à
+                // ce cran-là, du même nombre écrit à la main qui débordait aux
+                // trois autres.
+                //
+                // LE DÉFAUT EST ANTÉRIEUR À LA TRADUCTION, et il n'était pas
+                // mesuré. Le seul banc qui montait l'accueil le montait avec
+                // une session du PERSONNEL ; or le personnel n'a pas de
+                // garage, `_MyVehicleSection` disparaît pour lui, et cette
+                // bande n'existait donc dans aucun rendu de test. Elle a
+                // surgi au premier banc monté en session CLIENT.
+                //
+                // C'est exactement le défaut que `_DealsSection` a corrigé un
+                // lot plus tôt — son commentaire raconte le même
+                // « ajusté au contenu réel » qui était faux —, et la
+                // correction est la même, pour la même raison : la hauteur
+                // juste dépend de la police, de la langue et du réglage
+                // système, elle se mesure et ne se décide pas. Un `ListView`
+                // est un viewport, il ne sait pas dire la hauteur de ce qu'il
+                // contient, et c'est ce silence qui obligeait à l'écrire à la
+                // main.
+                //
+                // Le coût d'`IntrinsicHeight` est une seconde passe de mise en
+                // page, et il est borné : `homeCompatiblePartsProvider` fait
+                // `parts.take(6)`.
+                IntrinsicHeight(
+                  child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    itemCount: list.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (_, i) => _PartTile(part: list[i]),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var i = 0; i < list.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 8),
+                          _PartTile(part: list[i]),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -534,12 +623,43 @@ class _PartTile extends StatelessWidget {
                       style: const TextStyle(fontSize: 12, height: 1.25),
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      formatXof(part.pricing.sellingPrice),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: cs.primary,
+                    // LE PRIX RÉTRÉCIT, IL NE SE COUPE PAS, et c'est la
+                    // décision déjà prise pour les cartes du catalogue :
+                    // « un prix rendu plus petit reste VRAI, un prix coupé
+                    // devient FAUX ».
+                    //
+                    // MESURE DU DÉFAUT. La tuile fait 118 points de large en
+                    // dur, soit 102,0 de texte. À l'échelle de texte 2,0,
+                    // « 3 000 FCFA » en réclame 106,0 et « 3,000 FCFA » —
+                    // l'anglais, dont la virgule est plus large que l'espace
+                    // fine insécable — 108,9. Or un prix est un seul segment
+                    // INSÉCABLE : U+202F comme U+00A0 interdisent la coupure,
+                    // et c'est voulu, un prix cassé en deux lignes étant
+                    // illisible. Le paragraphe ne se déclare donc pas tronqué
+                    // — `didExceedMaxLines` reste faux — et les derniers
+                    // glyphes sortaient de la tuile pour être rognés SANS
+                    // ELLIPSE, donc sans qu'aucun signe n'avertisse que le
+                    // nombre lu n'est pas le prix.
+                    //
+                    // Le défaut existait avant la traduction, aux trois
+                    // largeurs d'écran ; l'anglais l'aggrave de 2,9 points.
+                    //
+                    // `BoxFit.scaleDown` ne réduit que lorsqu'il faut : au
+                    // réglage par défaut le prix ne réclame que 62,5 points
+                    // sur les 102,0 disponibles, et n'est pas touché. Ce n'est
+                    // qu'à partir du moment où il dépasse qu'il rétrécit, et
+                    // jamais plus qu'il ne faut.
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        formatXof(part.pricing.sellingPrice),
+                        maxLines: 1,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: cs.primary,
+                        ),
                       ),
                     ),
                   ],
@@ -581,7 +701,7 @@ class _DealsSection extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _SectionTitle(
-                  'Bonnes affaires',
+                  AppLocalizations.of(context).homeDealsSection,
                   onSeeAll: () => context.go('/vehicles'),
                 ),
                 // La hauteur vient du contenu, et plus d'un nombre écrit ici.
@@ -718,14 +838,34 @@ class _DealTile extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: 4),
-                    Text(
-                      c.salePrice != null
-                          ? formatXof(c.salePrice)
-                          : '${formatXof(c.rentalDailyRate)}/j',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: cs.primary,
+                    // MÊME DÉCISION QUE LA TUILE DE PIÈCE, ET MÊME MESURE.
+                    // La tuile fait 168 points de large, soit 150,0 de texte.
+                    // À l'échelle 2,0, « 99,999,999 FCFA » — huit chiffres,
+                    // la borne du catalogue — réclame 178,1 points en un seul
+                    // segment insécable : il ne peut donc pas se replier, le
+                    // paragraphe ne se déclare pas tronqué, et les derniers
+                    // glyphes sortaient de la tuile pour être rognés SANS
+                    // ELLIPSE — donc sans qu'aucun signe n'avertisse que le
+                    // nombre lu n'est pas le prix. Un prix coupé devient FAUX ;
+                    // réduit, il reste VRAI.
+                    //
+                    // Au réglage par défaut rien ne change : le même prix à
+                    // huit chiffres ne réclame que 96,5 points sur les 150,0
+                    // disponibles.
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        c.salePrice != null
+                            ? formatXof(c.salePrice)
+                            : '${formatXof(c.rentalDailyRate)}'
+                                  '${AppLocalizations.of(context).commonPerDaySuffix}',
+                        maxLines: 1,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: cs.primary,
+                        ),
                       ),
                     ),
                   ],
@@ -748,12 +888,36 @@ class _BrowseSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 18),
-      child: Row(
+      // LA MÊME BORNE D'ÉCHELLE QUE LA BARRE DU BAS, et la même constante —
+      // voir `echelleMaxLibellesDestinations`.
+      //
+      // LE DÉFAUT MESURÉ. Les trois tuiles se partagent la rangée à parts
+      // égales : 93,3 points chacune à 320 points d'écran, 106,7 à 360, et
+      // cette largeur ne dépend pas du réglage de texte. À l'échelle 2,0,
+      // « Accessoires » réclame 120,9 points et « Accessories » 121,1 — en un
+      // seul mot, donc en un seul segment INSÉCABLE. Un mot plus large que sa
+      // ligne est posé seul et déborde horizontalement sans que le paragraphe
+      // se déclare tronqué : `didExceedMaxLines` restait faux, et les derniers
+      // glyphes étaient rognés EN SILENCE. Le défaut est antérieur à la
+      // traduction et presque identique dans les deux langues — l'anglais y
+      // perd 0,2 point de plus.
+      //
+      // Sous la borne, le même mot ne demande plus que 77,9 points pour les
+      // 93,3 reçus — exactement la largeur qu'il demande dans la barre du bas,
+      // puisque c'est la même borne et le même corps 12. Il tient donc aux
+      // trois largeurs, avec de la marge. Le compromis est celui qui était
+      // déjà assumé pour la barre du bas : quelqu'un qui a grossi ses polices
+      // lit ces trois intitulés plus petits qu'il ne l'a demandé, et les lit
+      // ENTIERS. Les icônes, elles, ne sont pas touchées — elles tirent leur
+      // taille du thème.
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: echelleMaxLibellesDestinations,
+        child: Row(
         children: [
           Expanded(
             child: _BrowseTile(
               icon: Icons.directions_car_outlined,
-              label: 'Véhicules',
+              label: AppLocalizations.of(context).commonVehicles,
               onTap: () => context.go('/vehicles'),
             ),
           ),
@@ -763,7 +927,7 @@ class _BrowseSection extends StatelessWidget {
           Expanded(
             child: _BrowseTile(
               icon: Icons.tune_outlined,
-              label: 'Accessoires',
+              label: AppLocalizations.of(context).commonAccessories,
               onTap: () => context.go('/accessories'),
             ),
           ),
@@ -771,11 +935,12 @@ class _BrowseSection extends StatelessWidget {
           Expanded(
             child: _BrowseTile(
               icon: Icons.settings_outlined,
-              label: 'Pièces',
+              label: AppLocalizations.of(context).commonParts,
               onTap: () => context.go('/parts'),
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -828,7 +993,7 @@ class _NeedPrompt extends ConsumerWidget {
         child: TextButton.icon(
           onPressed: () => context.push('/needs/new'),
           icon: const Icon(Icons.help_outline, size: 18),
-          label: const Text('Vous ne trouvez pas ? Dites-nous ce que vous cherchez'),
+          label: Text(AppLocalizations.of(context).homeNeedPrompt),
           style: TextButton.styleFrom(
             textStyle: const TextStyle(fontSize: 12.5),
           ),
@@ -868,7 +1033,7 @@ class _SectionTitle extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
                 textStyle: const TextStyle(fontSize: 12.5),
               ),
-              child: const Text('Tout voir'),
+              child: Text(AppLocalizations.of(context).homeSeeAll),
             ),
         ],
       ),
@@ -889,9 +1054,6 @@ class _SectionSkeleton extends StatelessWidget {
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
-String _fmtKm(int km) =>
-    km.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]} ');
-
 IconData _iconFor(String kind) => switch (kind) {
       'technical_inspection' => Icons.fact_check_outlined,
       'insurance'            => Icons.shield_outlined,
@@ -899,21 +1061,30 @@ IconData _iconFor(String kind) => switch (kind) {
       _                      => Icons.event_outlined,
     };
 
-/// « Visite technique dans 21 jours », « Vidange dépassée de 300 km ».
-String _libelle(VehicleDeadline d) {
-  if (d.detail != null) return '${d.label} — ${d.detail}';
+/// « Visite technique dans 21 jours », « Roadworthiness test in 21 days ».
+///
+/// LE LIBELLÉ ET LE DÉTAIL VIENNENT DU SERVEUR et ne sont pas traduits par ce
+/// lot : `label` vaut « Visite technique », « Assurance », « Vidange », et
+/// `detail` vaut « dépassée de 300 km ». En anglais, cette fonction rend donc
+/// « Assurance expires today » — la phrase est traduite, le nom de l'échéance
+/// non. C'est l'état attendu jusqu'à la vague serveur, et c'est écrit ici plutôt
+/// que découvert sur une capture d'écran.
+///
+/// Le pluriel passe par ICU plutôt que par un `depuis > 1 ? 's' : ''` : la règle
+/// n'est pas la même dans les deux langues — le français écrit « 0 jour » au
+/// singulier, l'anglais « 0 days » au pluriel — et un ternaire sur la place du
+/// « s » ne sait pas le dire.
+String _libelle(AppLocalizations l10n, VehicleDeadline d) {
+  if (d.detail != null) return l10n.homeDeadlineDetail(d.label, d.detail!);
 
   final jours = d.daysLeft;
   if (jours == null) return d.label;
 
-  if (d.overdue) {
-    final depuis = jours.abs();
-    return '${d.label} dépassée depuis $depuis jour${depuis > 1 ? 's' : ''}';
-  }
+  if (d.overdue) return l10n.homeDeadlineOverdue(d.label, jours.abs());
 
   return switch (jours) {
-    0 => '${d.label} expire aujourd\'hui',
-    1 => '${d.label} expire demain',
-    _ => '${d.label} dans $jours jours',
+    0 => l10n.homeDeadlineToday(d.label),
+    1 => l10n.homeDeadlineTomorrow(d.label),
+    _ => l10n.homeDeadlineInDays(d.label, jours),
   };
 }

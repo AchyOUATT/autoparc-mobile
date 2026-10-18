@@ -20,6 +20,8 @@ import '../../../../features/notifications/presentation/widgets/notification_ico
 import '../../../../features/garage/data/models/owned_vehicle.dart';
 import '../../../../features/garage/presentation/providers/garage_provider.dart';
 import '../../../../core/providers/shell_scaffold_provider.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../widgets/ligne_compatibilite.dart';
 
 // ── Labels des types/conditions ─────────────────────────────────────
 
@@ -98,12 +100,12 @@ class _PartListPageState extends ConsumerState<PartListPage> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          tooltip: 'Menu',
+          tooltip: AppLocalizations.of(context).commonMenuTooltip,
           onPressed: () =>
               ref.read(shellScaffoldKeyProvider).currentState?.openDrawer(),
         ),
         titleSpacing: 0,
-        title: const Text('Pièces détachées'),
+        title: Text(AppLocalizations.of(context).catalogPartListTitle),
         actions: [
           const NotificationIconButton(),
           if (!isStaff) ...[
@@ -516,6 +518,20 @@ class _PartCardState extends ConsumerState<_PartCard> {
                       color: cs.onSurface,
                     ),
                   ),
+                  // LES MODÈLES COMPATIBLES, SOUS LE NOM ET AU-DESSUS DU PRIX.
+                  //
+                  // Cette place n'est pas indifférente. Sous le prix, la ligne
+                  // aurait séparé le prix du badge de disponibilité, qui se
+                  // lisent ensemble ; au-dessus du nom, elle aurait pris le
+                  // premier regard pour une mention secondaire. Elle prolonge
+                  // donc le nom, qui est ce qu'elle qualifie.
+                  //
+                  // `LigneCompatibilite` s'efface d'elle-même quand la clé
+                  // `compatibility` manque ou qu'elle est vide, donc rien n'est
+                  // conditionné ici : l'article sans compatibilité rend un
+                  // `SizedBox.shrink()` et l'écart ci-dessous se referme
+                  // dessus.
+                  LigneCompatibilite(resume: part.compatibility),
                   const SizedBox(height: 6),
                   Text(
                     formatXofShort(part.pricing.sellingPrice),

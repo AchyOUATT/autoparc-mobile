@@ -120,6 +120,82 @@ void main() {
 
       expect(page.data, isNotEmpty);
     });
+
+    /// LA CLÉ DONT DÉPEND LA LIGNE DE COMPATIBILITÉ DES CARTES.
+    ///
+    /// `PartResource` et `AccessoryResource` la rendent sous
+    /// `whenLoaded('fitments')` : si le contrôleur ne charge pas la relation,
+    /// la clé DISPARAÎT du JSON sans la moindre erreur, et la ligne reste vide
+    /// sur chaque carte. Le commentaire de `AccessoryController::catalog` dit
+    /// que ce dépôt a déjà livré cinq fois ce défaut-là. Les deux listes du
+    /// catalogue chargent bien `fitments.vehicleModel.brand` — vérifié dans
+    /// autoparc-backend —, et c'est cette vérification-ci qui le prouve sur
+    /// une VRAIE réponse plutôt que sur une lecture de code.
+    test('la pièce du catalogue porte le résumé de compatibilité', () {
+      final page = PaginatedResponse.fromJson(
+        objet('parts_list'),
+        Part.fromJson,
+      );
+
+      // NON NUL, et c'est tout l'objet du test : la fixture rend
+      // `{"count": 0, "vehicles": []}` pour une pièce sans fitment, et c'est
+      // une AFFIRMATION du serveur — « aucun modèle compatible ». Une clé
+      // absente aurait donné `null`, c'est-à-dire « la réponse ne le dit
+      // pas », et les deux ne s'affichent pas pareil : la première est une
+      // information, la seconde une ignorance.
+      expect(
+        page.data.first.compatibility,
+        isNotNull,
+        reason:
+            'La clé `compatibility` a disparu de /catalog/parts : '
+            '`PartController::index` ne charge plus `fitments`, et la ligne '
+            'des modèles compatibles est vide sur toutes les cartes — sans '
+            'erreur, sans trace, et sans que rien d\'autre ne le signale.',
+      );
+      expect(page.data.first.compatibility!.count, 0);
+      expect(page.data.first.compatibility!.vehicles, isEmpty);
+      expect(page.data.first.compatibility!.estVide, isTrue);
+    });
+
+    /// LA FIXTURE DES ACCESSOIRES EST EN RETARD SUR LE SERVEUR, et ce test le
+    /// dit plutôt que de le taire.
+    ///
+    /// `/api/catalog/accessories` charge `fitments.vehicleModel.brand` et
+    /// `AccessoryResource` rend `compatibility` — les deux sont dans
+    /// autoparc-backend. La fixture recopiée ici, elle, ne porte pas la clé :
+    /// elle a été produite avant que la ressource ne la rende. On ne peut donc
+    /// PAS prouver côté application que la carte d'un accessoire reçoit son
+    /// résumé d'une vraie réponse, comme on vient de le prouver pour une
+    /// pièce.
+    ///
+    /// Ce qui se vérifie quand même, et qui vaut la peine : la clé absente
+    /// donne `null` et non un résumé vide. C'est la distinction sur laquelle
+    /// repose l'affichage, et elle est lue sur une vraie réponse.
+    ///
+    /// CE TEST TOMBERA le jour où la fixture sera rafraîchie, et c'est voulu :
+    ///
+    ///   (backend) UPDATE_FIXTURES=1 php artisan test --filter=ApiContractFixturesTest
+    ///   cp ../autoparc-backend/tests/Fixtures/api/*.json test/fixtures/
+    ///
+    /// Il faudra alors le remplacer par la même assertion que pour les pièces.
+    test('la fixture des accessoires n\'a pas encore le résumé, et on le dit',
+        () {
+      final page = PaginatedResponse.fromJson(
+        objet('accessories_list'),
+        Accessory.fromJson,
+      );
+
+      expect(
+        page.data.first.compatibility,
+        isNull,
+        reason:
+            'La fixture des accessoires porte maintenant `compatibility` : '
+            'elle a été rafraîchie. Remplacez ce test par la même assertion '
+            'que « la pièce du catalogue porte le résumé de compatibilité », '
+            'pour que la carte d\'un accessoire soit couverte comme celle '
+            'd\'une pièce.',
+      );
+    });
   });
 
   group('Référentiels', () {

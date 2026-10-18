@@ -294,13 +294,29 @@ class Vehicle extends Equatable {
   /// à la charge de l'appelant : `/api/catalog/vehicles` liste les véhicules
   /// vendus, archivés et jamais publiés comme les autres.
   ///
-  /// Le critère est celui des `abort_if` de
-  /// `autoparc-backend/app/Http/Controllers/Web/ArticleController::vehicule` —
-  /// `published_at === null`, puis le statut — et il est recopié ici parce que
-  /// rien ne l'expose : l'API ne dit pas « cet article a une page ». Le jour où
-  /// le serveur bougera ce critère, c'est ce getter qu'il faudra suivre.
-  bool get aUnePagePublique =>
-      publishedAt != null && !_statutsSansPage.contains(commercial.status);
+  /// Le critère est celui de
+  /// `autoparc-backend/app/Http/Controllers/Web/ArticleController::catalogueMontre`
+  /// et il est recopié ici parce que rien ne l'expose : l'API ne dit pas « cet
+  /// article a une page ». Le jour où le serveur bougera ce critère, c'est ce
+  /// getter qu'il faudra suivre.
+  ///
+  /// `publishedAt` N'EN FAIT PLUS PARTIE, et l'avoir cru a rendu la fonction
+  /// morte pour TOUS les véhicules dès le premier jour. Personne ne pose
+  /// jamais ce champ : l'action existe côté serveur — POST
+  /// `/staff/vehicles/{id}/publish`, qui notifie au passage les clients dont
+  /// un besoin correspond — mais aucun écran de cette application ne l'appelle.
+  /// Tout véhicule enregistré depuis l'application a donc `published_at` à
+  /// null.
+  ///
+  /// Constaté sur la production par le propriétaire, en testant le partage :
+  /// la seule annonce du parc, une Mazda CX-9 `in_stock` et à vendre, visible
+  /// au catalogue, voyait son bouton masqué et rendait 404 sur `/v/86`.
+  ///
+  /// Trois relectures adversariales ont laissé passer ce défaut, parce
+  /// qu'elles vérifiaient la COHÉRENCE entre l'application et le serveur —
+  /// jamais si le champ était un jour REMPLI. Deux erreurs symétriques se
+  /// valident l'une l'autre.
+  bool get aUnePagePublique => !_statutsSansPage.contains(commercial.status);
 
   bool get isImported    => registrationStatus == 'unregistered';
   bool get isRegistered  => registrationStatus == 'registered';

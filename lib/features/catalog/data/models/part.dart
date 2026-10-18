@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'compatibility_summary.dart';
+
 /// Pièce détachée (OEM / aftermarket / occasion).
 class Part extends Equatable {
   final int     id;
@@ -43,15 +45,39 @@ class Part extends Equatable {
 
   /// Les compatibilités véhicules, telles que l'API les rend.
   ///
-  /// `null` ne veut pas dire « aucune » : la liste des pièces ne charge pas
-  /// cette relation, et la clé est alors absente de la réponse. La distinction
-  /// est vitale pour l'écran de modification — confondre « je ne sais pas »
-  /// avec « il n'y en a pas » revient à effacer la liste à l'enregistrement.
+  /// `null` ne veut pas dire « aucune » : `whenLoaded('fitments')` retire la
+  /// clé de la réponse quand le contrôleur n'a pas chargé la relation, et
+  /// toutes les routes ne la chargent pas. `CompatibilityService` ne charge que
+  /// `category`, `manufacturer` et `oemNumbers` — donc les pièces compatibles
+  /// de l'accueil et celles de la page du garage arrivent SANS la clé. La
+  /// distinction est vitale pour l'écran de modification : confondre « je ne
+  /// sais pas » avec « il n'y en a pas » revient à effacer la liste à
+  /// l'enregistrement.
   ///
   /// Les lignes restent sous forme brute à dessein : tout modèle intermédiaire
   /// qui oublierait une clé la viderait silencieusement au premier
   /// enregistrement, puisque le `PUT` remplace la liste entière.
   final List<Map<String, dynamic>>? fitments;
+
+  /// Le résumé des modèles compatibles, pour la LIGNE DE LA CARTE.
+  ///
+  /// `null` comme [fitments], et pour la même raison : le serveur rend les deux
+  /// sous le même `whenLoaded('fitments')`. La liste du catalogue la charge —
+  /// `PartController::index` fait `with('fitments.vehicleModel.brand')`, vérifié
+  /// dans autoparc-backend — donc la clé est présente sur `/catalog/parts`,
+  /// qui est la route de la grille, et la ligne de la carte s'affiche. Sur les
+  /// pièces compatibles de l'accueil elle vaut `null`, et la ligne disparaît :
+  /// c'est le bon comportement, ces tuiles-là n'ont pas la place et la liste
+  /// répond déjà à la question.
+  ///
+  /// POURQUOI UN RÉSUMÉ À CÔTÉ DE [fitments], QUI PORTE DÉJÀ TOUT. Parce que
+  /// `fitments` porte les identifiants et non les NOMS composés : un
+  /// `vehicle_model` y est `full_name` quand la relation imbriquée a été
+  /// chargée, et la déduplication « un modèle par moteur » se fait côté
+  /// serveur. Recomposer la ligne depuis `fitments` voudrait dire refaire ce
+  /// `unique()` ici, sur une liste que le serveur n'envoie pas toujours
+  /// entière.
+  final CompatibilitySummary? compatibility;
 
   const Part({
     required this.id,
@@ -71,6 +97,7 @@ class Part extends Equatable {
     this.coverUrl,
     this.photoUrls = const [],
     this.fitments,
+    this.compatibility,
   });
 
   factory Part.fromJson(Map<String, dynamic> json) {
@@ -123,6 +150,14 @@ class Part extends Equatable {
       fitments: (json['fitments'] as List?)
           ?.cast<Map<String, dynamic>>()
           .toList(growable: false),
+      // Même règle, et le `?` compte : la clé absente doit rester `null` et non
+      // devenir un résumé vide. Un résumé vide dit « aucun modèle compatible »,
+      // ce qui est une affirmation que la réponse n'a pas faite.
+      compatibility: (json['compatibility'] as Map<String, dynamic>?) == null
+          ? null
+          : CompatibilitySummary.fromJson(
+              json['compatibility'] as Map<String, dynamic>,
+            ),
     );
   }
 

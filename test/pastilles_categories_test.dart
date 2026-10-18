@@ -11,6 +11,9 @@ import 'package:auto/features/catalog/presentation/pages/part_list_page.dart';
 import 'package:auto/features/catalog/presentation/providers/catalog_providers.dart';
 import 'package:auto/features/vehicles/data/models/catalog_refs.dart';
 import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provider.dart';
+import 'package:auto/l10n/app_localizations.dart';
+
+import 'support/langues.dart';
 
 /// Les pastilles de filtre à l'écran, et le filtre qu'on ne pourrait plus
 /// retirer.
@@ -73,7 +76,14 @@ void main() {
 
     await tester.pumpWidget(UncontrolledProviderScope(
       container: container,
-      child: const MaterialApp(home: PartListPage()),
+      child: const MaterialApp(
+        // Voir test/support/langues.dart : sans `locale:`, la coque
+        // mesurerait l'anglais.
+        locale: localeFr,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PartListPage(),
+      ),
     ));
     for (var i = 0; i < 6; i++) {
       await tester.pump(const Duration(milliseconds: 50));
@@ -167,7 +177,12 @@ void main() {
 
     await tester.pumpWidget(UncontrolledProviderScope(
       container: container,
-      child: const MaterialApp(home: AccessoryListPage()),
+      child: const MaterialApp(
+        locale: localeFr,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AccessoryListPage(),
+      ),
     ));
     for (var i = 0; i < 6; i++) {
       await tester.pump(const Duration(milliseconds: 50));

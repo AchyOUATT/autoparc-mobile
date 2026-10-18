@@ -9,8 +9,11 @@ import 'package:image_picker_platform_interface/image_picker_platform_interface.
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'core/l10n/langue.dart';
+import 'core/l10n/tuile_langue.dart';
 import 'core/theme/app_theme.dart';
 import 'core/update/ecran_mise_a_jour.dart';
+import 'core/utils/currency_format.dart';
 import 'core/update/version_minimale.dart';
 import 'core/utils/lien_externe.dart';
 import 'core/widgets/navigation_bar_theme.dart';
@@ -55,6 +58,7 @@ import 'core/providers/shell_scaffold_provider.dart';
 import 'core/local/catalog_local_cache.dart';
 import 'features/vehicles/presentation/providers/vehicle_refs_provider.dart';
 import 'features/catalog/presentation/providers/catalog_providers.dart';
+import 'l10n/app_localizations.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -98,7 +102,20 @@ Future<void> main() async {
   // Vérifie si l'onboarding a déjà été vu.
   final onboardingDone = await OnboardingService.isDone();
 
-  runApp(ProviderScope(child: AutoParcApp(onboardingDone: onboardingDone)));
+  // La langue est lue ICI, et pas dans un provider asynchrone, pour la même
+  // raison que l'onboarding : les deux décident de ce que montre la PREMIÈRE
+  // trame. Une lecture tardive ouvrirait l'application en français puis la
+  // ferait sauter en anglais, à chaque lancement, pour tout utilisateur
+  // anglophone. Les deux lectures tapent la même instance de
+  // `SharedPreferences`, déjà chargée.
+  final langue = await LangueService.lire();
+
+  runApp(
+    ProviderScope(
+      overrides: [localeInitialeProvider.overrideWithValue(langue)],
+      child: AutoParcApp(onboardingDone: onboardingDone),
+    ),
+  );
 }
 
 // ── Routeur ────────────────────────────────────────────────────────
@@ -285,19 +302,55 @@ GoRouter _buildRouter({required bool onboardingDone}) => GoRouter(
 
 // ── App ────────────────────────────────────────────────────────────
 
-class AutoParcApp extends StatelessWidget {
+/// La racine de l'application.
+///
+/// ── POURQUOI ELLE EST DEVENUE UN `ConsumerStatefulWidget` ───────────────────
+///
+/// Elle était sans état, et son `build` fabriquait un `GoRouter` NEUF à chaque
+/// passage. Tant que rien ne la faisait reconstruire, cela ne se voyait pas —
+/// c'est d'ailleurs la raison écrite dans [_PorteMiseAJour] pour y avoir mis le
+/// `ref.watch` du verdict de mise à jour plutôt qu'ici.
+///
+/// La langue, elle, DOIT être observée à ce niveau : c'est le `MaterialApp` qui
+/// porte `locale`. Avec l'ancienne forme, changer de langue aurait reconstruit
+/// un routeur neuf, donc ramené l'utilisateur à `initialLocation` : on touche
+/// « English » au fond du tiroir et on ressort sur l'accueil, panier perdu. Le
+/// routeur est donc construit UNE FOIS, dans `initState`, et le `build` ne fait
+/// plus que l'habiller.
+class AutoParcApp extends ConsumerStatefulWidget {
   final bool onboardingDone;
   const AutoParcApp({super.key, required this.onboardingDone});
 
   @override
+  ConsumerState<AutoParcApp> createState() => _AutoParcAppState();
+}
+
+class _AutoParcAppState extends ConsumerState<AutoParcApp> {
+  late final GoRouter _routeur = _buildRouter(
+    onboardingDone: widget.onboardingDone,
+  );
+
+  @override
   Widget build(BuildContext context) {
+    final langue = ref.watch(langueProvider);
+
+    // Le format des montants est accordé ICI, dans le `build` du parent, et
+    // non dans chaque page : Flutter construit un parent avant ses enfants,
+    // donc tout prix formaté pendant cette trame emploie la même locale que
+    // `Localizations.localeOf`. Voir core/utils/currency_format.dart.
+    definirLocaleMontants(langue);
+
     return _PorteMiseAJour(
+      langue: langue,
       enfant: MaterialApp.router(
         title: 'AutoParc',
         debugShowCheckedModeBanner: false,
-        routerConfig: _buildRouter(onboardingDone: onboardingDone),
+        routerConfig: _routeur,
         theme: themeAutoParc(Brightness.light),
         darkTheme: themeAutoParc(Brightness.dark),
+        locale: langue,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
       ),
     );
   }
@@ -325,7 +378,18 @@ class AutoParcApp extends StatelessWidget {
 /// pendant le chargement comme en cas d'erreur, et les deux laissent passer.
 class _PorteMiseAJour extends ConsumerWidget {
   final Widget enfant;
-  const _PorteMiseAJour({required this.enfant});
+
+  /// La langue active, PASSÉE et non relue.
+  ///
+  /// Ce widget remplace l'arbre entier : son `MaterialApp` doit porter les
+  /// mêmes délégués et la même `locale` que celui qu'il écarte, sinon le bouton
+  /// « Mettre à jour » reviendrait en français pour un utilisateur qui a choisi
+  /// l'anglais — et sur un écran bloquant, dont on ne sort pas. Elle est passée
+  /// par le parent, qui l'observe déjà : un second `ref.watch` sur le même
+  /// provider ne ferait que dupliquer l'abonnement.
+  final Locale langue;
+
+  const _PorteMiseAJour({required this.enfant, required this.langue});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -338,6 +402,9 @@ class _PorteMiseAJour extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: themeAutoParc(Brightness.light),
       darkTheme: themeAutoParc(Brightness.dark),
+      locale: langue,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: EcranMiseAJour(
         message: verdict.message,
         urlStore: verdict.urlStore,
@@ -359,11 +426,29 @@ class _AppShell extends ConsumerStatefulWidget {
 }
 
 class _AppShellState extends ConsumerState<_AppShell> {
+  /// Les quatre onglets : chemin et icône seulement.
+  ///
+  /// L'INTITULÉ N'EST PLUS ICI, et c'est ce qui permet au tuple de rester
+  /// `const` : un libellé traduit se lit dans le `BuildContext`, donc à la
+  /// construction, et non à la compilation. Il est pris dans [_libelles], dans
+  /// le même ordre.
   static const _tabs = [
-    (path: '/',            icon: Icons.home_outlined,           label: 'Accueil'),
-    (path: '/vehicles',    icon: Icons.directions_car_outlined, label: 'Véhicules'),
-    (path: '/accessories', icon: Icons.tune_outlined,           label: 'Accessoires'),
-    (path: '/parts',       icon: Icons.settings_outlined,       label: 'Pièces'),
+    (path: '/',            icon: Icons.home_outlined),
+    (path: '/vehicles',    icon: Icons.directions_car_outlined),
+    (path: '/accessories', icon: Icons.tune_outlined),
+    (path: '/parts',       icon: Icons.settings_outlined),
+  ];
+
+  /// Les intitulés des quatre onglets, dans l'ordre de [_tabs].
+  ///
+  /// Les mêmes clés que les tuiles « Parcourir » de l'accueil et que les titres
+  /// des pages : le code demandait déjà que les trois coïncident, une clé
+  /// partagée l'impose. Voir lib/l10n/CONVENTION.md.
+  static List<String> _libelles(AppLocalizations l10n) => [
+    l10n.commonHome,
+    l10n.commonVehicles,
+    l10n.commonAccessories,
+    l10n.commonParts,
   ];
 
   @override
@@ -443,19 +528,21 @@ class _AppShellState extends ConsumerState<_AppShell> {
     if (_sortieEnCours) return;
     _sortieEnCours = true;
 
+    final l10n = AppLocalizations.of(context);
+
     final quitter = await showDialog<bool>(
       context: context,
       builder: (contexteDialogue) => AlertDialog(
-        title: const Text('Quitter AutoParc ?'),
-        content: const Text('Voulez-vous fermer l\'application ?'),
+        title: Text(l10n.shellExitTitle),
+        content: Text(l10n.shellExitBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(contexteDialogue, false),
-            child: const Text('Annuler'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(contexteDialogue, true),
-            child: const Text('Quitter'),
+            child: Text(l10n.shellExitConfirm),
           ),
         ],
       ),
@@ -470,6 +557,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
     final scaffoldKey = ref.watch(shellScaffoldKeyProvider);
     final location    = GoRouterState.of(context).uri.path;
     final tabIndex    = _tabs.indexWhere((t) => t.path == location).clamp(0, _tabs.length - 1);
+    final libelles    = _libelles(AppLocalizations.of(context));
 
     // canPop: false intercepte le Retour systeme pour tout le shell.
     //
@@ -509,11 +597,14 @@ class _AppShellState extends ConsumerState<_AppShell> {
         bottomNavigationBar: BarreNavigationPrincipale(
           selectedIndex: tabIndex,
           onDestinationSelected: (i) => context.go(_tabs[i].path),
-          destinations: _tabs.map((t) => NavigationDestination(
-            icon:        Icon(t.icon),
-            selectedIcon: Icon(t.icon),
-            label:       t.label,
-          )).toList(),
+          destinations: [
+            for (var i = 0; i < _tabs.length; i++)
+              NavigationDestination(
+                icon:         Icon(_tabs[i].icon),
+                selectedIcon: Icon(_tabs[i].icon),
+                label:        libelles[i],
+              ),
+          ],
         ),
       ),
     );
@@ -532,6 +623,7 @@ class _AppDrawer extends ConsumerWidget {
     final auth   = ref.watch(authProvider);
     final unread = ref.watch(unreadCountProvider).valueOrNull ?? 0;
     final cs     = Theme.of(context).colorScheme;
+    final l10n   = AppLocalizations.of(context);
 
     return Drawer(
       child: ListView(
@@ -542,13 +634,17 @@ class _AppDrawer extends ConsumerWidget {
           UserAccountsDrawerHeader(
             decoration: BoxDecoration(color: cs.primary),
             accountName: Text(
-              auth.isAuthenticated ? auth.displayName : 'Visiteur',
+              auth.isAuthenticated ? auth.displayName : l10n.shellAccountGuest,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             accountEmail: Text(
-              auth.isStaff  ? 'Personnel — ${auth.staffUser?.role ?? ''}' :
+              // Le rôle vient du serveur : « admin », « vendeur »… Il n'est pas
+              // traduit par ce lot, et la phrase qui l'encadre l'est — c'est le
+              // même partage que partout ailleurs dans ce lot, et il est écrit
+              // dans lib/l10n/CONVENTION.md.
+              auth.isStaff  ? l10n.shellAccountStaff(auth.staffUser?.role ?? '') :
               auth.isClient ? (auth.firebaseUser?.email ?? '') :
-              'Non connecté',
+              l10n.shellAccountNotSignedIn,
             ),
             currentAccountPicture: CircleAvatar(
               backgroundColor: cs.onPrimary.withAlpha(40),
@@ -571,24 +667,24 @@ class _AppDrawer extends ConsumerWidget {
           if (auth.isStaff) ...[
             _DrawerTile(
               icon: Icons.list_alt_outlined,
-              label: 'Besoins clients',
+              label: l10n.shellClientNeeds,
               onTap: () { _close(context); context.push('/needs'); },
             ),
             _DrawerTile(
               icon: Icons.handshake_outlined,
-              label: 'Partenaires',
+              label: l10n.shellPartners,
               onTap: () { _close(context); context.push('/partners'); },
             ),
             _DrawerTile(
               icon: Icons.notifications_outlined,
-              label: 'Notifications',
+              label: l10n.shellNotifications,
               badge: unread,
               onTap: () { _close(context); context.push('/notifications'); },
             ),
             const Divider(),
             _DrawerTile(
               icon: Icons.sync,
-              label: 'Rafraîchir le catalogue',
+              label: l10n.shellRefreshCatalog,
               onTap: () async {
                 _close(context);
                 await ref.read(catalogLocalCacheProvider).clear();
@@ -602,9 +698,9 @@ class _AppDrawer extends ConsumerWidget {
                 ref.invalidate(categoriesAccessoiresOccupeesProvider);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Catalogue mis à jour'),
-                      duration: Duration(seconds: 2),
+                    SnackBar(
+                      content: Text(l10n.shellCatalogRefreshed),
+                      duration: const Duration(seconds: 2),
                     ),
                   );
                 }
@@ -612,14 +708,14 @@ class _AppDrawer extends ConsumerWidget {
             ),
             _DrawerTile(
               icon: Icons.logout,
-              label: 'Se déconnecter',
+              label: l10n.shellSignOut,
               color: cs.error,
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Vous êtes déconnecté.'),
+                  SnackBar(
+                    content: Text(l10n.shellSignedOut),
                     behavior: SnackBarBehavior.floating,
-                    duration: Duration(seconds: 2),
+                    duration: const Duration(seconds: 2),
                   ),
                 );
                 _close(context);
@@ -634,17 +730,17 @@ class _AppDrawer extends ConsumerWidget {
           if (auth.isClient) ...[
             _DrawerTile(
               icon: Icons.garage_outlined,
-              label: 'Mon Garage',
+              label: l10n.shellMyGarage,
               onTap: () { _close(context); context.push('/garage'); },
             ),
             _DrawerTile(
               icon: Icons.list_alt_outlined,
-              label: 'Mes besoins',
+              label: l10n.shellMyNeeds,
               onTap: () { _close(context); context.push('/needs/mine'); },
             ),
             _DrawerTile(
               icon: Icons.phone_outlined,
-              label: 'Nous contacter',
+              label: l10n.shellContact,
               onTap: () {
                 _close(context);
                 _showContactSheet(context);
@@ -653,14 +749,14 @@ class _AppDrawer extends ConsumerWidget {
             const Divider(),
             _DrawerTile(
               icon: Icons.logout,
-              label: 'Se déconnecter',
+              label: l10n.shellSignOut,
               color: cs.error,
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Vous êtes déconnecté.'),
+                  SnackBar(
+                    content: Text(l10n.shellSignedOut),
                     behavior: SnackBarBehavior.floating,
-                    duration: Duration(seconds: 2),
+                    duration: const Duration(seconds: 2),
                   ),
                 );
                 _close(context);
@@ -675,10 +771,30 @@ class _AppDrawer extends ConsumerWidget {
           if (!auth.isAuthenticated) ...[
             _DrawerTile(
               icon: Icons.login,
-              label: 'Se connecter',
+              label: l10n.shellSignIn,
               onTap: () { _close(context); context.push('/login'); },
             ),
           ],
+
+          // ════════════════════════════════════════════════════════
+          // RÉGLAGES — communs aux trois états
+          // ════════════════════════════════════════════════════════
+          //
+          // IL N'Y A PAS D'ÉCRAN DE RÉGLAGES DANS CETTE APPLICATION. Vérifié
+          // avant d'en poser un : aucune route, aucune page, et le seul endroit
+          // où un réglage d'application ait jamais vécu est ce tiroir — c'est
+          // lui qui porte « Rafraîchir le catalogue ». Un écran de réglages
+          // neuf pour une seule ligne aurait ajouté une route, un titre et une
+          // barre de titre à traduire, pour cacher d'un niveau le réglage que
+          // l'on veut justement qu'un anglophone trouve.
+          //
+          // Posé APRÈS les blocs par rôle, donc après « Se déconnecter », et
+          // séparé : la langue n'appartient à aucun compte. Un même téléphone
+          // passe du personnel au client sans que le choix de langue n'ait à
+          // suivre, et le mettre dans un bloc conditionnel l'aurait fait
+          // disparaître pour les deux autres états.
+          const Divider(),
+          const TuileLangue(),
         ],
       ),
     );
@@ -690,25 +806,28 @@ class _AppDrawer extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => Padding(
+      builder: (contexteFeuille) {
+        final l10n = AppLocalizations.of(contexteFeuille);
+
+        return Padding(
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Nous contacter',
+            Text(l10n.shellContact,
                 style: Theme.of(context).textTheme.titleLarge
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 20),
             _ContactTile(
               icon: Icons.phone_outlined,
-              label: 'Téléphone',
+              label: l10n.shellContactPhone,
               value: kContactPhoneDisplay,
               onTap: () => ouvrirLien(
                 context,
                 Uri.parse('tel:$kContactPhone'),
                 valeurACopier: kContactPhoneDisplay,
-                ceQuiNePeutPasSOuvrir: 'le composeur',
+                ceQuiNePeutPasSOuvrir: l10n.shellContactDialerTarget,
               ),
             ),
             const SizedBox(height: 12),
@@ -721,24 +840,28 @@ class _AppDrawer extends ConsumerWidget {
                 context,
                 Uri.parse('https://wa.me/$kContactWhatsApp'),
                 valeurACopier: kContactPhoneDisplay,
+                // « WhatsApp » reste en dur, et n'a pas de clé : c'est un nom
+                // de marque, identique dans les deux langues, et lui donner une
+                // clé inviterait un traducteur à le traduire.
                 ceQuiNePeutPasSOuvrir: 'WhatsApp',
               ),
             ),
             const SizedBox(height: 12),
             _ContactTile(
               icon: Icons.email_outlined,
-              label: 'Email',
+              label: l10n.shellContactEmail,
               value: kContactEmail,
               onTap: () => ouvrirLien(
                 context,
                 Uri.parse('mailto:$kContactEmail'),
                 valeurACopier: kContactEmail,
-                ceQuiNePeutPasSOuvrir: 'la messagerie',
+                ceQuiNePeutPasSOuvrir: l10n.shellContactMailTarget,
               ),
             ),
           ],
         ),
-      ),
+      );
+      },
     );
   }
 }

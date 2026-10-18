@@ -1,0 +1,26 @@
+# Réglage de `flutter gen-l10n`, déclenché à chaque `flutter pub get` par
+# `generate: true` dans pubspec.yaml.
+
+arb-dir: lib/l10n
+template-arb-file: app_fr.arb
+output-dir: lib/l10n
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+
+# LE FRANÇAIS EST LE GABARIT, et ce n'est pas une préférence de langue : le
+# gabarit est le fichier dont `gen-l10n` tire la liste des clés, leur type et
+# leurs placeholders. Les 1 200 à 1 500 chaînes qui restent existent déjà en
+# français dans le code ; les saisir d'abord ailleurs les ferait traduire deux
+# fois. Le français est aussi la locale de REPLI — voir core/l10n/langue.dart.
+
+# `AppLocalizations.of(context)` rend un objet NON NUL. À l'échelle visée —
+# 1 200 à 1 500 clés réparties sur 91 fichiers —, un `!` par site d'appel est
+# autant d'occasions d'en oublier un ; et un `MaterialApp` sans délégué est un
+# défaut de câblage, qui doit lever au premier écran, pas un cas d'exécution à
+# traiter mille fois.
+nullable-getter: false
+
+# La sortie va dans `lib/l10n`, à côté des `.arb`, et non dans le paquet
+# synthétique `flutter_gen` : ce dernier est en voie de retrait, et un fichier
+# généré qu'on peut OUVRIR est un fichier dont on peut lire le `switch` de
+# repli quand une clé rend le mauvais texte.

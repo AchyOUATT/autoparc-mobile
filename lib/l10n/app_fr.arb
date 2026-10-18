@@ -1,0 +1,296 @@
+{
+  "@@locale": "fr",
+
+  "commonHome": "Accueil",
+  "@commonHome": {
+    "description": "Nom de la destination d'accueil. UNE SEULE CLÉ pour l'onglet de la barre du bas, la tuile « Parcourir » de l'accueil et le titre de la page : le code demande déjà que les trois coïncident (« deux rangements différents pour les mêmes destinations obligeraient à relire à chaque fois »), et une clé partagée rend la divergence impossible."
+  },
+  "commonVehicles": "Véhicules",
+  "@commonVehicles": {
+    "description": "Nom de la destination du catalogue de véhicules : onglet, tuile de l'accueil et titre de la page. Voir commonHome."
+  },
+  "commonAccessories": "Accessoires",
+  "@commonAccessories": {
+    "description": "Nom de la destination des accessoires : onglet, tuile de l'accueil et titre de la page. C'est le plus large des quatre intitulés de la barre du bas — il réclame 87,7 points à 320 points d'écran et à l'échelle 1,3 pour 80,0 reçus, et c'est lui qui a imposé la borne d'échelle de BarreNavigationPrincipale. Toute traduction plus longue rouvre ce défaut : bandes_filtres_test.dart le mesure dans les deux langues."
+  },
+  "commonParts": "Pièces",
+  "@commonParts": {
+    "description": "Nom COURT de la destination des pièces, pour l'onglet et la tuile de l'accueil. Le titre de la page est plus long et porte sa propre clé, catalogPartListTitle."
+  },
+  "commonCancel": "Annuler",
+  "@commonCancel": {
+    "description": "Bouton qui ferme une boîte de dialogue sans rien appliquer. 15 fichiers de lib/ l'écrivent aujourd'hui en dur : la clé est commune parce que le seuil de trois sites dans deux zones est franchi, pas par anticipation."
+  },
+  "commonRetry": "Réessayer",
+  "@commonRetry": {
+    "description": "Bouton qui relance une requête échouée. 15 fichiers de lib/ l'écrivent en dur."
+  },
+  "commonMenuTooltip": "Menu",
+  "@commonMenuTooltip": {
+    "description": "Infobulle du bouton qui ouvre le tiroir latéral, présent dans les quatre barres de titre principales. Identique en anglais, et la clé existe quand même : une chaîne affichée laissée en dur est une chaîne que personne ne retrouvera au lot suivant."
+  },
+  "commonPerDaySuffix": "/j",
+  "@commonPerDaySuffix": {
+    "description": "Suffixe collé à un tarif de location journalier : « 25 000 FCFA/j ». Aucune espace avant, et c'est voulu : le suffixe doit rester dans le même segment insécable que le montant, sinon il part seul à la ligne."
+  },
+  "commonMileageKm": "{value} km",
+  "@commonMileageKm": {
+    "description": "Un kilométrage et son unité. L'UNITÉ RESTE MÉTRIQUE dans les deux langues : les clients visés comptent en kilomètres et en litres, et convertir en milles ferait mentir une valeur relevée au compteur.",
+    "placeholders": {
+      "value": {
+        "type": "String",
+        "example": "246 965"
+      }
+    }
+  },
+  "commonLinkUnavailable": "Impossible d'ouvrir {what} sur cet appareil. {value} a été copié.",
+  "@commonLinkUnavailable": {
+    "description": "Repli quand aucune application du téléphone ne sait ouvrir un lien. Le repli copie la valeur plutôt que de s'excuser : une impasse devient une gêne.",
+    "placeholders": {
+      "what": {
+        "type": "String",
+        "example": "la messagerie"
+      },
+      "value": {
+        "type": "String",
+        "example": "contact@autoparc.bf"
+      }
+    }
+  },
+
+  "shellExitTitle": "Quitter AutoParc ?",
+  "@shellExitTitle": {
+    "description": "Titre de la demande de confirmation déclenchée par le Retour d'Android depuis l'un des quatre onglets."
+  },
+  "shellExitBody": "Voulez-vous fermer l'application ?",
+  "@shellExitBody": {
+    "description": "Corps de la demande de confirmation de sortie."
+  },
+  "shellExitConfirm": "Quitter",
+  "@shellExitConfirm": {
+    "description": "Bouton qui ferme réellement l'application."
+  },
+  "shellAccountGuest": "Visiteur",
+  "@shellAccountGuest": {
+    "description": "Nom affiché dans l'en-tête du tiroir pour un utilisateur sans compte."
+  },
+  "shellAccountStaff": "Personnel — {role}",
+  "@shellAccountStaff": {
+    "description": "Sous-titre de l'en-tête du tiroir pour un membre du personnel. Le rôle vient du serveur et n'est PAS traduit par ce lot.",
+    "placeholders": {
+      "role": {
+        "type": "String",
+        "example": "admin"
+      }
+    }
+  },
+  "shellAccountNotSignedIn": "Non connecté",
+  "@shellAccountNotSignedIn": {
+    "description": "Sous-titre de l'en-tête du tiroir quand personne n'est connecté."
+  },
+  "shellClientNeeds": "Besoins clients",
+  "@shellClientNeeds": {
+    "description": "Entrée du tiroir (personnel) vers la liste des demandes déposées par les clients."
+  },
+  "shellPartners": "Partenaires",
+  "@shellPartners": {
+    "description": "Entrée du tiroir (personnel) vers les garages et fournisseurs partenaires."
+  },
+  "shellNotifications": "Notifications",
+  "@shellNotifications": {
+    "description": "Entrée du tiroir vers les notifications reçues."
+  },
+  "shellRefreshCatalog": "Rafraîchir le catalogue",
+  "@shellRefreshCatalog": {
+    "description": "Entrée du tiroir (personnel) qui vide le cache local du catalogue."
+  },
+  "shellCatalogRefreshed": "Catalogue mis à jour",
+  "@shellCatalogRefreshed": {
+    "description": "Confirmation affichée après le vidage du cache du catalogue."
+  },
+  "shellMyGarage": "Mon Garage",
+  "@shellMyGarage": {
+    "description": "Entrée du tiroir (client) vers ses propres véhicules et leurs échéances."
+  },
+  "shellMyNeeds": "Mes besoins",
+  "@shellMyNeeds": {
+    "description": "Entrée du tiroir (client) vers les demandes qu'il a lui-même déposées."
+  },
+  "shellContact": "Nous contacter",
+  "@shellContact": {
+    "description": "Entrée du tiroir, et titre de la feuille de contact qu'elle ouvre."
+  },
+  "shellSignIn": "Se connecter",
+  "@shellSignIn": {
+    "description": "Entrée du tiroir pour un visiteur sans compte."
+  },
+  "shellSignOut": "Se déconnecter",
+  "@shellSignOut": {
+    "description": "Entrée du tiroir qui termine la session. Deux sites d'appel seulement — ici et le profil du garage —, donc la clé reste préfixée par sa zone tant que le seuil de trois n'est pas franchi."
+  },
+  "shellSignedOut": "Vous êtes déconnecté.",
+  "@shellSignedOut": {
+    "description": "Confirmation affichée après la déconnexion."
+  },
+  "shellContactPhone": "Téléphone",
+  "@shellContactPhone": {
+    "description": "Libellé de la ligne « appeler » de la feuille de contact."
+  },
+  "shellContactEmail": "Email",
+  "@shellContactEmail": {
+    "description": "Libellé de la ligne « écrire » de la feuille de contact."
+  },
+  "shellContactDialerTarget": "le composeur",
+  "@shellContactDialerTarget": {
+    "description": "Désigne le composeur téléphonique DANS la phrase commonLinkUnavailable : « Impossible d'ouvrir le composeur sur cet appareil. » D'où l'article et la minuscule — ce fragment ne s'affiche jamais seul."
+  },
+  "shellContactMailTarget": "la messagerie",
+  "@shellContactMailTarget": {
+    "description": "Désigne le client courriel DANS la phrase commonLinkUnavailable. Voir shellContactDialerTarget."
+  },
+  "shellLanguage": "Langue",
+  "@shellLanguage": {
+    "description": "Entrée du tiroir qui ouvre le choix de langue, et titre de la boîte de dialogue correspondante. Les deux noms de langue proposés — « Français », « English » — ne sont PAS dans ce fichier : chacun s'écrit dans sa propre langue, pour qu'un anglophone tombe sur « English » même quand l'interface est encore en français."
+  },
+
+  "updateAction": "Mettre à jour",
+  "@updateAction": {
+    "description": "Bouton de l'écran bloquant de mise à jour obligatoire ; il ouvre la fiche de l'application dans le magasin. Le message affiché au-dessus vient du serveur et reste en français jusqu'à la vague serveur."
+  },
+  "updateStoreTarget": "la fiche de l'application",
+  "@updateStoreTarget": {
+    "description": "Désigne le magasin d'applications DANS la phrase commonLinkUnavailable. Voir shellContactDialerTarget."
+  },
+
+  "catalogPartListTitle": "Pièces détachées",
+  "@catalogPartListTitle": {
+    "description": "Titre de la page du catalogue de pièces. Plus long que l'intitulé de l'onglet (commonParts), et c'était déjà le cas en français : une barre de titre a de la place, une barre de navigation n'en a pas."
+  },
+  "catalogCompatibilitySeparator": " · ",
+  "@catalogCompatibilitySeparator": {
+    "description": "Ce qui joint deux noms de modèle sur la ligne de compatibilité d'une carte du catalogue : « Corolla · Tucson ». Les NOMS viennent du référentiel du serveur, qui n'envoie que le modèle sans la marque, et ne sont pas traduits ; ce séparateur, lui, nous appartient. Identique en anglais aujourd'hui, et la clé existe quand même — une ponctuation laissée en dur est une ponctuation que personne ne retrouvera le jour où une langue en voudra une autre, et c'est précisément ce qui est arrivé à l'espace des milliers du kilométrage de l'accueil. Les espaces font partie de la valeur : le point médian collé aux noms se lit comme une faute."
+  },
+  "catalogCompatibilityMore": "+{count}",
+  "@catalogCompatibilityMore": {
+    "description": "Le nombre de modèles compatibles que la carte n'affiche PAS : « +9 ». Il est rendu dans un élément SÉPARÉ de la liste de noms, jamais collé au bout du texte tronqué — la troncature mangerait le compte en premier, donc précisément quand il est le plus utile. Le compte est calculé sur les noms réellement PEINTS et non sur ceux que le serveur envoie : la carte n'en affiche souvent que deux des trois reçus aux grandes échelles de texte, et « +9 » devrait alors dire « +10 ».",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "9"
+      }
+    }
+  },
+
+  "homeDealsSection": "Bonnes affaires",
+  "@homeDealsSection": {
+    "description": "Titre de la bande horizontale des véhicules en promotion sur l'accueil."
+  },
+  "homeSeeAll": "Tout voir",
+  "@homeSeeAll": {
+    "description": "Lien au bout d'un titre de section, vers la liste complète."
+  },
+  "homeCompatiblePartsSection": "Pièces pour {model}",
+  "@homeCompatiblePartsSection": {
+    "description": "Titre de la bande des pièces compatibles avec le véhicule mis en avant. Le modèle vient du référentiel du serveur et n'est pas traduit.",
+    "placeholders": {
+      "model": {
+        "type": "String",
+        "example": "Corolla"
+      }
+    }
+  },
+  "homeCompatiblePartsFallbackModel": "votre véhicule",
+  "@homeCompatiblePartsFallbackModel": {
+    "description": "Remplace le modèle dans homeCompatiblePartsSection quand le serveur ne l'a pas renseigné."
+  },
+  "homeUpdateMileage": "Mettre à jour le kilométrage",
+  "@homeUpdateMileage": {
+    "description": "Bouton de la carte du véhicule. C'est le geste qui fait vivre le rappel de vidange : sans compteur tenu à jour, il ne part jamais."
+  },
+  "homeNoDeadlinePrompt": "Renseignez vos échéances pour être prévenu à temps",
+  "@homeNoDeadlinePrompt": {
+    "description": "Remplace le bloc d'échéance quand le véhicule n'en porte aucune : on demande les dates plutôt que d'afficher un vide."
+  },
+  "homeGarageUnavailable": "Votre garage n'a pas pu être chargé",
+  "@homeGarageUnavailable": {
+    "description": "Titre de la carte d'échec du chargement du garage. Distinct de l'invitation à enregistrer un véhicule : dire « enregistrez votre véhicule » à quelqu'un qui en a trois est pire que ne rien dire."
+  },
+  "homeAddVehicleTitle": "Enregistrez votre véhicule",
+  "@homeAddVehicleTitle": {
+    "description": "Titre de la carte d'invitation affichée quand le garage est vide."
+  },
+  "homeAddVehicleBody": "Visite technique, assurance, vidange : nous vous prévenons avant l'échéance.",
+  "@homeAddVehicleBody": {
+    "description": "Corps de la carte d'invitation : les trois rappels que l'enregistrement débloque."
+  },
+  "homeAddVehicleCta": "Ajouter ma voiture",
+  "@homeAddVehicleCta": {
+    "description": "Bouton de la carte d'invitation."
+  },
+  "homeNeedPrompt": "Vous ne trouvez pas ? Dites-nous ce que vous cherchez",
+  "@homeNeedPrompt": {
+    "description": "Lien en bas de l'accueil vers le dépôt d'un besoin. Masqué pour le personnel, qui traite les besoins au lieu de les soumettre."
+  },
+  "homeDeadlineDetail": "{label} — {detail}",
+  "@homeDeadlineDetail": {
+    "description": "Échéance dont le serveur fournit un détail chiffré : « Vidange — dépassée de 300 km ». LE LIBELLÉ ET LE DÉTAIL VIENNENT DU SERVEUR et restent en français jusqu'à la vague serveur ; cette clé ne porte que le tiret qui les joint.",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Vidange"
+      },
+      "detail": {
+        "type": "String",
+        "example": "dépassée de 300 km"
+      }
+    }
+  },
+  "homeDeadlineOverdue": "{label} dépassée depuis {days, plural, one{{days} jour} other{{days} jours}}",
+  "@homeDeadlineOverdue": {
+    "description": "Échéance déjà passée. L'accord féminin de « dépassée » suit les libellés du serveur, qui sont tous féminins : visite technique, assurance, vidange.",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Assurance"
+      },
+      "days": {
+        "type": "int",
+        "example": "11"
+      }
+    }
+  },
+  "homeDeadlineToday": "{label} expire aujourd'hui",
+  "@homeDeadlineToday": {
+    "description": "Échéance du jour. L'APOSTROPHE S'ÉCRIT SIMPLE, et c'est une vérification et non une supposition : `use-escaping` vaut faux par défaut, donc `gen-l10n` ne déséchappe rien. Écrite doublée comme le veut ICU, elle ressortait littéralement — le fichier généré contenait « expire aujourd''hui ». Lu dans lib/l10n/app_localizations_fr.dart, et verrouillé par le banc de langue, qui compare la chaîne RENDUE.",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Assurance"
+      }
+    }
+  },
+  "homeDeadlineTomorrow": "{label} expire demain",
+  "@homeDeadlineTomorrow": {
+    "description": "Échéance du lendemain.",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Assurance"
+      }
+    }
+  },
+  "homeDeadlineInDays": "{label} dans {days, plural, one{{days} jour} other{{days} jours}}",
+  "@homeDeadlineInDays": {
+    "description": "Échéance à venir.",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "example": "Visite technique"
+      },
+      "days": {
+        "type": "int",
+        "example": "21"
+      }
+    }
+  }
+}

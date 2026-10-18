@@ -19,6 +19,7 @@ import '../../../vehicles/data/vehicle_admin_repository.dart';
 import '../../../vehicles/data/models/catalog_refs.dart';
 import '../../../vehicles/presentation/widgets/vehicle_faults_section.dart';
 import '../libelles_vehicule.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // Séparateur de milliers à la française : « 246 965 km » plutôt que « 246965 ».
 final _integer = NumberFormat.decimalPattern('fr_FR');
@@ -549,7 +550,32 @@ class _PriceSection extends StatelessWidget {
                 const Icon(Icons.key, size: 18),
                 const SizedBox(width: 6),
                 Text(
-                  '${formatXofShort(commercial.rentalDailyRate)} / jour',
+                  // LA FICHE ET LA CARTE DISENT MAINTENANT LA MÊME CHOSE, et
+                  // c'est un changement du FRANÇAIS qu'il faut déclarer.
+                  //
+                  // Cette ligne écrivait « 25 000 FCFA / jour », la carte du
+                  // catalogue « 25 000 FCFA/j » : le même tarif changeait de
+                  // forme entre les deux écrans, exactement comme le
+                  // kilométrage changeait de ponctuation entre l'accueil et la
+                  // fiche avant que `formatEntier` ne les réunisse. Les deux
+                  // passent désormais par `commonPerDaySuffix`, donc par la
+                  // forme courte, et par la langue active : « /day » en
+                  // anglais, où la ligne n'était traduite qu'à moitié —
+                  // `formatXofShort` suivait la langue, « / jour » non.
+                  //
+                  // CE QUE LE FRANÇAIS PERD, MESURÉ sur « 25 000 FCFA » et à
+                  // 411 points d'écran : la ligne rétrécit de 32,34 points au
+                  // réglage par défaut — 100,90 contre 133,25 — et de 63,94 au
+                  // dernier cran d'Android, 199,86 contre 263,79. L'écart ne
+                  // dépend pas du montant, qui est le même préfixe dans les
+                  // deux formes. Elle ne tronquait pas avant et ne tronque pas
+                  // davantage : ce paragraphe n'est pas borné — il est posé nu
+                  // dans sa rangée, donc `recue` vaut l'infini — et c'est de la
+                  // place rendue, pas du texte perdu. Le mot « jour »
+                  // disparaît, ce qui est le prix assumé d'une seule forme pour
+                  // les deux écrans.
+                  '${formatXofShort(commercial.rentalDailyRate)}'
+                  '${AppLocalizations.of(context).commonPerDaySuffix}',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: cs.secondary,
                   ),

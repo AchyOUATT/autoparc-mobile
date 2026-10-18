@@ -55,6 +55,27 @@ NavigationBarThemeData barreNavigationTheme(ColorScheme couleurs) {
   );
 }
 
+/// Le plafond d'échelle des QUATRE NOMS DE DESTINATION — « Accueil »,
+/// « Véhicules », « Accessoires », « Pièces » —, partout où ils sont peints.
+///
+/// ── POURQUOI IL EST PARTAGÉ ET NON RECOPIÉ ──────────────────────────────────
+///
+/// Les mêmes quatre mots apparaissent à DEUX endroits : la barre du bas, et les
+/// tuiles « Parcourir » de l'accueil. Le code dit déjà qu'ils doivent coïncider
+/// — « deux rangements différents pour les mêmes destinations obligeraient à
+/// relire à chaque fois » — et le lot de traduction leur a donné une seule clé
+/// `.arb`. La borne d'échelle suit : deux constantes de 1,15 auraient divergé
+/// au premier ajustement, et c'est « Accessoires » qui aurait débordé d'un
+/// côté seulement.
+///
+/// La valeur vient d'une mesure sur la barre du bas, la plus contrainte des
+/// deux : « Accessoires » demande 68,1 points à l'échelle 1,0 pour les 80,0
+/// que sa destination reçoit, donc le rapport qui le fait déborder vaut 1,174,
+/// et la borne est posée juste en dessous. La tuile « Parcourir » est plus
+/// large — 93,3 points à 320 points d'écran — et tient donc avec de la marge
+/// sous la même borne.
+const double echelleMaxLibellesDestinations = 1.15;
+
 /// L'opacité des onglets inactifs.
 ///
 /// Mesurée, pas choisie à l'œil : 0,75 rendait 4,40:1 en clair et 4,39:1 en
@@ -104,8 +125,9 @@ class BarreNavigationPrincipale extends StatelessWidget {
     this.onDestinationSelected,
   });
 
-  /// Le plafond d'échelle des quatre intitulés — voir l'en-tête de la classe.
-  static const double _echelleMaxLibelles = 1.15;
+  /// Le plafond d'échelle des quatre intitulés — voir l'en-tête de la classe,
+  /// et [echelleMaxLibellesDestinations] pour la raison du partage.
+  static const double _echelleMaxLibelles = echelleMaxLibellesDestinations;
 
   @override
   Widget build(BuildContext context) {

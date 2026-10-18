@@ -7,6 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:auto/core/update/ecran_mise_a_jour.dart';
 import 'package:auto/core/update/version_minimale.dart';
+import 'package:auto/l10n/app_localizations.dart';
+
+import 'support/langues.dart';
 
 /// Le plancher de version, et surtout ce qui arrive quand il échoue.
 ///
@@ -197,6 +200,11 @@ void main() {
         'La version installée ne peut plus lire les prix du catalogue.';
 
     Widget ecran() => const MaterialApp(
+          // L'écran bloquant porte désormais du texte traduit (son bouton).
+          // Voir test/support/langues.dart.
+          locale: localeFr,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: EcranMiseAJour(
             message: messageServeur,
             urlStore: 'https://play.google.com/store/apps/details?id=bf.autoparc',
@@ -225,6 +233,11 @@ void main() {
 
       await tester.pumpWidget(MaterialApp(
         navigatorKey: navigateur,
+        // L'écran poussé plus bas porte du texte traduit : les délégués
+        // doivent être sur CE `MaterialApp`, qui est celui qui l'héberge.
+        locale: localeFr,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: const Scaffold(body: Text('Catalogue')),
       ));
 
@@ -261,6 +274,9 @@ void main() {
     /// sans aucune commande laisserait croire à une application cassée.
     testWidgets('sans adresse de store, le bouton est grisé', (tester) async {
       await tester.pumpWidget(const MaterialApp(
+        locale: localeFr,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: EcranMiseAJour(message: messageServeur),
       ));
 

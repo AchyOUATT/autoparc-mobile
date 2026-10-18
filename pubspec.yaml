@@ -1,7 +1,7 @@
 name: auto
 description: "AutoParc – vente et location de véhicules, pièces et accessoires."
 publish_to: 'none'
-version: 1.3.0+1
+version: 1.4.0+1
 
 environment:
   sdk: ^3.11.5
@@ -13,6 +13,18 @@ environment:
 
 dependencies:
   flutter:
+    sdk: flutter
+
+  # Les délégués traduits de Material, Cupertino et Widgets, et les données de
+  # locale sans lesquelles `MaterialApp` ne sait servir que l'anglais.
+  #
+  # VIENT DU SDK, et c'est la seule raison pour laquelle ce lot se permet une
+  # ligne de plus ici : il n'y a aucune contrainte de version à négocier. Le
+  # dépôt a déjà payé une résolution bloquée — share_plus 13 exige `win32 ^6`
+  # quand package_info_plus 8 reste sur `win32 ^5.5.3`, voir plus bas —, donc
+  # la traduction se fait sans aucune dépendance tierce : ni paquet de
+  # détection de langue, ni surcouche d'ARB.
+  flutter_localizations:
     sdk: flutter
   cupertino_icons: ^1.0.8
 
@@ -61,8 +73,27 @@ dependencies:
   # net à toutes les tailles. À retirer si l'on repasse à des PNG.
   flutter_svg: ^2.0.10
 
-  # Formatage (dates, monnaie XOF)
-  intl: ^0.19.0
+  # Formatage (dates, monnaie XOF).
+  #
+  # PLANCHER MONTÉ À 0.20.3 PAR LE SDK, ET NON PAR CHOIX. Le lot de traduction
+  # déclare `flutter_localizations`, qui vient du SDK et dont la contrainte est
+  # `intl ^0.20.3` : `flutter pub get` refusait net —
+  #
+  #   Because auto depends on flutter_localizations from sdk which depends on
+  #   intl ^0.20.3, intl ^0.20.3 is required.
+  #   So, because auto depends on intl ^0.19.0, version solving failed.
+  #
+  # Il n'y a donc aucune marge ici tant que `flutter_localizations` est
+  # déclaré. Ce n'est PAS une dépendance de plus, c'est un plancher que le SDK
+  # impose sur une dépendance déjà présente.
+  #
+  # LA MONTÉE A ÉTÉ MESURÉE, et non supposée, parce que les séparateurs de
+  # milliers sont assertés au caractère près dans les bancs — « 95 000 km »
+  # porte une espace fine insécable U+202F dans vehicle_card_test.dart. Lu
+  # sous 0.20.3 : `NumberFormat.currency(locale: fr_FR)` rend toujours U+202F
+  # entre les milliers et U+00A0 devant FCFA, `decimalPattern(fr_FR)` toujours
+  # U+202F. Aucun des 595 tests ne bouge.
+  intl: ^0.20.3
 
   # Equals/hashCode sans boilerplate
   equatable: ^2.0.7
@@ -136,6 +167,12 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Déclenche `gen-l10n` à chaque `flutter pub get`, d'après l10n.yaml. Sans
+  # cette ligne, `lib/l10n/app_localizations.dart` ne serait régénéré que par un
+  # appel manuel à `flutter gen-l10n`, et un `.arb` modifié sans cet appel
+  # compilerait l'ancien texte en silence.
+  generate: true
 
   assets:
     # Logos de marques, nommés sur le slug de la table `brands`
