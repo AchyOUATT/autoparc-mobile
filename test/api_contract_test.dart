@@ -23,8 +23,24 @@ import 'package:flutter_test/flutter_test.dart';
 /// la main aurait porté des nombres et n'aurait rien révélé.
 ///
 /// Rafraîchir après toute modification d'une ressource côté serveur :
-///   (backend) php artisan test --filter=ApiContractFixturesTest
+///   (backend) UPDATE_FIXTURES=1 php artisan test --filter=ApiContractFixturesTest
 ///   cp ../autoparc-backend/tests/Fixtures/api/*.json test/fixtures/
+///
+/// **Une divergence assumée, et une seule : les `media` des deux fixtures de
+/// véhicule.** `ApiContractFixturesTest` ne crée aucun média — le mot n'y
+/// apparaît pas —, donc le serveur rend `"media": []`, et les douze fixtures
+/// étaient dans ce cas. Or l'ordre des photos est un contrat : la couverture
+/// en tête, `is_cover` honoré. Avec des listes vides, on pouvait remettre
+/// `mediaUrls` sur un `map(url)` sans ordre et garder toute la suite au vert —
+/// exactement la panne qu'on venait de réparer. `vehicles_list.json` et
+/// `vehicle_detail.json` portent donc trois médias dont la couverture en
+/// DEUXIÈME position, à la forme de `VehicleResource` (id, url, collection,
+/// is_cover — pas de `position`).
+///
+/// La recopie ci-dessus les écrase. Ce n'est pas silencieux : le groupe « Les
+/// médias des fixtures » de `photo_couverture_test.dart` vérifie d'abord la
+/// fixture elle-même et tombe en nommant ce paragraphe. Les remettre à la main
+/// — ou les faire créer côté serveur — est alors le travail à faire.
 void main() {
   Map<String, dynamic> objet(String nom) =>
       jsonDecode(File('test/fixtures/$nom.json').readAsStringSync())

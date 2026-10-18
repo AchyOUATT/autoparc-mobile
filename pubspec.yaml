@@ -1,7 +1,7 @@
 name: auto
 description: "AutoParc – vente et location de véhicules, pièces et accessoires."
 publish_to: 'none'
-version: 1.2.0+1
+version: 1.3.0+1
 
 environment:
   sdk: ^3.11.5
@@ -47,6 +47,15 @@ dependencies:
 
   # Images réseau avec cache
   cached_network_image: ^3.4.1
+  # `flutter_cache_manager` était déclaré ici, à côté, pour un seul appelant :
+  # le partage ouvrait `DefaultCacheManager` en direct afin de joindre la photo
+  # déjà en cache. Le partage envoie maintenant l'adresse de la page publique
+  # et aucun fichier — une image jointe empêche WhatsApp de rendre l'aperçu de
+  # lien —, plus rien ne l'importe (vérifié par grep sur lib/, test/, tool/),
+  # et une dépendance directe sans appelant finit par être montée de version
+  # pour personne. Elle reste disponible en transitif de
+  # cached_network_image ; la redéclarer sera nécessaire le jour où du code la
+  # réimportera, sous peine de `depend_on_referenced_packages`.
 
   # Logos de marques : les sources publiques les distribuent en SVG, qui reste
   # net à toutes les tailles. À retirer si l'on repasse à des PNG.
@@ -61,12 +70,45 @@ dependencies:
   # Liens externes (WhatsApp, téléphone)
   url_launcher: ^6.3.1
 
+  # Feuille de partage du système (WhatsApp, Facebook, Messenger, SMS…).
+  #
+  # Bloqué sur la branche 12 : à partir de 13.0.0, share_plus exige
+  # `win32 ^6`, alors que `package_info_plus ^8` — indispensable au plancher
+  # de version ci-dessous — reste sur `win32 ^5.5.3`. La résolution échoue.
+  # Monter de branche suppose donc de monter package_info_plus d'abord.
+  share_plus: ^12.0.2
+
   # Sélection de photos depuis la galerie ou l'appareil photo
   image_picker: ^1.1.2
   # Déclarés explicitement pour activer le sélecteur de photos du système
   # (voir main.dart) : sans lui, l'application devait réclamer
   # READ_MEDIA_IMAGES, que Google Play refuse depuis Android 13.
-  image_picker_android: ^0.8.13
+  #
+  # PLANCHER MONTÉ À +25 pour une raison de mémoire, pas de confort.
+  # pubspec.lock tenait 0.8.13+17, dont l'`ImageResizer.java` construit un
+  # `BitmapFactory.Options` NEUF puis lit `outWidth`/`outHeight` dessus pour
+  # calculer `inSampleSize` : ces champs valent zéro, le test de réduction est
+  # toujours faux, et BitmapFactory décodait à PLEINE RESOLUTION avant de
+  # réduire. Une prise de 4000x3000 fait 48,0 Mo en ARGB_8888, plus 12,6 Mo
+  # pour la copie réduite allouée pendant que la source vit encore — 60,6 Mo
+  # de pointe. Or `minSdk` vaut 24, et jusqu'à l'API 25 les pixels d'un Bitmap
+  # vivent sur le tas Java, dont le défaut AOSP est 48 Mo sur un appareil de
+  # 512 Mo de RAM et 96 Mo sur un appareil de 1 Go : le décodage seul dépassait
+  # le premier.
+  #
+  # +25 corrige exactement cela (« large images are now subsampled while
+  # decoding ») : la taille d'origine, lue par `readFileDimensions` avec
+  # `inJustDecodeBounds`, est passée à `calculateSampleSize` en entiers. Lu
+  # dans la source installée, pas déduit du journal des modifications.
+  #
+  # La résolution a été vérifiée avant d'être posée, parce que ce dépôt a déjà
+  # payé un blocage (share_plus 13 contre package_info_plus 8, ci-dessus) :
+  # `flutter pub upgrade image_picker_android --dry-run` annonce « Would change
+  # 1 dependency ». Et comme +18 migre le greffon vers le Kotlin intégré d'AGP,
+  # la construction Android a été mesurée pour de vrai, pas supposée :
+  # `flutter build apk --debug` puis `--release` (R8 et shrinkResources
+  # compris) passent tous deux.
+  image_picker_android: ^0.8.13+25
   image_picker_platform_interface: ^2.11.1
 
   # Persistance légère (onboarding vu, préférences UI)

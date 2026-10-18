@@ -9,6 +9,7 @@ import 'package:image_picker_platform_interface/image_picker_platform_interface.
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'core/theme/app_theme.dart';
 import 'core/update/ecran_mise_a_jour.dart';
 import 'core/update/version_minimale.dart';
 import 'core/utils/lien_externe.dart';
@@ -295,8 +296,8 @@ class AutoParcApp extends StatelessWidget {
         title: 'AutoParc',
         debugShowCheckedModeBanner: false,
         routerConfig: _buildRouter(onboardingDone: onboardingDone),
-        theme: _theme(Brightness.light),
-        darkTheme: _theme(Brightness.dark),
+        theme: themeAutoParc(Brightness.light),
+        darkTheme: themeAutoParc(Brightness.dark),
       ),
     );
   }
@@ -335,55 +336,14 @@ class _PorteMiseAJour extends ConsumerWidget {
     return MaterialApp(
       title: 'AutoParc',
       debugShowCheckedModeBanner: false,
-      theme: _theme(Brightness.light),
-      darkTheme: _theme(Brightness.dark),
+      theme: themeAutoParc(Brightness.light),
+      darkTheme: themeAutoParc(Brightness.dark),
       home: EcranMiseAJour(
         message: verdict.message,
         urlStore: verdict.urlStore,
       ),
     );
   }
-}
-
-/// Le theme de l'application, clair et sombre.
-///
-/// Les deux ne differaient que par leur Brightness : une fonction evite de
-/// repeter chaque reglage de densite dans les deux copies, et surtout evite
-/// qu'ils divergent.
-///
-/// Densite reduite le 2026-10-16. Les reglages par defaut de Material 3 sont
-/// genereux — pensés pour des ecrans larges —, et sur un telephone ils
-/// mangeaient de la hauteur utile a chaque ecran : une barre de titre de 56
-/// points, des icones de 24, un titre de 22.
-ThemeData _theme(Brightness brightness) {
-  final base = ThemeData(
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF8AAFC8), // bleu ardoise pâle — très doux
-      brightness: brightness,
-    ),
-    useMaterial3: true,
-  );
-
-  return base.copyWith(
-    appBarTheme: base.appBarTheme.copyWith(
-      // 48 au lieu des 56 par defaut (kToolbarHeight), et un titre a 18
-      // au lieu de 22. On ne descend pas sous 48 : les IconButton de la
-      // barre imposent une cible tactile de 48 points, et la barre les
-      // rognerait. Le titre est construit a partir de titleLarge et non
-      // ecrit de zero — sans cela il perdrait sa couleur, et deviendrait
-      // illisible sur les barres colorees.
-      toolbarHeight: 48,
-      titleTextStyle: base.textTheme.titleLarge?.copyWith(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-      ),
-      // Cloche, panier, retour : 20 au lieu de 24. iconTheme couvre le
-      // bouton de navigation a gauche, actionsIconTheme ceux de droite —
-      // les deux sont necessaires, l'un ne retombe pas sur l'autre.
-      iconTheme: const IconThemeData(size: 20),
-      actionsIconTheme: const IconThemeData(size: 20),
-    ),
-  );
 }
 
 // Coordonnées de contact : voir core/utils/contact_info.dart.
@@ -541,21 +501,19 @@ class _AppShellState extends ConsumerState<_AppShell> {
         key: scaffoldKey,
         drawer: const _AppDrawer(),
         body: widget.child,
-        bottomNavigationBar: Theme(
-          data: Theme.of(context).copyWith(
-            navigationBarTheme:
-                barreNavigationTheme(Theme.of(context).colorScheme),
-          ),
-          child: NavigationBar(
-            selectedIndex: tabIndex,
-            onDestinationSelected: (i) => context.go(_tabs[i].path),
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            destinations: _tabs.map((t) => NavigationDestination(
-              icon:        Icon(t.icon),
-              selectedIcon: Icon(t.icon),
-              label:       t.label,
-            )).toList(),
-          ),
+        // L'habillage ET la borne d'échelle de texte sont dans
+        // `BarreNavigationPrincipale` : « Accessoires » se cassait sur deux
+        // lignes à 320 points et à l'échelle 1,3, et la coque de mesure des
+        // tests reproduisait ce `Theme` à la main sans pouvoir reproduire le
+        // reste. Le widget est la source unique des deux.
+        bottomNavigationBar: BarreNavigationPrincipale(
+          selectedIndex: tabIndex,
+          onDestinationSelected: (i) => context.go(_tabs[i].path),
+          destinations: _tabs.map((t) => NavigationDestination(
+            icon:        Icon(t.icon),
+            selectedIcon: Icon(t.icon),
+            label:       t.label,
+          )).toList(),
         ),
       ),
     );

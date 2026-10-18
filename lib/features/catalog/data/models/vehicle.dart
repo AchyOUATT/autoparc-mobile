@@ -56,7 +56,42 @@ class Vehicle extends Equatable {
   final VehicleCommercial commercial;
   final VehicleImport? import_;
   final int faultsCount;
+
+  /// Toutes les photos du véhicule, **couverture en tête**.
+  ///
+  /// L'ordre est un contrat, pas une commodité : trois écrans le supposent
+  /// déjà — la carte du catalogue et le carrousel d'accueil lisent [coverUrl],
+  /// qui en est le premier élément, la galerie de la fiche affiche la liste
+  /// telle quelle.
+  /// Le partage en dépendait aussi, tant qu'il joignait la photo ; il envoie
+  /// désormais l'adresse de la page publique, et c'est le serveur qui choisit
+  /// la photo de l'aperçu. Voir `Part.photoUrls` : même format, même garantie,
+  /// et jamais `null`.
   final List<String> mediaUrls;
+
+  /// La photo de couverture, `null` si le véhicule n'a aucune photo.
+  ///
+  /// C'est exactement le premier élément de [mediaUrls] — même invariant que
+  /// `Part.coverUrl`, et il est désormais vrai des trois modèles : les deux
+  /// autres dérivaient leur couverture avant de filtrer les adresses vides, et
+  /// rendaient donc la chaîne vide là où ce champ-ci rendait la vraie photo.
+  /// Voir `Part.fromJson`.
+  ///
+  /// Le champ existe pour que l'appelant qui n'a besoin que d'une image le
+  /// dise, au lieu de prendre `.first` sur une liste et de laisser croire que
+  /// l'ordre lui est indifférent. Ses appelants sont la carte de la grille du
+  /// catalogue et la tuile du carrousel d'accueil ; la galerie de la fiche, qui
+  /// montre toutes les photos, lit [mediaUrls].
+  final String? coverUrl;
+
+  /// Date de publication au catalogue public, `null` si la fiche n'a jamais
+  /// été publiée.
+  ///
+  /// Le champ arrivait de `VehicleResource` — liste comprise, il n'y est pas
+  /// conditionné à une relation chargée — et n'était lu par personne. Il
+  /// décide pourtant de l'existence de `/v/{id}` : voir [aUnePagePublique].
+  final DateTime? publishedAt;
+
   final List<VehicleFeature> features;
 
   /// Kilométrage. L'API le résout côté serveur : compteur de la carte grise
@@ -121,6 +156,8 @@ class Vehicle extends Equatable {
     this.import_,
     required this.faultsCount,
     required this.mediaUrls,
+    this.coverUrl,
+    this.publishedAt,
     this.features = const [],
     this.mileageKm,
     this.transmission,
@@ -141,6 +178,51 @@ class Vehicle extends Equatable {
   factory Vehicle.fromJson(Map<String, dynamic> json) {
     final technique = json['technical'] as Map<String, dynamic>?;
 
+    // ── Les photos, couverture en tête ───────────────────────────────────
+    //
+    // `is_cover` arrivait et était jeté : ce parseur ne lisait que `url`.
+    // `Part.fromJson` et `Accessory.fromJson` l'honoraient déjà, celui-ci
+    // non, et tous les écrans qui lisent ces photos — par `mediaUrls` pour la
+    // galerie, par `coverUrl` pour les vignettes — supposent la couverture en
+    // tête. Cela marchait par chance — le serveur rend souvent la couverture
+    // en premier. Le partage a rendu la panne publique : un véhicule envoyé
+    // dans une conversation pouvait s'annoncer par une photo de jante au lieu
+    // de la voiture.
+    //
+    // Le tri est fait ici, au parseur, et nulle part ailleurs : tous les
+    // points d'appel deviennent justes sans qu'on les touche, et le prochain
+    // écran qui lira ces photos héritera de la correction au lieu de refaire
+    // le même oubli.
+    //
+    // Même motif que `Part.fromJson`, à une différence près : VehicleResource
+    // ne sérialise pas `position` — il rend id, url, collection, is_cover. Il
+    // n'y a donc rien à trier derrière la couverture, et surtout rien à
+    // trier *sur* : la relation `media` du modèle Vehicle est déjà ordonnée
+    // par `position` côté serveur, et un tri sur une clé absente écraserait
+    // cet ordre sans rien apporter.
+    final medias = json['media'] as List?;
+    var photos = const <String>[];
+    if (medias != null && medias.isNotEmpty) {
+      final couverture = medias.firstWhere(
+        (m) => m['is_cover'] == true,
+        orElse: () => medias.first,
+      );
+      // La couverture est écartée du reste par identité et non par URL : deux
+      // médias peuvent porter la même adresse — voir `Part.fromJson`, le
+      // catalogue en a eu deux pointant sur « /0 » après une panne de
+      // stockage — et un filtre par URL les aurait tous perdus.
+      photos = <dynamic>[
+        couverture,
+        ...medias.where((m) => !identical(m, couverture)),
+      ]
+          // Le filtre des URL vides existait déjà et reste : un média sans
+          // adresse ferait un cadre noir dans la galerie, ou pire, partirait
+          // en vignette de partage.
+          .map((m) => m['url'] as String? ?? '')
+          .where((u) => u.isNotEmpty)
+          .toList(growable: false);
+    }
+
     final status = json['registration_status'];
     return Vehicle(
       id:                 json['id'] as int,
@@ -156,11 +238,15 @@ class Vehicle extends Equatable {
                               ? VehicleImport.fromJson(json['import'] as Map<String, dynamic>)
                               : null,
       faultsCount:        json['faults_count'] as int? ?? 0,
-      mediaUrls:          (json['media'] as List?)
-                              ?.map((m) => m['url'] as String? ?? '')
-                              .where((u) => u.isNotEmpty)
-                              .toList() ??
-                          [],
+      mediaUrls:          photos,
+      // `coverUrl` n'est pas une seconde lecture de `media` : c'est le même
+      // premier élément, nommé. Les deux ne peuvent donc pas diverger.
+      coverUrl:           photos.isEmpty ? null : photos.first,
+      // Une date illisible compte comme « pas publié », et c'est le bon sens
+      // de l'erreur : le seul lecteur de ce champ masque le partage quand il
+      // est nul. Un bouton absent se remarque et se signale ; un lien mort
+      // part dans une conversation et n'en revient pas.
+      publishedAt:        DateTime.tryParse(json['published_at'] as String? ?? ''),
       features:           (json['features'] as List?)
                               ?.map((f) => VehicleFeature.fromJson(f as Map<String, dynamic>))
                               .toList() ??
@@ -183,6 +269,38 @@ class Vehicle extends Equatable {
       isFullOption:         json['is_full_option'] as bool? ?? false,
     );
   }
+
+  /// Les statuts qui FERMENT la page publique d'un véhicule.
+  ///
+  /// Recopiés de `ArticleController::STATUTS_RETIRES` côté serveur, et dans le
+  /// même sens : une liste de ce qui ferme, jamais de ce qui ouvre. Un statut
+  /// ajouté demain à l'énumération garde donc sa page — et son bouton — par
+  /// défaut, au lieu de disparaître sans bruit du partage.
+  ///
+  /// Les quatre autres statuts restent ouverts à dessein, pour la raison que le
+  /// serveur écrit : `reserved` parce qu'une réservation tombe, `rented`,
+  /// `maintenance` et `in_transit` parce que le véhicule est au parc et
+  /// revient.
+  static const _statutsSansPage = {'sold', 'archived'};
+
+  /// Vrai quand `/v/{id}` répond, c'est-à-dire quand ce véhicule est
+  /// partageable.
+  ///
+  /// **Le bouton « Partager » est posé sous cette condition, sur les trois
+  /// fiches.** Depuis que le partage porte l'adresse de l'article et non plus
+  /// celle du magasin d'applications, un article sans page publique fabrique un
+  /// lien mort : le destinataire reçoit un 404. Avant ce changement le lien
+  /// menait toujours quelque part, donc la régression est nouvelle, et elle est
+  /// à la charge de l'appelant : `/api/catalog/vehicles` liste les véhicules
+  /// vendus, archivés et jamais publiés comme les autres.
+  ///
+  /// Le critère est celui des `abort_if` de
+  /// `autoparc-backend/app/Http/Controllers/Web/ArticleController::vehicule` —
+  /// `published_at === null`, puis le statut — et il est recopié ici parce que
+  /// rien ne l'expose : l'API ne dit pas « cet article a une page ». Le jour où
+  /// le serveur bougera ce critère, c'est ce getter qu'il faudra suivre.
+  bool get aUnePagePublique =>
+      publishedAt != null && !_statutsSansPage.contains(commercial.status);
 
   bool get isImported    => registrationStatus == 'unregistered';
   bool get isRegistered  => registrationStatus == 'registered';

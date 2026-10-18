@@ -77,6 +77,74 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
 
   // ── Sélection & upload ───────────────────────────────────────────
 
+  /// Choisit des photos, les redimensionne, les envoie.
+  ///
+  /// ── POURQUOI 2048 px, ET POURQUOI C'EST URGENT ──────────────────────────
+  ///
+  /// LES VENDEURS N'ARRIVAIENT PAS À ENVOYER LEURS PHOTOS, en production. Le
+  /// plafond REEL de depot du serveur est 2 Mo et non les 8192 ko que sa
+  /// validation annonce : l'image PHP ne posait aucun php.ini — ni
+  /// php.ini-production ni php.ini-development ne sont actives dans
+  /// php:8.4-cli — si bien que le defaut COMPILE upload_max_filesize=2M
+  /// s'appliquait. PHP refusait le fichier avant que Laravel le voie. Mesure du
+  /// serveur par HTTP reel, POST /api/parts/1/media, un fichier :
+  ///
+  ///     2 072 238 o (juste sous 2 MiB) -> 201
+  ///     2 255 773 o (juste au-dessus)  -> 422 « The photos.0 failed to upload. »
+  ///     6 797 161 o (4000x3000, q85)   -> 422 « The photos.0 failed to upload. »
+  ///
+  /// Une prise de telephone ordinaire fait 2 a 5 Mo : toutes tombaient dans le
+  /// deuxieme cas, et le message ne parlait meme pas de taille. A 2048 px et
+  /// qualite 85, une photo retombe aux alentours de 700 ko et passe.
+  ///
+  /// Le serveur corrige son plafond en parallele
+  /// (`docker/php/depot-de-photos.ini` : upload_max_filesize=9M,
+  /// post_max_size=92M). CE CHANGEMENT-CI RESTE NECESSAIRE : les versions deja
+  /// installees continueront d'envoyer des photos pleines pendant des mois, et
+  /// le plancher de version d'AppVersionController ne les bloque pas toutes.
+  ///
+  /// Second benefice, sur une connexion mobile payee a la donnee : dix photos
+  /// passent d'environ 50 Mo a environ 7 Mo a envoyer.
+  ///
+  /// ── CE QUE LE GREFFON FAISAIT MAL, ET QUI EST CORRIGE ───────────────────
+  ///
+  /// `maxWidth`/`maxHeight` donnaient le bon FICHIER mais pas la bonne
+  /// EMPREINTE MEMOIRE sur Android. Lu dans `ImageResizer.java`
+  /// d'image_picker_android 0.8.13+17, la version que pubspec.lock tenait
+  /// quand ce changement a ete ecrit :
+  ///
+  ///     BitmapFactory.Options options = new BitmapFactory.Options();
+  ///     options.inSampleSize = calculateSampleSize(options, targetW, targetH);
+  ///     Bitmap bmp = decodeFile(imagePath, options);
+  ///
+  /// `calculateSampleSize` lisait `options.outWidth`/`outHeight` sur cet objet
+  /// NEUF, donc a zero : son test `height > targetHeight` etait toujours faux,
+  /// `inSampleSize` restait a 1, et BitmapFactory decodait a PLEINE RESOLUTION
+  /// avant que `createScaledBitmap` reduise. Le fichier de sortie restait
+  /// correct — les deux benefices ci-dessus tenaient deja — mais le telephone
+  /// allouait l'image entiere au passage : une prise de 4000x3000 fait
+  /// 12,0 Mpx, soit 48,0 Mo en ARGB_8888, plus 12,6 Mo pour la copie reduite de
+  /// 2048x1536 allouee pendant que la source vit encore — 60,6 Mo de pointe
+  /// pour UNE photo, et ce selecteur en prend dix.
+  ///
+  /// Ce que ca coutait, chiffre : `minSdk` vaut 24 (le defaut de Flutter 3.47),
+  /// et de l'API 24 a 25 les pixels d'un Bitmap vivent sur le TAS JAVA, ou
+  /// `dalvik.vm.heapgrowthlimit` s'applique. Valeurs par defaut d'AOSP
+  /// (frameworks/native/build) : 48 Mo sur un appareil de 512 Mo de RAM
+  /// (phone-hdpi-512-dalvik-heap.mk), 96 Mo sur un appareil de 1 Go
+  /// (phone-xhdpi-1024-dalvik-heap.mk). Le decodage seul, 48,0 Mo, depassait
+  /// donc le premier — OutOfMemoryError certain — et occupait les deux tiers du
+  /// second. A partir de l'API 26 les pixels passent en memoire NATIVE et le
+  /// plafond Java ne s'applique plus : le defaut y etait du gaspillage, pas une
+  /// mort certaine. C'est la fourchette basse du parc vise qui payait.
+  ///
+  /// CORRIGE, ET PRIS : pubspec.yaml monte le plancher a
+  /// image_picker_android 0.8.13+25, dont `ImageResizer` passe la taille
+  /// d'origine a `calculateSampleSize` en entiers, lue par
+  /// `readFileDimensions` avec `inJustDecodeBounds`. Lu dans la source
+  /// installee, pas deduit du journal des modifications ; et la construction
+  /// Android a ete mesuree, `--debug` et `--release` avec R8 — voir le
+  /// commentaire de pubspec.yaml, qui porte le detail.
   Future<void> _pickAndUpload(ImageSource source) async {
     List<XFile> files;
 
@@ -84,9 +152,19 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
       // Ce 10 est celui du serveur : MediaController::MAX_PHOTOS plafonne
       // l'envoi, et post_max_size est dimensionne dessus. Le relever ici
       // sans toucher aux deux autres ferait refuser l'envoi entier.
-      files = await _picker.pickMultiImage(imageQuality: 85, limit: 10);
+      files = await _picker.pickMultiImage(
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+        limit: 10,
+      );
     } else {
-      final f = await _picker.pickImage(source: source, imageQuality: 85);
+      final f = await _picker.pickImage(
+        source: source,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+      );
       files = f != null ? [f] : [];
     }
 

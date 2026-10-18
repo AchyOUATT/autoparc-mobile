@@ -9,6 +9,8 @@ import '../providers/catalog_providers.dart';
 import '../widgets/niveau_categories.dart';
 import '../../../../shared/models/paged_state.dart';
 import '../../../../core/utils/currency_format.dart';
+import '../../../../core/widgets/bande_filtres.dart';
+import '../../../../core/widgets/bouton_flottant_effacable.dart';
 import '../../../../core/widgets/catalog_image.dart';
 import '../../../../core/api/api_exception.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
@@ -81,13 +83,16 @@ class _PartListPageState extends ConsumerState<PartListPage> {
       // Un magasinier ou un observateur n'a pas le droit de creer une fiche :
       // le bouton disparait plutot que de renvoyer un 403.
       floatingActionButton: auth.canManageCatalog
-          ? FloatingActionButton.extended(
-              onPressed: () async {
-                await context.push('/parts/new');
-                ref.read(partListProvider.notifier).refresh();
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Nouvelle pièce'),
+          ? BoutonFlottantEffacable(
+              controleur: _scrollCtrl,
+              enfant: FloatingActionButton.extended(
+                onPressed: () async {
+                  await context.push('/parts/new');
+                  ref.read(partListProvider.notifier).refresh();
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Nouvelle pièce'),
+              ),
             )
           : null,
       appBar: AppBar(
@@ -241,12 +246,13 @@ class _FilterBar extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return SizedBox(
-      height: 48,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        scrollDirection: Axis.horizontal,
-        children: [
+    // Même bande que les véhicules et les accessoires depuis ce lot. Les 48
+    // points étaient écrits ici à la main ; ils viennent désormais du plancher
+    // de cible tactile des puces elles-mêmes, et les bords s'estompent au lieu
+    // de se couper net — voir `BandeFiltres`. En laisser deux pages à l'ancien
+    // dessin aurait eu l'air d'un défaut, comme pour les barres de recherche.
+    return BandeFiltres(
+      children: [
           for (final c in categories)
             Padding(
               padding: const EdgeInsets.only(right: 8),
@@ -274,8 +280,7 @@ class _FilterBar extends ConsumerWidget {
                 )),
               ),
             ),
-        ],
-      ),
+      ],
     );
   }
 }
@@ -346,6 +351,15 @@ class _PartList extends StatelessWidget {
               ),
             ),
           ),
+        // Dégage la dernière rangée du bouton flottant.
+        //
+        // IL MANQUAIT ICI, et la liste des véhicules l'avait : le bouton
+        // « Nouvelle pièce » fait 56,0 points de haut et le `Scaffold` le pose
+        // à 16 du bas, donc la dernière carte finissait dessous sans qu'aucun
+        // défilement ne puisse l'en sortir. 88 points, la même valeur que la
+        // liste des véhicules — deux listes côte à côte dans la même barre
+        // d'onglets ne se dégagent pas différemment.
+        const SliverToBoxAdapter(child: SizedBox(height: 88)),
       ],
     );
   }

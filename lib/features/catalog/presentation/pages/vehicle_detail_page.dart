@@ -11,12 +11,14 @@ import '../../data/models/vehicle.dart';
 import '../providers/catalog_providers.dart';
 import '../../../../core/utils/contact_info.dart';
 import '../../../../core/utils/currency_format.dart';
+import '../../../../core/utils/partage.dart';
 import '../../../../core/widgets/brand_logo.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../../vehicles/data/vehicle_admin_repository.dart';
 import '../../../vehicles/data/models/catalog_refs.dart';
 import '../../../vehicles/presentation/widgets/vehicle_faults_section.dart';
+import '../libelles_vehicule.dart';
 
 // Séparateur de milliers à la française : « 246 965 km » plutôt que « 246965 ».
 final _integer = NumberFormat.decimalPattern('fr_FR');
@@ -134,6 +136,60 @@ class _VehicleDetailView extends ConsumerWidget {
             // La suppression est plus restreinte que la modification : elle ne
             // se rattrape pas depuis l'application.
             actions: [
+              // La seule commande de cette barre qui existe pour un visiteur :
+              // sans session personnel, `actions` ne portait rien du tout.
+              // Partager un véhicule est même le geste le plus courant — on
+              // envoie la fiche à un proche pour qu'il rappelle l'agence — donc
+              // aucune capacité ne le conditionne, et il passe devant les
+              // commandes de gestion.
+              //
+              // AUCUNE CAPACITÉ, MAIS UNE CONDITION, et elle n'est pas
+              // négociable : un véhicule vendu, archivé ou jamais publié n'a
+              // pas de page `/v/{id}`, et le message porte désormais cette
+              // adresse. Le bouton fabriquerait un lien qui rend 404 chez le
+              // destinataire — voir `Vehicle.aUnePagePublique`, où le critère
+              // du serveur est recopié. Le catalogue, lui, montre ces
+              // véhicules : c'est bien à l'écran de trancher.
+              //
+              // Il DISPARAÎT au lieu de rester grisé avec une explication :
+              // l'infobulle devrait parler de publication et de statut, c'est-
+              // à-dire exposer une mécanique de serveur à un acheteur qui n'en
+              // a rien à faire. Ce commentaire existe pour que personne ne le
+              // reposte sans condition.
+              if (vehicle.aUnePagePublique)
+                IconButton(
+                  icon: const Icon(Icons.share_outlined),
+                  tooltip: 'Partager',
+                  // Les valeurs telles que la fiche les affiche, aux mêmes
+                  // libellés : `_libelleCarrosserie` et `libelleTransmission`
+                  // sont ceux du bloc « Véhicule » juste dessous, et le
+                  // kilométrage garde le séparateur de milliers de `_integer` —
+                  // « 246 965 km », pas « 246965 ».
+                  //
+                  // Le prix de vente ne part que si le véhicule est à vendre :
+                  // `_PriceSection` le masque sur une location seule, où
+                  // `salePrice` est nul. Un prix nul disparaît du message plutôt
+                  // que d'y laisser un tiret — voir `composerMessagePartage`.
+                  onPressed: () => partagerArticle(
+                    context,
+                    titre: id.fullName,
+                    // `vehicle.id` et non `reference` : la route publique
+                    // `/v/{id}` est indexée sur la clef primaire. La référence
+                    // « VH-… » n'existe que pour les humains du parc.
+                    type: TypeArticle.vehicule,
+                    id: vehicle.id,
+                    prix: c.isForSale ? c.salePrice : null,
+                    precisions: [
+                      if (vehicle.mileageKm != null)
+                        '${_integer.format(vehicle.mileageKm)} km',
+                      if (vehicle.bodyStyle != null)
+                        _libelleCarrosserie(vehicle.bodyStyle!),
+                      id.engineType,
+                      if (vehicle.transmission != null)
+                        libelleTransmission(vehicle.transmission!),
+                    ],
+                  ),
+                ),
               if (auth.canManageCatalog)
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
@@ -226,7 +282,7 @@ class _VehicleDetailView extends ConsumerWidget {
                     if (vehicle.bodyStyle != null)
                       ('Carrosserie', _libelleCarrosserie(vehicle.bodyStyle!)),
                     if (vehicle.transmission != null)
-                      ('Boîte', _libelleTransmission(vehicle.transmission!)),
+                      ('Boîte', libelleTransmission(vehicle.transmission!)),
                     if (vehicle.powerHp != null) ('Puissance', '${vehicle.powerHp} ch'),
                     if (vehicle.engineDisplacementCc != null)
                       ('Cylindrée', '${vehicle.engineDisplacementCc} cm³'),
@@ -1104,14 +1160,6 @@ class _ConsommationOfficielle extends StatelessWidget {
     );
   }
 }
-
-/// « automatic » ne se montre pas a un acheteur.
-String _libelleTransmission(String code) => switch (code) {
-      'manual'    => 'Manuelle',
-      'cvt'       => 'CVT',
-      'automatic' => 'Automatique',
-      _           => code,
-    };
 
 /// Les memes libelles que le formulaire d'enregistrement : une carrosserie
 /// saisie « Berline » doit se relire « Berline », pas « sedan ».

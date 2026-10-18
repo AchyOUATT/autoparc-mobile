@@ -6,10 +6,12 @@ import 'package:auto/core/update/ecran_mise_a_jour.dart';
 import 'package:auto/features/catalog/data/catalog_repository.dart';
 import 'package:auto/features/catalog/data/models/accessory.dart';
 import 'package:auto/features/catalog/data/models/part.dart';
+import 'package:auto/features/catalog/data/models/vehicle.dart';
 import 'package:auto/features/catalog/presentation/pages/add_accessory_page.dart';
 import 'package:auto/features/auth/data/auth_repository.dart';
 import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
 import 'package:auto/features/cart/presentation/pages/cart_page.dart';
+import 'package:auto/features/catalog/presentation/pages/accessory_detail_page.dart';
 import 'package:auto/features/catalog/presentation/pages/accessory_list_page.dart';
 import 'package:auto/features/catalog/presentation/pages/add_part_page.dart';
 import 'package:auto/features/catalog/presentation/pages/part_list_page.dart';
@@ -21,6 +23,7 @@ import 'package:auto/features/garage/presentation/pages/garage_page.dart';
 import 'package:auto/features/garage/presentation/providers/fuel_fills_provider.dart';
 import 'package:auto/features/garage/presentation/providers/garage_provider.dart';
 import 'package:auto/features/home/presentation/pages/home_page.dart';
+import 'package:auto/features/home/presentation/providers/home_providers.dart';
 import 'package:auto/features/needs/presentation/pages/client_needs_page.dart';
 import 'package:auto/features/needs/presentation/pages/needs_list_page.dart';
 import 'package:auto/features/needs/presentation/pages/submit_need_page.dart';
@@ -305,6 +308,51 @@ void main() {
     }
   });
 
+  // ── La fiche d'un accessoire, vue par un administrateur ──────────────────
+
+  /// Cet écran manquait, et c'est la seule raison pour laquelle un débordement
+  /// mesuré à la main n'avait pas été vu ici : sa barre de titre portait une
+  /// puce de catégorie en plus des quatre commandes — Partager, Photos,
+  /// Modifier, Supprimer — et débordait de 9,0 points à 320 × 1,0 et de
+  /// 40 points à 320 × 1,3. À 360, elle tenait.
+  ///
+  /// Le libellé de catégorie compte autant que le format, et c'est pourquoi
+  /// `_accessoire()` porte « Multimédia » : avec « Confort », sept signes, la
+  /// barre tenait à 320 et le banc serait resté vert sur un écran cassé.
+  group('Fiche d\'un accessoire (admin)', () {
+    Widget fiche() => ProviderScope(
+          overrides: [
+            authProvider.overrideWith((_) => _FauxAuth(_admin())),
+            catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
+          ],
+          child: MaterialApp(
+            home: AccessoryDetailPage(
+              accessoryId: 1,
+              initialAccessory: _accessoire(),
+            ),
+          ),
+        );
+
+    for (final format in formats.entries) {
+      for (final echelle in echelles) {
+        testWidgets('tient en ${format.key}, texte x$echelle', (tester) async {
+          expect(
+            await debordeEnDefilant(
+              tester,
+              fiche(),
+              taille: format.value,
+              echelle: echelle,
+              // Un texte du corps, et non le nom de l'article : celui-ci
+              // s'affiche dans la barre de titre même sans corps dessiné.
+              marqueur: 'Informations',
+            ),
+            isNull,
+          );
+        });
+      }
+    }
+  });
+
   // ── Les autres écrans, en bloc ───────────────────────────────────────────
 
   /// Chacun est ouvert avec la session qui le concerne — administrateur pour
@@ -337,6 +385,27 @@ void main() {
     'Mettre en vente':    (const VehicleRegisterPage(), 'véhicule',         _admin()),
   };
 
+  /// Les surcharges propres à un écran, en plus des trois communes.
+  ///
+  /// **« Accueil » MESURAIT UN ÉCRAN VIDE.** Les trois surcharges communes
+  /// posent un dépôt muet ; `homeDealsProvider` ne résolvait donc jamais, et
+  /// `_DealsSection` rend `SizedBox.shrink()` sur tout ce qui n'est pas
+  /// `data` : la vitrine n'existait pas au rendu. Le carrousel débordait de
+  /// 26 points à l'échelle 1,0 et de 65 à 1,3 — dès le premier rendu, aux
+  /// trois largeurs, avec ou sans photo — et ce groupe restait vert.
+  ///
+  /// C'est le défaut de méthode que corrige cette carte : un écran dont les
+  /// sections dépendent d'un `FutureProvider` ne se mesure pas avec un dépôt
+  /// muet. Le marqueur « Accueil » ne protégeait pas de ça — il n'est que le
+  /// titre de la barre, et il s'affiche même quand le corps est vide.
+  ///
+  /// Un seul véhicule suffit, et c'est volontaire : le carrousel défile
+  /// horizontalement, donc c'est la HAUTEUR d'une tuile qui déborde, jamais
+  /// leur nombre.
+  final surcharges = <String, List<Override>>{
+    'Accueil': [homeDealsProvider.overrideWith((_) async => [_affaire()])],
+  };
+
   for (final entree in ecrans.entries) {
     group(entree.key, () {
       for (final format in formats.entries) {
@@ -353,6 +422,7 @@ void main() {
                     catalogRepositoryProvider
                         .overrideWithValue(_DepotMuet()),
                     catalogRefsProvider.overrideWith((_) async => refs),
+                    ...?surcharges[entree.key],
                   ],
                   child: MaterialApp(home: entree.value.$1),
                 ),
@@ -585,7 +655,12 @@ Accessory _accessoire() => Accessory.fromJson({
       'id': 1,
       'name': 'Tapis de sol caoutchouc toutes saisons, jeu de quatre',
       'sku': 'TAP-4S-001',
-      'category': {'value': 'confort', 'label': 'Confort'},
+      // « Multimédia » et non « Confort » : dix signes contre sept, à égalité
+      // avec « Esthétique » et « Utilitaire » pour le plus long des cinq
+      // libellés. C'est lui qui décidait si la barre de la fiche débordait —
+      // 129,0 points de puce contre 95,7 —, donc le seul qui mesure quelque
+      // chose. Le libellé le plus court aurait rendu le banc complaisant.
+      'category': {'value': 'multimedia', 'label': 'Multimédia'},
       'pricing': {
         'selling_price': 12000,
         'currency': 'XOF',
@@ -630,6 +705,46 @@ Part _piece() => Part.fromJson({
         'alert_threshold': 0,
         'is_low': false,
       },
+    });
+
+/// Un véhicule de la vitrine de l'accueil, au pire cas de hauteur.
+///
+/// La tuile du carrousel empile le nom, la ville quand elle est connue, et le
+/// prix. Les trois sont donc renseignés : une tuile sans ville est plus courte,
+/// et c'est exactement ce qu'« ajusté au contenu réel » avait mesuré avant de
+/// figer 152 points.
+///
+/// La pastille de promotion vit dans la photo et ne pousse rien ; elle est là
+/// parce que `homeDealsProvider` ne sert que des `deal_type` non nuls, et que
+/// la fixture doit ressembler à ce que l'écran reçoit.
+Vehicle _affaire() => Vehicle.fromJson({
+      'id': 1,
+      'reference': 'VH-0001',
+      'designation': 'Toyota Corolla Base 2015',
+      'registration_status': 'registered',
+      'identity': {
+        'brand': 'Toyota',
+        'brand_slug': 'toyota',
+        'model': 'Corolla',
+        'year': 2015,
+      },
+      'commercial': {
+        'condition': 'used',
+        'status': 'in_stock',
+        'availability': 'sale',
+        'sale_price': '4500000.00',
+        'currency': 'XOF',
+        'price_negotiable': true,
+        'deal_type': 'good_deal',
+        'deal_label': 'Bonne affaire',
+        'location': {
+          'id': 1,
+          'name': 'Showroom Paspanga',
+          'city': 'Ouagadougou',
+        },
+      },
+      'media': const [],
+      'published_at': '2026-09-30T18:42:43+00:00',
     });
 
 /// Un dépôt qui ne répond jamais : l'écran doit se dessiner sans attendre le

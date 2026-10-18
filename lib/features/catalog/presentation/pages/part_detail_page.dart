@@ -9,6 +9,7 @@ import '../widgets/fitments_section.dart';
 import '../../../../features/garage/data/models/garage_compatibility.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../../core/utils/currency_format.dart';
+import '../../../../core/utils/partage.dart';
 import '../../../../features/cart/data/models/cart_item.dart';
 import '../../../../features/cart/presentation/pages/cart_page.dart';
 import '../../../../features/cart/presentation/providers/cart_provider.dart';
@@ -121,6 +122,56 @@ class PartDetailPage extends ConsumerWidget {
             backgroundColor: cs.surface,
             surfaceTintColor: Colors.transparent,
             actions: [
+              // Le partage en tête, et sans aucune condition de capacité.
+              //
+              // Les autres commandes de cette barre sont des commandes de
+              // gestion, réservées au personnel. Le partage ne l'est pas : la
+              // personne qui partage est le plus souvent un client, pour qu'un
+              // proche voie la pièce et rappelle le magasin. Le conditionner à
+              // `canManageCatalog` l'aurait rendu invisible à presque tous ceux
+              // qui s'en servent.
+              //
+              // En tête, il garde la même place que le personnel soit connecté
+              // ou non, et c'est la dernière commande de la rangée — jamais
+              // celle-ci — qui serait rognée si la barre venait à déborder.
+              //
+              // Pas de capacité, donc, mais UNE condition : une pièce
+              // désactivée n'a pas de page `/p/{id}`, et le message porte
+              // cette adresse depuis qu'il ne porte plus celle du magasin
+              // d'applications. Partager une pièce désactivée, c'est envoyer un
+              // 404 — voir `Part.aUnePagePublique`.
+              //
+              // Masqué et non grisé : la raison est une règle de catalogue, et
+              // l'écrire dans une infobulle ferait porter à cet écran une
+              // mécanique de serveur. D'où ce commentaire, faute de quoi
+              // quelqu'un le repostera sans condition.
+              if (part.aUnePagePublique)
+                IconButton(
+                  icon: const Icon(Icons.share_outlined),
+                  tooltip: 'Partager',
+                  // Les mêmes champs que ceux affichés plus bas, et pas d'autres :
+                  // un message qui annoncerait un prix ou un état que l'écran ne
+                  // montre pas ferait rappeler le magasin pour un article qui
+                  // n'existe pas sous cette forme.
+                  //
+                  // La référence est le SKU : le modèle n'en porte pas d'autre, et
+                  // la puce « OEM » de la fiche n'est que la lecture de `type`.
+                  onPressed: () => partagerArticle(
+                    context,
+                    titre: part.name,
+                    // `id` et non `sku` : c'est la clef primaire que la route
+                    // publique `/p/{id}` attend. Le SKU reste une précision
+                    // lisible dans le message, pas une adresse.
+                    type: TypeArticle.piece,
+                    id: part.id,
+                    prix: part.pricing.sellingPrice,
+                    precisions: [
+                      part.categoryName,
+                      _conditionLabels[part.condition] ?? part.condition,
+                      if (part.sku != null) 'Réf. ${part.sku!}',
+                    ],
+                  ),
+                ),
               // Les photos s'ajoutaient uniquement dans la seconde qui suivait
               // la creation : le formulaire basculait sur l'ecran de
               // televersement, et plus rien n'y menait ensuite. Passer cette

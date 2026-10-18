@@ -111,7 +111,26 @@
         ],
         "optional_feature_count": 7,
         "is_full_option": false,
-        "media": [],
+        "media": [
+            {
+                "id": 41,
+                "url": "https://media.autoparc.test/vehicles/1/jante.jpg",
+                "collection": "gallery",
+                "is_cover": false
+            },
+            {
+                "id": 42,
+                "url": "https://media.autoparc.test/vehicles/1/tucson.jpg",
+                "collection": "gallery",
+                "is_cover": true
+            },
+            {
+                "id": 43,
+                "url": "https://media.autoparc.test/vehicles/1/moteur.jpg",
+                "collection": "gallery",
+                "is_cover": false
+            }
+        ],
         "description": null,
         "published_at": "2026-09-30T18:42:43+00:00",
         "created_at": "2026-10-16T18:42:43+00:00"

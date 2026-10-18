@@ -14,7 +14,12 @@ class Accessory extends Equatable {
   final AccessoryStock   stock;
   final int?    warrantyMonths;
   final bool    isActive;
-  final String? coverUrl; // URL de la photo de couverture (null si aucune photo)
+
+  /// La photo de couverture, `null` sans photo utilisable. Voir
+  /// `Part.coverUrl` : même invariant, et le même défaut corrigé — une
+  /// couverture sans adresse rendait la chaîne vide, que les écrans prenaient
+  /// pour une photo.
+  final String? coverUrl;
 
   /// Toutes les photos, couverture en tête. Voir `Part.photoUrls` : même
   /// raisonnement, même format, et jamais `null`.
@@ -46,25 +51,24 @@ class Accessory extends Equatable {
   factory Accessory.fromJson(Map<String, dynamic> json) {
     final category  = json['category'] as Map<String, dynamic>;
     final mediaList = json['media'] as List?;
-    String? cover;
     var photos = const <String>[];
     if (mediaList != null && mediaList.isNotEmpty) {
       final coverItem = mediaList.firstWhere(
         (m) => m['is_cover'] == true,
         orElse: () => mediaList.first,
       );
-      cover = coverItem['url'] as String?;
 
       // Couverture en tête, le reste par `position`. Voir Part.fromJson pour
-      // le choix de l'identité plutôt que de l'URL.
+      // le choix de l'identité plutôt que de l'URL, et pour la raison du
+      // filtre appliqué après coup à la couverture comme au reste.
       final autres = mediaList.where((m) => !identical(m, coverItem)).toList()
         ..sort((a, b) => ((a['position'] as int?) ?? 0)
             .compareTo((b['position'] as int?) ?? 0));
 
-      photos = <String>[
-        ?cover,
-        ...autres.map((m) => m['url'] as String?).whereType<String>(),
-      ];
+      photos = <dynamic>[coverItem, ...autres]
+          .map((m) => m['url'] as String? ?? '')
+          .where((u) => u.isNotEmpty)
+          .toList(growable: false);
     }
     return Accessory(
       id:             json['id']              as int,
@@ -79,13 +83,23 @@ class Accessory extends Equatable {
       stock:          AccessoryStock.fromJson(json['stock']     as Map<String, dynamic>),
       warrantyMonths: json['warranty_months'] as int?,
       isActive:       json['is_active']       as bool? ?? true,
-      coverUrl:       cover,
+      coverUrl:       photos.isEmpty ? null : photos.first,
       photoUrls:      photos,
       fitments: (json['fitments'] as List?)
           ?.cast<Map<String, dynamic>>()
           .toList(growable: false),
     );
   }
+
+  /// Vrai quand `/a/{id}` répond, c'est-à-dire quand cet accessoire est
+  /// partageable. Voir `Vehicle.aUnePagePublique` pour le pourquoi.
+  ///
+  /// Les DEUX conditions du serveur :
+  /// `abort_if(! $accessory->is_active || ! $accessory->is_available)`. Elles
+  /// sont celles du catalogue des accessoires, qui masque les indisponibles —
+  /// contrairement à celui des pièces. Un accessoire en rupture rendait donc
+  /// 404 pendant que son bouton restait là.
+  bool get aUnePagePublique => isActive && stock.isAvailable;
 
   @override
   List<Object?> get props => [id, sku];

@@ -9,6 +9,7 @@ import '../widgets/fitments_section.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../../core/widgets/product_gallery.dart';
 import '../../../../core/utils/currency_format.dart';
+import '../../../../core/utils/partage.dart';
 import '../../../../features/cart/data/models/cart_item.dart';
 import '../../../../features/cart/presentation/pages/cart_page.dart';
 import '../../../../features/cart/presentation/providers/cart_provider.dart';
@@ -101,14 +102,76 @@ class _AccessoryDetailView extends ConsumerWidget {
       appBar: AppBar(
         title: Text(accessory.name, maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
-          // Badge catégorie
-          Chip(
-            label: Text(accessory.categoryLabel,
-                style: const TextStyle(fontSize: 11)),
-            padding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
-          ),
-          const SizedBox(width: 8),
+          // La première des commandes, et la seule que tout le monde voie.
+          //
+          // Même raisonnement que sur la fiche d'une pièce : partager n'est pas
+          // une action de gestion, c'est le plus souvent un client qui le fait.
+          // Aucune capacité ne le conditionne donc, et il précède les trois
+          // commandes du personnel pour garder sa place quand elles s'affichent.
+          //
+          // CETTE BARRE A DÉBORDÉ, et c'est réglé — par la puce de catégorie
+          // qui a quitté la rangée, pas par ce bouton.
+          //
+          // La mesure, qui garde toute sa valeur : à 320 points, le plus petit
+          // format que `responsive_test.dart` exige, vue par un administrateur
+          // et sur le libellé de catégorie le plus long (« Multimédia »,
+          // 10 signes, à égalité avec « Esthétique » et « Utilitaire »), la
+          // barre débordait de 9,0 points à l'échelle de texte 1,0 et de
+          // 40 points à 1,3. À 360, elle tenait. Sans ce bouton, elle tenait
+          // aussi — mais le partage est la commande demandée, et c'est
+          // l'occupant qui n'était pas une commande qui est parti.
+          //
+          // `actions` est une rangée de COMMANDES. La puce de catégorie en
+          // était le seul occupant à n'en pas être une, et la catégorie
+          // n'apparaissait nulle part dans le corps de la fiche : elle y
+          // descend donc, en première ligne de « Informations », au lieu
+          // d'être supprimée. Elle y gagne même en lisibilité — 11 points de
+          // corps dans une puce, contre le corps de texte normal.
+          //
+          // Ce que ce départ rend : 129,0 points de puce à l'échelle 1,0
+          // (95,7 pour « Confort ») plus l'espaceur de 8, soit ~137 — bien
+          // plus que les 40 points du pire cas mesuré.
+          //
+          // Et ce départ répare au passage un défaut plus ancien, qui n'était
+          // pas un débordement et qu'aucun banc d'essai ne rendait : le titre
+          // mesurait 0 point de large, à 320 comme à 360 avec « Multimédia »
+          // — le nom de l'article était simplement invisible. Il mesure
+          // maintenant 96,0 points à 320 et 136,0 à 360, aux deux échelles de
+          // texte. C'est la place que la puce occupait.
+          //
+          // UNE condition tout de même, et elle ne tient pas à la session : un
+          // accessoire désactivé ou indisponible n'a pas de page `/a/{id}`, et
+          // le message porte cette adresse depuis qu'il ne porte plus celle du
+          // magasin d'applications. Le partage enverrait un 404 — voir
+          // `Accessory.aUnePagePublique`, qui recopie les deux `abort_if` du
+          // serveur. Le catalogue des accessoires masque déjà les
+          // indisponibles ; une fiche atteinte autrement, ou devenue
+          // indisponible depuis, les montre encore.
+          //
+          // Le bouton disparaît plutôt que de rester grisé : la raison est une
+          // règle de catalogue, et l'expliquer dans une infobulle ferait porter
+          // à cette fiche une mécanique de serveur. Ce commentaire est là pour
+          // qu'on ne le repose pas sans condition.
+          if (accessory.aUnePagePublique)
+            IconButton(
+              icon: const Icon(Icons.share_outlined),
+              tooltip: 'Partager',
+              // La catégorie seule en précision. La consigne demandait aussi
+              // l'état, mais `Accessory` n'a pas de champ `condition` — ni le
+              // modèle, ni l'API, ni le formulaire de saisie — et la fiche
+              // n'affiche donc aucun état. L'inventer ici ferait dire au message
+              // ce que l'écran ne dit pas.
+              onPressed: () => partagerArticle(
+                context,
+                titre: accessory.name,
+                // La clef primaire, celle que la route publique `/a/{id}`
+                // attend. Le partage ne fabrique aucune autre adresse.
+                type: TypeArticle.accessoire,
+                id: accessory.id,
+                prix: accessory.pricing.sellingPrice,
+                precisions: [accessory.categoryLabel],
+              ),
+            ),
           // Voir la fiche piece : l'ecran de televersement n'etait atteignable
           // qu'au moment de la creation, et plus jamais ensuite.
           if (auth.canManageCatalog)
@@ -183,6 +246,16 @@ class _AccessoryDetailView extends ConsumerWidget {
                 fontWeight: FontWeight.bold,
               )),
           const SizedBox(height: 10),
+          // La catégorie, en première ligne et sans condition : elle était
+          // dans la barre de titre, sous forme de puce, et c'est elle qui la
+          // faisait déborder à 320 points. Elle n'est pas perdue pour autant
+          // — elle n'était affichée nulle part ailleurs sur la fiche, et une
+          // ligne d'information est sa place : la barre porte des commandes,
+          // le corps porte ce que l'article est.
+          //
+          // Avant le SKU parce qu'un accessoire a toujours une catégorie,
+          // jamais forcément une référence.
+          _InfoRow('Catégorie', accessory.categoryLabel),
           if (accessory.sku != null) _InfoRow('SKU', accessory.sku!),
           if (accessory.manufacturer != null)
             _InfoRow('Fabricant',  accessory.manufacturer!),

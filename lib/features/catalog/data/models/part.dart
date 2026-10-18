@@ -16,7 +16,18 @@ class Part extends Equatable {
   final PartStock   stock;
   final int?    warrantyMonths;
   final bool    isActive;
-  final String? coverUrl; // URL de la photo de couverture (null si aucune photo)
+
+  /// La photo de couverture, `null` si la pièce n'a aucune photo **utilisable**.
+  ///
+  /// Le premier élément de [photoUrls], et rien d'autre. Ce n'était pas le cas :
+  /// la couverture était lue directement sur le média (`coverItem['url']`) et
+  /// échappait au filtre des adresses vides, si bien qu'un média de couverture
+  /// sans URL rendait `coverUrl == ''`. Or les écrans qui montrent la vignette
+  /// — `part_list_page`, la section des pièces compatibles de l'accueil, et
+  /// `accessory_list_page` pour le modèle jumeau — testent `coverUrl != null`,
+  /// vrai pour la chaîne vide : ils affichaient le carré gris de repli alors
+  /// que la vraie photo suivait dans la liste. Voir [photoUrls].
+  final String? coverUrl;
 
   /// Toutes les photos de l'article, couverture en tête.
   ///
@@ -64,7 +75,6 @@ class Part extends Equatable {
 
   factory Part.fromJson(Map<String, dynamic> json) {
     final mediaList = json['media'] as List?;
-    String? cover;
     var photos = const <String>[];
     if (mediaList != null && mediaList.isNotEmpty) {
       // Priorité : is_cover = true, sinon premier élément
@@ -72,7 +82,6 @@ class Part extends Equatable {
         (m) => m['is_cover'] == true,
         orElse: () => mediaList.first,
       );
-      cover = coverItem['url'] as String?;
 
       // La couverture d'abord, puis les autres par `position`. On écarte la
       // couverture par identité et non par URL : deux médias peuvent porter
@@ -82,10 +91,15 @@ class Part extends Equatable {
         ..sort((a, b) => ((a['position'] as int?) ?? 0)
             .compareTo((b['position'] as int?) ?? 0));
 
-      photos = <String>[
-        ?cover,
-        ...autres.map((m) => m['url'] as String?).whereType<String>(),
-      ];
+      // Le filtre des adresses vides s'applique à la couverture comme au
+      // reste, et c'est tout le correctif : elle était lue à part, avant le
+      // filtre, et une couverture sans URL donnait `coverUrl == ''` plus un
+      // premier élément vide dans la galerie. Aligné sur `Vehicle.fromJson`,
+      // qui faisait déjà exactement ceci.
+      photos = <dynamic>[coverItem, ...autres]
+          .map((m) => m['url'] as String? ?? '')
+          .where((u) => u.isNotEmpty)
+          .toList(growable: false);
     }
     return Part(
       id:             json['id']              as int,
@@ -102,7 +116,8 @@ class Part extends Equatable {
       stock:          PartStock.fromJson(json['stock']     as Map<String, dynamic>),
       warrantyMonths: json['warranty_months'] as int?,
       isActive:       json['is_active']       as bool? ?? true,
-      coverUrl:       cover,
+      // Le même premier élément, nommé : les deux ne peuvent plus diverger.
+      coverUrl:       photos.isEmpty ? null : photos.first,
       photoUrls:      photos,
       // Clé absente → null, c'est-à-dire « la réponse ne le dit pas ».
       fitments: (json['fitments'] as List?)
@@ -110,6 +125,17 @@ class Part extends Equatable {
           .toList(growable: false),
     );
   }
+
+  /// Vrai quand `/p/{id}` répond, c'est-à-dire quand cette pièce est
+  /// partageable. Voir `Vehicle.aUnePagePublique` pour le pourquoi.
+  ///
+  /// `is_active` SEUL, et c'est bien l'alignement sur le serveur :
+  /// `ArticleController::piece` n'a qu'un `abort_if(! $part->is_active)`. Le
+  /// stock n'y entre pas, parce que le catalogue des pièces montre les ruptures
+  /// — `is_available` n'y est qu'un filtre optionnel — là où celui des
+  /// accessoires les masque. D'où une condition ici et deux chez
+  /// `Accessory`.
+  bool get aUnePagePublique => isActive;
 
   bool get isOem         => type == 'oem';
   bool get isAftermarket => type == 'aftermarket';

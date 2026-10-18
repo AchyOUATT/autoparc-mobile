@@ -7,6 +7,8 @@ import '../../data/models/accessory.dart';
 import '../providers/catalog_providers.dart';
 import '../../../../shared/models/paged_state.dart';
 import '../../../../core/utils/currency_format.dart';
+import '../../../../core/widgets/bande_filtres.dart';
+import '../../../../core/widgets/bouton_flottant_effacable.dart';
 import '../../../../core/widgets/catalog_image.dart';
 import '../../../../core/api/api_exception.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
@@ -66,13 +68,16 @@ class _AccessoryListPageState extends ConsumerState<AccessoryListPage> {
       // Un magasinier ou un observateur n'a pas le droit de creer une fiche :
       // le bouton disparait plutot que de renvoyer un 403.
       floatingActionButton: auth.canManageCatalog
-          ? FloatingActionButton.extended(
-              onPressed: () async {
-                await context.push('/accessories/new');
-                ref.read(accessoryListProvider.notifier).refresh();
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Nouvel accessoire'),
+          ? BoutonFlottantEffacable(
+              controleur: _scrollCtrl,
+              enfant: FloatingActionButton.extended(
+                onPressed: () async {
+                  await context.push('/accessories/new');
+                  ref.read(accessoryListProvider.notifier).refresh();
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Nouvel accessoire'),
+              ),
             )
           : null,
       appBar: AppBar(
@@ -215,12 +220,11 @@ class _FilterBar extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return SizedBox(
-      height: 48,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        scrollDirection: Axis.horizontal,
-        children: [
+    // Même bande que les véhicules et les pièces depuis ce lot : la hauteur
+    // vient du plancher de cible tactile des puces au lieu d'être écrite ici,
+    // et les bords s'estompent — voir `BandeFiltres`.
+    return BandeFiltres(
+      children: [
           // Chips de catégorie
           ...categories.map((cat) {
             final selected = filter.category == cat.value;
@@ -238,8 +242,14 @@ class _FilterBar extends ConsumerWidget {
             );
           }),
           // Chips de ville
-          if (cities.isNotEmpty)
-            const VerticalDivider(width: 16, indent: 8, endIndent: 8),
+          //
+          // Un blanc de 20 points au lieu du `VerticalDivider` d'avant, et pour
+          // une raison de mise en page, pas de goût : la bande ne fixe plus sa
+          // hauteur, elle la lit sur ses puces. Un `VerticalDivider` n'a alors
+          // plus aucune contrainte verticale à remplir et se réduit à rien —
+          // le séparateur aurait disparu en silence. Vingt points est l'écart
+          // qui sépare déjà les groupes sur la page des véhicules.
+          if (cities.isNotEmpty) const SizedBox(width: 20),
           for (final city in cities)
             Padding(
               padding: const EdgeInsets.only(right: 8),
@@ -254,8 +264,7 @@ class _FilterBar extends ConsumerWidget {
                 )),
               ),
             ),
-        ],
-      ),
+      ],
     );
   }
 }
@@ -328,6 +337,9 @@ class _AccessoryList extends StatelessWidget {
               ),
             ),
           ),
+        // Dégage la dernière rangée du bouton flottant — voir la note
+        // détaillée sur la liste des pièces. Il manquait sur les deux.
+        const SliverToBoxAdapter(child: SizedBox(height: 88)),
       ],
     );
   }

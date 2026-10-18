@@ -65,3 +65,63 @@ Color _teinte(ColorScheme couleurs, Set<WidgetState> etats) =>
     etats.contains(WidgetState.selected)
         ? couleurs.onPrimary
         : couleurs.onPrimary.withValues(alpha: _opaciteInactive);
+
+/// La barre de navigation du bas, habillée ET bornée en échelle de texte.
+///
+/// ── LE DÉFAUT MESURÉ ────────────────────────────────────────────────────────
+///
+/// À 320 points d'écran et à l'échelle de texte 1,3 — le deuxième cran des
+/// réglages Android, « Grande police » —, « Accessoires » réclamait 87,7 points
+/// pour les 80,0 que sa destination reçoit : le libellé se cassait sur DEUX
+/// lignes. Un intitulé de navigation replié se lit comme un bug, et il l'était
+/// sur la capture du propriétaire. Les trois autres tenaient : 52,7 pour
+/// « Accueil », 70,9 pour « Véhicules », 47,9 pour « Pièces ». À 360 points la
+/// destination reçoit 90,0 et « Accessoires » passe.
+///
+/// ── CE QUI EST BORNÉ, ET CE QUI NE L'EST PAS ────────────────────────────────
+///
+/// `MediaQuery.withClampedTextScaling` ne borne QUE ce que peint cette barre :
+/// le reste de l'application suit le réglage de l'utilisateur, intact. Le
+/// plafond vient de la mesure et non du goût — « Accessoires » demande 68,1
+/// points à l'échelle 1,0, donc le rapport qui le fait déborder des 80,0 reçus
+/// vaut 1,174. [_echelleMaxLibelles] est posée en dessous, avec 1,7 point de
+/// marge pour la plus étroite des trois largeurs du parc.
+///
+/// LE COMPROMIS EST ASSUMÉ : quelqu'un qui a grossi ses polices lit ces quatre
+/// intitulés à 13,8 points au lieu de 15,6. C'est le prix d'un libellé entier
+/// contre un libellé replié, et il porte sur le texte le MOINS porteur de
+/// l'écran — chaque destination a son icône, que cette borne ne touche pas,
+/// les icônes tirant leur taille du thème et non de l'échelle de texte.
+class BarreNavigationPrincipale extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int>? onDestinationSelected;
+  final List<NavigationDestination> destinations;
+
+  const BarreNavigationPrincipale({
+    super.key,
+    required this.selectedIndex,
+    required this.destinations,
+    this.onDestinationSelected,
+  });
+
+  /// Le plafond d'échelle des quatre intitulés — voir l'en-tête de la classe.
+  static const double _echelleMaxLibelles = 1.15;
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: Theme.of(context).copyWith(
+        navigationBarTheme: barreNavigationTheme(Theme.of(context).colorScheme),
+      ),
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: _echelleMaxLibelles,
+        child: NavigationBar(
+          selectedIndex: selectedIndex,
+          onDestinationSelected: onDestinationSelected,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          destinations: destinations,
+        ),
+      ),
+    );
+  }
+}

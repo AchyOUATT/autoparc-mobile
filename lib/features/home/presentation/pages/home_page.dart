@@ -584,15 +584,47 @@ class _DealsSection extends ConsumerWidget {
                   'Bonnes affaires',
                   onSeeAll: () => context.go('/vehicles'),
                 ),
-                // Ajusté au contenu réel : une carte sans ville laissait
-                // sinon un bandeau vide sous le prix.
-                SizedBox(
-                  height: 152,
-                  child: ListView.separated(
+                // La hauteur vient du contenu, et plus d'un nombre écrit ici.
+                //
+                // `SizedBox(height: 152)` portait le commentaire « ajusté au
+                // contenu réel » : c'était faux, et c'est l'écran que tout le
+                // monde voit à chaque ouverture. Mesuré avec un seul véhicule
+                // en vitrine, la tuile réclame 178 points à l'échelle de texte
+                // 1,0 et 217 à 1,3 — soit 26 et 65 de débordement, dès le
+                // premier rendu, identiques à 320, 360 et 411 points de large
+                // et indépendants de la photo. Flutter peint alors sa bande
+                // rayée en travers du prix.
+                //
+                // L'écart entre les deux échelles dit pourquoi aucun nombre ne
+                // tiendrait : il ne s'agit pas de choisir 178 plutôt que 152.
+                // La ville et le prix passent sur deux lignes quand les
+                // caractères grossissent, et la hauteur juste dépend donc de la
+                // police, de la langue et du réglage système. Elle se mesure,
+                // elle ne se décide pas.
+                //
+                // D'où `IntrinsicHeight` sur un `Row` défilant, et non un
+                // `ListView` : un ListView est un viewport, il ne sait pas dire
+                // la hauteur de ce qu'il contient, et c'est bien ce silence qui
+                // obligeait à l'écrire à la main. `CrossAxisAlignment.stretch`
+                // garde ce que la hauteur fixe donnait gratuitement — des
+                // tuiles de même hauteur, alignées.
+                //
+                // Le coût d'`IntrinsicHeight` est une seconde passe de mise en
+                // page, et il est borné : `homeDealsProvider` demande
+                // `perPage: 6`. Construire six tuiles d'un coup au lieu de les
+                // bâtir à la demande ne se discute pas à cette taille.
+                IntrinsicHeight(
+                  child: SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    itemCount: list.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (_, i) => _DealTile(vehicle: list[i]),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var i = 0; i < list.length; i++) ...[
+                          if (i > 0) const SizedBox(width: 8),
+                          _DealTile(vehicle: list[i]),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -633,11 +665,14 @@ class _DealTile extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    if (vehicle.mediaUrls.isEmpty)
+                    // Voir la carte de la grille du catalogue : `coverUrl`
+                    // dit qu'on ne veut qu'une image, là où `.first` laissait
+                    // croire que l'ordre de `mediaUrls` était indifférent.
+                    if (vehicle.coverUrl == null)
                       couverture
                     else
                       CatalogImage(
-                        url: vehicle.mediaUrls.first,
+                        url: vehicle.coverUrl!,
                         fallback: couverture,
                       ),
                     if (c.dealLabel != null)
