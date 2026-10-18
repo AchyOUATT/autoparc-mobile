@@ -56,9 +56,10 @@ import 'package:auto/features/vehicles/data/models/catalog_refs.dart';
 import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provider.dart';
 import 'package:auto/shared/models/paginated_response.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/polices.dart';
 
 /// Captures du catalogue, pour regarder la grille au lieu d'en lire les cotes.
 ///
@@ -116,7 +117,7 @@ void main() {
   final bool ecrireCaptures = Platform.environment['CAPTURES'] == '1';
 
   setUpAll(() async {
-    await _chargerPolices();
+    await chargerPolices(exigerRoboto: false);
 
     // Sans cette ligne, le banc peint un anneau de focus épais autour de la
     // barre de recherche et du bouton flottant — et SEULEMENT dans le banc.
@@ -131,9 +132,10 @@ void main() {
         FocusHighlightStrategy.alwaysTouch;
   });
 
-  final gabarit = (jsonDecode(
-    File('test/fixtures/vehicles_list.json').readAsStringSync(),
-  ) as Map<String, dynamic>)['data'][0] as Map<String, dynamic>;
+  final gabarit =
+      (jsonDecode(File('test/fixtures/vehicles_list.json').readAsStringSync())
+              as Map<String, dynamic>)['data'][0]
+          as Map<String, dynamic>;
 
   Vehicle vehicule({
     required String marque,
@@ -156,7 +158,10 @@ void main() {
     // Le repli de vignette se choisit sur le SLUG, pas sur le nom : sans cette
     // ligne les quatre cartes portaient le logo Hyundai du gabarit, Toyota
     // comprise. Une capture qui ment sur son contenu ne vaut rien.
-    id['brand_slug'] = marque.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+    id['brand_slug'] = marque.toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9]+'),
+      '-',
+    );
     id['model'] = modele;
     id['year'] = annee;
     id['trim'] = finition;
@@ -177,60 +182,59 @@ void main() {
   /// haut de gamme et une citadine. Trois des quatre libellés de disponibilité
   /// y passent, « Vente & Location » compris, qui est le badge le plus large.
   List<Vehicle> parc() => [
-        vehicule(
-          marque: 'Toyota',
-          modele: 'Land Cruiser Prado',
-          finition: 'TXL',
-          annee: 2015,
-          kilometrage: 345900,
-          motorisation: 'Diesel',
-          boite: 'automatic',
-          disponibilite: 'both',
-          ville: 'Ouagadougou',
-          affaire: 'Bonne affaire',
-          prix: '18500000.00',
-        ),
-        vehicule(
-          marque: 'Hyundai',
-          modele: 'Tucson',
-          finition: 'Executive',
-          annee: 2019,
-          kilometrage: 96000,
-          motorisation: 'Essence',
-          boite: 'automatic',
-          disponibilite: 'sale',
-          ville: 'Bobo-Dioulasso',
-          affaire: null,
-          prix: '12900000.00',
-        ),
-        vehicule(
-          marque: 'Mercedes-Benz',
-          modele: 'Classe C 220 d',
-          finition: 'AMG Line',
-          annee: 2017,
-          kilometrage: 128400,
-          motorisation: 'Diesel',
-          boite: 'automatic',
-          disponibilite: 'sale',
-          ville: 'Ouagadougou',
-          affaire: 'Prix revu',
-          prix: '9750000.00',
-        ),
-        vehicule(
-          marque: 'Suzuki',
-          modele: 'Alto',
-          finition: null,
-          annee: 2021,
-          kilometrage: 41200,
-          motorisation: 'Essence',
-          boite: 'manual',
-          disponibilite: 'rent',
-          ville: 'Koudougou',
-          affaire: null,
-          prix: '3200000.00',
-        ),
-      ];
-
+    vehicule(
+      marque: 'Toyota',
+      modele: 'Land Cruiser Prado',
+      finition: 'TXL',
+      annee: 2015,
+      kilometrage: 345900,
+      motorisation: 'Diesel',
+      boite: 'automatic',
+      disponibilite: 'both',
+      ville: 'Ouagadougou',
+      affaire: 'Bonne affaire',
+      prix: '18500000.00',
+    ),
+    vehicule(
+      marque: 'Hyundai',
+      modele: 'Tucson',
+      finition: 'Executive',
+      annee: 2019,
+      kilometrage: 96000,
+      motorisation: 'Essence',
+      boite: 'automatic',
+      disponibilite: 'sale',
+      ville: 'Bobo-Dioulasso',
+      affaire: null,
+      prix: '12900000.00',
+    ),
+    vehicule(
+      marque: 'Mercedes-Benz',
+      modele: 'Classe C 220 d',
+      finition: 'AMG Line',
+      annee: 2017,
+      kilometrage: 128400,
+      motorisation: 'Diesel',
+      boite: 'automatic',
+      disponibilite: 'sale',
+      ville: 'Ouagadougou',
+      affaire: 'Prix revu',
+      prix: '9750000.00',
+    ),
+    vehicule(
+      marque: 'Suzuki',
+      modele: 'Alto',
+      finition: null,
+      annee: 2021,
+      kilometrage: 41200,
+      motorisation: 'Essence',
+      boite: 'manual',
+      disponibilite: 'rent',
+      ville: 'Koudougou',
+      affaire: null,
+      prix: '3200000.00',
+    ),
+  ];
 
   /// Monte la PAGE ENTIÈRE DANS SA COQUE, et c'est la correction du relecteur.
   ///
@@ -262,24 +266,30 @@ void main() {
     await tester.binding.setSurfaceSize(taille);
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(ProviderScope(
-      // Une clé neuve à chaque pose : sans elle, Flutter réutilise l'élément du
-      // `ProviderScope`, donc son conteneur, donc l'état déjà chargé de
-      // `vehicleListProvider` — qui ne relit son dépôt que sur un changement de
-      // filtre. Deux captures du même test montreraient le premier jeu.
-      key: UniqueKey(),
-      overrides: [
-        authProvider.overrideWith((_) => _FauxAuth(const AuthState(
-              type: AuthType.staff,
-              staffUser: StaffUser(
-                id: 1,
-                name: 'Administrateur',
-                email: 'admin@autoparc.bf',
-                role: 'admin',
+    await tester.pumpWidget(
+      ProviderScope(
+        // Une clé neuve à chaque pose : sans elle, Flutter réutilise l'élément du
+        // `ProviderScope`, donc son conteneur, donc l'état déjà chargé de
+        // `vehicleListProvider` — qui ne relit son dépôt que sur un changement de
+        // filtre. Deux captures du même test montreraient le premier jeu.
+        key: UniqueKey(),
+        overrides: [
+          authProvider.overrideWith(
+            (_) => _FauxAuth(
+              const AuthState(
+                type: AuthType.staff,
+                staffUser: StaffUser(
+                  id: 1,
+                  name: 'Administrateur',
+                  email: 'admin@autoparc.bf',
+                  role: 'admin',
+                ),
               ),
-            ))),
-        catalogRepositoryProvider.overrideWithValue(_Depot(parc())),
-        catalogRefsProvider.overrideWith((_) async => const CatalogRefs(
+            ),
+          ),
+          catalogRepositoryProvider.overrideWithValue(_Depot(parc())),
+          catalogRefsProvider.overrideWith(
+            (_) async => const CatalogRefs(
               brands: [],
               vehicleModels: [],
               trims: [],
@@ -288,42 +298,51 @@ void main() {
               colors: [],
               features: [],
               locations: [],
-            )),
-      ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: themeAutoParc(mode),
-        home: MediaQuery(
-          data: MediaQueryData(
-            size: taille,
-            textScaler: TextScaler.linear(echelle),
-            padding: const EdgeInsets.only(top: 24, bottom: 48),
-            viewPadding: const EdgeInsets.only(top: 24, bottom: 48),
+            ),
           ),
-          // La barre vient de `BarreNavigationPrincipale`, comme dans
-          // `_AppShell` : la recopier ici a fait diverger la capture de
-          // l'application — la copie n'avait pas la borne d'échelle de texte
-          // qui empêche « Accessoires » de se casser sur deux lignes.
-          child: const Scaffold(
-            body: VehicleListPage(),
-            bottomNavigationBar: BarreNavigationPrincipale(
-              selectedIndex: 1,
-              destinations: [
-                NavigationDestination(
-                    icon: Icon(Icons.home_outlined), label: 'Accueil'),
-                NavigationDestination(
+        ],
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: themeAutoParc(mode),
+          home: MediaQuery(
+            data: MediaQueryData(
+              size: taille,
+              textScaler: TextScaler.linear(echelle),
+              padding: const EdgeInsets.only(top: 24, bottom: 48),
+              viewPadding: const EdgeInsets.only(top: 24, bottom: 48),
+            ),
+            // La barre vient de `BarreNavigationPrincipale`, comme dans
+            // `_AppShell` : la recopier ici a fait diverger la capture de
+            // l'application — la copie n'avait pas la borne d'échelle de texte
+            // qui empêche « Accessoires » de se casser sur deux lignes.
+            child: const Scaffold(
+              body: VehicleListPage(),
+              bottomNavigationBar: BarreNavigationPrincipale(
+                selectedIndex: 1,
+                destinations: [
+                  NavigationDestination(
+                    icon: Icon(Icons.home_outlined),
+                    label: 'Accueil',
+                  ),
+                  NavigationDestination(
                     icon: Icon(Icons.directions_car_outlined),
-                    label: 'Véhicules'),
-                NavigationDestination(
-                    icon: Icon(Icons.tune_outlined), label: 'Accessoires'),
-                NavigationDestination(
-                    icon: Icon(Icons.settings_outlined), label: 'Pièces'),
-              ],
+                    label: 'Véhicules',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.tune_outlined),
+                    label: 'Accessoires',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.settings_outlined),
+                    label: 'Pièces',
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     // Le dépôt répond sur une microtâche ; cinq pompes laissent la page passer
     // de son indicateur de chargement à ses cartes.
     for (var i = 0; i < 5; i++) {
@@ -343,15 +362,26 @@ void main() {
       matchesGoldenFile('../build/captures/$nom.png'),
     );
   }
+
   testWidgets('catalogue, 360x720, texte normal, clair', (tester) async {
-    await monter(tester,
-        largeur: 360, hauteur: 720, echelle: 1.0, mode: Brightness.light);
+    await monter(
+      tester,
+      largeur: 360,
+      hauteur: 720,
+      echelle: 1.0,
+      mode: Brightness.light,
+    );
     await capturer(tester, 'catalogue-360-x10-clair');
   });
 
   testWidgets('catalogue, 360x720, texte normal, sombre', (tester) async {
-    await monter(tester,
-        largeur: 360, hauteur: 720, echelle: 1.0, mode: Brightness.dark);
+    await monter(
+      tester,
+      largeur: 360,
+      hauteur: 720,
+      echelle: 1.0,
+      mode: Brightness.dark,
+    );
     await capturer(tester, 'catalogue-360-x10-sombre');
   });
 
@@ -364,8 +394,13 @@ void main() {
   // juge pas au chiffre : il faut regarder si une voiture recadrée en 16:9 est
   // encore reconnaissable.
   testWidgets('catalogue, 320x640, grande police, clair', (tester) async {
-    await monter(tester,
-        largeur: 320, hauteur: 640, echelle: 1.3, mode: Brightness.light);
+    await monter(
+      tester,
+      largeur: 320,
+      hauteur: 640,
+      echelle: 1.3,
+      mode: Brightness.light,
+    );
     await capturer(tester, 'catalogue-320-x13-clair');
   });
 
@@ -375,8 +410,13 @@ void main() {
   // voir, c'est si une carte de 509 points reste lisible ou si elle a l'air
   // cassée.
   testWidgets('catalogue, 360x720, très grande police, clair', (tester) async {
-    await monter(tester,
-        largeur: 360, hauteur: 720, echelle: 2.0, mode: Brightness.light);
+    await monter(
+      tester,
+      largeur: 360,
+      hauteur: 720,
+      echelle: 2.0,
+      mode: Brightness.light,
+    );
     await capturer(tester, 'catalogue-360-x20-clair');
   });
 
@@ -386,8 +426,13 @@ void main() {
   // maintenant, et c'est sur un Pixel qu'on regardera l'écran — quatre annonces
   // entières, deux rangées pleines.
   testWidgets('catalogue, 411x923, émulateur de référence', (tester) async {
-    await monter(tester,
-        largeur: 411, hauteur: 923, echelle: 1.0, mode: Brightness.light);
+    await monter(
+      tester,
+      largeur: 411,
+      hauteur: 923,
+      echelle: 1.0,
+      mode: Brightness.light,
+    );
     await capturer(tester, 'catalogue-411-x10-clair');
   });
 
@@ -404,30 +449,6 @@ void main() {
 /// Lues là plutôt que copiées dans le dépôt : deux fichiers binaires de plus
 /// dans l'historique pour des métriques de test ne se justifient pas, et
 /// `captures_controle_test.dart` fait déjà ainsi.
-Future<void> _chargerPolices() async {
-  final racine = Platform.environment['FLUTTER_ROOT'];
-  if (racine == null) return;
-  final dossier = Directory('$racine/bin/cache/artifacts/material_fonts');
-  if (!dossier.existsSync()) return;
-
-  const fontes = {
-    'Roboto': ['roboto-regular.ttf', 'roboto-medium.ttf', 'roboto-bold.ttf'],
-    'MaterialIcons': ['materialicons-regular.otf'],
-  };
-
-  for (final entree in fontes.entries) {
-    final chargeur = FontLoader(entree.key);
-    var trouvee = false;
-    for (final nom in entree.value) {
-      final fichier = File('${dossier.path}/$nom');
-      if (!fichier.existsSync()) continue;
-      chargeur.addFont(
-          Future.value(fichier.readAsBytesSync().buffer.asByteData()));
-      trouvee = true;
-    }
-    if (trouvee) await chargeur.load();
-  }
-}
 
 /// Un dépôt qui rend le parc d'échantillon, sans réseau.
 class _Depot implements CatalogRepository {
@@ -452,14 +473,13 @@ class _Depot implements CatalogRepository {
     int? locationId,
     bool? customsCleared,
     bool? deal,
-  }) async =>
-      PaginatedResponse<Vehicle>(
-        data: liste,
-        currentPage: 1,
-        lastPage: 1,
-        total: liste.length,
-        perPage: perPage,
-      );
+  }) async => PaginatedResponse<Vehicle>(
+    data: liste,
+    currentPage: 1,
+    lastPage: 1,
+    total: liste.length,
+    perPage: perPage,
+  );
 
   @override
   Object? noSuchMethod(Invocation invocation) => null;

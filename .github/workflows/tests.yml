@@ -43,6 +43,18 @@ jobs:
       - name: Télécharger les dépendances
         run: flutter pub get
 
+      # Les POLICES du SDK, sans lesquelles les bancs de geometrie mesurent
+      # faux. Flutter ne telecharge ses artefacts qu'a la demande, et une
+      # machine neuve qui ne fait que `flutter test` n'a aucune raison d'avoir
+      # `material_fonts`. Sans Roboto, le rendu se rabat sur une police
+      # d'essai presque deux fois plus large : mesure, la CI a rendu des
+      # cartes de 617,5 points la ou le poste de developpement en mesure
+      # 376,5, et la publication 1.3.0 a echoue dessus.
+      # `test/support/polices.dart` leve desormais au lieu de se taire ; cette
+      # etape est ce qui lui donne de quoi ne pas lever.
+      - name: Polices du SDK
+        run: flutter precache --universal
+
       # Les avertissements existants sont nombreux ; on ne bloque que sur les
       # erreurs, sans quoi le garde-fou serait désactivé dès le premier jour.
       - name: Analyse statique

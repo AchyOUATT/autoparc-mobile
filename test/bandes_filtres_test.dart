@@ -21,9 +21,10 @@ import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provi
 import 'package:auto/shared/models/paginated_response.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/polices.dart';
 
 /// LES BANDES DE FILTRES DU CATALOGUE : ce qui se tape, ce qui se peint, et ce
 /// qu'elles laissent à la liste.
@@ -61,11 +62,12 @@ import 'package:flutter_test/flutter_test.dart';
 ///    cassait sur deux lignes dans la barre du bas à 320 points et à l'échelle
 ///    1,3 ; le bouton flottant recouvrait la deuxième carte de la liste.
 void main() {
-  setUpAll(_chargerPolices);
+  setUpAll(() => chargerPolices());
 
-  final gabarit = (jsonDecode(
-    File('test/fixtures/vehicles_list.json').readAsStringSync(),
-  ) as Map<String, dynamic>)['data'][0] as Map<String, dynamic>;
+  final gabarit =
+      (jsonDecode(File('test/fixtures/vehicles_list.json').readAsStringSync())
+              as Map<String, dynamic>)['data'][0]
+          as Map<String, dynamic>;
 
   /// Le pire contenu du référentiel, comme dans `carte_geometrie_test.dart` :
   /// une annonce pauvre ferait des rangées courtes et rendrait les mesures de
@@ -130,20 +132,26 @@ void main() {
     await tester.binding.setSurfaceSize(ecran);
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(ProviderScope(
-      key: UniqueKey(),
-      overrides: [
-        authProvider.overrideWith((_) => _FauxAuth(const AuthState(
-              type: AuthType.staff,
-              staffUser: StaffUser(
-                id: 1,
-                name: 'Administrateur',
-                email: 'admin@autoparc.bf',
-                role: 'admin',
+    await tester.pumpWidget(
+      ProviderScope(
+        key: UniqueKey(),
+        overrides: [
+          authProvider.overrideWith(
+            (_) => _FauxAuth(
+              const AuthState(
+                type: AuthType.staff,
+                staffUser: StaffUser(
+                  id: 1,
+                  name: 'Administrateur',
+                  email: 'admin@autoparc.bf',
+                  role: 'admin',
+                ),
               ),
-            ))),
-        catalogRepositoryProvider.overrideWithValue(_Depot(vehicules)),
-        catalogRefsProvider.overrideWith((_) async => CatalogRefs(
+            ),
+          ),
+          catalogRepositoryProvider.overrideWithValue(_Depot(vehicules)),
+          catalogRefsProvider.overrideWith(
+            (_) async => CatalogRefs(
               brands: const [],
               vehicleModels: const [],
               trims: const [],
@@ -155,37 +163,46 @@ void main() {
                 for (var i = 0; i < villes.length; i++)
                   LocationRef(id: i + 1, name: 'Agence', city: villes[i]),
               ],
-            )),
-      ],
-      child: MaterialApp(
-        theme: themeAutoParc(Brightness.light),
-        home: MediaQuery(
-          data: MediaQueryData(
-            size: ecran,
-            textScaler: TextScaler.linear(echelle),
-            padding: const EdgeInsets.only(top: 24, bottom: 48),
-            viewPadding: const EdgeInsets.only(top: 24, bottom: 48),
+            ),
           ),
-          child: const Scaffold(
-            body: VehicleListPage(),
-            bottomNavigationBar: BarreNavigationPrincipale(
-              selectedIndex: 1,
-              destinations: [
-                NavigationDestination(
-                    icon: Icon(Icons.home_outlined), label: 'Accueil'),
-                NavigationDestination(
+        ],
+        child: MaterialApp(
+          theme: themeAutoParc(Brightness.light),
+          home: MediaQuery(
+            data: MediaQueryData(
+              size: ecran,
+              textScaler: TextScaler.linear(echelle),
+              padding: const EdgeInsets.only(top: 24, bottom: 48),
+              viewPadding: const EdgeInsets.only(top: 24, bottom: 48),
+            ),
+            child: const Scaffold(
+              body: VehicleListPage(),
+              bottomNavigationBar: BarreNavigationPrincipale(
+                selectedIndex: 1,
+                destinations: [
+                  NavigationDestination(
+                    icon: Icon(Icons.home_outlined),
+                    label: 'Accueil',
+                  ),
+                  NavigationDestination(
                     icon: Icon(Icons.directions_car_outlined),
-                    label: 'Véhicules'),
-                NavigationDestination(
-                    icon: Icon(Icons.tune_outlined), label: 'Accessoires'),
-                NavigationDestination(
-                    icon: Icon(Icons.settings_outlined), label: 'Pièces'),
-              ],
+                    label: 'Véhicules',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.tune_outlined),
+                    label: 'Accessoires',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.settings_outlined),
+                    label: 'Pièces',
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     for (var i = 0; i < 6; i++) {
       await tester.pump(const Duration(milliseconds: 50));
     }
@@ -220,20 +237,26 @@ void main() {
     await tester.binding.setSurfaceSize(ecran);
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(ProviderScope(
-      key: UniqueKey(),
-      overrides: [
-        authProvider.overrideWith((_) => _FauxAuth(const AuthState(
-              type: AuthType.staff,
-              staffUser: StaffUser(
-                id: 1,
-                name: 'Administrateur',
-                email: 'admin@autoparc.bf',
-                role: 'admin',
+    await tester.pumpWidget(
+      ProviderScope(
+        key: UniqueKey(),
+        overrides: [
+          authProvider.overrideWith(
+            (_) => _FauxAuth(
+              const AuthState(
+                type: AuthType.staff,
+                staffUser: StaffUser(
+                  id: 1,
+                  name: 'Administrateur',
+                  email: 'admin@autoparc.bf',
+                  role: 'admin',
+                ),
               ),
-            ))),
-        catalogRepositoryProvider.overrideWithValue(_Depot(const [])),
-        catalogRefsProvider.overrideWith((_) async => const CatalogRefs(
+            ),
+          ),
+          catalogRepositoryProvider.overrideWithValue(_Depot(const [])),
+          catalogRefsProvider.overrideWith(
+            (_) async => const CatalogRefs(
               brands: [],
               vehicleModels: [],
               trims: [],
@@ -242,22 +265,24 @@ void main() {
               colors: [],
               features: [],
               locations: [],
-            )),
-        ...surcharges,
-      ],
-      child: MaterialApp(
-        theme: themeAutoParc(Brightness.light),
-        home: MediaQuery(
-          data: MediaQueryData(
-            size: ecran,
-            textScaler: TextScaler.linear(echelle),
-            padding: const EdgeInsets.only(top: 24, bottom: 48),
-            viewPadding: const EdgeInsets.only(top: 24, bottom: 48),
+            ),
           ),
-          child: page,
+          ...surcharges,
+        ],
+        child: MaterialApp(
+          theme: themeAutoParc(Brightness.light),
+          home: MediaQuery(
+            data: MediaQueryData(
+              size: ecran,
+              textScaler: TextScaler.linear(echelle),
+              padding: const EdgeInsets.only(top: 24, bottom: 48),
+              viewPadding: const EdgeInsets.only(top: 24, bottom: 48),
+            ),
+            child: page,
+          ),
         ),
       ),
-    ));
+    );
     for (var i = 0; i < 6; i++) {
       await tester.pump(const Duration(milliseconds: 50));
     }
@@ -284,88 +309,105 @@ void main() {
   /// La hauteur PEINTE de la première puce : son `Material`, c'est-à-dire le
   /// fond et la bordure que l'œil voit.
   double hauteurPeinte(WidgetTester tester) => tester
-      .renderObject<RenderBox>(find
-          .descendant(
+      .renderObject<RenderBox>(
+        find
+            .descendant(
               of: find.byType(FilterChip).first,
-              matching: find.byType(Material))
-          .first)
+              matching: find.byType(Material),
+            )
+            .first,
+      )
       .size
       .height;
 
   /// La largeur que ce paragraphe DEMANDE sur une seule ligne.
   double voulue(RenderParagraph p) => (TextPainter(
-        text: p.text,
-        textDirection: p.textDirection,
-        textScaler: p.textScaler,
-        maxLines: 1,
-      )..layout())
-      .width;
+    text: p.text,
+    textDirection: p.textDirection,
+    textScaler: p.textScaler,
+    maxLines: 1,
+  )..layout()).width;
 
   /// Les lignes réellement posées par le `TextPainter` à la largeur reçue.
   int lignesPosees(RenderParagraph p) => (TextPainter(
-        text: p.text,
-        textDirection: p.textDirection,
-        textScaler: p.textScaler,
-      )..layout(maxWidth: p.constraints.maxWidth))
-      .computeLineMetrics()
-      .length;
+    text: p.text,
+    textDirection: p.textDirection,
+    textScaler: p.textScaler,
+  )..layout(maxWidth: p.constraints.maxWidth)).computeLineMetrics().length;
 
   // ── 1. LA CIBLE TACTILE, ET LA PREUVE QU'ELLE SE PERD ─────────────────────
 
-  testWidgets('une bande de 44 points raboterait la cible tactile',
-      (tester) async {
+  testWidgets('une bande de 44 points raboterait la cible tactile', (
+    tester,
+  ) async {
     // NON-VACUITÉ, et c'est le test qui donne leur sens à tous les autres. Si
     // le plancher de 48 points était acquis par construction, les assertions
     // ci-dessous ne protégeraient rien. Il ne l'est pas : la contrainte de
     // `minHeight` de `RawChip` est `enforce`ée par celle qu'il reçoit, donc une
     // bande plus courte que 48 points la rabote. C'est l'état EXACT des deux
     // bandes de la page des véhicules avant ce lot.
-    await tester.pumpWidget(MaterialApp(
-      theme: themeAutoParc(Brightness.light),
-      home: Scaffold(
-        body: SizedBox(
-          height: 44,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              FilterChip(label: const Text('À vendre'), onSelected: (_) {}),
-            ],
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: themeAutoParc(Brightness.light),
+        home: Scaffold(
+          body: SizedBox(
+            height: 44,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                FilterChip(label: const Text('À vendre'), onSelected: (_) {}),
+              ],
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pump();
 
-    expect(ciblesTactiles(tester).single, closeTo(44.0, 0.01),
-        reason: 'Une bande de 44 points ne rabote plus la cible tactile : le '
-            'mécanisme a changé dans le SDK, et les assertions de 48 points de '
-            'ce fichier ne mesurent plus rien.');
-    expect(ciblesTactiles(tester).single, lessThan(plancherTactile),
-        reason: 'Le plancher Material ne vaut plus 48 points.');
+    expect(
+      ciblesTactiles(tester).single,
+      closeTo(44.0, 0.01),
+      reason:
+          'Une bande de 44 points ne rabote plus la cible tactile : le '
+          'mécanisme a changé dans le SDK, et les assertions de 48 points de '
+          'ce fichier ne mesurent plus rien.',
+    );
+    expect(
+      ciblesTactiles(tester).single,
+      lessThan(plancherTactile),
+      reason: 'Le plancher Material ne vaut plus 48 points.',
+    );
   });
 
   group('La cible tactile des puces', () {
     for (final ecran in ecrans.entries) {
       for (final echelle in echelles) {
-        testWidgets('${ecran.key}, texte x$echelle : 48 points au moins',
-            (tester) async {
-          await poserVehicules(tester,
-              ecran: ecran.value,
-              echelle: echelle,
-              vehicules: List.generate(4, (_) => vehicule()),
-              villes: const ['Ouagadougou', 'Bobo-Dioulasso']);
+        testWidgets('${ecran.key}, texte x$echelle : 48 points au moins', (
+          tester,
+        ) async {
+          await poserVehicules(
+            tester,
+            ecran: ecran.value,
+            echelle: echelle,
+            vehicules: List.generate(4, (_) => vehicule()),
+            villes: const ['Ouagadougou', 'Bobo-Dioulasso'],
+          );
 
           final cibles = ciblesTactiles(tester);
           expect(cibles, isNotEmpty);
 
           for (final h in cibles) {
-            expect(h, greaterThanOrEqualTo(plancherTactile - 0.01),
-                reason: 'Une puce de filtre n\'offre que '
-                    '${h.toStringAsFixed(1)} points de zone tapable en '
-                    '${ecran.key} à l\'échelle $echelle, pour un plancher '
-                    'Material de ${plancherTactile.toStringAsFixed(1)}. Une '
-                    'puce est une cible tactile : c\'est le seul chiffre qui '
-                    'peut faire refuser ce lot.');
+            expect(
+              h,
+              greaterThanOrEqualTo(plancherTactile - 0.01),
+              reason:
+                  'Une puce de filtre n\'offre que '
+                  '${h.toStringAsFixed(1)} points de zone tapable en '
+                  '${ecran.key} à l\'échelle $echelle, pour un plancher '
+                  'Material de ${plancherTactile.toStringAsFixed(1)}. Une '
+                  'puce est une cible tactile : c\'est le seul chiffre qui '
+                  'peut faire refuser ce lot.',
+            );
           }
         });
       }
@@ -379,22 +421,28 @@ void main() {
       testWidgets('${ecran.key} : 48,0 jusqu\'à l\'échelle 1,5, puis elle '
           'grandit', (tester) async {
         for (final echelle in [1.0, 1.3, 1.5]) {
-          await poserVehicules(tester,
-              ecran: ecran.value,
-              echelle: echelle,
-              vehicules: List.generate(4, (_) => vehicule()));
+          await poserVehicules(
+            tester,
+            ecran: ecran.value,
+            echelle: echelle,
+            vehicules: List.generate(4, (_) => vehicule()),
+          );
 
           // CHAQUE bande, et non « la » bande : la page des véhicules en porte
           // deux depuis que les carrosseries ont repris leur ligne. Mesurer
           // `.single` ne plantait pas seulement — il laissait la seconde
           // bande sans surveillance, c'est-à-dire libre de retomber à 44.
           for (final h in hauteursDesBandes(tester)) {
-            expect(h, closeTo(plancherTactile, 0.01),
-                reason: 'Une bande mesure ${h.toStringAsFixed(1)} points en '
-                    '${ecran.key} à l\'échelle $echelle au lieu de '
-                    '${plancherTactile.toStringAsFixed(1)}. Plus bas, la cible '
-                    'tactile tombe avec elle ; plus haut, la liste perd de la '
-                    'hauteur sans rien rendre.');
+            expect(
+              h,
+              closeTo(plancherTactile, 0.01),
+              reason:
+                  'Une bande mesure ${h.toStringAsFixed(1)} points en '
+                  '${ecran.key} à l\'échelle $echelle au lieu de '
+                  '${plancherTactile.toStringAsFixed(1)}. Plus bas, la cible '
+                  'tactile tombe avec elle ; plus haut, la liste perd de la '
+                  'hauteur sans rien rendre.',
+            );
           }
         }
 
@@ -402,22 +450,29 @@ void main() {
         // réclame 52,0 avec son remplissage et sa bordure. La bande les lui
         // donne au lieu de l'écraser — les 44 points d'avant l'écrasaient dès
         // l'échelle 1,5.
-        await poserVehicules(tester,
-            ecran: ecran.value,
-            echelle: 2.0,
-            vehicules: List.generate(4, (_) => vehicule()));
+        await poserVehicules(
+          tester,
+          ecran: ecran.value,
+          echelle: 2.0,
+          vehicules: List.generate(4, (_) => vehicule()),
+        );
 
         for (final h in hauteursDesBandes(tester)) {
-          expect(h, greaterThan(plancherTactile + 0.01),
-              reason: 'Une bande reste à ${h.toStringAsFixed(1)} points à '
-                  'l\'échelle 2,0 : elle impose de nouveau une hauteur, et le '
-                  'libellé de la puce est rogné dedans.');
+          expect(
+            h,
+            greaterThan(plancherTactile + 0.01),
+            reason:
+                'Une bande reste à ${h.toStringAsFixed(1)} points à '
+                'l\'échelle 2,0 : elle impose de nouveau une hauteur, et le '
+                'libellé de la puce est rogné dedans.',
+          );
         }
       });
     }
 
-    testWidgets('la puce PEINTE est plus mince que sa zone tapable',
-        (tester) async {
+    testWidgets('la puce PEINTE est plus mince que sa zone tapable', (
+      tester,
+    ) async {
       // CE QUI A ÉTÉ AMINCI, et c'est la demande du propriétaire. Material 3
       // donne aux puces un `EdgeInsets.all(8)` : 38,0 points peints à
       // l'échelle 1,0 et 44,0 à l'échelle 1,3, où la bande de 44 les écrasait
@@ -427,19 +482,29 @@ void main() {
       // tapable, et elle passe par le `padding`, jamais par `visualDensity`,
       // qui est SOUSTRAIT du plancher de 48.
       for (final attendu in [(1.0, 34.0), (1.3, 38.0)]) {
-        await poserVehicules(tester,
-            ecran: const Size(360, 720),
-            echelle: attendu.$1,
-            vehicules: List.generate(2, (_) => vehicule()));
+        await poserVehicules(
+          tester,
+          ecran: const Size(360, 720),
+          echelle: attendu.$1,
+          vehicules: List.generate(2, (_) => vehicule()),
+        );
 
-        expect(hauteurPeinte(tester), closeTo(attendu.$2, 0.01),
-            reason: 'La puce est peinte sur '
-                '${hauteurPeinte(tester).toStringAsFixed(1)} points à '
-                'l\'échelle ${attendu.$1} au lieu de ${attendu.$2} : le '
-                'remplissage de la bande a changé.');
-        expect(hauteurPeinte(tester), lessThan(ciblesTactiles(tester).first),
-            reason: 'La puce peinte remplit toute sa zone tapable : il n\'y a '
-                'plus rien à amincir sans rogner ce qu\'on tape.');
+        expect(
+          hauteurPeinte(tester),
+          closeTo(attendu.$2, 0.01),
+          reason:
+              'La puce est peinte sur '
+              '${hauteurPeinte(tester).toStringAsFixed(1)} points à '
+              'l\'échelle ${attendu.$1} au lieu de ${attendu.$2} : le '
+              'remplissage de la bande a changé.',
+        );
+        expect(
+          hauteurPeinte(tester),
+          lessThan(ciblesTactiles(tester).first),
+          reason:
+              'La puce peinte remplit toute sa zone tapable : il n\'y a '
+              'plus rien à amincir sans rogner ce qu\'on tape.',
+        );
       }
     });
   });
@@ -447,8 +512,9 @@ void main() {
   // ── 3. DEUX BANDES, ET LES QUATRE GROUPES DEDANS ──────────────────────────
 
   group('Les deux bandes des véhicules', () {
-    testWidgets('il y en a deux, et elles portent les quatre groupes',
-        (tester) async {
+    testWidgets('il y en a deux, et elles portent les quatre groupes', (
+      tester,
+    ) async {
       // TROIS ÉTATS SE SONT SUCCÉDÉ, et le commentaire les garde parce que le
       // deuxième reviendra sur la table dès qu'on reparlera de densité :
       //
@@ -461,23 +527,33 @@ void main() {
       // Le propriétaire a tranché pour le troisième : les carrosseries se
       // voient sans geste. Ce qui est DÉFINITIVEMENT acquis des deux premiers
       // états, c'est la cible tactile — 48 points par bande, jamais 44.
-      await poserVehicules(tester,
-          ecran: const Size(360, 720),
-          echelle: 1.0,
-          vehicules: List.generate(2, (_) => vehicule()),
-          villes: const ['Ouagadougou']);
+      await poserVehicules(
+        tester,
+        ecran: const Size(360, 720),
+        echelle: 1.0,
+        vehicules: List.generate(2, (_) => vehicule()),
+        villes: const ['Ouagadougou'],
+      );
 
-      expect(find.byType(BandeFiltres), findsNWidgets(2),
-          reason: 'La page des véhicules ne porte plus deux bandes : les onze '
-              'carrosseries sont reparties derrière un défilement.');
+      expect(
+        find.byType(BandeFiltres),
+        findsNWidgets(2),
+        reason:
+            'La page des véhicules ne porte plus deux bandes : les onze '
+            'carrosseries sont reparties derrière un défilement.',
+      );
 
       for (final groupe in ['OFFRE', 'TYPE', 'VILLE', 'CARROSSERIE']) {
         expect(
-            find.descendant(
-                of: find.byType(BandeFiltres), matching: find.text(groupe)),
-            findsOneWidget,
-            reason: 'Le groupe « $groupe » a disparu des bandes : séparer les '
-                'carrosseries ne devait rien retirer à l\'utilisateur.');
+          find.descendant(
+            of: find.byType(BandeFiltres),
+            matching: find.text(groupe),
+          ),
+          findsOneWidget,
+          reason:
+              'Le groupe « $groupe » a disparu des bandes : séparer les '
+              'carrosseries ne devait rien retirer à l\'utilisateur.',
+        );
       }
 
       // Les onze carrosseries sont toujours proposées, et c'est le point à
@@ -495,19 +571,25 @@ void main() {
         'Cabriolet',
         'Coupé',
       ]) {
-        expect(find.widgetWithText(FilterChip, carrosserie), findsOneWidget,
-            reason: 'La carrosserie « $carrosserie » n\'est plus proposée.');
+        expect(
+          find.widgetWithText(FilterChip, carrosserie),
+          findsOneWidget,
+          reason: 'La carrosserie « $carrosserie » n\'est plus proposée.',
+        );
       }
     });
 
-    testWidgets('une puce de carrosserie pose toujours son filtre',
-        (tester) async {
+    testWidgets('une puce de carrosserie pose toujours son filtre', (
+      tester,
+    ) async {
       // La fusion a déplacé les puces d'un widget à l'autre ; leur effet ne
       // doit pas être resté dans l'ancien.
-      await poserVehicules(tester,
-          ecran: const Size(411, 923),
-          echelle: 1.0,
-          vehicules: List.generate(2, (_) => vehicule()));
+      await poserVehicules(
+        tester,
+        ecran: const Size(411, 923),
+        echelle: 1.0,
+        vehicules: List.generate(2, (_) => vehicule()),
+      );
 
       await tester.ensureVisible(find.widgetWithText(FilterChip, 'Berline'));
       await tester.pump();
@@ -515,9 +597,13 @@ void main() {
       await tester.pump();
 
       final portee = ProviderScope.containerOf(
-          tester.element(find.byType(VehicleListPage)));
-      expect(portee.read(vehicleFilterProvider).bodyStyle, 'sedan',
-          reason: 'La puce de carrosserie ne pose plus son filtre.');
+        tester.element(find.byType(VehicleListPage)),
+      );
+      expect(
+        portee.read(vehicleFilterProvider).bodyStyle,
+        'sedan',
+        reason: 'La puce de carrosserie ne pose plus son filtre.',
+      );
     });
   });
 
@@ -525,58 +611,83 @@ void main() {
 
   group('Les trois bandes du catalogue', () {
     for (final echelle in echelles) {
-      testWidgets('pièces, texte x$echelle : même bande, même plancher',
-          (tester) async {
-        await poserPage(tester,
-            ecran: const Size(320, 640),
-            echelle: echelle,
-            page: const PartListPage(),
-            surcharges: [
-              // Une liste PEUPLÉE, et pas par confort : l'écran « aucune pièce
-              // trouvée » déborde de 2,0 points à 320 points d'écran et à
-              // l'échelle 2,0 — un défaut qui lui est propre, antérieur à ce
-              // lot (la bande des pièces mesurait déjà 48 points avant) et qui
-              // n'a rien à voir avec ce que ce test mesure. Le mesurer ici
-              // ferait échouer le test sur le mauvais objet.
-              catalogRepositoryProvider.overrideWithValue(
-                  _Depot(const [], pieces: List.generate(4, (_) => _piece()))),
-              partCategoriesProvider.overrideWith((_) async => deuxBranches),
-              categoriesAvecPiecesProvider
-                  .overrideWith((_) async => deuxBranches),
-            ]);
+      testWidgets('pièces, texte x$echelle : même bande, même plancher', (
+        tester,
+      ) async {
+        await poserPage(
+          tester,
+          ecran: const Size(320, 640),
+          echelle: echelle,
+          page: const PartListPage(),
+          surcharges: [
+            // Une liste PEUPLÉE, et pas par confort : l'écran « aucune pièce
+            // trouvée » déborde de 2,0 points à 320 points d'écran et à
+            // l'échelle 2,0 — un défaut qui lui est propre, antérieur à ce
+            // lot (la bande des pièces mesurait déjà 48 points avant) et qui
+            // n'a rien à voir avec ce que ce test mesure. Le mesurer ici
+            // ferait échouer le test sur le mauvais objet.
+            catalogRepositoryProvider.overrideWithValue(
+              _Depot(const [], pieces: List.generate(4, (_) => _piece())),
+            ),
+            partCategoriesProvider.overrideWith((_) async => deuxBranches),
+            categoriesAvecPiecesProvider.overrideWith(
+              (_) async => deuxBranches,
+            ),
+          ],
+        );
 
         expect(find.byType(BandeFiltres), findsOneWidget);
-        expect(hauteursDesBandes(tester).single,
-            greaterThanOrEqualTo(plancherTactile - 0.01));
+        expect(
+          hauteursDesBandes(tester).single,
+          greaterThanOrEqualTo(plancherTactile - 0.01),
+        );
         for (final h in ciblesTactiles(tester)) {
-          expect(h, greaterThanOrEqualTo(plancherTactile - 0.01),
-              reason: 'Une puce des pièces n\'offre que '
-                  '${h.toStringAsFixed(1)} points de zone tapable à l\'échelle '
-                  '$echelle.');
+          expect(
+            h,
+            greaterThanOrEqualTo(plancherTactile - 0.01),
+            reason:
+                'Une puce des pièces n\'offre que '
+                '${h.toStringAsFixed(1)} points de zone tapable à l\'échelle '
+                '$echelle.',
+          );
         }
       });
 
-      testWidgets('accessoires, texte x$echelle : même bande, même plancher',
-          (tester) async {
-        await poserPage(tester,
-            ecran: const Size(320, 640),
-            echelle: echelle,
-            page: const AccessoryListPage(),
-            surcharges: [
-              catalogRepositoryProvider.overrideWithValue(_Depot(const [],
-                  accessoires: List.generate(4, (_) => _accessoire()))),
-              categoriesAccessoiresOccupeesProvider.overrideWith(
-                  (_) async => {'esthetique', 'confort', 'securite'}),
-            ]);
+      testWidgets('accessoires, texte x$echelle : même bande, même plancher', (
+        tester,
+      ) async {
+        await poserPage(
+          tester,
+          ecran: const Size(320, 640),
+          echelle: echelle,
+          page: const AccessoryListPage(),
+          surcharges: [
+            catalogRepositoryProvider.overrideWithValue(
+              _Depot(
+                const [],
+                accessoires: List.generate(4, (_) => _accessoire()),
+              ),
+            ),
+            categoriesAccessoiresOccupeesProvider.overrideWith(
+              (_) async => {'esthetique', 'confort', 'securite'},
+            ),
+          ],
+        );
 
         expect(find.byType(BandeFiltres), findsOneWidget);
-        expect(hauteursDesBandes(tester).single,
-            greaterThanOrEqualTo(plancherTactile - 0.01));
+        expect(
+          hauteursDesBandes(tester).single,
+          greaterThanOrEqualTo(plancherTactile - 0.01),
+        );
         for (final h in ciblesTactiles(tester)) {
-          expect(h, greaterThanOrEqualTo(plancherTactile - 0.01),
-              reason: 'Une puce des accessoires n\'offre que '
-                  '${h.toStringAsFixed(1)} points de zone tapable à l\'échelle '
-                  '$echelle.');
+          expect(
+            h,
+            greaterThanOrEqualTo(plancherTactile - 0.01),
+            reason:
+                'Une puce des accessoires n\'offre que '
+                '${h.toStringAsFixed(1)} points de zone tapable à l\'échelle '
+                '$echelle.',
+          );
         }
       });
     }
@@ -587,18 +698,24 @@ void main() {
   group('Les libellés des puces', () {
     for (final ecran in ecrans.entries) {
       for (final echelle in echelles) {
-        testWidgets('${ecran.key}, texte x$echelle : rien n\'est coupé',
-            (tester) async {
-          await poserVehicules(tester,
-              ecran: ecran.value,
-              echelle: echelle,
-              vehicules: List.generate(4, (_) => vehicule()),
-              villes: const ['Ouagadougou', 'Bobo-Dioulasso']);
+        testWidgets('${ecran.key}, texte x$echelle : rien n\'est coupé', (
+          tester,
+        ) async {
+          await poserVehicules(
+            tester,
+            ecran: ecran.value,
+            echelle: echelle,
+            vehicules: List.generate(4, (_) => vehicule()),
+            villes: const ['Ouagadougou', 'Bobo-Dioulasso'],
+          );
 
           final paragraphes = tester
-              .renderObjectList<RenderParagraph>(find.descendant(
+              .renderObjectList<RenderParagraph>(
+                find.descendant(
                   of: find.byType(BandeFiltres),
-                  matching: find.byType(RichText)))
+                  matching: find.byType(RichText),
+                ),
+              )
               .toList();
           expect(paragraphes, isNotEmpty);
 
@@ -606,14 +723,22 @@ void main() {
             final texte = (p.text as TextSpan).toPlainText();
             // `didExceedMaxLines` est l'état que le `TextPainter` a réellement
             // constaté, et non une comparaison de largeurs reconstruite.
-            expect(p.didExceedMaxLines, isFalse,
-                reason: '« $texte » est COUPÉ en ${ecran.key} à l\'échelle '
-                    '$echelle : ${voulue(p).toStringAsFixed(1)} points voulus '
-                    'pour ${p.constraints.maxWidth.toStringAsFixed(1)} reçus.');
-            expect(lignesPosees(p), 1,
-                reason: '« $texte » est replié sur ${lignesPosees(p)} lignes '
-                    'en ${ecran.key} à l\'échelle $echelle : une puce de '
-                    'filtre sur deux lignes se lit comme un défaut.');
+            expect(
+              p.didExceedMaxLines,
+              isFalse,
+              reason:
+                  '« $texte » est COUPÉ en ${ecran.key} à l\'échelle '
+                  '$echelle : ${voulue(p).toStringAsFixed(1)} points voulus '
+                  'pour ${p.constraints.maxWidth.toStringAsFixed(1)} reçus.',
+            );
+            expect(
+              lignesPosees(p),
+              1,
+              reason:
+                  '« $texte » est replié sur ${lignesPosees(p)} lignes '
+                  'en ${ecran.key} à l\'échelle $echelle : une puce de '
+                  'filtre sur deux lignes se lit comme un défaut.',
+            );
           }
 
           // Les deux libellés nommés par la demande, vérifiés par leur nom et
@@ -621,17 +746,21 @@ void main() {
           // la puce y accole le nombre de promotions quand il y en a, et le
           // dépôt du banc en rend autant qu'il a de véhicules.
           expect(
-              find.descendant(
-                  of: find.byType(BandeFiltres),
-                  matching: find.textContaining('Bonne affaire')),
-              findsOneWidget,
-              reason: '« Bonne affaire » a disparu de la bande.');
+            find.descendant(
+              of: find.byType(BandeFiltres),
+              matching: find.textContaining('Bonne affaire'),
+            ),
+            findsOneWidget,
+            reason: '« Bonne affaire » a disparu de la bande.',
+          );
           expect(
-              find.descendant(
-                  of: find.byType(BandeFiltres),
-                  matching: find.text('SUV / 4×4')),
-              findsOneWidget,
-              reason: '« SUV / 4×4 » a disparu de la bande.');
+            find.descendant(
+              of: find.byType(BandeFiltres),
+              matching: find.text('SUV / 4×4'),
+            ),
+            findsOneWidget,
+            reason: '« SUV / 4×4 » a disparu de la bande.',
+          );
         });
       }
     }
@@ -655,100 +784,143 @@ void main() {
 
       const destinations = [
         NavigationDestination(
-            icon: Icon(Icons.home_outlined), label: 'Accueil'),
+          icon: Icon(Icons.home_outlined),
+          label: 'Accueil',
+        ),
         NavigationDestination(
-            icon: Icon(Icons.directions_car_outlined), label: 'Véhicules'),
+          icon: Icon(Icons.directions_car_outlined),
+          label: 'Véhicules',
+        ),
         NavigationDestination(
-            icon: Icon(Icons.tune_outlined), label: 'Accessoires'),
+          icon: Icon(Icons.tune_outlined),
+          label: 'Accessoires',
+        ),
         NavigationDestination(
-            icon: Icon(Icons.settings_outlined), label: 'Pièces'),
+          icon: Icon(Icons.settings_outlined),
+          label: 'Pièces',
+        ),
       ];
 
-      await tester.pumpWidget(MaterialApp(
-        theme: themeAutoParc(Brightness.light),
-        home: MediaQuery(
-          data: MediaQueryData(
-            size: ecran,
-            textScaler: TextScaler.linear(echelle),
-          ),
-          child: Builder(
-            builder: (context) => Scaffold(
-              body: const SizedBox.shrink(),
-              bottomNavigationBar: bornee
-                  ? const BarreNavigationPrincipale(
-                      selectedIndex: 1, destinations: destinations)
-                  // L'état d'AVANT, reconstruit : l'habillage sans la borne.
-                  : Theme(
-                      data: Theme.of(context).copyWith(
-                        navigationBarTheme: barreNavigationTheme(
-                            Theme.of(context).colorScheme),
-                      ),
-                      child: NavigationBar(
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: themeAutoParc(Brightness.light),
+          home: MediaQuery(
+            data: MediaQueryData(
+              size: ecran,
+              textScaler: TextScaler.linear(echelle),
+            ),
+            child: Builder(
+              builder: (context) => Scaffold(
+                body: const SizedBox.shrink(),
+                bottomNavigationBar: bornee
+                    ? const BarreNavigationPrincipale(
                         selectedIndex: 1,
-                        labelBehavior:
-                            NavigationDestinationLabelBehavior.alwaysShow,
                         destinations: destinations,
+                      )
+                    // L'état d'AVANT, reconstruit : l'habillage sans la borne.
+                    : Theme(
+                        data: Theme.of(context).copyWith(
+                          navigationBarTheme: barreNavigationTheme(
+                            Theme.of(context).colorScheme,
+                          ),
+                        ),
+                        child: NavigationBar(
+                          selectedIndex: 1,
+                          labelBehavior:
+                              NavigationDestinationLabelBehavior.alwaysShow,
+                          destinations: destinations,
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
         ),
-      ));
+      );
       await tester.pump();
     }
 
-    testWidgets('« Accessoires » se cassait bien en deux sans la borne',
-        (tester) async {
+    testWidgets('« Accessoires » se cassait bien en deux sans la borne', (
+      tester,
+    ) async {
       // NON-VACUITÉ. Le défaut vient d'une capture à 320 points et à l'échelle
       // 1,3 : « Accessoires » réclame 87,7 points pour les 80,0 que sa
       // destination reçoit. Si ce test passait au vert, la borne ne corrigerait
       // rien et pourrait être retirée.
-      await poserBarre(tester,
-          ecran: const Size(320, 640), echelle: 1.3, bornee: false);
+      await poserBarre(
+        tester,
+        ecran: const Size(320, 640),
+        echelle: 1.3,
+        bornee: false,
+      );
 
-      final p = tester.renderObject<RenderParagraph>(find
-          .descendant(
+      final p = tester.renderObject<RenderParagraph>(
+        find
+            .descendant(
               of: find.byType(NavigationBar),
-              matching: find.text('Accessoires'))
-          .first);
+              matching: find.text('Accessoires'),
+            )
+            .first,
+      );
 
-      expect(lignesPosees(p), 2,
-          reason: '« Accessoires » tient désormais sur une ligne SANS la borne '
-              '(${voulue(p).toStringAsFixed(1)} points voulus pour '
-              '${p.constraints.maxWidth.toStringAsFixed(1)} reçus) : le défaut '
-              'a disparu autrement, et la borne d\'échelle n\'a plus de raison '
-              'd\'être.');
+      expect(
+        lignesPosees(p),
+        2,
+        reason:
+            '« Accessoires » tient désormais sur une ligne SANS la borne '
+            '(${voulue(p).toStringAsFixed(1)} points voulus pour '
+            '${p.constraints.maxWidth.toStringAsFixed(1)} reçus) : le défaut '
+            'a disparu autrement, et la borne d\'échelle n\'a plus de raison '
+            'd\'être.',
+      );
     });
 
     for (final ecran in ecrans.entries) {
       for (final echelle in echelles) {
-        testWidgets('${ecran.key}, texte x$echelle : les quatre sur une ligne',
-            (tester) async {
-          await poserBarre(tester,
-              ecran: ecran.value, echelle: echelle, bornee: true);
+        testWidgets(
+          '${ecran.key}, texte x$echelle : les quatre sur une ligne',
+          (tester) async {
+            await poserBarre(
+              tester,
+              ecran: ecran.value,
+              echelle: echelle,
+              bornee: true,
+            );
 
-          for (final nom in [
-            'Accueil',
-            'Véhicules',
-            'Accessoires',
-            'Pièces'
-          ]) {
-            final p = tester.renderObject<RenderParagraph>(find
-                .descendant(
-                    of: find.byType(NavigationBar), matching: find.text(nom))
-                .first);
+            for (final nom in [
+              'Accueil',
+              'Véhicules',
+              'Accessoires',
+              'Pièces',
+            ]) {
+              final p = tester.renderObject<RenderParagraph>(
+                find
+                    .descendant(
+                      of: find.byType(NavigationBar),
+                      matching: find.text(nom),
+                    )
+                    .first,
+              );
 
-            expect(lignesPosees(p), 1,
-                reason: '« $nom » est replié sur ${lignesPosees(p)} lignes en '
+              expect(
+                lignesPosees(p),
+                1,
+                reason:
+                    '« $nom » est replié sur ${lignesPosees(p)} lignes en '
                     '${ecran.key} à l\'échelle $echelle : '
                     '${voulue(p).toStringAsFixed(1)} points voulus pour '
                     '${p.constraints.maxWidth.toStringAsFixed(1)} reçus. Un '
-                    'intitulé de navigation cassé en deux a l\'air d\'un bug.');
-            expect(p.didExceedMaxLines, isFalse,
-                reason: '« $nom » est ellipsé en ${ecran.key} à l\'échelle '
-                    '$echelle.');
-          }
-        });
+                    'intitulé de navigation cassé en deux a l\'air d\'un bug.',
+              );
+              expect(
+                p.didExceedMaxLines,
+                isFalse,
+                reason:
+                    '« $nom » est ellipsé en ${ecran.key} à l\'échelle '
+                    '$echelle.',
+              );
+            }
+          },
+        );
       }
     }
   });
@@ -760,33 +932,41 @@ void main() {
     /// `BoutonFlottantEffacable` — la carte du catalogue en porte un aussi, d'où
     /// la descendance explicite.
     double echelleDuBouton(WidgetTester tester) => tester
-        .widget<AnimatedScale>(find
-            .descendant(
+        .widget<AnimatedScale>(
+          find
+              .descendant(
                 of: find.byType(BoutonFlottantEffacable),
-                matching: find.byType(AnimatedScale))
-            .first)
+                matching: find.byType(AnimatedScale),
+              )
+              .first,
+        )
         .scale;
 
-    testWidgets('il recouvrait la deuxième carte, et c\'est mesuré',
-        (tester) async {
+    testWidgets('il recouvrait la deuxième carte, et c\'est mesuré', (
+      tester,
+    ) async {
       // LE DÉFAUT, à la configuration de la capture du propriétaire : 320
       // points, échelle 1,3. Le bouton fait 128,1 × 56,0 points et le
       // `Scaffold` le pose à 16 du bas du corps. Ce test NE PRÉTEND PAS que le
       // recouvrement au repos a disparu — il n'a pas disparu, et c'est écrit
       // dans `BoutonFlottantEffacable`. Il verrouille le chiffre, pour que
       // personne ne croie le contraire sur la foi du lot.
-      await poserVehicules(tester,
-          ecran: const Size(320, 640),
-          echelle: 1.3,
-          vehicules: List.generate(8, (_) => vehicule()));
+      await poserVehicules(
+        tester,
+        ecran: const Size(320, 640),
+        echelle: 1.3,
+        vehicules: List.generate(8, (_) => vehicule()),
+      );
 
       final bouton = tester.renderObject<RenderBox>(
-          find.byType(FloatingActionButton).first);
+        find.byType(FloatingActionButton).first,
+      );
       final hautBouton = bouton.localToGlobal(Offset.zero).dy;
       final gaucheBouton = bouton.localToGlobal(Offset.zero).dx;
 
-      final cartes =
-          tester.renderObjectList<RenderBox>(find.byType(VehicleCard)).toList();
+      final cartes = tester
+          .renderObjectList<RenderBox>(find.byType(VehicleCard))
+          .toList();
       expect(cartes.length, greaterThanOrEqualTo(2));
 
       // LA DEUXIÈME CARTE SE DÉSIGNE PAR SA POSITION, ET PLUS PAR SON RANG DANS
@@ -805,65 +985,92 @@ void main() {
       });
 
       final deuxieme = cartes[1];
-      final basDeuxieme =
-          deuxieme.localToGlobal(Offset(0, deuxieme.size.height)).dy;
-      final droiteDeuxieme =
-          deuxieme.localToGlobal(Offset(deuxieme.size.width, 0)).dx;
+      final basDeuxieme = deuxieme
+          .localToGlobal(Offset(0, deuxieme.size.height))
+          .dy;
+      final droiteDeuxieme = deuxieme
+          .localToGlobal(Offset(deuxieme.size.width, 0))
+          .dx;
 
-      expect(basDeuxieme, greaterThan(hautBouton),
-          reason: 'Le bouton ne mord plus sur la deuxième carte au repos : '
-              'tant mieux, mais c\'est un changement de géométrie à constater '
-              'et à redire, pas un test à laisser mentir.');
+      expect(
+        basDeuxieme,
+        greaterThan(hautBouton),
+        reason:
+            'Le bouton ne mord plus sur la deuxième carte au repos : '
+            'tant mieux, mais c\'est un changement de géométrie à constater '
+            'et à redire, pas un test à laisser mentir.',
+      );
       expect(droiteDeuxieme, greaterThan(gaucheBouton));
     });
 
     testWidgets('il s\'efface quand on descend la liste et revient quand on '
         'remonte', (tester) async {
-      await poserVehicules(tester,
-          ecran: const Size(320, 640),
-          echelle: 1.3,
-          vehicules: List.generate(8, (_) => vehicule()));
+      await poserVehicules(
+        tester,
+        ecran: const Size(320, 640),
+        echelle: 1.3,
+        vehicules: List.generate(8, (_) => vehicule()),
+      );
 
-      expect(echelleDuBouton(tester), 1.0,
-          reason: 'Le bouton est déjà effacé avant tout geste.');
+      expect(
+        echelleDuBouton(tester),
+        1.0,
+        reason: 'Le bouton est déjà effacé avant tout geste.',
+      );
 
       // Un glissement vers le HAUT descend la liste : c'est le geste qui doit
       // dégager le prix que le bouton couvrait.
       await tester.drag(find.byType(VehicleGrid), const Offset(0, -120));
       await tester.pumpAndSettle();
 
-      expect(echelleDuBouton(tester), 0.0,
-          reason: 'Le bouton reste en place quand on descend la liste : il '
-              'continue de couvrir la carte sous lui.');
+      expect(
+        echelleDuBouton(tester),
+        0.0,
+        reason:
+            'Le bouton reste en place quand on descend la liste : il '
+            'continue de couvrir la carte sous lui.',
+      );
 
       // Et il doit revenir, sinon l\'action d\'ajout devient introuvable.
       await tester.drag(find.byType(VehicleGrid), const Offset(0, 120));
       await tester.pumpAndSettle();
 
-      expect(echelleDuBouton(tester), 1.0,
-          reason: 'Le bouton ne revient pas quand on remonte : l\'action '
-              'd\'ajout est devenue introuvable.');
+      expect(
+        echelleDuBouton(tester),
+        1.0,
+        reason:
+            'Le bouton ne revient pas quand on remonte : l\'action '
+            'd\'ajout est devenue introuvable.',
+      );
     });
 
     testWidgets('effacé, il ne répond plus au doigt', (tester) async {
       // Une échelle nulle ne retire pas la boîte du pointage : sans
       // `IgnorePointer`, un bouton invisible ouvrirait quand même le
       // formulaire d'ajout — pire que le recouvrement qu'on corrige.
-      await poserVehicules(tester,
-          ecran: const Size(320, 640),
-          echelle: 1.3,
-          vehicules: List.generate(8, (_) => vehicule()));
+      await poserVehicules(
+        tester,
+        ecran: const Size(320, 640),
+        echelle: 1.3,
+        vehicules: List.generate(8, (_) => vehicule()),
+      );
 
       await tester.drag(find.byType(VehicleGrid), const Offset(0, -120));
       await tester.pumpAndSettle();
 
-      final ignore = tester.widget<IgnorePointer>(find
-          .descendant(
+      final ignore = tester.widget<IgnorePointer>(
+        find
+            .descendant(
               of: find.byType(BoutonFlottantEffacable),
-              matching: find.byType(IgnorePointer))
-          .first);
-      expect(ignore.ignoring, isTrue,
-          reason: 'Le bouton effacé reçoit encore le doigt.');
+              matching: find.byType(IgnorePointer),
+            )
+            .first,
+      );
+      expect(
+        ignore.ignoring,
+        isTrue,
+        reason: 'Le bouton effacé reçoit encore le doigt.',
+      );
     });
 
     /// Le bas de la dernière carte, une fois la liste poussée en butée, contre
@@ -879,7 +1086,8 @@ void main() {
       required String quoi,
     }) async {
       final bouton = tester.renderObject<RenderBox>(
-          find.byType(FloatingActionButton).first);
+        find.byType(FloatingActionButton).first,
+      );
       final hautBouton = bouton.localToGlobal(Offset.zero).dy;
 
       // Jusqu'à la butée : plusieurs glissements, le constructeur étant
@@ -895,59 +1103,81 @@ void main() {
           .map((c) => c.localToGlobal(Offset(0, c.size.height)).dy)
           .reduce((a, b) => a > b ? a : b);
 
-      expect(basDerniere, lessThanOrEqualTo(hautBouton + 0.01),
-          reason: '$quoi : en butée de liste, la dernière carte descend encore '
-              'à ${basDerniere.toStringAsFixed(1)} alors que le bouton '
-              'commence à ${hautBouton.toStringAsFixed(1)}. Le dégagement de '
-              'bas de liste manque ou ne suffit plus.');
+      expect(
+        basDerniere,
+        lessThanOrEqualTo(hautBouton + 0.01),
+        reason:
+            '$quoi : en butée de liste, la dernière carte descend encore '
+            'à ${basDerniere.toStringAsFixed(1)} alors que le bouton '
+            'commence à ${hautBouton.toStringAsFixed(1)}. Le dégagement de '
+            'bas de liste manque ou ne suffit plus.',
+      );
     }
 
     testWidgets('la dernière annonce se dégage du bouton', (tester) async {
-      await poserVehicules(tester,
-          ecran: const Size(320, 640),
-          echelle: 1.3,
-          vehicules: List.generate(8, (_) => vehicule()));
+      await poserVehicules(
+        tester,
+        ecran: const Size(320, 640),
+        echelle: 1.3,
+        vehicules: List.generate(8, (_) => vehicule()),
+      );
 
-      await verifierDegagement(tester,
-          liste: find.byType(VehicleGrid),
-          cartes: find.byType(VehicleCard),
-          quoi: 'Véhicules');
+      await verifierDegagement(
+        tester,
+        liste: find.byType(VehicleGrid),
+        cartes: find.byType(VehicleCard),
+        quoi: 'Véhicules',
+      );
     });
 
     testWidgets('la dernière pièce se dégage du bouton', (tester) async {
-      await poserPage(tester,
-          ecran: const Size(320, 640),
-          echelle: 1.3,
-          page: const PartListPage(),
-          surcharges: [
-            catalogRepositoryProvider.overrideWithValue(
-                _Depot(const [], pieces: List.generate(8, (_) => _piece()))),
-            partCategoriesProvider.overrideWith((_) async => deuxBranches),
-            categoriesAvecPiecesProvider.overrideWith((_) async => deuxBranches),
-          ]);
+      await poserPage(
+        tester,
+        ecran: const Size(320, 640),
+        echelle: 1.3,
+        page: const PartListPage(),
+        surcharges: [
+          catalogRepositoryProvider.overrideWithValue(
+            _Depot(const [], pieces: List.generate(8, (_) => _piece())),
+          ),
+          partCategoriesProvider.overrideWith((_) async => deuxBranches),
+          categoriesAvecPiecesProvider.overrideWith((_) async => deuxBranches),
+        ],
+      );
 
-      await verifierDegagement(tester,
-          liste: find.byType(CustomScrollView),
-          cartes: find.byType(Card),
-          quoi: 'Pièces');
+      await verifierDegagement(
+        tester,
+        liste: find.byType(CustomScrollView),
+        cartes: find.byType(Card),
+        quoi: 'Pièces',
+      );
     });
 
     testWidgets('le dernier accessoire se dégage du bouton', (tester) async {
-      await poserPage(tester,
-          ecran: const Size(320, 640),
-          echelle: 1.3,
-          page: const AccessoryListPage(),
-          surcharges: [
-            catalogRepositoryProvider.overrideWithValue(_Depot(const [],
-                accessoires: List.generate(8, (_) => _accessoire()))),
-            categoriesAccessoiresOccupeesProvider
-                .overrideWith((_) async => {'esthetique', 'confort'}),
-          ]);
+      await poserPage(
+        tester,
+        ecran: const Size(320, 640),
+        echelle: 1.3,
+        page: const AccessoryListPage(),
+        surcharges: [
+          catalogRepositoryProvider.overrideWithValue(
+            _Depot(
+              const [],
+              accessoires: List.generate(8, (_) => _accessoire()),
+            ),
+          ),
+          categoriesAccessoiresOccupeesProvider.overrideWith(
+            (_) async => {'esthetique', 'confort'},
+          ),
+        ],
+      );
 
-      await verifierDegagement(tester,
-          liste: find.byType(CustomScrollView),
-          cartes: find.byType(Card),
-          quoi: 'Accessoires');
+      await verifierDegagement(
+        tester,
+        liste: find.byType(CustomScrollView),
+        cartes: find.byType(Card),
+        quoi: 'Accessoires',
+      );
     });
   });
 }
@@ -955,13 +1185,17 @@ void main() {
 /// Une pièce et un accessoire tirés des gabarits du serveur : les listes des
 /// pièces et des accessoires doivent porter de VRAIES cartes pour que la mesure
 /// du dégagement de bas de liste veuille dire quelque chose.
-Part _piece() => Part.fromJson((jsonDecode(
-          File('test/fixtures/parts_list.json').readAsStringSync(),
-        ) as Map<String, dynamic>)['data'][0] as Map<String, dynamic>);
+Part _piece() => Part.fromJson(
+  (jsonDecode(File('test/fixtures/parts_list.json').readAsStringSync())
+          as Map<String, dynamic>)['data'][0]
+      as Map<String, dynamic>,
+);
 
-Accessory _accessoire() => Accessory.fromJson((jsonDecode(
-          File('test/fixtures/accessories_list.json').readAsStringSync(),
-        ) as Map<String, dynamic>)['data'][0] as Map<String, dynamic>);
+Accessory _accessoire() => Accessory.fromJson(
+  (jsonDecode(File('test/fixtures/accessories_list.json').readAsStringSync())
+          as Map<String, dynamic>)['data'][0]
+      as Map<String, dynamic>,
+);
 
 /// Un dépôt qui rend des listes fixées, sans réseau.
 class _Depot implements CatalogRepository {
@@ -985,14 +1219,13 @@ class _Depot implements CatalogRepository {
     int? year,
     String? city,
     int? locationId,
-  }) async =>
-      PaginatedResponse<Part>(
-        data: pieces,
-        currentPage: 1,
-        lastPage: 1,
-        total: pieces.length,
-        perPage: perPage,
-      );
+  }) async => PaginatedResponse<Part>(
+    data: pieces,
+    currentPage: 1,
+    lastPage: 1,
+    total: pieces.length,
+    perPage: perPage,
+  );
 
   @override
   Future<PaginatedResponse<Accessory>> getAccessories({
@@ -1005,14 +1238,13 @@ class _Depot implements CatalogRepository {
     int? vehicleModelId,
     String? city,
     int? locationId,
-  }) async =>
-      PaginatedResponse<Accessory>(
-        data: accessoires,
-        currentPage: 1,
-        lastPage: 1,
-        total: accessoires.length,
-        perPage: perPage,
-      );
+  }) async => PaginatedResponse<Accessory>(
+    data: accessoires,
+    currentPage: 1,
+    lastPage: 1,
+    total: accessoires.length,
+    perPage: perPage,
+  );
 
   @override
   Future<PaginatedResponse<Vehicle>> getVehicles({
@@ -1032,14 +1264,13 @@ class _Depot implements CatalogRepository {
     int? locationId,
     bool? customsCleared,
     bool? deal,
-  }) async =>
-      PaginatedResponse<Vehicle>(
-        data: liste,
-        currentPage: 1,
-        lastPage: 1,
-        total: liste.length,
-        perPage: perPage,
-      );
+  }) async => PaginatedResponse<Vehicle>(
+    data: liste,
+    currentPage: 1,
+    lastPage: 1,
+    total: liste.length,
+    perPage: perPage,
+  );
 
   @override
   Object? noSuchMethod(Invocation invocation) => null;
@@ -1058,30 +1289,3 @@ class _FauxAuth extends StateNotifier<AuthState> implements AuthNotifier {
 ///
 /// Sans elles le banc peint chaque caractère comme un carré du corps du texte,
 /// et toutes les largeurs de ce fichier seraient fausses — et vertes.
-Future<void> _chargerPolices() async {
-  final racine = Platform.environment['FLUTTER_ROOT'];
-  if (racine == null) return;
-
-  final dossier = Directory('$racine/bin/cache/artifacts/material_fonts');
-  if (!dossier.existsSync()) return;
-
-  const fontes = {
-    'Roboto': ['roboto-regular.ttf', 'roboto-medium.ttf', 'roboto-bold.ttf'],
-    'MaterialIcons': ['materialicons-regular.otf'],
-  };
-
-  for (final entree in fontes.entries) {
-    final chargeur = FontLoader(entree.key);
-    var trouvee = false;
-
-    for (final nom in entree.value) {
-      final fichier = File('${dossier.path}/$nom');
-      if (!fichier.existsSync()) continue;
-      chargeur.addFont(
-          Future.value(fichier.readAsBytesSync().buffer.asByteData()));
-      trouvee = true;
-    }
-
-    if (trouvee) await chargeur.load();
-  }
-}

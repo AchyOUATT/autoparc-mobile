@@ -13,9 +13,10 @@ import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provi
 import 'package:auto/shared/models/paginated_response.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/polices.dart';
 
 /// La GÉOMÉTRIE des fiches du catalogue : ce qui est peint, pas ce qui est
 /// voulu, et sur la PAGE ENTIÈRE plutôt que sur la grille nue.
@@ -78,13 +79,14 @@ import 'package:flutter_test/flutter_test.dart';
 /// un prix que même le plancher absolu ne peut loger DOIT être vu comme coupé.
 /// Un test de régression qu'aucune régression ne déclenche ne protège rien.
 void main() {
-  setUpAll(_chargerPolices);
+  setUpAll(() => chargerPolices());
 
   // ── Le gabarit du catalogue, remoulé champ par champ ──────────────────────
 
-  final gabarit = (jsonDecode(
-    File('test/fixtures/vehicles_list.json').readAsStringSync(),
-  ) as Map<String, dynamic>)['data'][0] as Map<String, dynamic>;
+  final gabarit =
+      (jsonDecode(File('test/fixtures/vehicles_list.json').readAsStringSync())
+              as Map<String, dynamic>)['data'][0]
+          as Map<String, dynamic>;
 
   /// LE PIRE CONTENU QUE LE SERVEUR PUISSE RENDRE, et chaque valeur est tirée
   /// du référentiel du backend, pas inventée :
@@ -124,20 +126,20 @@ void main() {
     int photos = 0,
   }) {
     final json = jsonDecode(jsonEncode(gabarit)) as Map<String, dynamic>;
-    final id  = json['identity']  as Map<String, dynamic>;
+    final id = json['identity'] as Map<String, dynamic>;
     final tec = json['technical'] as Map<String, dynamic>;
     final com = json['commercial'] as Map<String, dynamic>;
-    id['brand']  = marque;
-    id['model']  = modele;
-    id['year']   = 2018;
-    id['trim']   = finition;
-    id['engine_type']  = motorisation;
+    id['brand'] = marque;
+    id['model'] = modele;
+    id['year'] = 2018;
+    id['trim'] = finition;
+    id['engine_type'] = motorisation;
     tec['transmission'] = boite;
-    tec['mileage_km']   = kilometrage;
+    tec['mileage_km'] = kilometrage;
     com['availability'] = disponibilite;
-    com['sale_price']   = prix;
+    com['sale_price'] = prix;
     com['rental_daily_rate'] = null;
-    com['deal_label']   = affaire;
+    com['deal_label'] = affaire;
     com['location'] = agence == null && ville == null
         ? null
         : {'id': 3, 'name': agence, 'city': ville};
@@ -181,7 +183,7 @@ void main() {
   const echelles = <double>[1.0, 1.3, 1.5, 2.0];
 
   const modes = <String, Brightness>{
-    'clair':  Brightness.light,
+    'clair': Brightness.light,
     'sombre': Brightness.dark,
   };
 
@@ -190,12 +192,11 @@ void main() {
   /// La largeur que ce paragraphe DEMANDE, remis en page sans borne et sur une
   /// seule ligne.
   double voulue(RenderParagraph p) => (TextPainter(
-        text: p.text,
-        textDirection: p.textDirection,
-        textScaler: p.textScaler,
-        maxLines: 1,
-      )..layout())
-      .width;
+    text: p.text,
+    textDirection: p.textDirection,
+    textScaler: p.textScaler,
+    maxLines: 1,
+  )..layout()).width;
 
   /// La largeur que ce paragraphe a REÇUE.
   ///
@@ -208,10 +209,10 @@ void main() {
 
   /// Le paragraphe remis en page à la largeur qu'il a REÇUE.
   TextPainter pose(RenderParagraph p) => TextPainter(
-        text: p.text,
-        textDirection: p.textDirection,
-        textScaler: p.textScaler,
-      )..layout(maxWidth: p.constraints.maxWidth);
+    text: p.text,
+    textDirection: p.textDirection,
+    textScaler: p.textScaler,
+  )..layout(maxWidth: p.constraints.maxWidth);
 
   /// La largeur du plus long segment INSÉCABLE du paragraphe.
   ///
@@ -235,8 +236,9 @@ void main() {
     for (var n = 1; n <= texte.length; n++) {
       final tp = TextPainter(
         text: TextSpan(
-            text: '${texte.substring(0, n)}…',
-            style: (p.text as TextSpan).style),
+          text: '${texte.substring(0, n)}…',
+          style: (p.text as TextSpan).style,
+        ),
         textDirection: p.textDirection,
         textScaler: p.textScaler,
         maxLines: 1,
@@ -287,27 +289,33 @@ void main() {
     await tester.binding.setSurfaceSize(ecran);
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(ProviderScope(
-      // UNE CLÉ NEUVE À CHAQUE POSE, et ce n'est pas une précaution : sans
-      // elle, Flutter réutilise l'élément du `ProviderScope` d'une pose à la
-      // suivante, donc son conteneur, donc l'état déjà chargé de
-      // `vehicleListProvider` — qui ne relit son dépôt que sur un changement de
-      // filtre. Deux poses dans le même test mesuraient alors DEUX FOIS le
-      // premier jeu de véhicules, et un test de contenu y passait au vert sans
-      // avoir rien remplacé.
-      key: UniqueKey(),
-      overrides: [
-        authProvider.overrideWith((_) => _FauxAuth(const AuthState(
-              type: AuthType.staff,
-              staffUser: StaffUser(
-                id: 1,
-                name: 'Administrateur',
-                email: 'admin@autoparc.bf',
-                role: 'admin',
+    await tester.pumpWidget(
+      ProviderScope(
+        // UNE CLÉ NEUVE À CHAQUE POSE, et ce n'est pas une précaution : sans
+        // elle, Flutter réutilise l'élément du `ProviderScope` d'une pose à la
+        // suivante, donc son conteneur, donc l'état déjà chargé de
+        // `vehicleListProvider` — qui ne relit son dépôt que sur un changement de
+        // filtre. Deux poses dans le même test mesuraient alors DEUX FOIS le
+        // premier jeu de véhicules, et un test de contenu y passait au vert sans
+        // avoir rien remplacé.
+        key: UniqueKey(),
+        overrides: [
+          authProvider.overrideWith(
+            (_) => _FauxAuth(
+              const AuthState(
+                type: AuthType.staff,
+                staffUser: StaffUser(
+                  id: 1,
+                  name: 'Administrateur',
+                  email: 'admin@autoparc.bf',
+                  role: 'admin',
+                ),
               ),
-            ))),
-        catalogRepositoryProvider.overrideWithValue(_Depot(vehicules)),
-        catalogRefsProvider.overrideWith((_) async => const CatalogRefs(
+            ),
+          ),
+          catalogRepositoryProvider.overrideWithValue(_Depot(vehicules)),
+          catalogRefsProvider.overrideWith(
+            (_) async => const CatalogRefs(
               brands: [],
               vehicleModels: [],
               trims: [],
@@ -316,39 +324,48 @@ void main() {
               colors: [],
               features: [],
               locations: [],
-            )),
-      ],
-      child: MaterialApp(
-        theme: themeAutoParc(mode),
-        home: MediaQuery(
-          data: MediaQueryData(
-            size: ecran,
-            textScaler: TextScaler.linear(echelle),
-            padding: const EdgeInsets.only(top: 24, bottom: 48),
-            viewPadding: const EdgeInsets.only(top: 24, bottom: 48),
+            ),
           ),
-          child: Builder(
-            builder: (context) => const Scaffold(
-              body: VehicleListPage(),
-              bottomNavigationBar: BarreNavigationPrincipale(
-                selectedIndex: 1,
-                destinations: [
-                  NavigationDestination(
-                      icon: Icon(Icons.home_outlined), label: 'Accueil'),
-                  NavigationDestination(
+        ],
+        child: MaterialApp(
+          theme: themeAutoParc(mode),
+          home: MediaQuery(
+            data: MediaQueryData(
+              size: ecran,
+              textScaler: TextScaler.linear(echelle),
+              padding: const EdgeInsets.only(top: 24, bottom: 48),
+              viewPadding: const EdgeInsets.only(top: 24, bottom: 48),
+            ),
+            child: Builder(
+              builder: (context) => const Scaffold(
+                body: VehicleListPage(),
+                bottomNavigationBar: BarreNavigationPrincipale(
+                  selectedIndex: 1,
+                  destinations: [
+                    NavigationDestination(
+                      icon: Icon(Icons.home_outlined),
+                      label: 'Accueil',
+                    ),
+                    NavigationDestination(
                       icon: Icon(Icons.directions_car_outlined),
-                      label: 'Véhicules'),
-                  NavigationDestination(
-                      icon: Icon(Icons.tune_outlined), label: 'Accessoires'),
-                  NavigationDestination(
-                      icon: Icon(Icons.settings_outlined), label: 'Pièces'),
-                ],
+                      label: 'Véhicules',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.tune_outlined),
+                      label: 'Accessoires',
+                    ),
+                    NavigationDestination(
+                      icon: Icon(Icons.settings_outlined),
+                      label: 'Pièces',
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ));
+    );
     // Le dépôt répond sur une microtâche ; cinq pompes laissent la page passer
     // de son indicateur de chargement à ses cartes.
     for (var i = 0; i < 5; i++) {
@@ -364,8 +381,12 @@ void main() {
   /// les 112 points de la coque en sont déjà déduits par la mise en page
   /// elle-même.
   double utile(WidgetTester tester) => tester
-      .renderObject<RenderBox>(find.descendant(
-          of: find.byType(VehicleGrid), matching: find.byType(Viewport)))
+      .renderObject<RenderBox>(
+        find.descendant(
+          of: find.byType(VehicleGrid),
+          matching: find.byType(Viewport),
+        ),
+      )
       .size
       .height;
 
@@ -383,14 +404,19 @@ void main() {
   /// `Viewport`, pour se comparer à [utile].
   List<({double haut, double bas, int cartes})> rangs(WidgetTester tester) {
     final origine = tester
-        .renderObject<RenderBox>(find.descendant(
-            of: find.byType(VehicleGrid), matching: find.byType(Viewport)))
+        .renderObject<RenderBox>(
+          find.descendant(
+            of: find.byType(VehicleGrid),
+            matching: find.byType(Viewport),
+          ),
+        )
         .localToGlobal(Offset.zero)
         .dy;
 
     final parHaut = <double, List<RenderBox>>{};
-    for (final carte
-        in tester.renderObjectList<RenderBox>(find.byType(VehicleCard))) {
+    for (final carte in tester.renderObjectList<RenderBox>(
+      find.byType(VehicleCard),
+    )) {
       final haut = carte.localToGlobal(Offset.zero).dy - origine;
       parHaut.putIfAbsent(haut, () => []).add(carte);
     }
@@ -400,7 +426,8 @@ void main() {
       for (final haut in cles)
         (
           haut: haut,
-          bas: haut +
+          bas:
+              haut +
               parHaut[haut]!
                   .map((c) => c.size.height)
                   .reduce((a, b) => a > b ? a : b),
@@ -416,15 +443,13 @@ void main() {
   /// contenu, plus bas, dit qu'elles sont parties et pourquoi.
   Map<String, RenderParagraph> lignes(WidgetTester tester) {
     final carte = find.byType(VehicleCard).first;
-    RenderParagraph p(Finder f) =>
-        tester.renderObject<RenderParagraph>(find.descendant(
-          of: carte,
-          matching: f,
-        ));
+    RenderParagraph p(Finder f) => tester.renderObject<RenderParagraph>(
+      find.descendant(of: carte, matching: f),
+    );
     return {
       'titre': p(find.text('Land Rover Range Rover Sport (2018)')),
       'specs': p(find.textContaining('km')),
-      'prix':  p(find.textContaining('FCFA')),
+      'prix': p(find.textContaining('FCFA')),
       'badge': p(find.text('Vente & Location')),
       'affaire': p(find.text('Bonne affaire')),
     };
@@ -432,8 +457,9 @@ void main() {
 
   // ── Le garde-fou de la police ─────────────────────────────────────────────
 
-  testWidgets('la vraie police est chargée, et le banc le vérifie',
-      (tester) async {
+  testWidgets('la vraie police est chargée, et le banc le vérifie', (
+    tester,
+  ) async {
     // 19 signes en corps 12 : la police du banc d'essai en ferait 228,0 points,
     // Roboto 117,1. Le seuil est posé largement au-dessous de la première et
     // largement au-dessus de la seconde — il ne mesure pas une métrique
@@ -447,18 +473,21 @@ void main() {
       textScaler: TextScaler.noScaling,
     )..layout();
 
-    expect(tp.width, lessThan(170.0),
-        reason: 'Roboto n\'est pas chargée : ${tp.width.toStringAsFixed(1)} '
-            'points pour « 95 000 km • Essence » en corps 12, alors que la '
-            'police du banc d\'essai en donnerait 228,0. Toutes les mesures de '
-            'ce fichier seraient fausses, et vertes. Le cache du SDK est-il là '
-            '(\$FLUTTER_ROOT/bin/cache/artifacts/material_fonts) ?');
+    expect(
+      tp.width,
+      lessThan(170.0),
+      reason:
+          'Roboto n\'est pas chargée : ${tp.width.toStringAsFixed(1)} '
+          'points pour « 95 000 km • Essence » en corps 12, alors que la '
+          'police du banc d\'essai en donnerait 228,0. Toutes les mesures de '
+          'ce fichier seraient fausses, et vertes. Le cache du SDK est-il là '
+          '(\$FLUTTER_ROOT/bin/cache/artifacts/material_fonts) ?',
+    );
   });
 
   // ── Le garde-fou de la coque ──────────────────────────────────────────────
 
-  testWidgets('la coque retire bien ses 112 points à la liste',
-      (tester) async {
+  testWidgets('la coque retire bien ses 112 points à la liste', (tester) async {
     // LE DÉFAUT QUE LE RELECTEUR A RELEVÉ, rendu impossible à reconduire. La
     // version précédente comptait les annonces contre 512,0 points à 360
     // d'écran ; la liste n'en a que 400,0. L'écart venait d'ici.
@@ -466,23 +495,30 @@ void main() {
     // La hauteur de la barre n'est pas écrite en clair : elle est LUE dans
     // `barreNavigationTheme`, qui est la source de vérité de l'application. Si
     // quelqu'un y change 64, ce test suit au lieu de mentir.
-    await poserPage(tester,
-        ecran: const Size(360, 720),
-        echelle: 1.0,
-        mode: Brightness.light,
-        vehicules: [vehicule()]);
+    await poserPage(
+      tester,
+      ecran: const Size(360, 720),
+      echelle: 1.0,
+      mode: Brightness.light,
+      vehicules: [vehicule()],
+    );
 
     final barre = tester.renderObject<RenderBox>(find.byType(NavigationBar));
     final attendue =
-        barreNavigationTheme(themeAutoParc(Brightness.light).colorScheme)
-                .height! +
-            48;
+        barreNavigationTheme(
+          themeAutoParc(Brightness.light).colorScheme,
+        ).height! +
+        48;
 
-    expect(barre.size.height, closeTo(attendue, 0.01),
-        reason: 'La coque de mesure ne reproduit plus celle de `_AppShell` : '
-            'la barre fait ${barre.size.height.toStringAsFixed(1)} points au '
-            'lieu de ${attendue.toStringAsFixed(1)}. Tout le tableau de densité '
-            'mesurerait une page qui n\'existe pas.');
+    expect(
+      barre.size.height,
+      closeTo(attendue, 0.01),
+      reason:
+          'La coque de mesure ne reproduit plus celle de `_AppShell` : '
+          'la barre fait ${barre.size.height.toStringAsFixed(1)} points au '
+          'lieu de ${attendue.toStringAsFixed(1)}. Tout le tableau de densité '
+          'mesurerait une page qui n\'existe pas.',
+    );
 
     // 392,0 : TROIS ÉTATS SE SONT SUCCÉDÉ ICI, et les garder écrits évite de
     // refaire deux fois le même raisonnement.
@@ -495,11 +531,15 @@ void main() {
     //          désormais respectée.
     // Le dernier état est celui que le propriétaire a choisi en connaissant
     // le prix : voir le tableau de densité, deux cases y perdent.
-    expect(utile(tester), closeTo(392.0, 0.01),
-        reason: 'La liste dispose de ${utile(tester).toStringAsFixed(1)} points '
-            'à 360 × 720 au lieu de 392,0. Le chrome de la page a changé, et '
-            'les comptes d\'annonces du tableau avec lui — remesurez avant de '
-            'les réécrire.');
+    expect(
+      utile(tester),
+      closeTo(392.0, 0.01),
+      reason:
+          'La liste dispose de ${utile(tester).toStringAsFixed(1)} points '
+          'à 360 × 720 au lieu de 392,0. Le chrome de la page a changé, et '
+          'les comptes d\'annonces du tableau avec lui — remesurez avant de '
+          'les réécrire.',
+    );
   });
 
   // ── LE TABLEAU DE TRONCATURE, remesuré à chaque exécution ─────────────────
@@ -508,8 +548,9 @@ void main() {
     for (final ecran in ecrans.entries) {
       for (final echelle in echelles) {
         for (final mode in modes.entries) {
-          testWidgets('${ecran.key}, texte x$echelle, ${mode.key}',
-              (tester) async {
+          testWidgets('${ecran.key}, texte x$echelle, ${mode.key}', (
+            tester,
+          ) async {
             final exception = await poserPage(
               tester,
               ecran: ecran.value,
@@ -522,39 +563,51 @@ void main() {
 
             final rapport = <String>[];
             mesures.forEach((nom, p) {
-              rapport.add('${nom.padRight(8)}'
-                  ' ${voulue(p).toStringAsFixed(1).padLeft(6)}'
-                  '/${recue(p).toStringAsFixed(1).padLeft(6)}'
-                  ' mot=${motLePlusLarge(p).toStringAsFixed(1).padLeft(6)}'
-                  ' lignes=${lignesPosees(p)}'
-                  ' corps=${(p.text as TextSpan).style?.fontSize?.toStringAsFixed(1) ?? "?"}'
-                  ' ${p.didExceedMaxLines ? "COUPÉ peint=\"${peint(p, recue(p))}\"" : "entier"}');
+              rapport.add(
+                '${nom.padRight(8)}'
+                ' ${voulue(p).toStringAsFixed(1).padLeft(6)}'
+                '/${recue(p).toStringAsFixed(1).padLeft(6)}'
+                ' mot=${motLePlusLarge(p).toStringAsFixed(1).padLeft(6)}'
+                ' lignes=${lignesPosees(p)}'
+                ' corps=${(p.text as TextSpan).style?.fontSize?.toStringAsFixed(1) ?? "?"}'
+                ' ${p.didExceedMaxLines ? "COUPÉ peint=\"${peint(p, recue(p))}\"" : "entier"}',
+              );
             });
 
             // ignore: avoid_print
-            print('── troncature ${ecran.key}, x$echelle, ${mode.key} ──'
-                '\n   ${rapport.join('\n   ')}');
+            print(
+              '── troncature ${ecran.key}, x$echelle, ${mode.key} ──'
+              '\n   ${rapport.join('\n   ')}',
+            );
 
             // 1. AUCUNE LIGNE N'EST TRONQUÉE.
             mesures.forEach((nom, p) {
-              expect(p.didExceedMaxLines, isFalse,
-                  reason: '$nom TRONQUÉ en ${ecran.key} à l\'échelle $echelle '
-                      '(thème ${mode.key}) : ${voulue(p).toStringAsFixed(1)} '
-                      'points voulus pour ${recue(p).toStringAsFixed(1)} '
-                      'reçus. Il n\'en reste peint que '
-                      '« ${peint(p, recue(p))} ».');
+              expect(
+                p.didExceedMaxLines,
+                isFalse,
+                reason:
+                    '$nom TRONQUÉ en ${ecran.key} à l\'échelle $echelle '
+                    '(thème ${mode.key}) : ${voulue(p).toStringAsFixed(1)} '
+                    'points voulus pour ${recue(p).toStringAsFixed(1)} '
+                    'reçus. Il n\'en reste peint que '
+                    '« ${peint(p, recue(p))} ».',
+              );
             });
 
             // 2. AUCUN MOT NE DÉBORDE DE SA LIGNE. C'est la troncature que
             //    `didExceedMaxLines` ne voit pas, et que le `Card` coupe sans
             //    rien signaler.
             mesures.forEach((nom, p) {
-              expect(motLePlusLarge(p), lessThanOrEqualTo(recue(p) + 0.01),
-                  reason: '$nom a un mot de '
-                      '${motLePlusLarge(p).toStringAsFixed(1)} points pour '
-                      '${recue(p).toStringAsFixed(1)} reçus en ${ecran.key} à '
-                      'l\'échelle $echelle : il sera rogné par le `Card` sans '
-                      'ellipse, donc en silence.');
+              expect(
+                motLePlusLarge(p),
+                lessThanOrEqualTo(recue(p) + 0.01),
+                reason:
+                    '$nom a un mot de '
+                    '${motLePlusLarge(p).toStringAsFixed(1)} points pour '
+                    '${recue(p).toStringAsFixed(1)} reçus en ${ecran.key} à '
+                    'l\'échelle $echelle : il sera rogné par le `Card` sans '
+                    'ellipse, donc en silence.',
+              );
             });
 
             // 3. LE PRIX GARDE SON CORPS DEMANDÉ TANT QU'IL LE PEUT, ET NE
@@ -571,25 +624,37 @@ void main() {
             //    celui qu'aurait ce prix sur un téléphone qui n'a rien réglé.
             final corpsPrix =
                 (mesures['prix']!.text as TextSpan).style!.fontSize!;
-            expect(corpsPrix, lessThanOrEqualTo(14.0 * echelle + 0.05),
-                reason: 'Le prix est peint en '
-                    '${corpsPrix.toStringAsFixed(1)}, plus GRAND que le corps '
-                    'demandé (${(14.0 * echelle).toStringAsFixed(1)}).');
-            expect(corpsPrix, greaterThanOrEqualTo(14.0),
-                reason: 'Le prix est descendu à '
-                    '${corpsPrix.toStringAsFixed(1)} en ${ecran.key} à '
-                    'l\'échelle $echelle, sous le corps qu\'il aurait au '
-                    'réglage par défaut : le plancher de confort a cédé. On ne '
-                    'rend pas le prix plus petit à quelqu\'un qui a grossi ses '
-                    'polices.');
+            expect(
+              corpsPrix,
+              lessThanOrEqualTo(14.0 * echelle + 0.05),
+              reason:
+                  'Le prix est peint en '
+                  '${corpsPrix.toStringAsFixed(1)}, plus GRAND que le corps '
+                  'demandé (${(14.0 * echelle).toStringAsFixed(1)}).',
+            );
+            expect(
+              corpsPrix,
+              greaterThanOrEqualTo(14.0),
+              reason:
+                  'Le prix est descendu à '
+                  '${corpsPrix.toStringAsFixed(1)} en ${ecran.key} à '
+                  'l\'échelle $echelle, sous le corps qu\'il aurait au '
+                  'réglage par défaut : le plancher de confort a cédé. On ne '
+                  'rend pas le prix plus petit à quelqu\'un qui a grossi ses '
+                  'polices.',
+            );
 
             // 4. Aucune bande rayée. Acquis par construction — la rangée n'a
             //    plus de budget vertical imposé d'en haut —, et l'assertion
             //    reste parce que c'est exactement ce qu'un `childAspectRatio`
             //    réintroduirait.
-            expect(exception, isNull,
-                reason: 'Débordement en ${ecran.key} à l\'échelle $echelle, '
-                    'thème ${mode.key}.');
+            expect(
+              exception,
+              isNull,
+              reason:
+                  'Débordement en ${ecran.key} à l\'échelle $echelle, '
+                  'thème ${mode.key}.',
+            );
           });
         }
       }
@@ -599,30 +664,41 @@ void main() {
   // ── DEUX PAR RANGÉE, ET C'EST LA DÉCISION DU PROPRIÉTAIRE ─────────────────
 
   group('Deux colonnes en maçonnerie', () {
-    testWidgets('à toutes les largeurs et à toutes les échelles',
-        (tester) async {
+    testWidgets('à toutes les largeurs et à toutes les échelles', (
+      tester,
+    ) async {
       // L'ANCIEN SEUIL EST MORT. Il valait 808 points, donc aucun téléphone
       // n'avait deux colonnes : le parc visé — 320 à 430 points — était en
       // colonne unique. Le propriétaire a tranché pour deux par rangée partout,
       // et ce test est la décision rendue vérifiable.
       for (final ecran in ecrans.values) {
         for (final echelle in echelles) {
-          await poserPage(tester,
-              ecran: ecran,
-              echelle: echelle,
-              mode: Brightness.light,
-              vehicules: List.generate(4, (_) => vehicule()));
+          await poserPage(
+            tester,
+            ecran: ecran,
+            echelle: echelle,
+            mode: Brightness.light,
+            vehicules: List.generate(4, (_) => vehicule()),
+          );
 
           final r = rangs(tester);
-          expect(r, isNotEmpty,
-              reason: 'Aucune rangée posée en '
-                  '${ecran.width.toStringAsFixed(0)} points.');
+          expect(
+            r,
+            isNotEmpty,
+            reason:
+                'Aucune rangée posée en '
+                '${ecran.width.toStringAsFixed(0)} points.',
+          );
           for (final rangee in r) {
-            expect(rangee.cartes, 2,
-                reason: 'Une rangée porte ${rangee.cartes} carte(s) en '
-                    '${ecran.width.toStringAsFixed(0)} points à l\'échelle '
-                    '$echelle, et quatre véhicules en font deux rangées '
-                    'pleines.');
+            expect(
+              rangee.cartes,
+              2,
+              reason:
+                  'Une rangée porte ${rangee.cartes} carte(s) en '
+                  '${ecran.width.toStringAsFixed(0)} points à l\'échelle '
+                  '$echelle, et quatre véhicules en font deux rangées '
+                  'pleines.',
+            );
           }
         }
       }
@@ -640,25 +716,32 @@ void main() {
       // dernière : avec un nombre impair, la carte solitaire est celle d'une
       // colonne dont l'index dans l'arbre dépend de l'ordre de parcours, et le
       // test d'avant comparait en fait deux cartes au hasard.
-      await poserPage(tester,
-          ecran: const Size(360, 720),
-          echelle: 1.0,
-          mode: Brightness.light,
-          vehicules: List.generate(3, (_) => vehicule()));
+      await poserPage(
+        tester,
+        ecran: const Size(360, 720),
+        echelle: 1.0,
+        mode: Brightness.light,
+        vehicules: List.generate(3, (_) => vehicule()),
+      );
 
-      final cartes =
-          tester.renderObjectList<RenderBox>(find.byType(VehicleCard)).toList();
+      final cartes = tester
+          .renderObjectList<RenderBox>(find.byType(VehicleCard))
+          .toList();
       expect(cartes.length, 3);
 
       // La demi-largeur, DÉDUITE de la mise en page et non écrite à la main :
       // 360 d'écran − 24 de `SliverPadding` − 10 d'écart, divisé par deux.
       const demie = (360.0 - 24.0 - 10.0) / 2;
       for (final carte in cartes) {
-        expect(carte.size.width, closeTo(demie, 0.01),
-            reason: 'Une carte fait ${carte.size.width.toStringAsFixed(1)} '
-                'points au lieu de ${demie.toStringAsFixed(1)} : la colonne la '
-                'plus courte s\'est étalée sur toute la largeur, et la liste '
-                'finit sur une carte deux fois plus large que les autres.');
+        expect(
+          carte.size.width,
+          closeTo(demie, 0.01),
+          reason:
+              'Une carte fait ${carte.size.width.toStringAsFixed(1)} '
+              'points au lieu de ${demie.toStringAsFixed(1)} : la colonne la '
+              'plus courte s\'est étalée sur toute la largeur, et la liste '
+              'finit sur une carte deux fois plus large que les autres.',
+        );
       }
     });
   });
@@ -672,39 +755,48 @@ void main() {
       // même hauteur, calculée depuis la largeur : le texte ne peut plus se
       // replier, il ne lui reste que l'ellipse. Ici il n'y a plus de budget, donc
       // une annonce pauvre fait une rangée PLUS COURTE.
-      await poserPage(tester,
-          ecran: const Size(360, 720),
-          echelle: 1.0,
-          mode: Brightness.light,
-          vehicules: List.generate(2, (_) => vehicule()));
+      await poserPage(
+        tester,
+        ecran: const Size(360, 720),
+        echelle: 1.0,
+        mode: Brightness.light,
+        vehicules: List.generate(2, (_) => vehicule()),
+      );
       final riche = rangs(tester).first;
 
-      await poserPage(tester,
-          ecran: const Size(360, 720),
-          echelle: 1.0,
-          mode: Brightness.light,
-          vehicules: List.generate(
-              2,
-              (_) => vehicule(
-                    marque: 'Kia',
-                    modele: 'Rio',
-                    finition: null,
-                    agence: null,
-                    ville: null,
-                    affaire: null,
-                    kilometrage: null,
-                    motorisation: null,
-                    boite: null,
-                    prix: '3200000.00',
-                  )));
+      await poserPage(
+        tester,
+        ecran: const Size(360, 720),
+        echelle: 1.0,
+        mode: Brightness.light,
+        vehicules: List.generate(
+          2,
+          (_) => vehicule(
+            marque: 'Kia',
+            modele: 'Rio',
+            finition: null,
+            agence: null,
+            ville: null,
+            affaire: null,
+            kilometrage: null,
+            motorisation: null,
+            boite: null,
+            prix: '3200000.00',
+          ),
+        ),
+      );
       final maigre = rangs(tester).first;
 
-      expect(maigre.bas - maigre.haut, lessThan(riche.bas - riche.haut),
-          reason: 'Une annonce pauvre fait une rangée de '
-              '${(maigre.bas - maigre.haut).toStringAsFixed(1)} points contre '
-              '${(riche.bas - riche.haut).toStringAsFixed(1)} pour le pire '
-              'contenu : la hauteur est redevenue fixe, et le titre va se '
-              'faire ellipser.');
+      expect(
+        maigre.bas - maigre.haut,
+        lessThan(riche.bas - riche.haut),
+        reason:
+            'Une annonce pauvre fait une rangée de '
+            '${(maigre.bas - maigre.haut).toStringAsFixed(1)} points contre '
+            '${(riche.bas - riche.haut).toStringAsFixed(1)} pour le pire '
+            'contenu : la hauteur est redevenue fixe, et le titre va se '
+            'faire ellipser.',
+      );
     });
 
     testWidgets('les deux premières cartes partent du même haut, chacune à sa '
@@ -721,63 +813,82 @@ void main() {
       // n'était pas nécessaire. Deux cartes de contenus INÉGAUX sont posées
       // exprès : c'est le seul cas où le décalage ne peut pas encore se produire,
       // donc le seul où cette assertion a un sens.
-      await poserPage(tester,
-          ecran: const Size(360, 720),
-          echelle: 1.0,
-          mode: Brightness.light,
-          vehicules: [
-            vehicule(),
-            vehicule(marque: 'Kia', modele: 'Rio', prix: '3200000.00'),
-          ]);
+      await poserPage(
+        tester,
+        ecran: const Size(360, 720),
+        echelle: 1.0,
+        mode: Brightness.light,
+        vehicules: [
+          vehicule(),
+          vehicule(marque: 'Kia', modele: 'Rio', prix: '3200000.00'),
+        ],
+      );
 
-      final cartes =
-          tester.renderObjectList<RenderBox>(find.byType(VehicleCard)).toList();
+      final cartes = tester
+          .renderObjectList<RenderBox>(find.byType(VehicleCard))
+          .toList();
       final rangee = rangs(tester).first;
       final plusHaute = cartes
           .map((c) => c.size.height)
           .reduce((a, b) => a > b ? a : b);
 
       expect(rangee.bas - rangee.haut, closeTo(plusHaute, 0.01));
-      expect(cartes[0].localToGlobal(Offset.zero).dy,
-          closeTo(cartes[1].localToGlobal(Offset.zero).dy, 0.01),
-          reason: 'Les deux cartes d\'une rangée ne sont plus alignées en '
-              'haut : la ligne de lecture de la liste est perdue.');
+      expect(
+        cartes[0].localToGlobal(Offset.zero).dy,
+        closeTo(cartes[1].localToGlobal(Offset.zero).dy, 0.01),
+        reason:
+            'Les deux cartes d\'une rangée ne sont plus alignées en '
+            'haut : la ligne de lecture de la liste est perdue.',
+      );
     });
 
-    testWidgets('la photo garde son ratio et s\'aligne entre les colonnes',
-        (tester) async {
+    testWidgets('la photo garde son ratio et s\'aligne entre les colonnes', (
+      tester,
+    ) async {
       // LE RATIO EST FIXE, et c'est ce qui aligne les vignettes : les deux
       // cartes d'une rangée ont la même largeur, donc la même hauteur de photo
       // et le même bord inférieur de photo. La carte du lot précédent étirait sa
       // photo sur toute la hauteur ; deux cartes voisines auraient eu des
       // vignettes de hauteurs différentes dès qu'un titre se replie une ligne de
       // plus que l'autre.
-      await poserPage(tester,
-          ecran: const Size(360, 720),
-          echelle: 1.0,
-          mode: Brightness.light,
-          vehicules: [
-            vehicule(),
-            vehicule(marque: 'Kia', modele: 'Rio', prix: '3200000.00'),
-          ]);
+      await poserPage(
+        tester,
+        ecran: const Size(360, 720),
+        echelle: 1.0,
+        mode: Brightness.light,
+        vehicules: [
+          vehicule(),
+          vehicule(marque: 'Kia', modele: 'Rio', prix: '3200000.00'),
+        ],
+      );
 
-      final photos =
-          tester.renderObjectList<RenderBox>(find.byKey(clePhoto)).toList();
+      final photos = tester
+          .renderObjectList<RenderBox>(find.byKey(clePhoto))
+          .toList();
       expect(photos.length, 2);
 
       for (final photo in photos) {
-        expect(photo.size.width / photo.size.height, closeTo(16 / 9, 0.01),
-            reason: 'La photo est à '
-                '${(photo.size.width / photo.size.height).toStringAsFixed(2)} '
-                'au lieu de 16:9 : les vignettes ne s\'alignent plus entre '
-                'colonnes.');
+        expect(
+          photo.size.width / photo.size.height,
+          closeTo(16 / 9, 0.01),
+          reason:
+              'La photo est à '
+              '${(photo.size.width / photo.size.height).toStringAsFixed(2)} '
+              'au lieu de 16:9 : les vignettes ne s\'alignent plus entre '
+              'colonnes.',
+        );
       }
       expect(photos[0].size.height, closeTo(photos[1].size.height, 0.01));
-      expect(photos[0].localToGlobal(Offset(0, photos[0].size.height)).dy,
-          closeTo(photos[1].localToGlobal(Offset(0, photos[1].size.height)).dy,
-              0.01),
-          reason: 'Les deux vignettes d\'une rangée ne finissent plus à la '
-              'même hauteur.');
+      expect(
+        photos[0].localToGlobal(Offset(0, photos[0].size.height)).dy,
+        closeTo(
+          photos[1].localToGlobal(Offset(0, photos[1].size.height)).dy,
+          0.01,
+        ),
+        reason:
+            'Les deux vignettes d\'une rangée ne finissent plus à la '
+            'même hauteur.',
+      );
     });
   });
 
@@ -832,11 +943,13 @@ void main() {
       // « Sans finition ni ville » et « titre + prix seuls » donnent EXACTEMENT
       // le même compte dans les DOUZE cases : les caractéristiques sont
       // gratuites, et elles restent — c'est le premier filtre d'un acheteur.
-      await poserPage(tester,
-          ecran: const Size(360, 720),
-          echelle: 1.0,
-          mode: Brightness.light,
-          vehicules: [vehicule()]);
+      await poserPage(
+        tester,
+        ecran: const Size(360, 720),
+        echelle: 1.0,
+        mode: Brightness.light,
+        vehicules: [vehicule()],
+      );
 
       expect(find.text('Land Rover Range Rover Sport (2018)'), findsOneWidget);
       // « 246 965 » s'écrit avec une espace fine insécable (U+202F) : la
@@ -847,13 +960,21 @@ void main() {
       expect(find.textContaining('FCFA'), findsOneWidget);
       expect(find.text('Bonne affaire'), findsOneWidget);
 
-      expect(find.text('TRD Off-Road'), findsNothing,
-          reason: 'La finition est revenue sur la carte : elle coûte une '
-              'annonce entière à 320 points dès le réglage par défaut.');
-      expect(find.textContaining('Paspanga'), findsNothing,
-          reason: 'La ville est revenue sur la carte : elle coûte une annonce '
-              'entière à 320 points dès « Grande police », et « Dioulasso » '
-              'est un mot plus large que la ligne à l\'échelle 2,0.');
+      expect(
+        find.text('TRD Off-Road'),
+        findsNothing,
+        reason:
+            'La finition est revenue sur la carte : elle coûte une '
+            'annonce entière à 320 points dès le réglage par défaut.',
+      );
+      expect(
+        find.textContaining('Paspanga'),
+        findsNothing,
+        reason:
+            'La ville est revenue sur la carte : elle coûte une annonce '
+            'entière à 320 points dès « Grande police », et « Dioulasso » '
+            'est un mot plus large que la ligne à l\'échelle 2,0.',
+      );
       expect(find.textContaining('Bobo-Dioulasso'), findsNothing);
     });
 
@@ -862,119 +983,160 @@ void main() {
       // Elle coûte onze signes, donc une ligne de repli, donc de la HAUTEUR —
       // et la hauteur est exactement ce que la seconde colonne rend rare. Elle
       // reste sur la fiche du véhicule, où l'acheteur s'engage.
-      await poserPage(tester,
-          ecran: const Size(411, 923),
-          echelle: 1.0,
-          mode: Brightness.light,
-          vehicules: [vehicule()]);
+      await poserPage(
+        tester,
+        ecran: const Size(411, 923),
+        echelle: 1.0,
+        mode: Brightness.light,
+        vehicules: [vehicule()],
+      );
 
       expect(find.textContaining('Automatique'), findsNothing);
       expect(find.textContaining('Manuelle'), findsNothing);
     });
 
-    testWidgets('le compteur de photos s\'affiche à partir de deux',
-        (tester) async {
+    testWidgets('le compteur de photos s\'affiche à partir de deux', (
+      tester,
+    ) async {
       // Décision déjà prise et mesurée, à conserver. « 1 photos » est faux, et
       // « 1 photo » n'annoncerait rien de plus que la vignette elle-même.
-      await poserPage(tester,
-          ecran: const Size(360, 720),
-          echelle: 1.0,
-          mode: Brightness.light,
-          vehicules: [vehicule(photos: 3)]);
+      await poserPage(
+        tester,
+        ecran: const Size(360, 720),
+        echelle: 1.0,
+        mode: Brightness.light,
+        vehicules: [vehicule(photos: 3)],
+      );
       expect(find.text('3 photos'), findsOneWidget);
 
-      await poserPage(tester,
-          ecran: const Size(360, 720),
-          echelle: 1.0,
-          mode: Brightness.light,
-          vehicules: [vehicule(photos: 1)]);
+      await poserPage(
+        tester,
+        ecran: const Size(360, 720),
+        echelle: 1.0,
+        mode: Brightness.light,
+        vehicules: [vehicule(photos: 1)],
+      );
       expect(find.textContaining('photo'), findsNothing);
     });
 
-    testWidgets('le compteur de photos tient à 320 points et à l\'échelle 2,0',
-        (tester) async {
-      // LE CAS OÙ IL DÉBORDAIT. « 12 photos » en corps 20 réclame 92,0 points
-      // et l'icône et son espace 14 de plus, pour 107,0 reçus : c'est pour ça
-      // qu'il est replié en deux et que son `Positioned` est borné à gauche.
-      final exception = await poserPage(tester,
+    testWidgets(
+      'le compteur de photos tient à 320 points et à l\'échelle 2,0',
+      (tester) async {
+        // LE CAS OÙ IL DÉBORDAIT. « 12 photos » en corps 20 réclame 92,0 points
+        // et l'icône et son espace 14 de plus, pour 107,0 reçus : c'est pour ça
+        // qu'il est replié en deux et que son `Positioned` est borné à gauche.
+        final exception = await poserPage(
+          tester,
           ecran: const Size(320, 640),
           echelle: 2.0,
           mode: Brightness.light,
-          vehicules: [vehicule(photos: 12)]);
+          vehicules: [vehicule(photos: 12)],
+        );
 
-      expect(exception, isNull,
-          reason: 'Le compteur de photos fait déborder la vignette.');
+        expect(
+          exception,
+          isNull,
+          reason: 'Le compteur de photos fait déborder la vignette.',
+        );
 
-      final libelle =
-          tester.renderObject<RenderParagraph>(find.text('12 photos'));
-      expect(libelle.didExceedMaxLines, isFalse,
-          reason: '« 12 photos » est coupé : '
+        final libelle = tester.renderObject<RenderParagraph>(
+          find.text('12 photos'),
+        );
+        expect(
+          libelle.didExceedMaxLines,
+          isFalse,
+          reason:
+              '« 12 photos » est coupé : '
               '${voulue(libelle).toStringAsFixed(1)} points voulus pour '
-              '${recue(libelle).toStringAsFixed(1)} reçus.');
-      expect(motLePlusLarge(libelle), lessThanOrEqualTo(recue(libelle) + 0.01),
-          reason: 'Un mot du compteur déborde de sa ligne et sera rogné en '
-              'silence.');
-    });
+              '${recue(libelle).toStringAsFixed(1)} reçus.',
+        );
+        expect(
+          motLePlusLarge(libelle),
+          lessThanOrEqualTo(recue(libelle) + 0.01),
+          reason:
+              'Un mot du compteur déborde de sa ligne et sera rogné en '
+              'silence.',
+        );
+      },
+    );
 
-    testWidgets('un seul badge sur la photo, et l\'affaire est près du prix',
-        (tester) async {
+    testWidgets('un seul badge sur la photo, et l\'affaire est près du prix', (
+      tester,
+    ) async {
       // Décision déjà prise et mesurée, à conserver : deux badges de teinte
       // identique se superposaient sur un véhicule en location portant une
       // affaire. L'étiquette d'affaire est descendue à côté du prix, qu'elle
       // qualifie.
-      await poserPage(tester,
-          ecran: const Size(360, 720),
-          echelle: 1.0,
-          mode: Brightness.light,
-          vehicules: [vehicule()]);
+      await poserPage(
+        tester,
+        ecran: const Size(360, 720),
+        echelle: 1.0,
+        mode: Brightness.light,
+        vehicules: [vehicule()],
+      );
 
-      final affaire =
-          tester.renderObject<RenderBox>(find.text('Bonne affaire'));
+      final affaire = tester.renderObject<RenderBox>(
+        find.text('Bonne affaire'),
+      );
       final photo = tester.renderObject<RenderBox>(find.byKey(clePhoto).first);
 
       // La comparaison est VERTICALE : la photo est en haut de la carte, le
       // texte dessous. Ce qui est vérifié n'a pas changé — l'étiquette n'est
       // PAS posée sur la photo.
-      expect(affaire.localToGlobal(Offset.zero).dy,
-          greaterThanOrEqualTo(
-              photo.localToGlobal(Offset(0, photo.size.height)).dy - 0.01),
-          reason: 'L\'étiquette d\'affaire est revenue sur la photo : elle y '
-              'faisait doublon de teinte avec le badge de disponibilité.');
+      expect(
+        affaire.localToGlobal(Offset.zero).dy,
+        greaterThanOrEqualTo(
+          photo.localToGlobal(Offset(0, photo.size.height)).dy - 0.01,
+        ),
+        reason:
+            'L\'étiquette d\'affaire est revenue sur la photo : elle y '
+            'faisait doublon de teinte avec le badge de disponibilité.',
+      );
 
       // Et il n'y a QU'UN badge sur la vignette.
       expect(
-          find.descendant(
-              of: find.byKey(clePhoto).first,
-              matching: find.byType(RichText)),
-          findsOneWidget,
-          reason: 'La vignette porte plus d\'un libellé : le badge de '
-              'disponibilité doit y être seul.');
+        find.descendant(
+          of: find.byKey(clePhoto).first,
+          matching: find.byType(RichText),
+        ),
+        findsOneWidget,
+        reason:
+            'La vignette porte plus d\'un libellé : le badge de '
+            'disponibilité doit y être seul.',
+      );
     });
 
     testWidgets('le retour au toucher est conservé', (tester) async {
       // Décision déjà prise, à conserver.
-      await poserPage(tester,
-          ecran: const Size(360, 720),
-          echelle: 1.0,
-          mode: Brightness.light,
-          vehicules: [vehicule()]);
+      await poserPage(
+        tester,
+        ecran: const Size(360, 720),
+        echelle: 1.0,
+        mode: Brightness.light,
+        vehicules: [vehicule()],
+      );
 
       final echelle = find.descendant(
-          of: find.byType(VehicleCard).first,
-          matching: find.byType(AnimatedScale));
+        of: find.byType(VehicleCard).first,
+        matching: find.byType(AnimatedScale),
+      );
 
       expect(tester.widget<AnimatedScale>(echelle.first).scale, 1.0);
 
-      final geste = await tester
-          .startGesture(tester.getCenter(find.byType(VehicleCard).first));
+      final geste = await tester.startGesture(
+        tester.getCenter(find.byType(VehicleCard).first),
+      );
       // 300 ms ET NON 50 : la carte vit dans un `Scrollable` doublé d'un
       // `RefreshIndicator`, et le reconnaisseur d'appui de l'`InkWell` ne gagne
       // l'arène des gestes qu'après le délai de rétention. À 50 ms l'appui n'est
       // pas encore reconnu, et le test mesurait une carte au repos.
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(tester.widget<AnimatedScale>(echelle.first).scale, lessThan(1.0),
-          reason: 'La carte ne répond plus au doigt.');
+      expect(
+        tester.widget<AnimatedScale>(echelle.first).scale,
+        lessThan(1.0),
+        reason: 'La carte ne répond plus au doigt.',
+      );
 
       // `cancel` et non `up` : un appui complet ouvre la fiche du véhicule par
       // `context.push`, et il n'y a pas de `GoRouter` dans cet arbre. Ce qui est
@@ -982,8 +1144,11 @@ void main() {
       await geste.cancel();
       await tester.pumpAndSettle();
 
-      expect(tester.widget<AnimatedScale>(echelle.first).scale, 1.0,
-          reason: 'La carte reste enfoncée après que le doigt a quitté.');
+      expect(
+        tester.widget<AnimatedScale>(echelle.first).scale,
+        1.0,
+        reason: 'La carte reste enfoncée après que le doigt a quitté.',
+      );
     });
   });
 
@@ -1000,29 +1165,41 @@ void main() {
       String quoi,
     ) async {
       for (final echelle in [1.0, 2.0]) {
-        final exception = await poserPage(tester,
-            ecran: const Size(320, 640),
-            echelle: echelle,
-            mode: Brightness.light,
-            vehicules: [v]);
+        final exception = await poserPage(
+          tester,
+          ecran: const Size(320, 640),
+          echelle: echelle,
+          mode: Brightness.light,
+          vehicules: [v],
+        );
 
         expect(exception, isNull, reason: '$quoi fait déborder la carte.');
 
         for (final p in tester.renderObjectList<RenderParagraph>(
-            find.descendant(
-                of: find.byType(VehicleCard),
-                matching: find.byType(RichText)))) {
+          find.descendant(
+            of: find.byType(VehicleCard),
+            matching: find.byType(RichText),
+          ),
+        )) {
           final texte = (p.text as TextSpan).toPlainText();
-          expect(p.didExceedMaxLines, isFalse,
-              reason: '$quoi : « $texte » est coupé à 320 points et à '
-                  'l\'échelle $echelle — ${voulue(p).toStringAsFixed(1)} '
-                  'voulus pour ${recue(p).toStringAsFixed(1)} reçus, il n\'en '
-                  'reste que « ${peint(p, recue(p))} ».');
-          expect(motLePlusLarge(p), lessThanOrEqualTo(recue(p) + 0.01),
-              reason: '$quoi : un mot de « $texte » fait '
-                  '${motLePlusLarge(p).toStringAsFixed(1)} points pour '
-                  '${recue(p).toStringAsFixed(1)} reçus à l\'échelle $echelle, '
-                  'et sera rogné en silence.');
+          expect(
+            p.didExceedMaxLines,
+            isFalse,
+            reason:
+                '$quoi : « $texte » est coupé à 320 points et à '
+                'l\'échelle $echelle — ${voulue(p).toStringAsFixed(1)} '
+                'voulus pour ${recue(p).toStringAsFixed(1)} reçus, il n\'en '
+                'reste que « ${peint(p, recue(p))} ».',
+          );
+          expect(
+            motLePlusLarge(p),
+            lessThanOrEqualTo(recue(p) + 0.01),
+            reason:
+                '$quoi : un mot de « $texte » fait '
+                '${motLePlusLarge(p).toStringAsFixed(1)} points pour '
+                '${recue(p).toStringAsFixed(1)} reçus à l\'échelle $echelle, '
+                'et sera rogné en silence.',
+          );
         }
       }
     }
@@ -1036,7 +1213,10 @@ void main() {
 
     testWidgets('« 99 999 999 FCFA »', (tester) async {
       await tenirPartout(
-          tester, vehicule(prix: '99999999.00'), '99 999 999 FCFA');
+        tester,
+        vehicule(prix: '99999999.00'),
+        '99 999 999 FCFA',
+      );
     });
 
     testWidgets('« Showroom Paspanga — Bobo-Dioulasso »', (tester) async {
@@ -1044,33 +1224,42 @@ void main() {
       // une annonce qui la porte doit tenir quand même, parce que le champ
       // existe toujours côté serveur et qu'un lot futur pourrait le remettre.
       await tenirPartout(
-          tester,
-          vehicule(agence: 'Showroom Paspanga', ville: 'Bobo-Dioulasso'),
-          'Showroom Paspanga — Bobo-Dioulasso');
+        tester,
+        vehicule(agence: 'Showroom Paspanga', ville: 'Bobo-Dioulasso'),
+        'Showroom Paspanga — Bobo-Dioulasso',
+      );
     });
 
     testWidgets('« Vente & Location »', (tester) async {
-      await tenirPartout(tester, vehicule(disponibilite: 'both'),
-          'Le badge « Vente & Location »');
+      await tenirPartout(
+        tester,
+        vehicule(disponibilite: 'both'),
+        'Le badge « Vente & Location »',
+      );
     });
 
     testWidgets('une annonce sans finition ni ville', (tester) async {
       await tenirPartout(
-          tester,
-          vehicule(finition: null, agence: null, ville: null),
-          'Une annonce sans finition ni ville');
+        tester,
+        vehicule(finition: null, agence: null, ville: null),
+        'Une annonce sans finition ni ville',
+      );
     });
 
-    testWidgets('« Électrique » et les trois autres carburants',
-        (tester) async {
+    testWidgets('« Électrique » et les trois autres carburants', (
+      tester,
+    ) async {
       // Le plus long des quatre libellés de carburant. À 320 points et à
       // l'échelle 1,5, il DISPARAISSAIT entièrement de la ligne de
       // caractéristiques dans la grille d'origine : 171,9 points voulus pour
       // 119,0, et ce qui était peint était « 95 000 km • » — le séparateur,
       // puis rien.
       for (final carburant in ['Essence', 'Diesel', 'Hybride', 'Électrique']) {
-        await tenirPartout(tester, vehicule(motorisation: carburant),
-            'Le carburant « $carburant »');
+        await tenirPartout(
+          tester,
+          vehicule(motorisation: carburant),
+          'Le carburant « $carburant »',
+        );
       }
     });
   });
@@ -1085,54 +1274,72 @@ void main() {
       // largeur naturelle, débordait de la vignette, et le
       // `clipBehavior: Clip.antiAlias` du `Card` le coupait au bord — sans
       // ellipse, sans `RenderFlex`, sans exception. Rien ne le signalait.
-      await poserPage(tester,
-          ecran: const Size(320, 640),
-          echelle: 1.0,
-          mode: Brightness.light,
-          vehicules: [vehicule()]);
+      await poserPage(
+        tester,
+        ecran: const Size(320, 640),
+        echelle: 1.0,
+        mode: Brightness.light,
+        vehicules: [vehicule()],
+      );
 
-      final badge =
-          tester.renderObject<RenderParagraph>(find.text('Vente & Location'));
+      final badge = tester.renderObject<RenderParagraph>(
+        find.text('Vente & Location'),
+      );
 
-      expect(badge.constraints.maxWidth.isFinite, isTrue,
-          reason: 'Le badge reçoit encore une contrainte de largeur illimitée : '
-              'il sera rogné par le `Card` sans ellipse, donc en silence.');
+      expect(
+        badge.constraints.maxWidth.isFinite,
+        isTrue,
+        reason:
+            'Le badge reçoit encore une contrainte de largeur illimitée : '
+            'il sera rogné par le `Card` sans ellipse, donc en silence.',
+      );
     });
 
-    testWidgets('il reste dans la vignette, à toutes les échelles',
-        (tester) async {
+    testWidgets('il reste dans la vignette, à toutes les échelles', (
+      tester,
+    ) async {
       // Le rognage se voyait à l'œil et nulle part ailleurs. Ici on compare les
       // bords peints : celui du badge contre celui de la carte.
       for (final echelle in echelles) {
-        await poserPage(tester,
-            ecran: const Size(320, 640),
-            echelle: echelle,
-            mode: Brightness.light,
-            vehicules: [vehicule()]);
+        await poserPage(
+          tester,
+          ecran: const Size(320, 640),
+          echelle: echelle,
+          mode: Brightness.light,
+          vehicules: [vehicule()],
+        );
 
         final carte = tester.renderObject<RenderBox>(find.byType(Card).first);
         // L'ancêtre `Container` du libellé, et non `find.byType(Container)` à un
         // index : la vignette en compte trois — le repli de photo, ce badge et
         // le compteur —, et prendre le premier mesurerait le repli, qui occupe
         // toute la carte et rendrait ce test vide.
-        final badge = tester.renderObject<RenderBox>(find
-            .ancestor(
+        final badge = tester.renderObject<RenderBox>(
+          find
+              .ancestor(
                 of: find.text('Vente & Location'),
-                matching: find.byType(Container))
-            .first);
+                matching: find.byType(Container),
+              )
+              .first,
+        );
 
         final droiteCarte = carte.localToGlobal(Offset(carte.size.width, 0)).dx;
         final droiteBadge = badge.localToGlobal(Offset(badge.size.width, 0)).dx;
 
-        expect(droiteBadge, lessThanOrEqualTo(droiteCarte + 0.01),
-            reason: 'Le badge dépasse la carte de '
-                '${(droiteBadge - droiteCarte).toStringAsFixed(1)} points à '
-                'l\'échelle $echelle : il est rogné sans ellipse.');
+        expect(
+          droiteBadge,
+          lessThanOrEqualTo(droiteCarte + 0.01),
+          reason:
+              'Le badge dépasse la carte de '
+              '${(droiteBadge - droiteCarte).toStringAsFixed(1)} points à '
+              'l\'échelle $echelle : il est rogné sans ellipse.',
+        );
       }
     });
 
-    testWidgets('et il s\'ellipse plutôt que de se faire couper',
-        (tester) async {
+    testWidgets('et il s\'ellipse plutôt que de se faire couper', (
+      tester,
+    ) async {
       // Non-vacuité : on étouffe le badge dans une case volontairement
       // minuscule — PAS une case que la grille peut produire, et c'est dit pour
       // qu'aucun chiffre du tableau n'en soit tiré — et on vérifie qu'il rend
@@ -1144,30 +1351,40 @@ void main() {
       // laisse. À 60 points de carte il n'en reçoit que 24, moins que son plus
       // court segment, et la troncature redevient inévitable — c'est ce que ce
       // test doit voir.
-      await tester.pumpWidget(ProviderScope(
-        child: MaterialApp(
-          theme: themeAutoParc(Brightness.light),
-          home: Scaffold(
-            body: Center(
-              child: SizedBox(
-                width: 60,
-                child: VehicleCard(vehicle: vehicule()),
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: themeAutoParc(Brightness.light),
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 60,
+                  child: VehicleCard(vehicle: vehicule()),
+                ),
               ),
             ),
           ),
         ),
-      ));
+      );
       await tester.pump();
 
-      final badge =
-          tester.renderObject<RenderParagraph>(find.text('Vente & Location'));
+      final badge = tester.renderObject<RenderParagraph>(
+        find.text('Vente & Location'),
+      );
 
-      expect(badge.didExceedMaxLines, isTrue,
-          reason: 'Le badge ne déclare aucune troncature dans une case de 60 '
-              'points : son `maxLines`/`overflow` a disparu, et il se fera '
-              'rogner en silence comme avant.');
-      expect(peint(badge, recue(badge)), isNotEmpty,
-          reason: 'Le badge ellipsé ne montre plus rien.');
+      expect(
+        badge.didExceedMaxLines,
+        isTrue,
+        reason:
+            'Le badge ne déclare aucune troncature dans une case de 60 '
+            'points : son `maxLines`/`overflow` a disparu, et il se fera '
+            'rogner en silence comme avant.',
+      );
+      expect(
+        peint(badge, recue(badge)),
+        isNotEmpty,
+        reason: 'Le badge ellipsé ne montre plus rien.',
+      );
     });
   });
 
@@ -1187,22 +1404,21 @@ void main() {
       Vehicle v, {
       required double echelle,
     }) async {
-      await tester.pumpWidget(ProviderScope(
-        child: MaterialApp(
-          theme: themeAutoParc(Brightness.light),
-          home: MediaQuery(
-            data: MediaQueryData(textScaler: TextScaler.linear(echelle)),
-            child: Scaffold(
-              body: Center(
-                child: SizedBox(
-                  width: 143,
-                  child: VehicleCard(vehicle: v),
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: themeAutoParc(Brightness.light),
+            home: MediaQuery(
+              data: MediaQueryData(textScaler: TextScaler.linear(echelle)),
+              child: Scaffold(
+                body: Center(
+                  child: SizedBox(width: 143, child: VehicleCard(vehicle: v)),
                 ),
               ),
             ),
           ),
         ),
-      ));
+      );
       await tester.pump();
     }
 
@@ -1218,36 +1434,57 @@ void main() {
       // Dix chiffres : « 9 999 999 999 FCFA » demande plus que les 119,0 points
       // de la case au corps nominal de 14,0. Huit chiffres n'y suffiraient pas —
       // « 99 999 999 FCFA » n'en demande que 105,3 et tient sans réduction.
-      await poserCaseEtroite(tester, vehicule(prix: '9999999999.00'),
-          echelle: 1.0);
+      await poserCaseEtroite(
+        tester,
+        vehicule(prix: '9999999999.00'),
+        echelle: 1.0,
+      );
 
-      final prix = tester
-          .renderObject<RenderParagraph>(find.textContaining('FCFA').first);
+      final prix = tester.renderObject<RenderParagraph>(
+        find.textContaining('FCFA').first,
+      );
       final corps = (prix.text as TextSpan).style!.fontSize!;
 
-      expect(prix.didExceedMaxLines, isFalse,
-          reason: 'Prix tronqué AU RÉGLAGE PAR DÉFAUT : '
-              '${voulue(prix).toStringAsFixed(1)} points voulus pour '
-              '${recue(prix).toStringAsFixed(1)} reçus, corps '
-              '${corps.toStringAsFixed(1)}. Un prix tronqué est un prix faux.');
-      expect(corps, lessThan(14.0),
-          reason: 'Le prix n\'a pas rétréci (corps '
-              '${corps.toStringAsFixed(1)}) : le plancher vaut encore le corps '
-              'nominal à l\'échelle 1,0, et la boucle ne peut rien faire.');
-      expect(corps, greaterThanOrEqualTo(11.0),
-          reason: 'Le prix est descendu sous le plancher absolu de 11,0 points, '
-              'le corps de l\'étiquette d\'affaire peinte à côté.');
+      expect(
+        prix.didExceedMaxLines,
+        isFalse,
+        reason:
+            'Prix tronqué AU RÉGLAGE PAR DÉFAUT : '
+            '${voulue(prix).toStringAsFixed(1)} points voulus pour '
+            '${recue(prix).toStringAsFixed(1)} reçus, corps '
+            '${corps.toStringAsFixed(1)}. Un prix tronqué est un prix faux.',
+      );
+      expect(
+        corps,
+        lessThan(14.0),
+        reason:
+            'Le prix n\'a pas rétréci (corps '
+            '${corps.toStringAsFixed(1)}) : le plancher vaut encore le corps '
+            'nominal à l\'échelle 1,0, et la boucle ne peut rien faire.',
+      );
+      expect(
+        corps,
+        greaterThanOrEqualTo(11.0),
+        reason:
+            'Le prix est descendu sous le plancher absolu de 11,0 points, '
+            'le corps de l\'étiquette d\'affaire peinte à côté.',
+      );
     });
 
-    testWidgets('un prix à huit chiffres garde son corps nominal',
-        (tester) async {
+    testWidgets('un prix à huit chiffres garde son corps nominal', (
+      tester,
+    ) async {
       // Le cas que la décision nomme. Il tient dans la case étroite : 105,3
       // points pour 119,0. Rien ne justifie de réduire un prix qui tient.
-      await poserCaseEtroite(tester, vehicule(prix: '99999999.00'),
-          echelle: 1.0);
+      await poserCaseEtroite(
+        tester,
+        vehicule(prix: '99999999.00'),
+        echelle: 1.0,
+      );
 
-      final prix = tester
-          .renderObject<RenderParagraph>(find.textContaining('FCFA').first);
+      final prix = tester.renderObject<RenderParagraph>(
+        find.textContaining('FCFA').first,
+      );
 
       expect(prix.didExceedMaxLines, isFalse);
       expect((prix.text as TextSpan).style!.fontSize, 14.0);
@@ -1258,59 +1495,83 @@ void main() {
       // LE PLANCHER DE CONFORT est ce qui est vérifié ici — on ne rend pas le
       // prix plus petit qu'à quelqu'un qui n'a rien réglé, à qui que ce soit qui
       // a grossi ses polices.
-      await poserCaseEtroite(tester, vehicule(prix: '9500000.00'),
-          echelle: 1.3);
+      await poserCaseEtroite(
+        tester,
+        vehicule(prix: '9500000.00'),
+        echelle: 1.3,
+      );
 
-      final prix = tester
-          .renderObject<RenderParagraph>(find.textContaining('FCFA').first);
+      final prix = tester.renderObject<RenderParagraph>(
+        find.textContaining('FCFA').first,
+      );
       final corps = (prix.text as TextSpan).style!.fontSize!;
 
       expect(prix.didExceedMaxLines, isFalse);
-      expect(corps, lessThan(14.0 * 1.3),
-          reason: 'Le prix devait rétrécir sous les 18,2 points demandés.');
-      expect(corps, greaterThanOrEqualTo(14.0),
-          reason: 'Et pas sous le corps d\'un téléphone au réglage par défaut : '
-              'le plancher de confort n\'a aucune raison de céder ici, le prix '
-              'tenant largement au-dessus.');
+      expect(
+        corps,
+        lessThan(14.0 * 1.3),
+        reason: 'Le prix devait rétrécir sous les 18,2 points demandés.',
+      );
+      expect(
+        corps,
+        greaterThanOrEqualTo(14.0),
+        reason:
+            'Et pas sous le corps d\'un téléphone au réglage par défaut : '
+            'le plancher de confort n\'a aucune raison de céder ici, le prix '
+            'tenant largement au-dessus.',
+      );
     });
 
     testWidgets('le prix d\'une location rétrécit aussi', (tester) async {
       // « /j » allonge la chaîne, et ce chemin-là est un autre appel.
       final json = jsonDecode(jsonEncode(gabarit)) as Map<String, dynamic>;
       final commerce = json['commercial'] as Map<String, dynamic>;
-      commerce['availability']      = 'rent';
-      commerce['sale_price']        = null;
+      commerce['availability'] = 'rent';
+      commerce['sale_price'] = null;
       commerce['rental_daily_rate'] = '9500000.00';
       json['media'] = <dynamic>[];
 
       await poserCaseEtroite(tester, Vehicle.fromJson(json), echelle: 1.3);
 
-      final prix = tester
-          .renderObject<RenderParagraph>(find.textContaining('FCFA').first);
+      final prix = tester.renderObject<RenderParagraph>(
+        find.textContaining('FCFA').first,
+      );
 
-      expect(prix.didExceedMaxLines, isFalse,
-          reason: 'Un loyer tronqué est un loyer faux, comme un prix.');
+      expect(
+        prix.didExceedMaxLines,
+        isFalse,
+        reason: 'Un loyer tronqué est un loyer faux, comme un prix.',
+      );
       expect((prix.text as TextSpan).style!.fontSize!, lessThan(14.0 * 1.3));
     });
 
-    testWidgets('le détecteur voit une troncature qu\'il doit voir',
-        (tester) async {
+    testWidgets('le détecteur voit une troncature qu\'il doit voir', (
+      tester,
+    ) async {
       // NON-VACUITÉ. Vingt chiffres : même au plancher absolu de 11,0 points, ce
       // prix ne peut pas tenir dans 119,0 — il n'y a plus rien à réduire, donc
       // il est coupé, et le détecteur doit le dire. Si cette assertion tombe,
       // c'est que `didExceedMaxLines` ne mesure plus ce qu'on croit, et que les
       // assertions du tableau ne protègent plus rien.
       await poserCaseEtroite(
-          tester, vehicule(prix: '99999999999999999999.00'), echelle: 1.0);
+        tester,
+        vehicule(prix: '99999999999999999999.00'),
+        echelle: 1.0,
+      );
 
-      final prix = tester
-          .renderObject<RenderParagraph>(find.textContaining('FCFA').first);
+      final prix = tester.renderObject<RenderParagraph>(
+        find.textContaining('FCFA').first,
+      );
 
-      expect(prix.didExceedMaxLines, isTrue,
-          reason: 'Le détecteur ne voit pas une troncature qu\'il devrait '
-              'voir : ${voulue(prix).toStringAsFixed(1)} points voulus pour '
-              '${recue(prix).toStringAsFixed(1)} reçus, corps '
-              '${(prix.text as TextSpan).style!.fontSize}.');
+      expect(
+        prix.didExceedMaxLines,
+        isTrue,
+        reason:
+            'Le détecteur ne voit pas une troncature qu\'il devrait '
+            'voir : ${voulue(prix).toStringAsFixed(1)} points voulus pour '
+            '${recue(prix).toStringAsFixed(1)} reçus, corps '
+            '${(prix.text as TextSpan).style!.fontSize}.',
+      );
     });
 
     testWidgets('`find.text` passerait sur ce même prix coupé', (tester) async {
@@ -1318,10 +1579,14 @@ void main() {
       // prix entier alors que les glyphes sont coupés. C'est exactement ce que
       // le banc précédent assertait sur la ligne de caractéristiques.
       await poserCaseEtroite(
-          tester, vehicule(prix: '99999999999999999999.00'), echelle: 1.0);
+        tester,
+        vehicule(prix: '99999999999999999999.00'),
+        echelle: 1.0,
+      );
 
-      final prix = tester
-          .renderObject<RenderParagraph>(find.textContaining('FCFA').first);
+      final prix = tester.renderObject<RenderParagraph>(
+        find.textContaining('FCFA').first,
+      );
       // Le texte VOULU, relu dans le paragraphe plutôt qu'écrit en clair : le
       // séparateur de milliers de `NumberFormat` est une espace fine insécable
       // (U+202F), et l'écrire à la main avec des espaces ordinaires ferait
@@ -1329,9 +1594,13 @@ void main() {
       final voulu = (prix.text as TextSpan).toPlainText();
 
       expect(prix.didExceedMaxLines, isTrue);
-      expect(find.text(voulu), findsOneWidget,
-          reason: 'Un texte ellipsé passe `find.text` : voilà pourquoi ce '
-              'fichier mesure la géométrie.');
+      expect(
+        find.text(voulu),
+        findsOneWidget,
+        reason:
+            'Un texte ellipsé passe `find.text` : voilà pourquoi ce '
+            'fichier mesure la géométrie.',
+      );
     });
   });
 
@@ -1440,13 +1709,16 @@ void main() {
 
     for (final ecran in ecrans.entries) {
       for (final echelle in echelles) {
-        testWidgets('${ecran.key}, texte x$echelle : la rangée et le compte',
-            (tester) async {
-          await poserPage(tester,
-              ecran: ecran.value,
-              echelle: echelle,
-              mode: Brightness.light,
-              vehicules: List.generate(8, (_) => vehicule()));
+        testWidgets('${ecran.key}, texte x$echelle : la rangée et le compte', (
+          tester,
+        ) async {
+          await poserPage(
+            tester,
+            ecran: ecran.value,
+            echelle: echelle,
+            mode: Brightness.light,
+            vehicules: List.generate(8, (_) => vehicule()),
+          );
 
           final hauteurListe = utile(tester);
           final r = rangs(tester);
@@ -1458,9 +1730,13 @@ void main() {
           // l'être aussi. L'assertion n'est pas décorative : c'est elle qui
           // autorise à déduire le compte d'une seule hauteur de rangée.
           for (final rangee in r) {
-            expect(rangee.bas - rangee.haut, closeTo(hauteurRangee, 0.01),
-                reason: 'Deux rangées du même contenu n\'ont pas la même '
-                    'hauteur : le compte ci-dessous ne vaut plus rien.');
+            expect(
+              rangee.bas - rangee.haut,
+              closeTo(hauteurRangee, 0.01),
+              reason:
+                  'Deux rangées du même contenu n\'ont pas la même '
+                  'hauteur : le compte ci-dessous ne vaut plus rien.',
+            );
           }
 
           // Le pas entre deux rangées, LU quand une seconde rangée est posée.
@@ -1484,26 +1760,36 @@ void main() {
           final direct =
               r.where((x) => x.bas <= hauteurListe + 0.01).length * 2;
           if (r.length * 2 > direct) {
-            expect(direct, n,
-                reason: 'Le comptage direct ($direct) et la déduction ($n) ne '
-                    's\'accordent pas.');
+            expect(
+              direct,
+              n,
+              reason:
+                  'Le comptage direct ($direct) et la déduction ($n) ne '
+                  's\'accordent pas.',
+            );
           }
 
           // ignore: avoid_print
-          print('── densité ${ecran.key}, x$echelle : '
-              'rangée ${hauteurRangee.toStringAsFixed(1)}, '
-              'pas ${(hauteurRangee + ecart).toStringAsFixed(1)}, '
-              'première à ${r.first.haut.toStringAsFixed(1)}, '
-              'liste ${hauteurListe.toStringAsFixed(1)} → '
-              '$n annonce(s) entière(s)');
+          print(
+            '── densité ${ecran.key}, x$echelle : '
+            'rangée ${hauteurRangee.toStringAsFixed(1)}, '
+            'pas ${(hauteurRangee + ecart).toStringAsFixed(1)}, '
+            'première à ${r.first.haut.toStringAsFixed(1)}, '
+            'liste ${hauteurListe.toStringAsFixed(1)} → '
+            '$n annonce(s) entière(s)',
+          );
 
-          expect(n, attendu['${ecran.key}-$echelle'],
-              reason: 'La densité a changé en ${ecran.key} à l\'échelle '
-                  '$echelle : rangée de ${hauteurRangee.toStringAsFixed(1)} '
-                  'points, première à ${r.first.haut.toStringAsFixed(1)}, pour '
-                  '${hauteurListe.toStringAsFixed(1)} de liste. C\'est le '
-                  'chiffre que ce lot avait pour objet — s\'il baisse, '
-                  'dites-le avant de le livrer.');
+          expect(
+            n,
+            attendu['${ecran.key}-$echelle'],
+            reason:
+                'La densité a changé en ${ecran.key} à l\'échelle '
+                '$echelle : rangée de ${hauteurRangee.toStringAsFixed(1)} '
+                'points, première à ${r.first.haut.toStringAsFixed(1)}, pour '
+                '${hauteurListe.toStringAsFixed(1)} de liste. C\'est le '
+                'chiffre que ce lot avait pour objet — s\'il baisse, '
+                'dites-le avant de le livrer.',
+          );
         });
       }
     }
@@ -1533,14 +1819,13 @@ class _Depot implements CatalogRepository {
     int? locationId,
     bool? customsCleared,
     bool? deal,
-  }) async =>
-      PaginatedResponse<Vehicle>(
-        data: liste,
-        currentPage: 1,
-        lastPage: 1,
-        total: liste.length,
-        perPage: perPage,
-      );
+  }) async => PaginatedResponse<Vehicle>(
+    data: liste,
+    currentPage: 1,
+    lastPage: 1,
+    total: liste.length,
+    perPage: perPage,
+  );
 
   @override
   Object? noSuchMethod(Invocation invocation) => null;
@@ -1565,30 +1850,10 @@ class _FauxAuth extends StateNotifier<AuthState> implements AuthNotifier {
 /// `captures_controle_test.dart` fait déjà ainsi. Si le cache manque, ce fichier
 /// ne se tait pas — le premier test mesure la police chargée et dit laquelle il
 /// a trouvée.
-Future<void> _chargerPolices() async {
-  final racine = Platform.environment['FLUTTER_ROOT'];
-  if (racine == null) return;
 
-  final dossier = Directory('$racine/bin/cache/artifacts/material_fonts');
-  if (!dossier.existsSync()) return;
-
-  const fontes = {
-    'Roboto': ['roboto-regular.ttf', 'roboto-medium.ttf', 'roboto-bold.ttf'],
-    'MaterialIcons': ['materialicons-regular.otf'],
-  };
-
-  for (final entree in fontes.entries) {
-    final chargeur = FontLoader(entree.key);
-    var trouvee = false;
-
-    for (final nom in entree.value) {
-      final fichier = File('${dossier.path}/$nom');
-      if (!fichier.existsSync()) continue;
-      chargeur.addFont(
-          Future.value(fichier.readAsBytesSync().buffer.asByteData()));
-      trouvee = true;
-    }
-
-    if (trouvee) await chargeur.load();
-  }
-}
+/// Charge Roboto, ou ÉCHOUE — elle ne se tait plus.
+///
+/// L'ancienne version rendait la main sans rien dire quand les polices
+/// manquaient, et les douze assertions de géométrie tombaient ensuite une par
+/// une sur des chiffres incompréhensibles. Une seule erreur à la racine vaut
+/// mieux que douze symptômes.
