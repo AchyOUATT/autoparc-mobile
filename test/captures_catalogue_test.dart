@@ -50,6 +50,7 @@ import 'package:auto/features/auth/data/auth_repository.dart';
 import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
 import 'package:auto/features/catalog/data/catalog_repository.dart';
 import 'package:auto/core/theme/app_theme.dart';
+import 'package:auto/core/utils/currency_format.dart';
 import 'package:auto/features/catalog/data/models/accessory.dart';
 import 'package:auto/features/catalog/data/models/part.dart';
 import 'package:auto/features/catalog/data/models/part_category.dart';
@@ -125,6 +126,12 @@ import 'support/polices.dart';
 /// vérifie qu'ils rendent des cartes.
 void main() {
   final bool ecrireCaptures = Platform.environment['CAPTURES'] == '1';
+
+  // Le drapeau de `formatXof` est un réglage de MODULE : il survit à la fin du
+  // test qui l'a posé. Sans ce retour au français, la première capture
+  // française exécutée après une capture anglaise montrerait des virgules de
+  // milliers. Même garde que `accueil_langues_test.dart` et `langue_test.dart`.
+  tearDown(() => definirLocaleMontants(localeFr));
 
   setUpAll(() async {
     await chargerPolices(exigerRoboto: false);
@@ -268,7 +275,23 @@ void main() {
     required double hauteur,
     required double echelle,
     required Brightness mode,
+
+    /// La langue de la capture. Le français par défaut, parce que tout le parc
+    /// installé est francophone et que ces captures servent d'abord à juger ce
+    /// qu'il voit. La vague 2 en ajoute trois en ANGLAIS, à la configuration de
+    /// référence : des mesures au dixième de point disent qu'une traduction ne
+    /// tronque pas, elles ne disent pas si l'écran se lit.
+    Locale locale = localeFr,
   }) async {
+    // LE FORMAT DES MONTANTS, ET LA CAPTURE ANGLAISE L'A RÉVÉLÉ. `formatXof`
+    // lit un drapeau de module que `AutoParcApp.build` pose dans
+    // l'application ; une coque de banc doit le poser elle-même. Sans cette
+    // ligne, la première capture anglaise montrait « 18 500 000 FCFA » —
+    // espaces fines insécables françaises — sous une interface anglaise, qui
+    // attend « 18,500,000 FCFA ». Aucune mesure ne l'aurait dit : les deux
+    // formes font la même largeur à un cheveu près.
+    definirLocaleMontants(locale);
+
     final taille = Size(largeur, hauteur);
     tester.view.physicalSize = taille;
     tester.view.devicePixelRatio = 1.0;
@@ -316,7 +339,7 @@ void main() {
           // Les délégués ET la locale : voir test/support/langues.dart. Sans
           // `locale:`, ce banc mesurerait l'ANGLAIS — la liste des locales du
           // banc vaut `[en_US]` et `supportedLocales` commence par `en`.
-          locale: localeFr,
+          locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           theme: themeAutoParc(mode),
@@ -331,29 +354,42 @@ void main() {
             // `_AppShell` : la recopier ici a fait diverger la capture de
             // l'application — la copie n'avait pas la borne d'échelle de texte
             // qui empêche « Accessoires » de se casser sur deux lignes.
-            child: const Scaffold(
-              body: VehicleListPage(),
-              bottomNavigationBar: BarreNavigationPrincipale(
-                selectedIndex: 1,
-                destinations: [
-                  NavigationDestination(
-                    icon: Icon(Icons.home_outlined),
-                    label: 'Accueil',
+            //
+            // LES QUATRE INTITULÉS SONT LUS, et ils étaient recopiés. La
+            // première capture anglaise l'a montré du premier coup d'œil : une
+            // barre de titre « Vehicles » au-dessus d'une barre du bas
+            // « Accueil / Véhicules / Accessoires / Pièces ». C'est exactement
+            // ce que le widget partagé évitait pour la hauteur, et que la copie
+            // des libellés rouvrait pour la langue. La coque des articles,
+            // elle, les lisait déjà — les deux posent maintenant la même chose.
+            child: Builder(
+              builder: (context) {
+                final l10n = AppLocalizations.of(context);
+                return Scaffold(
+                  body: const VehicleListPage(),
+                  bottomNavigationBar: BarreNavigationPrincipale(
+                    selectedIndex: 1,
+                    destinations: [
+                      NavigationDestination(
+                        icon: const Icon(Icons.home_outlined),
+                        label: l10n.commonHome,
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.directions_car_outlined),
+                        label: l10n.commonVehicles,
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.tune_outlined),
+                        label: l10n.commonAccessories,
+                      ),
+                      NavigationDestination(
+                        icon: const Icon(Icons.settings_outlined),
+                        label: l10n.commonParts,
+                      ),
+                    ],
                   ),
-                  NavigationDestination(
-                    icon: Icon(Icons.directions_car_outlined),
-                    label: 'Véhicules',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.tune_outlined),
-                    label: 'Accessoires',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.settings_outlined),
-                    label: 'Pièces',
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ),
@@ -495,11 +531,13 @@ void main() {
     required double hauteur,
     required double echelle,
     required Brightness mode,
+    Locale locale = localeFr,
   }) => _monterArticles(
     tester,
     largeur: largeur,
     hauteur: hauteur,
     echelle: echelle,
+    locale: locale,
     mode: mode,
     onglet: 3,
     page: const PartListPage(),
@@ -517,11 +555,13 @@ void main() {
     required double hauteur,
     required double echelle,
     required Brightness mode,
+    Locale locale = localeFr,
   }) => _monterArticles(
     tester,
     largeur: largeur,
     hauteur: hauteur,
     echelle: echelle,
+    locale: locale,
     mode: mode,
     onglet: 2,
     page: const AccessoryListPage(),
@@ -760,6 +800,64 @@ void main() {
     );
     await capturerArticles(tester, 'accessoires-360-x10-sombre');
   });
+
+  // ── LES TROIS CATALOGUES EN ANGLAIS ───────────────────────────────────────
+  //
+  // Une capture par liste, à la configuration de référence — 360 points, texte
+  // normal, thème clair —, et c'est l'apport de la vague 2 à ce fichier.
+  //
+  // POURQUOI UNE SEULE CONFIGURATION PAR ÉCRAN. Les mesures, elles, couvrent
+  // les vingt-quatre cases de chaque liste dans les deux langues :
+  // `bandes_filtres_test.dart` pour les puces et les écrans vides,
+  // `carte_geometrie_test.dart` pour les cartes, `accueil_langues_test.dart`
+  // pour les barres de titre. Elles disent qu'aucune chaîne anglaise ne se
+  // coupe ; elles ne disent pas si l'écran se LIT — si « Customs cleared »
+  // déséquilibre la bande d'offre, si « Good deal » a l'air d'un filtre, si
+  // « Sale & rental » tient sur une ligne au lieu de deux. Ce sont des
+  // questions de regard, et trois images y répondent mieux que trois cents
+  // chiffres.
+  //
+  // Le reste du parc est francophone : les captures françaises ci-dessus
+  // restent la référence, et ces trois-là s'ajoutent sans les remplacer.
+  testWidgets('catalogue, 360x720, texte normal, clair, anglais', (
+    tester,
+  ) async {
+    await monter(
+      tester,
+      largeur: 360,
+      hauteur: 720,
+      echelle: 1.0,
+      mode: Brightness.light,
+      locale: localeEn,
+    );
+    await capturer(tester, 'catalogue-360-x10-clair-en');
+  });
+
+  testWidgets('pièces, 360x720, texte normal, clair, anglais', (tester) async {
+    await monterPieces(
+      tester,
+      largeur: 360,
+      hauteur: 720,
+      echelle: 1.0,
+      mode: Brightness.light,
+      locale: localeEn,
+    );
+    await capturerArticles(tester, 'pieces-360-x10-clair-en');
+  });
+
+  testWidgets('accessoires, 360x720, texte normal, clair, anglais', (
+    tester,
+  ) async {
+    await monterAccessoires(
+      tester,
+      largeur: 360,
+      hauteur: 720,
+      echelle: 1.0,
+      mode: Brightness.light,
+      locale: localeEn,
+    );
+    await capturerArticles(tester, 'accessoires-360-x10-clair-en');
+  });
 }
 
 /// Charge Roboto et les icônes Material depuis le cache du SDK.
@@ -855,7 +953,11 @@ Future<void> _monterArticles(
   required Widget page,
   required CatalogRepository depot,
   required List<Override> surcharges,
+  Locale locale = localeFr,
 }) async {
+  // Même raison que dans `monter` : voir le commentaire là-bas.
+  definirLocaleMontants(locale);
+
   final taille = Size(largeur, hauteur);
   tester.view.physicalSize = taille;
   tester.view.devicePixelRatio = 1.0;
@@ -897,7 +999,7 @@ Future<void> _monterArticles(
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        locale: localeFr,
+        locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: themeAutoParc(mode),

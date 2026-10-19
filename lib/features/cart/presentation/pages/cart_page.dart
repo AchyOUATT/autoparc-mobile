@@ -8,6 +8,7 @@ import '../providers/cart_provider.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/utils/whatsapp_helper.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ── Page ──────────────────────────────────────────────────────────────
 
@@ -17,13 +18,14 @@ class CartPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final items = ref.watch(cartProvider);
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
           items.isEmpty
-              ? 'Panier'
-              : 'Panier (${items.fold(0, (s, i) => s + i.quantity)})',
+              ? l10n.cartTitle
+              : l10n.cartTitleCount(items.fold(0, (s, i) => s + i.quantity)),
         ),
         centerTitle: false,
         actions: [
@@ -31,7 +33,7 @@ class CartPage extends ConsumerWidget {
             TextButton.icon(
               onPressed: () => _confirmClear(context, ref),
               icon: const Icon(Icons.delete_sweep_outlined, size: 18),
-              label: const Text('Vider'),
+              label: Text(l10n.cartClear),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
             ),
         ],
@@ -51,27 +53,26 @@ class CartPage extends ConsumerWidget {
                 _SummaryCard(items: items),
               ],
             ),
-      bottomNavigationBar: items.isEmpty
-          ? null
-          : _CheckoutBar(items: items),
+      bottomNavigationBar: items.isEmpty ? null : _CheckoutBar(items: items),
     );
   }
 
   Future<void> _confirmClear(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Vider le panier ?'),
-        content: const Text('Tous les articles seront retirés.'),
+        title: Text(l10n.cartClearTitle),
+        content: Text(l10n.cartClearBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Vider'),
+            child: Text(l10n.cartClear),
           ),
         ],
       ),
@@ -88,7 +89,7 @@ class _CartItemTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs    = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
     final notif = ref.read(cartProvider.notifier);
 
     return Padding(
@@ -100,8 +101,8 @@ class _CartItemTile extends ConsumerWidget {
           CircleAvatar(
             radius: 20,
             backgroundColor: (item.itemType == CartItemType.accessory
-                    ? cs.tertiaryContainer
-                    : cs.secondaryContainer),
+                ? cs.tertiaryContainer
+                : cs.secondaryContainer),
             child: Icon(
               item.itemType == CartItemType.accessory
                   ? Icons.tune_outlined
@@ -136,12 +137,14 @@ class _CartItemTile extends ConsumerWidget {
                   ),
                 const SizedBox(height: 4),
                 Text(
-                  '${formatXofShort(item.unitPriceHt)} × ${item.quantity} = '
-                  '${formatXof(item.lineTotalHt)}',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: cs.primary),
+                  AppLocalizations.of(context).cartLineTotal(
+                    formatXofShort(item.unitPriceHt),
+                    item.quantity,
+                    formatXof(item.lineTotalHt),
+                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: cs.primary),
                 ),
               ],
             ),
@@ -223,10 +226,11 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalHt  = items.fold(0.0, (s, i) => s + i.lineTotalHt);
+    final totalHt = items.fold(0.0, (s, i) => s + i.lineTotalHt);
     final totalTtc = items.fold(0.0, (s, i) => s + i.lineTotalTtc);
-    final tva      = totalTtc - totalHt;
-    final cs       = Theme.of(context).colorScheme;
+    final tva = totalTtc - totalHt;
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 12),
@@ -237,12 +241,12 @@ class _SummaryCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _SummaryRow('Sous-total HT', formatXof(totalHt)),
+          _SummaryRow(l10n.cartSubtotalExclTax, formatXof(totalHt)),
           const SizedBox(height: 4),
-          _SummaryRow('TVA',           formatXof(tva)),
+          _SummaryRow(l10n.cartVat, formatXof(tva)),
           const Divider(height: 16),
           _SummaryRow(
-            'Total TTC',
+            l10n.cartTotalInclTax,
             formatXof(totalTtc),
             bold: true,
             color: cs.primary,
@@ -258,20 +262,40 @@ class _SummaryRow extends StatelessWidget {
   final String value;
   final bool bold;
   final Color? color;
-  const _SummaryRow(this.label, this.value,
-      {this.bold = false, this.color});
+  const _SummaryRow(this.label, this.value, {this.bold = false, this.color});
 
+  // ── LE LIBELLÉ SE REPLIE, LE MONTANT JAMAIS ────────────────────────────
+  //
+  // Les deux textes étaient posés bruts dans un `Row` : chacun réclamait sa
+  // largeur naturelle, et rien ne les repliait. À 320 points et à l'échelle
+  // 1,5, les trois lignes du récapitulatif dépassaient —
+  //
+  //     A RenderFlex overflowed by 26 pixels on the right.
+  //
+  // EN FRANÇAIS COMME EN ANGLAIS, donc antérieurement à la traduction ; c'est
+  // le banc « Les écrans de la vague 2 » qui regarde cet écran pour la
+  // première fois. L'anglais y est tout de même plus large — « Subtotal excl.
+  // VAT » contre « Sous-total HT » —, et c'est lui qui tombe le premier.
+  //
+  // `Expanded` SUR LE LIBELLÉ SEUL, et c'est tout l'arbitrage : le libellé est
+  // une phrase, il se replie sur deux lignes sans rien perdre ; le montant est
+  // un nombre, et un nombre replié dans son segment insécable devient un AUTRE
+  // nombre — voir `porteUnNombre` dans test/support/echelles.dart. Il garde
+  // donc sa largeur naturelle, et c'est le libellé qui cède.
   @override
   Widget build(BuildContext context) => Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
-      Text(
-        label,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          fontWeight: bold ? FontWeight.bold : null,
-          color: color,
+      Expanded(
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontWeight: bold ? FontWeight.bold : null,
+            color: color,
+          ),
         ),
       ),
+      const SizedBox(width: 12),
       Text(
         value,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -299,6 +323,7 @@ class _CheckoutBarState extends ConsumerState<_CheckoutBar> {
   @override
   Widget build(BuildContext context) {
     final isStaff = ref.watch(authProvider).isStaff;
+    final l10n = AppLocalizations.of(context);
 
     return SafeArea(
       child: Padding(
@@ -327,15 +352,13 @@ class _CheckoutBarState extends ConsumerState<_CheckoutBar> {
                     child: FilledButton.icon(
                       onPressed: () => _showStaffSheet(context),
                       icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                      label: const Text('Facturer'),
+                      label: Text(l10n.cartInvoice),
                     ),
                   ),
                 ],
               )
             : FilledButton.icon(
-                onPressed: _launching
-                    ? null
-                    : () => _openWhatsApp(context),
+                onPressed: _launching ? null : () => _openWhatsApp(context),
                 icon: _launching
                     ? const SizedBox(
                         width: 18,
@@ -346,7 +369,9 @@ class _CheckoutBarState extends ConsumerState<_CheckoutBar> {
                         ),
                       )
                     : const Icon(Icons.chat),
-                label: Text(_launching ? 'Ouverture…' : 'Commander via WhatsApp'),
+                label: Text(
+                  _launching ? l10n.cartOpening : l10n.cartOrderViaWhatsApp,
+                ),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(52),
                 ),
@@ -359,15 +384,38 @@ class _CheckoutBarState extends ConsumerState<_CheckoutBar> {
     setState(() => _launching = true);
     // Capture le messenger avant l'await pour éviter l'async-gap warning.
     final messenger = ScaffoldMessenger.of(context);
-    final ok = await launchWhatsApp(widget.items);
+    // LE MESSAGE EST LU AVANT L'`await`, POUR LA MÊME RAISON QUE LE MESSENGER :
+    // `AppLocalizations.of` lit le `BuildContext`, et le lire après une
+    // attente asynchrone est précisément ce que l'avertissement
+    // `use_build_context_synchronously` dénonce. La chaîne, elle, ne périme
+    // pas : la langue ne peut pas changer pendant le lancement de WhatsApp
+    // sans reconstruire tout l'arbre, donc ce widget.
+    final l10n = AppLocalizations.of(context);
+    final introuvable = l10n.cartWhatsAppMissing;
+
+    // LES CINQ CHAÎNES DU MESSAGE SE LISENT ICI, et pas dans l'utilitaire qui
+    // le compose : `buildWhatsAppMessage` n'a pas de `BuildContext` et ne doit
+    // pas en avoir, c'est ce qui la rend vérifiable sans monter d'arbre de
+    // widgets. Le même arbitrage que `composerMessagePartage`, qui porte sa
+    // mention de boutique en paramètre pour la même raison.
+    //
+    // Les trois intitulés du décompte sont les MÊMES CLÉS que le récapitulatif
+    // affiché juste au-dessus : le message dit exactement ce que le client
+    // vient de lire, et les deux ne peuvent pas diverger.
+    final libelles = LibellesCommande(
+      entete: l10n.cartWhatsAppHeader,
+      sousTotal: l10n.cartSubtotalExclTax,
+      taxe: l10n.cartVat,
+      total: l10n.cartTotalInclTax,
+      pied: l10n.cartWhatsAppFooter,
+    );
+
+    final ok = await launchWhatsApp(widget.items, libelles);
     if (!mounted) return;
     setState(() => _launching = false);
     if (!ok) {
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('WhatsApp n\'est pas installé sur cet appareil.'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(introuvable), backgroundColor: Colors.red),
       );
     }
   }
@@ -392,10 +440,10 @@ class _StaffOrderSheet extends ConsumerStatefulWidget {
 }
 
 class _StaffOrderSheetState extends ConsumerState<_StaffOrderSheet> {
-  final _nameCtrl  = TextEditingController();
+  final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
-  final _formKey   = GlobalKey<FormState>();
-  bool  _submitting = false;
+  final _formKey = GlobalKey<FormState>();
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -406,6 +454,8 @@ class _StaffOrderSheetState extends ConsumerState<_StaffOrderSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Padding(
       padding: EdgeInsets.only(
         left: 24,
@@ -433,29 +483,30 @@ class _StaffOrderSheetState extends ConsumerState<_StaffOrderSheet> {
             ),
 
             Text(
-              'Informations client',
+              l10n.cartCustomerSection,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 20),
 
             TextFormField(
               controller: _nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Nom du client *',
-                prefixIcon: Icon(Icons.person_outline),
+              decoration: InputDecoration(
+                labelText: l10n.cartCustomerName,
+                prefixIcon: const Icon(Icons.person_outline),
               ),
               textCapitalization: TextCapitalization.words,
               validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Champ obligatoire' : null,
+                  ? l10n.cartFieldRequired
+                  : null,
             ),
             const SizedBox(height: 12),
 
             TextFormField(
               controller: _phoneCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Téléphone',
-                hintText: '+226 xx xx xx xx',
-                prefixIcon: Icon(Icons.phone_outlined),
+              decoration: InputDecoration(
+                labelText: l10n.cartCustomerPhone,
+                hintText: l10n.cartPhoneHint,
+                prefixIcon: const Icon(Icons.phone_outlined),
               ),
               keyboardType: TextInputType.phone,
             ),
@@ -463,8 +514,12 @@ class _StaffOrderSheetState extends ConsumerState<_StaffOrderSheet> {
 
             // Résumé compact
             Text(
-              '${widget.items.fold<int>(0, (s, i) => s + i.quantity)} article(s) · '
-              '${formatXof(widget.items.fold<double>(0.0, (s, i) => s + i.lineTotalTtc))} TTC',
+              l10n.cartItemCountSummary(
+                widget.items.fold<int>(0, (s, i) => s + i.quantity),
+                formatXof(
+                  widget.items.fold<double>(0.0, (s, i) => s + i.lineTotalTtc),
+                ),
+              ),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.outline,
               ),
@@ -478,10 +533,14 @@ class _StaffOrderSheetState extends ConsumerState<_StaffOrderSheet> {
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.check),
-              label: Text(_submitting ? 'Envoi en cours…' : 'Confirmer la commande'),
+              label: Text(
+                _submitting ? l10n.cartSubmitting : l10n.cartConfirmOrder,
+              ),
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
               ),
@@ -496,11 +555,13 @@ class _StaffOrderSheetState extends ConsumerState<_StaffOrderSheet> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _submitting = true);
 
-    final error = await ref.read(orderRepositoryProvider).submitOrder(
-      customerName:  _nameCtrl.text,
-      customerPhone: _phoneCtrl.text,
-      items:         widget.items,
-    );
+    final error = await ref
+        .read(orderRepositoryProvider)
+        .submitOrder(
+          customerName: _nameCtrl.text,
+          customerPhone: _phoneCtrl.text,
+          items: widget.items,
+        );
 
     if (!mounted) return;
     setState(() => _submitting = false);
@@ -519,8 +580,8 @@ class _StaffOrderSheetState extends ConsumerState<_StaffOrderSheet> {
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Commande enregistrée avec succès ✓'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).cartOrderSaved),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
           ),
@@ -547,12 +608,12 @@ class _EmptyCart extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Text(
-          'Votre panier est vide',
+          AppLocalizations.of(context).cartEmptyTitle,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Ajoutez des accessoires ou des pièces\ndepuis le catalogue.',
+        Text(
+          AppLocalizations.of(context).cartEmptyBody,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -568,12 +629,12 @@ class _EmptyCart extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: () => context.go('/accessories'),
               icon: const Icon(Icons.tune_outlined, size: 16),
-              label: const Text('Accessoires'),
+              label: Text(AppLocalizations.of(context).commonAccessories),
             ),
             OutlinedButton.icon(
               onPressed: () => context.go('/parts'),
               icon: const Icon(Icons.settings_outlined, size: 16),
-              label: const Text('Pièces'),
+              label: Text(AppLocalizations.of(context).commonParts),
             ),
           ],
         ),
@@ -596,7 +657,7 @@ class CartIconButton extends ConsumerWidget {
       children: [
         IconButton(
           icon: const Icon(Icons.shopping_cart_outlined),
-          tooltip: 'Panier',
+          tooltip: AppLocalizations.of(context).cartTitle,
           onPressed: () => context.push('/cart'),
         ),
         if (count > 0)

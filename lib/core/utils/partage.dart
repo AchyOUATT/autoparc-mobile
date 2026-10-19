@@ -157,19 +157,39 @@ Future<bool> partagerArticle(
   }
 }
 
+/// Le repli : on copie, puis on le dit.
+///
+/// CE PAVÉ ÉTAIT LA DERNIÈRE PHRASE EN DUR DU PARCOURS CLIENT, et elle se
+/// montrait là où elle coûtait le plus cher. Ce chemin n'est atteint que
+/// lorsque la feuille de partage d'Android refuse de s'ouvrir ; un appareil
+/// dont le propriétaire a changé la langue du système est précisément un
+/// appareil dont l'inventaire d'applications n'est pas celui qu'on suppose.
+/// Un anglophone recevait donc la panne EN FRANÇAIS, sur les trois fiches
+/// clientes — pièce, accessoire, véhicule — qui passent toutes par
+/// `partagerArticle`.
+///
+/// La clé `commonShareUnavailable` existait déjà dans les deux `.arb`, et
+/// `gen-l10n` l'avait déjà rendue : seul ce site d'écriture ne la lisait pas.
+/// Rien ne manquait donc, ni clé ni traduction — c'est le dernier maillon qui
+/// n'avait pas été rebranché. Le contexte, lui, est là : `partagerArticle` le
+/// reçoit, s'en sert dans la même fonction pour `partageMentionBoutique`, et
+/// le passe ici en premier paramètre.
+///
+/// `const` a dû sauter devant `SnackBar` : `AppLocalizations.of` est une
+/// lecture de l'arbre de widgets, qui n'a pas de valeur à la compilation. Le
+/// `const` de `Duration` reste, lui. Comportement inchangé par ailleurs —
+/// mêmes `behavior` et `duration` que `commonLinkUnavailable` dans
+/// `lien_externe.dart`, dont ce repli est le jumeau.
 Future<void> _signalerEchec(BuildContext context, String texte) async {
   await Clipboard.setData(ClipboardData(text: texte));
 
   if (!context.mounted) return;
 
   ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text(
-        'Impossible d\'ouvrir le partage sur cet appareil. '
-        'Le message a été copié.',
-      ),
+    SnackBar(
+      content: Text(AppLocalizations.of(context).commonShareUnavailable),
       behavior: SnackBarBehavior.floating,
-      duration: Duration(seconds: 5),
+      duration: const Duration(seconds: 5),
     ),
   );
 }

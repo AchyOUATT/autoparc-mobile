@@ -12,6 +12,7 @@ import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/bande_filtres.dart';
 import '../../../../core/widgets/bouton_flottant_effacable.dart';
 import '../../../../core/widgets/catalog_image.dart';
+import '../../../../core/widgets/titre_barre.dart';
 import '../../../../core/api/api_exception.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../../features/cart/presentation/pages/cart_page.dart';
@@ -25,17 +26,32 @@ import '../widgets/ligne_compatibilite.dart';
 
 // ── Labels des types/conditions ─────────────────────────────────────
 
-const _typeLabels = {
-  'oem':         'OEM',
-  'oes':         'OES',
-  'aftermarket': 'Aftermarket',
-  'salvage':     'Occasion',
+/// Le libellé des quatre natures de pièce, dans la langue active.
+///
+/// C'ÉTAIT UNE TABLE `const`, et elle ne pouvait pas le rester : une constante
+/// est construite avant qu'aucun `BuildContext` n'existe, donc avant que la
+/// langue soit connue. Les quatre libellés y seraient restés français quelle
+/// que soit la langue choisie.
+///
+/// Trois des quatre s'écrivent pareil dans les deux langues — « OEM », « OES »
+/// sont des sigles, « Aftermarket » est un emprunt que le français fait déjà —
+/// et ils passent quand même par une clé : en laisser trois en dur aurait rendu
+/// le quatrième introuvable au lot suivant, et le badge est borné en largeur.
+///
+/// Le repli reste le code brut du serveur en capitales. Ce n'est pas un
+/// libellé, c'est un aveu : une nature inconnue de cette table doit se voir.
+String _libelleType(AppLocalizations l10n, String type) => switch (type) {
+  'oem' => l10n.catalogPartTypeOem,
+  'oes' => l10n.catalogPartTypeOes,
+  'aftermarket' => l10n.catalogPartTypeAftermarket,
+  'salvage' => l10n.catalogPartTypeSalvage,
+  _ => type.toUpperCase(),
 };
 
 const _conditionColors = {
-  'new':         Colors.green,
+  'new': Colors.green,
   'refurbished': Colors.orange,
-  'used':        Colors.grey,
+  'used': Colors.grey,
 };
 
 // ════════════════════════════════════════════════════════════════════
@@ -75,10 +91,11 @@ class _PartListPageState extends ConsumerState<PartListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final paged   = ref.watch(partListProvider);
-    final filter  = ref.watch(partFilterProvider);
-    final cities  = ref.watch(catalogRefsProvider).valueOrNull?.cities ?? const <String>[];
-    final auth    = ref.watch(authProvider);
+    final paged = ref.watch(partListProvider);
+    final filter = ref.watch(partFilterProvider);
+    final cities =
+        ref.watch(catalogRefsProvider).valueOrNull?.cities ?? const <String>[];
+    final auth = ref.watch(authProvider);
     final isStaff = auth.isStaff;
 
     return Scaffold(
@@ -93,7 +110,7 @@ class _PartListPageState extends ConsumerState<PartListPage> {
                   ref.read(partListProvider.notifier).refresh();
                 },
                 icon: const Icon(Icons.add),
-                label: const Text('Nouvelle pièce'),
+                label: Text(AppLocalizations.of(context).catalogPartAddCta),
               ),
             )
           : null,
@@ -105,13 +122,13 @@ class _PartListPageState extends ConsumerState<PartListPage> {
               ref.read(shellScaffoldKeyProvider).currentState?.openDrawer(),
         ),
         titleSpacing: 0,
-        title: Text(AppLocalizations.of(context).catalogPartListTitle),
+        title: TitreBarre(AppLocalizations.of(context).catalogPartListTitle),
         actions: [
           const NotificationIconButton(),
           if (!isStaff) ...[
             IconButton(
               icon: const Icon(Icons.inbox_outlined),
-              tooltip: 'Exprimer un besoin',
+              tooltip: AppLocalizations.of(context).catalogNeedTooltip,
               onPressed: () => context.push('/needs/new?type=part'),
             ),
             const CartIconButton(),
@@ -127,7 +144,7 @@ class _PartListPageState extends ConsumerState<PartListPage> {
             child: SearchBar(
               constraints: const BoxConstraints(minHeight: 40, maxHeight: 40),
               controller: _searchCtrl,
-              hintText: 'Nom, SKU, référence OEM…',
+              hintText: AppLocalizations.of(context).catalogPartSearchHint,
               leading: const Icon(Icons.search),
               trailing: [
                 if (_searchCtrl.text.isNotEmpty)
@@ -135,13 +152,13 @@ class _PartListPageState extends ConsumerState<PartListPage> {
                     icon: const Icon(Icons.clear),
                     onPressed: () {
                       _searchCtrl.clear();
-                      ref.read(partFilterProvider.notifier)
-                          .state = filter.copyWith(search: null);
+                      ref.read(partFilterProvider.notifier).state = filter
+                          .copyWith(search: null);
                     },
                   ),
               ],
-              onChanged: (q) => ref.read(partFilterProvider.notifier)
-                  .state = filter.copyWith(search: q.isEmpty ? null : q),
+              onChanged: (q) => ref.read(partFilterProvider.notifier).state =
+                  filter.copyWith(search: q.isEmpty ? null : q),
             ),
           ),
         ),
@@ -206,8 +223,9 @@ class _FilterBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     void update(PartFilter Function(PartFilter) fn) {
-      ref.read(partFilterProvider.notifier).state =
-          fn(ref.read(partFilterProvider));
+      ref.read(partFilterProvider.notifier).state = fn(
+        ref.read(partFilterProvider),
+      );
     }
 
     // La barre ne contenait que des villes. Aucune n'etant renseignee, elle
@@ -255,33 +273,37 @@ class _FilterBar extends ConsumerWidget {
     // dessin aurait eu l'air d'un défaut, comme pour les barres de recherche.
     return BandeFiltres(
       children: [
-          for (final c in categories)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                label: Text(c.name),
-                selected: filter.categoryId == c.id,
-                onSelected: (_) => update((f) => f.categoryId == c.id
+        for (final c in categories)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              label: Text(c.name),
+              selected: filter.categoryId == c.id,
+              onSelected: (_) => update(
+                (f) => f.categoryId == c.id
                     ? f.copyWith(clearCategory: true)
-                    : f.copyWith(categoryId: c.id)),
+                    : f.copyWith(categoryId: c.id),
               ),
             ),
+          ),
 
-          // Chips de ville
-          for (final city in cities)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                avatar: const Icon(Icons.location_on_outlined, size: 14),
-                label: Text(city),
-                selected: filter.city == city,
-                onSelected: (_) => update((f) => f.copyWith(
+        // Chips de ville
+        for (final city in cities)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              avatar: const Icon(Icons.location_on_outlined, size: 14),
+              label: Text(city),
+              selected: filter.city == city,
+              onSelected: (_) => update(
+                (f) => f.copyWith(
                   city: f.city == city ? null : city,
                   clearCity: f.city == city,
                   clearLocation: f.city == city,
-                )),
+                ),
               ),
             ),
+          ),
       ],
     );
   }
@@ -324,14 +346,12 @@ class _PartList extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           sliver: SliverToBoxAdapter(
             child: Text(
-              '$total résultat${total > 1 ? 's' : ''}',
+              AppLocalizations.of(context).catalogResultCount(total),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
         ),
-        SliverToBoxAdapter(
-          child: _StaggeredPartsGrid(parts: parts),
-        ),
+        SliverToBoxAdapter(child: _StaggeredPartsGrid(parts: parts)),
         if (isLoadingMore)
           const SliverToBoxAdapter(
             child: Padding(
@@ -345,7 +365,7 @@ class _PartList extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 20),
               child: Center(
                 child: Text(
-                  '— $total résultat${total > 1 ? 's' : ''} au total —',
+                  AppLocalizations.of(context).catalogResultTotal(total),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.outline,
                   ),
@@ -373,12 +393,14 @@ class _StaggeredPartsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final left  = <(Part, double)>[];
+    final left = <(Part, double)>[];
     final right = <(Part, double)>[];
     for (int i = 0; i < parts.length; i++) {
       const h = _imgHeight;
-      if (i.isEven) left.add((parts[i], h));
-      else          right.add((parts[i], h));
+      if (i.isEven)
+        left.add((parts[i], h));
+      else
+        right.add((parts[i], h));
     }
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
@@ -386,13 +408,19 @@ class _StaggeredPartsGrid extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Column(children: left.map((e) =>
-                _PartCard(part: e.$1, imageHeight: e.$2)).toList()),
+            child: Column(
+              children: left
+                  .map((e) => _PartCard(part: e.$1, imageHeight: e.$2))
+                  .toList(),
+            ),
           ),
           const SizedBox(width: 6),
           Expanded(
-            child: Column(children: right.map((e) =>
-                _PartCard(part: e.$1, imageHeight: e.$2)).toList()),
+            child: Column(
+              children: right
+                  .map((e) => _PartCard(part: e.$1, imageHeight: e.$2))
+                  .toList(),
+            ),
           ),
         ],
       ),
@@ -416,7 +444,9 @@ class _PartCardState extends ConsumerState<_PartCard> {
     if (_toggling) return;
     setState(() => _toggling = true);
     try {
-      await ref.read(catalogRepositoryProvider).togglePartAvailability(widget.part.id);
+      await ref
+          .read(catalogRepositoryProvider)
+          .togglePartAvailability(widget.part.id);
       ref.read(partListProvider.notifier).refresh();
     } finally {
       if (mounted) setState(() => _toggling = false);
@@ -425,15 +455,18 @@ class _PartCardState extends ConsumerState<_PartCard> {
 
   @override
   Widget build(BuildContext context) {
-    final cs        = Theme.of(context).colorScheme;
-    final auth      = ref.watch(authProvider);
-    final isStaff   = auth.isStaff;
-    final part      = widget.part;
-    final typeLabel = _typeLabels[part.type] ?? part.type.toUpperCase();
+    final cs = Theme.of(context).colorScheme;
+    final auth = ref.watch(authProvider);
+    final isStaff = auth.isStaff;
+    final part = widget.part;
+    final typeLabel = _libelleType(AppLocalizations.of(context), part.type);
 
     final selectedVehicle = ref.watch(selectedGarageVehicleProvider);
-    final idsAsync = ref.watch(compatiblePartIdsProvider(selectedVehicle?.id ?? -1));
-    final isCompatible = selectedVehicle != null &&
+    final idsAsync = ref.watch(
+      compatiblePartIdsProvider(selectedVehicle?.id ?? -1),
+    );
+    final isCompatible =
+        selectedVehicle != null &&
         (idsAsync.valueOrNull?.contains(part.id) ?? false);
 
     return Card(
@@ -457,33 +490,51 @@ class _PartCardState extends ConsumerState<_PartCard> {
                       ? CatalogImage(
                           url: part.coverUrl!,
                           fallback: _PartPlaceholder(
-                              type: typeLabel, isOem: part.isOem, cs: cs),
+                            type: typeLabel,
+                            isOem: part.isOem,
+                            cs: cs,
+                          ),
                         )
-                      : _PartPlaceholder(type: typeLabel, isOem: part.isOem, cs: cs),
+                      : _PartPlaceholder(
+                          type: typeLabel,
+                          isOem: part.isOem,
+                          cs: cs,
+                        ),
                 ),
                 // Bascule de disponibilite : reservee aux roles qui tiennent le
                 // stock (direction et magasin), pas a tout le personnel.
                 if (auth.canManageStock)
                   Positioned(
-                    top: 6, right: 6,
+                    top: 6,
+                    right: 6,
                     child: _toggling
-                        ? const SizedBox(width: 18, height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : GestureDetector(
                             onTap: _toggle,
-                            child: _SmallAvailabilityBadge(isAvailable: part.stock.isAvailable),
+                            child: _SmallAvailabilityBadge(
+                              isAvailable: part.stock.isAvailable,
+                            ),
                           ),
                   ),
                 if (isCompatible)
                   Positioned(
-                    top: 6, left: 6,
+                    top: 6,
+                    left: 6,
                     child: Container(
                       padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
                         color: Colors.green.withValues(alpha: 0.85),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.check, size: 10, color: Colors.white),
+                      child: const Icon(
+                        Icons.check,
+                        size: 10,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
               ],
@@ -513,10 +564,11 @@ class _PartCardState extends ConsumerState<_PartCard> {
                   // Seule la couleur change : onSurface et non outline. Le nom
                   // est le contenu principal de la carte ; en gris d'habillage
                   // il passerait pour une mention secondaire.
-                  Text(part.name,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: cs.onSurface,
-                    ),
+                  Text(
+                    part.name,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: cs.onSurface),
                   ),
                   // LES MODÈLES COMPATIBLES, SOUS LE NOM ET AU-DESSUS DU PRIX.
                   //
@@ -560,7 +612,11 @@ class _PartPlaceholder extends StatelessWidget {
   final String type;
   final bool isOem;
   final ColorScheme cs;
-  const _PartPlaceholder({required this.type, required this.isOem, required this.cs});
+  const _PartPlaceholder({
+    required this.type,
+    required this.isOem,
+    required this.cs,
+  });
 
   @override
   Widget build(BuildContext context) => Container(
@@ -569,18 +625,22 @@ class _PartPlaceholder extends StatelessWidget {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: isOem
-          ? [cs.primaryContainer, cs.primary.withValues(alpha: 0.45)]
-          : [cs.secondaryContainer, cs.secondary.withValues(alpha: 0.35)],
+            ? [cs.primaryContainer, cs.primary.withValues(alpha: 0.45)]
+            : [cs.secondaryContainer, cs.secondary.withValues(alpha: 0.35)],
       ),
     ),
     child: Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.settings_outlined, size: 30,
-              color: isOem ? cs.onPrimaryContainer : cs.onSecondaryContainer),
+          Icon(
+            Icons.settings_outlined,
+            size: 30,
+            color: isOem ? cs.onPrimaryContainer : cs.onSecondaryContainer,
+          ),
           const SizedBox(height: 4),
-          Text(type,
+          Text(
+            type,
             style: TextStyle(
               color: isOem ? cs.onPrimaryContainer : cs.onSecondaryContainer,
               fontWeight: FontWeight.w600,
@@ -607,7 +667,11 @@ class _SmallAvailabilityBadge extends StatelessWidget {
     ),
     child: Text(
       isAvailable ? '✓' : '✗',
-      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 10,
+        fontWeight: FontWeight.bold,
+      ),
     ),
   );
 }
@@ -633,7 +697,9 @@ class _AvailabilityBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        isAvailable ? 'Disponible' : 'Indisponible',
+        isAvailable
+            ? AppLocalizations.of(context).catalogStockIn
+            : AppLocalizations.of(context).catalogStockOut,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
           color: isAvailable ? Colors.green.shade700 : cs.onSurfaceVariant,
           fontWeight: FontWeight.w600,
@@ -714,18 +780,38 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
     // et introduit l'autre.
     //
     // On lit donc les notifiers maintenant — `ref` est valide — et on écrit
-    // après la frame. Les deux sont des StateProvider simples, non
-    // autoDispose : leurs contrôleurs sont encore là au moment du rappel.
-    // L'état courant est relu dans le rappel plutôt que capturé ici, pour ne
-    // pas réécrire une valeur devenue obsolète entre-temps.
+    // après la frame. L'état courant est relu dans le rappel plutôt que
+    // capturé ici, pour ne pas réécrire une valeur devenue obsolète
+    // entre-temps.
     //
     // L'assertion n'existe qu'en debug (flutter_riverpod framework.dart:309,
     // sous `if (kDebugMode)`), donc rien de ceci n'était visible en
     // production — mais la violation de cycle de vie, elle, était réelle.
-    final vehiculeSelectionne = ref.read(selectedGarageVehicleProvider.notifier);
-    final filtre              = ref.read(partFilterProvider.notifier);
+    //
+    // ── LE `mounted` N'EST PAS UNE PRÉCAUTION, C'EST UNE CORRECTION ─────────
+    //
+    // Ce commentaire affirmait : « Les deux sont des StateProvider simples,
+    // non autoDispose : leurs contrôleurs sont encore là au moment du rappel. »
+    // C'est faux dès que le `ProviderScope` lui-même disparaît entre la trame
+    // et le rappel — le rappel écrit alors dans un contrôleur jeté et lève
+    // « Tried to use StateController<OwnedVehicle?> after dispose was
+    // called ». Mesuré : le groupe « Les écrans vides du catalogue » de
+    // bandes_filtres_test.dart a fait tomber ses 48 cases « pièces, client »
+    // sur cette erreur à la seconde où il a monté un CLIENT, parce que c'est
+    // `if (!isStaff)` qui insère ce bandeau.
+    //
+    // Deux fichiers de banc portaient l'avertissement en commentaire et
+    // contournaient le cas en ne montant jamais de client sur cette page : un
+    // rôle entier d'un écran client restait donc hors de portée pour éviter
+    // une erreur de cycle de vie à deux lignes de la corriger. `mounted` est
+    // public sur `StateNotifier`, dont `StateController` hérite.
+    final vehiculeSelectionne = ref.read(
+      selectedGarageVehicleProvider.notifier,
+    );
+    final filtre = ref.read(partFilterProvider.notifier);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!vehiculeSelectionne.mounted || !filtre.mounted) return;
       vehiculeSelectionne.state = null;
       filtre.state = filtre.state.copyWith(clearVehicleModel: true);
     });
@@ -735,9 +821,9 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
 
   @override
   Widget build(BuildContext context) {
-    final cs          = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
     final garageAsync = ref.watch(garageProvider);
-    final vehicles    = garageAsync.valueOrNull;
+    final vehicles = garageAsync.valueOrNull;
 
     // Ne rien afficher si le garage est vide, en erreur (non connecté) ou en chargement.
     if (vehicles == null || vehicles.isEmpty) return const SizedBox.shrink();
@@ -779,11 +865,15 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
                   iconSize: 20,
                   style: Theme.of(context).textTheme.bodySmall,
                   items: vehicles
-                      .map((v) => DropdownMenuItem(
-                            value: v,
-                            child: Text(v.displayName,
-                                overflow: TextOverflow.ellipsis),
-                          ))
+                      .map(
+                        (v) => DropdownMenuItem(
+                          value: v,
+                          child: Text(
+                            v.displayName,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) {
                     if (v == null) return;
@@ -808,10 +898,14 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
             // effet — un bouton qui ne fait rien se lit comme une panne.
             Tooltip(
               message: _selected!.modeleHorsCatalogue
-                  ? 'Modèle hors catalogue : compatibilité indisponible'
-                  : 'Pièces compatibles avec ce véhicule',
+                  ? AppLocalizations.of(
+                      context,
+                    ).catalogGarageFitmentUnknownModel
+                  : AppLocalizations.of(context).catalogGarageFitmentTooltip,
               child: FilterChip(
-                label: const Text('Compatibles'),
+                label: Text(
+                  AppLocalizations.of(context).catalogGarageFitmentChip,
+                ),
                 selected: _onlyCompatible && !_selected!.modeleHorsCatalogue,
                 onSelected: _selected!.modeleHorsCatalogue
                     ? null
@@ -844,59 +938,80 @@ class _EmptyView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs      = Theme.of(context).colorScheme;
-    final filtre  = ref.watch(partFilterProvider);
-    final actifs  = <String>[
-      if (filtre.search?.isNotEmpty == true) '« ${filtre.search} »',
-      if (filtre.oem?.isNotEmpty == true)    'référence OEM',
-      if (filtre.categoryId != null)         'une catégorie',
-      if (filtre.vehicleModelId != null)     'compatibilité véhicule',
-      if (filtre.city != null)               filtre.city!,
-      if (filtre.inStockOnly)                'en stock',
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final filtre = ref.watch(partFilterProvider);
+    final actifs = <String>[
+      if (filtre.search?.isNotEmpty == true)
+        l10n.catalogFilterTermQuery(filtre.search!),
+      if (filtre.oem?.isNotEmpty == true) l10n.catalogFilterTermOem,
+      if (filtre.categoryId != null) l10n.catalogFilterTermCategory,
+      if (filtre.vehicleModelId != null) l10n.catalogFilterTermFitment,
+      // Le nom de la ville vient du référentiel du serveur et reste en
+      // français jusqu'à la vague serveur : pas de clé.
+      if (filtre.city != null) filtre.city!,
+      if (filtre.inStockOnly) l10n.catalogFilterTermInStock,
     ];
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.settings_outlined, size: 56, color: cs.outline),
-            const SizedBox(height: 14),
-            Text(
-              'Aucune pièce trouvée',
-              style: Theme.of(context).textTheme.titleMedium,
+    // Il défile, pour la raison mesurée et écrite dans `_EmptyView` de
+    // `vehicle_list_page.dart` : un `Center` autour d'une `Column` dépassait de
+    // 166 points à 320 × 2,0, en français et sans aucun filtre posé, et son
+    // dernier lien était hors d'atteinte. Le `ConstrainedBox` garde le contenu
+    // centré tant qu'il tient.
+    return LayoutBuilder(
+      builder: (context, contraintes) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: contraintes.maxHeight),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.settings_outlined, size: 56, color: cs.outline),
+                  const SizedBox(height: 14),
+                  Text(
+                    l10n.catalogPartNoneFound,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  if (actifs.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.catalogActiveFilters(
+                        actifs.join(l10n.catalogFilterListSeparator),
+                      ),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    FilledButton.tonalIcon(
+                      onPressed: () =>
+                          ref.read(partFilterProvider.notifier).state =
+                              const PartFilter(),
+                      icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
+                      label: Text(l10n.catalogClearFilters),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.catalogPartCatalogEmpty,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                  TextButton.icon(
+                    onPressed: () => context.push('/needs/new?type=part'),
+                    icon: const Icon(Icons.inbox_outlined, size: 18),
+                    label: Text(l10n.catalogNeedCta),
+                  ),
+                ],
+              ),
             ),
-            if (actifs.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Filtres actifs : ${actifs.join(', ')}.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium
-                    ?.copyWith(color: cs.onSurfaceVariant),
-              ),
-              const SizedBox(height: 20),
-              FilledButton.tonalIcon(
-                onPressed: () =>
-                    ref.read(partFilterProvider.notifier).state = const PartFilter(),
-                icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
-                label: const Text('Tout effacer'),
-              ),
-            ] else ...[
-              const SizedBox(height: 8),
-              Text(
-                'Le catalogue ne contient aucune pièce pour le moment.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium
-                    ?.copyWith(color: cs.onSurfaceVariant),
-              ),
-            ],
-            TextButton.icon(
-              onPressed: () => context.push('/needs/new?type=part'),
-              icon: const Icon(Icons.inbox_outlined, size: 18),
-              label: const Text('Dites-nous ce que vous cherchez'),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -917,7 +1032,10 @@ class _ErrorView extends StatelessWidget {
         const SizedBox(height: 12),
         Text(error, textAlign: TextAlign.center),
         const SizedBox(height: 16),
-        FilledButton(onPressed: onRetry, child: const Text('Réessayer')),
+        FilledButton(
+          onPressed: onRetry,
+          child: Text(AppLocalizations.of(context).commonRetry),
+        ),
       ],
     ),
   );

@@ -30,8 +30,46 @@ Exemples tels qu'ils existent aujourd'hui :
 | `homeDealsSection` | Bonnes affaires | Good deals |
 | `homeDeadlineOverdue` | {label} dépassée depuis {days, plural, …} | {label} overdue by {days, plural, …} |
 
-Au terme de ce lot, `app_fr.arb` et `app_en.arb` portent **51 clés** chacun :
-10 `common`, 22 `shell`, 16 `home`, 2 `update`, 1 `catalog`.
+## L'inventaire, au comptage du jour
+
+Mesuré — pas estimé — en parsant les deux `.arb` et en comptant les clés hors
+`@métadonnées` : **306 clés de chaque côté, et exactement le même jeu** ;
+`app_fr.arb` moins `app_en.arb` est vide, et la différence inverse aussi.
+
+| zone | clés |
+|---|---:|
+| `catalog` | 205 |
+| `cart` | 26 |
+| `shell` | 22 |
+| `home` | 16 |
+| `auth` | 14 |
+| `common` | 11 |
+| `onboarding` | 9 |
+| `update` | 2 |
+| `partage` | 1 |
+| **total** | **306** |
+
+Ce paragraphe annonçait « 51 clés chacun : 10 `common`, 22 `shell`, 16 `home`,
+2 `update`, 1 `catalog` » — le compte du lot de fondation, laissé tel quel
+pendant que deux vagues de traduction passaient dessus. **CE DOCUMENT SERT
+D'INVENTAIRE**, c'est à partir de lui qu'on juge si une zone est traitée : un
+inventaire faux ne se détecte pas, il se recopie. Il se remesure à chaque lot
+qui ajoute des clés.
+
+`catalog` pèse les deux tiers du total parce que la zone couvre les trois
+fiches produit, leurs trois listes et leurs bandes de filtres — soit la plus
+grosse part du parcours client, et non parce que la règle du préfixe y serait
+mal appliquée.
+
+`partage` est la seule entrée **hors convention** : sa zone n'est pas un
+dossier de `lib/features/`, elle vient du nom français du fichier
+`core/utils/partage.dart`. La clé unique `partageMentionBoutique` est
+antérieure à la règle ; la renommer coûterait les deux `.arb`, son site
+d'appel et les quatre assertions de `test/partage_test.dart` et
+`test/partage_bouton_test.dart`. Elle reste, et elle est signalée ici pour
+qu'elle ne fasse pas précédent : une chaîne de `lib/core/` prend la zone de
+l'écran qui l'affiche — c'est ce qu'a fait `commonShareUnavailable`, écrite
+dans le même fichier.
 
 ## Pourquoi celle-là
 

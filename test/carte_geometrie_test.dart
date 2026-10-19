@@ -90,6 +90,24 @@ import 'support/polices.dart';
 void main() {
   setUpAll(() => chargerPolices());
 
+  /// Le badge « vente ET location », LU dans les `.arb` au lieu d'être recopié.
+  ///
+  /// Il était écrit en dur à cinq endroits de ce fichier, et la vague 2 l'a
+  /// traduit : « Vente & Location » devient « Sale & rental ». Les vingt-quatre
+  /// cases anglaises du tableau de troncature sont alors tombées sur « Bad
+  /// state: No element » — `find.text('Vente & Location')` ne trouvait plus
+  /// rien dans une carte anglaise. C'est la bonne façon d'échouer, mais une
+  /// copie en dur retombera de la même façon au prochain changement de libellé.
+  /// Celle-ci suit le fichier de traduction.
+  final badgeOffre = <String, String>{};
+
+  setUpAll(() async {
+    for (final langue in langues.entries) {
+      badgeOffre[langue.key] =
+          (await chargerTextes(langue.value)).catalogOfferBoth;
+    }
+  });
+
   // ── Le gabarit du catalogue, remoulé champ par champ ──────────────────────
 
   final gabarit =
@@ -419,7 +437,14 @@ void main() {
   /// La finition et la ville n'y sont plus : la carte ne les porte plus, et les
   /// chercher ferait échouer le tableau pour la bonne raison — le test de
   /// contenu, plus bas, dit qu'elles sont parties et pourquoi.
-  Map<String, RenderParagraph> lignes(WidgetTester tester) {
+  /// [langue] est la clé de [langues] de la coque posée, et elle n'est pas
+  /// décorative : seules DEUX des cinq lignes sont indépendantes de la langue.
+  /// Le titre et la ligne de caractéristiques viennent du serveur ; le prix
+  /// change de PONCTUATION (U+202F contre virgule) sans changer de texte
+  /// cherché ; « Bonne affaire » est le `deal_label` du serveur, qui reste
+  /// français jusqu'à la vague serveur. Le BADGE, lui, est à nous depuis la
+  /// vague 2, et c'est le seul qu'il faut aller lire dans les `.arb`.
+  Map<String, RenderParagraph> lignes(WidgetTester tester, String langue) {
     final carte = find.byType(VehicleCard).first;
     RenderParagraph p(Finder f) => tester.renderObject<RenderParagraph>(
       find.descendant(of: carte, matching: f),
@@ -428,7 +453,7 @@ void main() {
       'titre': p(find.text('Land Rover Range Rover Sport (2018)')),
       'specs': p(find.textContaining('km')),
       'prix': p(find.textContaining('FCFA')),
-      'badge': p(find.text('Vente & Location')),
+      'badge': p(find.text(badgeOffre[langue]!)),
       'affaire': p(find.text('Bonne affaire')),
     };
   }
@@ -546,7 +571,7 @@ void main() {
               locale: langue.value,
             );
 
-            final mesures = lignes(tester);
+            final mesures = lignes(tester, langue.key);
 
             final rapport = <String>[];
             mesures.forEach((nom, p) {
@@ -1204,9 +1229,15 @@ void main() {
       Vehicle v,
       String quoi,
     ) async {
-      // LES DEUX LANGUES, et c'est ce que le lot de traduction ajoute ici. La
-      // carte elle-même n'est pas encore traduite — son badge dit toujours
-      // « Vente & Location » —, mais SON PRIX, LUI, CHANGE DE PONCTUATION :
+      // LES DEUX LANGUES, et ce qu'elles éprouvent a changé avec la vague 2.
+      // La vague 1 ne traduisait pas la carte : son badge disait « Vente &
+      // Location » dans les deux colonnes, et seul le PRIX changeait de
+      // ponctuation. Depuis la vague 2 le badge d'offre, le compteur de photos
+      // et « Prix non communiqué » sont traduits, et ce sont donc deux cartes
+      // RÉELLEMENT différentes qui sont mesurées ici.
+      //
+      // Le prix reste le cas qui a motivé la boucle : il CHANGE DE PONCTUATION
+      // sans changer de longueur apparente —
       // « 99 999 999 FCFA » en français, où les milliers sont séparés par une
       // espace fine insécable U+202F, devient « 99,999,999 FCFA » en anglais.
       // Or le prix est la ligne la plus large de la carte et celle qui ne doit
@@ -1282,11 +1313,14 @@ void main() {
       );
     });
 
-    testWidgets('« Vente & Location »', (tester) async {
+    testWidgets('« Vente & Location » / « Sale & rental »', (tester) async {
+      // Le libellé n'est plus nommé dans la raison d'échec : `tenirPartout`
+      // pose les DEUX langues, et écrire le français seul ferait lire un
+      // échec anglais comme un échec français.
       await tenirPartout(
         tester,
         vehicule(disponibilite: 'both'),
-        'Le badge « Vente & Location »',
+        'Le badge de double offre',
       );
     });
 
@@ -1335,7 +1369,7 @@ void main() {
       );
 
       final badge = tester.renderObject<RenderParagraph>(
-        find.text('Vente & Location'),
+        find.text(badgeOffre['fr']!),
       );
 
       expect(
@@ -1369,7 +1403,7 @@ void main() {
         final badge = tester.renderObject<RenderBox>(
           find
               .ancestor(
-                of: find.text('Vente & Location'),
+                of: find.text(badgeOffre['fr']!),
                 matching: find.byType(Container),
               )
               .first,
@@ -1403,10 +1437,19 @@ void main() {
       // laisse. À 60 points de carte il n'en reçoit que 24, moins que son plus
       // court segment, et la troncature redevient inévitable — c'est ce que ce
       // test doit voir.
+      // LES DÉLÉGUÉS ET LA LOCALE, et ils ne sont pas décoratifs : depuis la
+      // vague 2 le badge lit `AppLocalizations.of(context)`, qui LÈVE sur une
+      // coque qui ne les pose pas — « Null check operator used on a null
+      // value », et c'est ainsi que ce test est tombé. La règle est écrite une
+      // fois dans test/support/langues.dart : toute coque qui monte un écran
+      // traduit nomme sa locale, même quand c'est le français qu'elle veut.
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
             theme: themeAutoParc(Brightness.light),
+            locale: localeFr,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: Center(
                 child: SizedBox(
@@ -1421,7 +1464,7 @@ void main() {
       await tester.pump();
 
       final badge = tester.renderObject<RenderParagraph>(
-        find.text('Vente & Location'),
+        find.text(badgeOffre['fr']!),
       );
 
       expect(

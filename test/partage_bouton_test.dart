@@ -72,6 +72,38 @@ import 'support/langues.dart';
 /// du canal ne porte `paths` et `mimeTypes` que lorsque `ShareParams.files`
 /// est renseigné — leur absence est donc la mesure exacte.
 void main() {
+  /// Les trois infobulles de la barre de titre d'une fiche, LUES dans les
+  /// `.arb`.
+  ///
+  /// Elles y étaient en dur, treize fois dans ce seul fichier, et la
+  /// vague 2 les a traduites. Le groupe « la mention du message suit la langue
+  /// de l'application » est tombé sur sa colonne ANGLAISE, avec la bonne raison
+  /// : « Found 0 widgets », parce qu'une fiche anglaise affiche « Share ». Les
+  /// lire ici les fait suivre le fichier de traduction.
+  ///
+  /// Les CHAÎNES ATTENDUES du message partagé, elles, restent écrites en clair
+  /// dans leur groupe : c'est le contrat des deux `.arb`, et une assertion qui
+  /// relirait la clé resterait verte le jour où l'anglais rendrait du français.
+  /// La distinction est la même qu'entre chercher un widget et vérifier un
+  /// texte.
+  final bulleSuivante =
+      <String, ({String partager, String modifier, String supprimer})>{};
+
+  setUpAll(() async {
+    for (final langue in langues.entries) {
+      final t = await chargerTextes(langue.value);
+      bulleSuivante[langue.key] = (
+        partager: t.catalogShareTooltip,
+        modifier: t.catalogEditTooltip,
+        supprimer: t.catalogDeleteAction,
+      );
+    }
+  });
+
+  /// L'infobulle « Partager » en FRANÇAIS, pour les tests qui ne montent qu'une
+  /// seule langue — la coque de ce fichier pose `localeFr` par défaut.
+  String partagerFr() => bulleSuivante['fr']!.partager;
+
   // Le nom du canal est écrit en clair plutôt qu'importé de
   // `MethodChannelShare.channel` : `share_plus_platform_interface` est une
   // dépendance transitive, et l'importer ici déclencherait
@@ -87,12 +119,12 @@ void main() {
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(canalPartage, (appel) async {
-      envois.add(appel.arguments as Map<Object?, Object?>);
-      // La valeur que renvoie le canal natif quand l'utilisateur a choisi une
-      // application. `partagerArticle` ne la lit pas, mais `share_plus` la
-      // décode : rendre `null` la ferait passer pour « unavailable ».
-      return 'dev.fluttercommunity.plus/share/success';
-    });
+          envois.add(appel.arguments as Map<Object?, Object?>);
+          // La valeur que renvoie le canal natif quand l'utilisateur a choisi une
+          // application. `partagerArticle` ne la lit pas, mais `share_plus` la
+          // décode : rendre `null` la ferait passer pour « unavailable ».
+          return 'dev.fluttercommunity.plus/share/success';
+        });
   });
 
   tearDown(() {
@@ -114,23 +146,25 @@ void main() {
     required AuthState session,
     Locale locale = localeFr,
   }) async {
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        authProvider.overrideWith((_) => _FauxAuth(session)),
-        catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
-      ],
-      child: MaterialApp(
-        locale: locale,
-        // Les délégués sont nécessaires au PARTAGE lui-même, pas seulement à
-        // l'affichage : la mention du message vient de
-        // `partageMentionBoutique`, et `partagerArticle` est le seul maillon de
-        // ce chemin à disposer d'un `BuildContext` — la composition, elle, est
-        // pure. Sans eux, `AppLocalizations.of` lève au moment du tap.
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: fiche,
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authProvider.overrideWith((_) => _FauxAuth(session)),
+          catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
+        ],
+        child: MaterialApp(
+          locale: locale,
+          // Les délégués sont nécessaires au PARTAGE lui-même, pas seulement à
+          // l'affichage : la mention du message vient de
+          // `partageMentionBoutique`, et `partagerArticle` est le seul maillon de
+          // ce chemin à disposer d'un `BuildContext` — la composition, elle, est
+          // pure. Sans eux, `AppLocalizations.of` lève au moment du tap.
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: fiche,
+        ),
       ),
-    ));
+    );
 
     // Plusieurs passes avec du temps qui s'écoule, et non un simple `pump()`.
     //
@@ -151,9 +185,13 @@ void main() {
   final fiches = <String, Widget>{
     'pièce': PartDetailPage(partId: _idPiece, initialPart: _piece()),
     'accessoire': AccessoryDetailPage(
-        accessoryId: _idAccessoire, initialAccessory: _accessoire()),
-    'véhicule':
-        VehicleDetailPage(vehicleId: _idVehicule, initialVehicle: _vehicule()),
+      accessoryId: _idAccessoire,
+      initialAccessory: _accessoire(),
+    ),
+    'véhicule': VehicleDetailPage(
+      vehicleId: _idVehicule,
+      initialVehicle: _vehicule(),
+    ),
   };
 
   /// Le type de page attendu pour chaque fiche, et la clef primaire de son
@@ -176,7 +214,7 @@ void main() {
         expect(find.byIcon(Icons.share_outlined), findsOneWidget);
         // Le libellé n'apparaît qu'au survol ou au lecteur d'écran : une icône
         // d'engrenage, de crayon ou de flèche ne se devine pas.
-        expect(find.byTooltip('Partager'), findsOneWidget);
+        expect(find.byTooltip(partagerFr()), findsOneWidget);
       });
     }
   });
@@ -193,14 +231,16 @@ void main() {
 
     for (final fiche in fiches.entries) {
       for (final session in sessions.entries) {
-        testWidgets('fiche d\'une ${fiche.key}, ${session.key}',
-            (tester) async {
+        testWidgets('fiche d\'une ${fiche.key}, ${session.key}', (
+          tester,
+        ) async {
           await poser(tester, fiche.value, session: session.value);
 
           expect(
-            find.byTooltip('Partager'),
+            find.byTooltip(partagerFr()),
             findsOneWidget,
-            reason: 'Partager n\'est pas une action de gestion : c\'est '
+            reason:
+                'Partager n\'est pas une action de gestion : c\'est '
                 'surtout un client, voire un visiteur, qui partage.',
           );
         });
@@ -210,13 +250,14 @@ void main() {
 
   /// L'administrateur voit le plus de commandes — c'est le cas où le partage
   /// risquait d'être poussé hors de la barre.
-  testWidgets('le partage reste visible à côté des commandes du personnel',
-      (tester) async {
+  testWidgets('le partage reste visible à côté des commandes du personnel', (
+    tester,
+  ) async {
     await poser(tester, fiches['pièce']!, session: _admin());
 
-    expect(find.byTooltip('Partager'), findsOneWidget);
-    expect(find.byTooltip('Modifier'), findsOneWidget);
-    expect(find.byTooltip('Supprimer'), findsOneWidget);
+    expect(find.byTooltip(partagerFr()), findsOneWidget);
+    expect(find.byTooltip(bulleSuivante['fr']!.modifier), findsOneWidget);
+    expect(find.byTooltip(bulleSuivante['fr']!.supprimer), findsOneWidget);
   });
 
   // ── Absence : l'article n'a pas de page publique ───────────────────────────
@@ -298,17 +339,17 @@ void main() {
         );
 
         expect(
-          find.byTooltip('Partager'),
+          find.byTooltip(partagerFr()),
           findsNothing,
-          reason: 'Partager ${cas.key} fabrique un lien qui rend 404 chez le '
+          reason:
+              'Partager ${cas.key} fabrique un lien qui rend 404 chez le '
               'destinataire. Le bouton doit disparaître, pas rester inerte.',
         );
         expect(find.byIcon(Icons.share_outlined), findsNothing);
       });
     }
 
-    testWidgets('mais un véhicule JAMAIS PUBLIÉ garde le sien',
-        (tester) async {
+    testWidgets('mais un véhicule JAMAIS PUBLIÉ garde le sien', (tester) async {
       // Le cas qui a coûté la fonction entière, retourné en garde.
       //
       // Exiger `published_at` masquait le bouton sur TOUS les véhicules,
@@ -332,9 +373,10 @@ void main() {
       );
 
       expect(
-        find.byTooltip('Partager'),
+        find.byTooltip(partagerFr()),
         findsOneWidget,
-        reason: 'Le bouton a de nouveau disparu sur un véhicule non publié. '
+        reason:
+            'Le bouton a de nouveau disparu sur un véhicule non publié. '
             'Sa page existe — `catalogueMontre()` ne regarde que le statut — '
             'et aucun écran de cette application ne sait publier quoi que ce '
             'soit : exiger ce champ rend le partage mort pour tout le parc.',
@@ -345,8 +387,9 @@ void main() {
   /// Le pendant du groupe ci-dessus, sur le seul cas qui lui ressemble sans en
   /// être : un véhicule réservé garde sa page, donc son bouton. Sans ce test,
   /// une condition trop large — « tout ce qui n'est pas en stock » — passerait.
-  testWidgets('un véhicule réservé garde son bouton : sa page existe',
-      (tester) async {
+  testWidgets('un véhicule réservé garde son bouton : sa page existe', (
+    tester,
+  ) async {
     await poser(
       tester,
       VehicleDetailPage(
@@ -356,7 +399,7 @@ void main() {
       session: _client(),
     );
 
-    expect(find.byTooltip('Partager'), findsOneWidget);
+    expect(find.byTooltip(partagerFr()), findsOneWidget);
   });
 
   // ── Le message d'un véhicule ──────────────────────────────────────────────
@@ -370,30 +413,35 @@ void main() {
   /// fige donc la forme en entier, deux lignes comprises : c'est l'égalité du
   /// nombre de lignes qui fait tomber le test le jour où une information
   /// revient, quelle qu'elle soit.
-  testWidgets('le message d\'un véhicule porte sa désignation, et rien de plus',
-      (tester) async {
-    await poser(tester, fiches['véhicule']!, session: _client());
+  testWidgets(
+    'le message d\'un véhicule porte sa désignation, et rien de plus',
+    (tester) async {
+      await poser(tester, fiches['véhicule']!, session: _client());
 
-    await tester.tap(find.byTooltip('Partager'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(partagerFr()));
+      await tester.pumpAndSettle();
 
-    expect(envois, hasLength(1),
-        reason: 'Le bouton doit ouvrir la feuille de partage, une fois.');
+      expect(
+        envois,
+        hasLength(1),
+        reason: 'Le bouton doit ouvrir la feuille de partage, une fois.',
+      );
 
-    final texte = envois.single['text'] as String;
+      final texte = envois.single['text'] as String;
 
-    // La désignation telle que le bandeau de la fiche l'affiche : marque,
-    // modèle, année. Le message ne peut pas contredire l'écran.
-    expect(texte, contains('Hyundai Tucson (2023)'));
-    expect(texte, endsWith(adressesAttendues['véhicule']!));
-    expect(texte.split('\n'), hasLength(2));
+      // La désignation telle que le bandeau de la fiche l'affiche : marque,
+      // modèle, année. Le message ne peut pas contredire l'écran.
+      expect(texte, contains('Hyundai Tucson (2023)'));
+      expect(texte, endsWith(adressesAttendues['véhicule']!));
+      expect(texte.split('\n'), hasLength(2));
 
-    // Les champs du modèle rendent `null` quand ils manquent ; les interpoler
-    // sans les filtrer écrivait « null » dans la conversation. Le message n'en
-    // porte plus aucun, mais l'assertion reste : c'est le titre qui en vient
-    // maintenant, et une désignation sans année passe par le même chemin.
-    expect(texte.toLowerCase(), isNot(contains('null')));
-  });
+      // Les champs du modèle rendent `null` quand ils manquent ; les interpoler
+      // sans les filtrer écrivait « null » dans la conversation. Le message n'en
+      // porte plus aucun, mais l'assertion reste : c'est le titre qui en vient
+      // maintenant, et une désignation sans année passe par le même chemin.
+      expect(texte.toLowerCase(), isNot(contains('null')));
+    },
+  );
 
   // ── La garde : ce que la vignette dit déjà ne part plus dans le texte ─────
 
@@ -440,7 +488,7 @@ void main() {
       testWidgets('fiche d\'une ${fiche.key}', (tester) async {
         await poser(tester, fiche.value, session: _client());
 
-        await tester.tap(find.byTooltip('Partager'));
+        await tester.tap(find.byTooltip(partagerFr()));
         await tester.pumpAndSettle();
 
         final texte = envois.single['text'] as String;
@@ -449,7 +497,8 @@ void main() {
           expect(
             texte,
             isNot(contains(valeur)),
-            reason: '« $valeur » part déjà dans la vignette que WhatsApp '
+            reason:
+                '« $valeur » part déjà dans la vignette que WhatsApp '
                 'construit sur la page publique. Le remettre dans le texte, '
                 'c\'est la duplication signalée par le propriétaire : elle '
                 'n\'apparaît sur aucun écran de l\'application, seulement dans '
@@ -497,7 +546,14 @@ void main() {
         testWidgets('fiche d\'une ${fiche.key}, en $nom', (tester) async {
           await poser(tester, fiche.value, session: _client(), locale: locale);
 
-          await tester.tap(find.byTooltip('Partager'));
+          // L'INFOBULLE DE LA LANGUE MONTÉE, et non celle du français : c'est
+          // ce groupe-ci qui monte les deux langues, et chercher « Partager »
+          // sur une fiche anglaise ne trouve rien depuis la vague 2. Cet échec
+          // est aussi la non-vacuité du groupe : une coque qui servirait du
+          // français en annonçant l'anglais ne porterait pas « Share », donc ce
+          // test tomberait au lieu de vérifier la mention dans la mauvaise
+          // langue.
+          await tester.tap(find.byTooltip(bulleSuivante[nom]!.partager));
           await tester.pumpAndSettle();
 
           final texte = envois.single['text'] as String;
@@ -508,14 +564,17 @@ void main() {
           expect(texte, contains('— $attendue'));
           // La clé relue, pour que l'assertion ne survive pas à un `.arb` qui
           // dirait autre chose.
-          expect(texte,
-              contains((await chargerTextes(locale)).partageMentionBoutique));
+          expect(
+            texte,
+            contains((await chargerTextes(locale)).partageMentionBoutique),
+          );
 
           for (final autre in mentions.entries.where((e) => e.key != nom)) {
             expect(
               texte,
               isNot(contains(autre.value)),
-              reason: 'La mention est restée en ${autre.key} : le message ne '
+              reason:
+                  'La mention est restée en ${autre.key} : le message ne '
                   'suit pas la langue de l\'écran.',
             );
           }
@@ -538,7 +597,7 @@ void main() {
       testWidgets('fiche d\'une ${fiche.key}', (tester) async {
         await poser(tester, fiche.value, session: _client());
 
-        await tester.tap(find.byTooltip('Partager'));
+        await tester.tap(find.byTooltip(partagerFr()));
         await tester.pumpAndSettle();
 
         final texte = envois.single['text'] as String;
@@ -568,14 +627,18 @@ void main() {
       testWidgets('fiche d\'une ${fiche.key}', (tester) async {
         await poser(tester, fiche.value, session: _client());
 
-        await tester.tap(find.byTooltip('Partager'));
+        await tester.tap(find.byTooltip(partagerFr()));
         await tester.pumpAndSettle();
 
         final envoi = envois.single;
 
-        expect(envoi.containsKey('paths'), isFalse,
-            reason: 'Une pièce jointe supprime l\'aperçu de lien : le texte '
-                'deviendrait la légende d\'une image.');
+        expect(
+          envoi.containsKey('paths'),
+          isFalse,
+          reason:
+              'Une pièce jointe supprime l\'aperçu de lien : le texte '
+              'deviendrait la légende d\'une image.',
+        );
         expect(envoi.containsKey('mimeTypes'), isFalse);
         // Le texte, lui, doit bien être là : « aucun fichier » ne doit pas se
         // confondre avec « rien du tout ».
@@ -597,26 +660,26 @@ const _idVehicule = 305;
 /// [actif] porte `is_active`, la seule condition de la page `/p/{id}` : le
 /// stock n'y entre pas, le catalogue des pièces montrant les ruptures.
 Part _piece({bool actif = true}) => Part.fromJson({
-      'id': _idPiece,
-      'name': 'Filtre à huile moteur cartouche 04152-YZZA1',
-      'sku': '04152-YZZA1',
-      'type': 'aftermarket',
-      'condition': 'new',
-      'category': {'id': 4, 'name': 'Filtration'},
-      'pricing': {
-        'selling_price': 3000,
-        'currency': 'XOF',
-        'vat_rate': 0,
-        'price_including_vat': 3000,
-      },
-      'stock': {
-        'is_available': true,
-        'quantity': 15,
-        'alert_threshold': 0,
-        'is_low': false,
-      },
-      'is_active': actif,
-    });
+  'id': _idPiece,
+  'name': 'Filtre à huile moteur cartouche 04152-YZZA1',
+  'sku': '04152-YZZA1',
+  'type': 'aftermarket',
+  'condition': 'new',
+  'category': {'id': 4, 'name': 'Filtration'},
+  'pricing': {
+    'selling_price': 3000,
+    'currency': 'XOF',
+    'vat_rate': 0,
+    'price_including_vat': 3000,
+  },
+  'stock': {
+    'is_available': true,
+    'quantity': 15,
+    'alert_threshold': 0,
+    'is_low': false,
+  },
+  'is_active': actif,
+});
 
 /// [actif] et [disponible] portent les DEUX conditions de `/a/{id}`.
 Accessory _accessoire({bool actif = true, bool disponible = true}) =>
@@ -660,42 +723,40 @@ Accessory _accessoire({bool actif = true, bool disponible = true}) =>
 /// [statut] et [publie] portent la seule chose qui décide maintenant de la
 /// PRÉSENCE du bouton : `published_at` et le statut commercial. Par défaut,
 /// un véhicule en stock et publié — le cas partageable.
-Vehicle _vehicule({String statut = 'in_stock', bool publie = true}) =>
-    Vehicle.fromJson({
-      'id': _idVehicule,
-      'reference': 'VH-WHVQKVHM',
-      'designation': 'Hyundai Tucson Base 2023',
-      'vehicle_type': 'passenger',
-      'body_style': 'suv',
-      'registration_status': {'value': 'registered', 'label': 'Immatriculé'},
-      'identity': {
-        'brand': 'Hyundai',
-        'brand_slug': 'hyundai',
-        'model': 'Tucson',
-        'trim': 'Base',
-        'engine_type': 'Diesel',
-        'year': 2023,
-      },
-      'technical': {
-        'transmission': 'automatic',
-        'mileage_km': 62400,
-        'seats': 5,
-      },
-      'commercial': {
-        'condition': 'used',
-        'status': statut,
-        'availability': 'sale',
-        'sale_price': '2450000.00',
-        'currency': 'XOF',
-        'price_negotiable': true,
-        'site': 'Ouagadougou',
-      },
-      'media': const [],
-      'features': const [],
-      // La forme du serveur : `published_at?->toIso8601String()`, donc la clé
-      // est là et vaut `null` tant que la fiche n'a pas été publiée.
-      'published_at': publie ? '2026-09-30T18:42:43+00:00' : null,
-    });
+Vehicle _vehicule({
+  String statut = 'in_stock',
+  bool publie = true,
+}) => Vehicle.fromJson({
+  'id': _idVehicule,
+  'reference': 'VH-WHVQKVHM',
+  'designation': 'Hyundai Tucson Base 2023',
+  'vehicle_type': 'passenger',
+  'body_style': 'suv',
+  'registration_status': {'value': 'registered', 'label': 'Immatriculé'},
+  'identity': {
+    'brand': 'Hyundai',
+    'brand_slug': 'hyundai',
+    'model': 'Tucson',
+    'trim': 'Base',
+    'engine_type': 'Diesel',
+    'year': 2023,
+  },
+  'technical': {'transmission': 'automatic', 'mileage_km': 62400, 'seats': 5},
+  'commercial': {
+    'condition': 'used',
+    'status': statut,
+    'availability': 'sale',
+    'sale_price': '2450000.00',
+    'currency': 'XOF',
+    'price_negotiable': true,
+    'site': 'Ouagadougou',
+  },
+  'media': const [],
+  'features': const [],
+  // La forme du serveur : `published_at?->toIso8601String()`, donc la clé
+  // est là et vaut `null` tant que la fiche n'a pas été publiée.
+  'published_at': publie ? '2026-09-30T18:42:43+00:00' : null,
+});
 
 // ── Dépendances neutralisées ───────────────────────────────────────────────
 
@@ -716,13 +777,13 @@ class _FauxAuth extends StateNotifier<AuthState> implements AuthNotifier {
 }
 
 AuthState _admin() => const AuthState(
-      type: AuthType.staff,
-      staffUser: StaffUser(
-        id: 1,
-        name: 'Administrateur',
-        email: 'admin@autoparc.bf',
-        role: 'admin',
-      ),
-    );
+  type: AuthType.staff,
+  staffUser: StaffUser(
+    id: 1,
+    name: 'Administrateur',
+    email: 'admin@autoparc.bf',
+    role: 'admin',
+  ),
+);
 
 AuthState _client() => const AuthState(type: AuthType.client);

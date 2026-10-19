@@ -324,6 +324,13 @@ void main() {
             catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
           ],
           child: MaterialApp(
+            // Les délégués et la locale, depuis la vague 2 : la fiche lit
+            // `AppLocalizations.of(context)`, qui lève sur une coque qui ne
+            // les pose pas. `locale:` est explicite pour la raison écrite
+            // dans test/support/langues.dart.
+            locale: localeFr,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: PartDetailPage(partId: 1, initialPart: _piece()),
           ),
         );
@@ -364,6 +371,11 @@ void main() {
             catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
           ],
           child: MaterialApp(
+            // Mêmes délégués et même locale explicite que la fiche d'une
+            // pièce juste au-dessus.
+            locale: localeFr,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: AccessoryDetailPage(
               accessoryId: 1,
               initialAccessory: _accessoire(),
@@ -382,7 +394,13 @@ void main() {
               echelle: echelle,
               // Un texte du corps, et non le nom de l'article : celui-ci
               // s'affiche dans la barre de titre même sans corps dessiné.
-              marqueur: 'Informations',
+              //
+              // LU dans les `.arb` depuis la vague 2, qui l'y a fait entrer :
+              // recopié ici, ce marqueur cesserait de désigner quoi que ce
+              // soit au premier changement de libellé, et le test tomberait
+              // sur « rien n'est peint » au lieu de dire pourquoi.
+              marqueur: (await chargerTextes(localeFr))
+                  .catalogSectionInformation,
             ),
             isNull,
           );

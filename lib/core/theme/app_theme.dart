@@ -37,6 +37,21 @@ ThemeData themeAutoParc(Brightness brightness) {
       // ecrit de zero — sans cela il perdrait sa couleur, et deviendrait
       // illisible sur les barres colorees.
       toolbarHeight: 48,
+      // LES HUIT POINTS DE RIEN QUE LE DÉFAUT DE FLUTTER RÉSERVAIT.
+      //
+      // `AppBar` prend `leadingWidth ?? _kLeadingWidth`, et `_kLeadingWidth`
+      // vaut `kToolbarHeight` — 56 — avec ce commentaire dans app_bar.dart :
+      // « So the leading button is square ». Il a cessé d'être vrai le jour où
+      // `toolbarHeight` est passé à 48 juste au-dessus : le bouton de
+      // navigation est carré de 48 et la barre lui réservait 56. Les 8 points
+      // d'écart n'étaient peints par personne, et ils étaient retirés au TITRE.
+      //
+      // Mesuré à 320 points d'écran : le titre d'une liste du catalogue
+      // recevait 120,0 points pour un client — 320 − 56 − trois commandes de
+      // 48 — et en reçoit 128,0. La cible tactile du bouton ne bouge pas :
+      // l'`IconButton` fait 48 de large et c'est la boîte qui l'entourait qui
+      // rétrécit.
+      leadingWidth: 48,
       titleTextStyle: base.textTheme.titleLarge?.copyWith(
         fontSize: 18,
         fontWeight: FontWeight.w600,

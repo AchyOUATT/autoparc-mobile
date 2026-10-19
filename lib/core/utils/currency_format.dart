@@ -100,6 +100,32 @@ String formatXof(double? amount) {
 /// Même résultat que [formatXof] — conservé pour les sites d'appel existants.
 String formatXofShort(double? amount) => formatXof(amount);
 
+/// Un décimal à UN chiffre après la virgule, ponctué comme la langue active :
+/// « 7,5 » en français, « 7.5 » en anglais.
+///
+/// ── POURQUOI IL A FALLU L'AJOUTER ───────────────────────────────────────────
+///
+/// `vehicle_detail_page.dart` portait son propre `NumberFormat('#,##0.0',
+/// 'fr_FR')`, en privé et en dur, pour la seule ligne « Consommation ». La
+/// vague 2 a traduit cette fiche : le libellé passait en anglais et la valeur
+/// gardait sa virgule décimale française, soit « Fuel use — 7,5 L/100 km ».
+///
+/// CE N'EST PAS UN DÉTAIL D'ESTHÉTIQUE. Un anglophone lit « 7,5 » comme un
+/// séparateur de MILLIERS : la ligne devient « soixante-quinze » litres aux
+/// cent kilomètres, c'est-à-dire un autre nombre, plausible pour un camion.
+/// C'est exactement la distinction que `test/support/echelles.dart` trace entre
+/// un texte incomplet et une information FAUSSE.
+///
+/// Même forme que [formatEntier] : un `NumberFormat` par langue, construit une
+/// fois, et le drapeau de module pour choisir. Le motif `#,##0.0` est recopié
+/// tel quel de la fiche, donc la sortie française ne change pas d'un signe.
+final _decimauxAnglais = NumberFormat('#,##0.0', 'en');
+final _decimauxFrancais = NumberFormat('#,##0.0', 'fr_FR');
+
+String formatDecimal(num valeur) => _anglais
+    ? _decimauxAnglais.format(valeur)
+    : _decimauxFrancais.format(valeur);
+
 /// Un entier ponctué comme la langue active : « 246 965 » / « 246,965 ».
 ///
 /// Sert aux kilométrages, qui ne portent pas de symbole monétaire. L'accueil
@@ -107,6 +133,5 @@ String formatXofShort(double? amount) => formatXof(amount);
 /// le catalogue employait `decimalPattern('fr_FR')` et son espace fine
 /// insécable U+202F : le même compteur changeait de forme entre l'accueil et la
 /// fiche. Les deux passent désormais par ici.
-String formatEntier(num valeur) => _anglais
-    ? _entiersAnglais.format(valeur)
-    : _entiersFrancais.format(valeur);
+String formatEntier(num valeur) =>
+    _anglais ? _entiersAnglais.format(valeur) : _entiersFrancais.format(valeur);

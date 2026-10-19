@@ -17,6 +17,7 @@ import '../../../../features/partners/presentation/widgets/product_partners_sect
 import '../../../../core/api/api_exception.dart';
 import '../../../../shared/data/media_repository.dart';
 import '../../../../shared/presentation/pages/media_upload_page.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class AccessoryDetailPage extends ConsumerWidget {
   final int accessoryId;
@@ -31,15 +32,15 @@ class AccessoryDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detailAsync = ref.watch(accessoryDetailProvider(accessoryId));
-    final accessory   = detailAsync.valueOrNull ?? initialAccessory;
+    final accessory = detailAsync.valueOrNull ?? initialAccessory;
 
     if (accessory == null) {
       return Scaffold(
         appBar: AppBar(),
         body: detailAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error:   (e, _) => Center(child: Text(messageFor(e))),
-          data:    (_) => const SizedBox.shrink(),
+          error: (e, _) => Center(child: Text(messageFor(e))),
+          data: (_) => const SizedBox.shrink(),
         ),
       );
     }
@@ -54,24 +55,27 @@ class _AccessoryDetailView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs      = Theme.of(context).colorScheme;
-    final auth    = ref.watch(authProvider);
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final auth = ref.watch(authProvider);
     final isStaff = auth.isStaff;
-    final p       = accessory.pricing;
+    final p = accessory.pricing;
 
     Future<void> deleteAccessory() async {
       final ok = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text('Supprimer cet accessoire ?'),
-          content: Text('« ${accessory.name} » sera supprimé définitivement.'),
+          title: Text(l10n.catalogAccessoryDeleteTitle),
+          content: Text(l10n.catalogAccessoryDeleteBody(accessory.name)),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false),
-                child: const Text('Annuler')),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.commonCancel),
+            ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: cs.error),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Supprimer'),
+              child: Text(l10n.catalogDeleteAction),
             ),
           ],
         ),
@@ -91,16 +95,23 @@ class _AccessoryDetailView extends ConsumerWidget {
         }
       }
     }
-    final s       = accessory.stock;
-    final inCart  = ref.watch(cartProvider.select(
-      (items) => items.any(
-        (i) => i.id == accessory.id && i.itemType == CartItemType.accessory,
+
+    final s = accessory.stock;
+    final inCart = ref.watch(
+      cartProvider.select(
+        (items) => items.any(
+          (i) => i.id == accessory.id && i.itemType == CartItemType.accessory,
+        ),
       ),
-    ));
+    );
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(accessory.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+        title: Text(
+          accessory.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         actions: [
           // La première des commandes, et la seule que tout le monde voie.
           //
@@ -155,7 +166,7 @@ class _AccessoryDetailView extends ConsumerWidget {
           if (accessory.aUnePagePublique)
             IconButton(
               icon: const Icon(Icons.share_outlined),
-              tooltip: 'Partager',
+              tooltip: l10n.catalogShareTooltip,
               // LE NOM ET L'ADRESSE, RIEN D'AUTRE. Le prix et la catégorie
               // partaient encore dans le texte ; la page `/a/{id}` les porte
               // dans ses balises Open Graph, et WhatsApp les affiche dans sa
@@ -177,13 +188,16 @@ class _AccessoryDetailView extends ConsumerWidget {
           if (auth.canManageCatalog)
             IconButton(
               icon: const Icon(Icons.add_a_photo_outlined),
-              tooltip: 'Photos',
+              tooltip: l10n.catalogPhotosTooltip,
               onPressed: () => context
-                  .push('/media-upload', extra: MediaUploadConfig(
-                    type:  MediaOwnerType.accessory,
-                    id:    accessory.id,
-                    title: accessory.name,
-                  ))
+                  .push(
+                    '/media-upload',
+                    extra: MediaUploadConfig(
+                      type: MediaOwnerType.accessory,
+                      id: accessory.id,
+                      title: accessory.name,
+                    ),
+                  )
                   .then((_) {
                     ref.invalidate(accessoryDetailProvider(accessory.id));
                     ref.invalidate(accessoryListProvider);
@@ -192,15 +206,18 @@ class _AccessoryDetailView extends ConsumerWidget {
           if (auth.canManageCatalog)
             IconButton(
               icon: const Icon(Icons.edit_outlined),
-              tooltip: 'Modifier',
+              tooltip: l10n.catalogEditTooltip,
               onPressed: () => context
                   .push('/accessories/${accessory.id}/edit', extra: accessory)
-                  .then((_) => ref.invalidate(accessoryDetailProvider(accessory.id))),
+                  .then(
+                    (_) =>
+                        ref.invalidate(accessoryDetailProvider(accessory.id)),
+                  ),
             ),
           if (auth.canDeleteCatalog)
             IconButton(
               icon: Icon(Icons.delete_outline, color: cs.error),
-              tooltip: 'Supprimer',
+              tooltip: l10n.catalogDeleteAction,
               onPressed: deleteAccessory,
             ),
           if (!isStaff) const CartIconButton(),
@@ -210,7 +227,6 @@ class _AccessoryDetailView extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-
           // ── Photo de couverture, icone de categorie a defaut ──
           //
           // Ce bloc affichait l'icone en dur : il ne consultait ni coverUrl ni
@@ -241,10 +257,12 @@ class _AccessoryDetailView extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // ── Informations ──────────────────────────────────────
-          Text('Informations',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              )),
+          Text(
+            l10n.catalogSectionInformation,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 10),
           // La catégorie, en première ligne et sans condition : elle était
           // dans la barre de titre, sous forme de puce, et c'est elle qui la
@@ -255,20 +273,26 @@ class _AccessoryDetailView extends ConsumerWidget {
           //
           // Avant le SKU parce qu'un accessoire a toujours une catégorie,
           // jamais forcément une référence.
-          _InfoRow('Catégorie', accessory.categoryLabel),
-          if (accessory.sku != null) _InfoRow('SKU', accessory.sku!),
+          _InfoRow(l10n.catalogFieldCategory, accessory.categoryLabel),
+          if (accessory.sku != null)
+            _InfoRow(l10n.catalogFieldSku, accessory.sku!),
           if (accessory.manufacturer != null)
-            _InfoRow('Fabricant',  accessory.manufacturer!),
+            _InfoRow(l10n.catalogFieldManufacturer, accessory.manufacturer!),
           // garantie désactivée temporairement
           // if (accessory.warrantyMonths != null)
           //   _InfoRow('Garantie', '${accessory.warrantyMonths} mois'),
-          if (accessory.description != null && accessory.description!.isNotEmpty) ...[
+          if (accessory.description != null &&
+              accessory.description!.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text('Description',
-                style: Theme.of(context).textTheme.titleSmall),
+            Text(
+              l10n.catalogSectionDescription,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
             const SizedBox(height: 6),
-            Text(accessory.description!,
-                style: Theme.of(context).textTheme.bodyMedium),
+            Text(
+              accessory.description!,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ],
 
           // ── Véhicules compatibles ─────────────────────────────
@@ -279,11 +303,11 @@ class _AccessoryDetailView extends ConsumerWidget {
           // reste au staff. Voir part_detail_page.dart, même raisonnement.
           CompatibilitesDeclarees(
             lignes: accessory.fitments,
-            rienDeclare: 'Aucune compatibilité déclarée. L\'accessoire ne '
-                'remonte pas dans une recherche par véhicule.',
+            rienDeclare: l10n.catalogAccessoryNoFitments,
             onModifier: isStaff
-                ? () => GoRouter.of(context)
-                    .push('/accessories/${accessory.id}/edit', extra: accessory)
+                ? () => GoRouter.of(
+                    context,
+                  ).push('/accessories/${accessory.id}/edit', extra: accessory)
                 : null,
           ),
 
@@ -295,48 +319,60 @@ class _AccessoryDetailView extends ConsumerWidget {
       ),
 
       // ── Bouton commander (clients uniquement) ─────────────────
-      bottomNavigationBar: isStaff ? null : SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: FilledButton.icon(
-            onPressed: s.quantity > 0
-                ? () {
-                    ref
-                        .read(cartProvider.notifier)
-                        .add(CartItem.fromAccessory(accessory));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${accessory.name} ajouté au panier'),
-                        behavior: SnackBarBehavior.floating,
-                        action: SnackBarAction(
-                          label: 'Voir',
-                          onPressed: () => context.push('/cart'),
-                        ),
-                      ),
-                    );
-                  }
-                : null,
-            icon: Icon(inCart
-                ? Icons.shopping_cart
-                : Icons.add_shopping_cart),
-            label: Text(
-              s.quantity > 0
-                  ? (inCart ? 'Ajouter à nouveau' : 'Ajouter au panier')
-                  : 'Indisponible',
+      bottomNavigationBar: isStaff
+          ? null
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: FilledButton.icon(
+                  onPressed: s.quantity > 0
+                      ? () {
+                          ref
+                              .read(cartProvider.notifier)
+                              .add(CartItem.fromAccessory(accessory));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                l10n.catalogAddedToCart(accessory.name),
+                              ),
+                              behavior: SnackBarBehavior.floating,
+                              action: SnackBarAction(
+                                label: l10n.catalogSeeCart,
+                                onPressed: () => context.push('/cart'),
+                              ),
+                            ),
+                          );
+                        }
+                      : null,
+                  icon: Icon(
+                    inCart ? Icons.shopping_cart : Icons.add_shopping_cart,
+                  ),
+                  label: Text(
+                    s.quantity > 0
+                        ? (inCart
+                              ? l10n.catalogAddToCartAgain
+                              : l10n.catalogAddToCart)
+                        // `catalogOfferNone` et non `catalogOutOfStock` : la fiche
+                        // d'un accessoire écrit « Indisponible » là où celle d'une
+                        // pièce écrit « Rupture de stock ». La divergence est
+                        // antérieure à la traduction et ce lot la reporte au lieu de
+                        // la corriger — unifier changerait le français de l'un des
+                        // deux écrans.
+                        : l10n.catalogOfferNone,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 
   IconData _categoryIcon(String category) => switch (category) {
     'esthetique' => Icons.auto_awesome,
-    'confort'    => Icons.airline_seat_recline_normal,
-    'securite'   => Icons.shield,
+    'confort' => Icons.airline_seat_recline_normal,
+    'securite' => Icons.shield,
     'multimedia' => Icons.speaker,
     'utilitaire' => Icons.build,
-    _            => Icons.tune,
+    _ => Icons.tune,
   };
 }
 
@@ -356,11 +392,36 @@ class _PriceCard extends StatelessWidget {
         color: cs.primaryContainer.withAlpha(80),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(
-        formatXof(pricing.sellingPrice),
-        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: cs.primary,
+      // LA SEULE CARTE DE PRIX DU DÉPÔT QUI N'AVAIT PAS SON `BoxFit.scaleDown`,
+      // et elle était la seule à casser son montant. Les trois autres sites
+      // — la fiche d'une pièce, les deux de la fiche d'un véhicule et
+      // `_PrixAjuste` sur la carte du catalogue — portent cet arbitrage depuis
+      // la passe de densité ; celui-ci est resté sur un `Text` nu.
+      //
+      // CE QUE ÇA DONNAIT, mesuré par le banc « Les écrans de la vague 2 » dès
+      // que `coupeDansLeMot` est entré dans `aucuneTroncature` : à 320 points
+      // d'écran et à l'échelle 2,0, « 18 000 FCFA » réclame 267,4 points pour
+      // 256,0 reçus, et le plus long segment insécable retombe à 32,3 — la
+      // largeur d'un caractère. Un montant est UN SEUL segment insécable
+      // (U+202F entre les milliers, U+00A0 devant la devise), donc le moteur
+      // n'a aucune césure légale et coupe caractère par caractère :
+      // « 18 000 FCF » puis « A ». L'anglais tombait de même, à 267,4 pour
+      // « 18,000 FCFA ».
+      //
+      // Un nombre coupé est FAUX et non seulement incomplet : c'est le seul
+      // défaut que l'échelle 2,0 ne rachète pas — voir `porteUnNombre` dans
+      // test/support/mesures.dart. `scaleDown` ne réduit que lorsqu'il faut, et
+      // ne change donc rien en deçà : un montant abrégé vaut moins que pas de
+      // montant.
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: AlignmentDirectional.centerStart,
+        child: Text(
+          formatXof(pricing.sellingPrice),
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: cs.primary,
+          ),
         ),
       ),
     );
@@ -375,8 +436,9 @@ class _StockCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final inStock = stock.quantity > 0;
-    final color   = inStock ? Colors.green.shade700 : Colors.red.shade700;
+    final color = inStock ? Colors.green.shade700 : Colors.red.shade700;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -398,7 +460,9 @@ class _StockCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  inStock ? '${stock.quantity} en stock' : 'Rupture de stock',
+                  inStock
+                      ? l10n.catalogStockQuantity(stock.quantity)
+                      : l10n.catalogOutOfStock,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: color,
                     fontWeight: FontWeight.w600,
@@ -406,7 +470,7 @@ class _StockCard extends StatelessWidget {
                 ),
                 if (stock.location != null)
                   Text(
-                    'Emplacement : ${stock.location}',
+                    l10n.catalogStockLocation(stock.location!),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
               ],
@@ -417,7 +481,10 @@ class _StockCard extends StatelessWidget {
           // texte perdrait la moitie de sa largeur pour rien.
           if (stock.isLow && inStock) ...[
             Chip(
-              label: const Text('Stock bas', style: TextStyle(fontSize: 11)),
+              label: Text(
+                l10n.catalogStockLowChip,
+                style: const TextStyle(fontSize: 11),
+              ),
               backgroundColor: Colors.orange.shade100,
               padding: EdgeInsets.zero,
               visualDensity: VisualDensity.compact,
@@ -444,14 +511,15 @@ class _InfoRow extends StatelessWidget {
       children: [
         SizedBox(
           width: 120,
-          child: Text(label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
-              )),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.outline,
+            ),
+          ),
         ),
         Expanded(
-          child: Text(value,
-              style: Theme.of(context).textTheme.bodyMedium),
+          child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
         ),
       ],
     ),
@@ -465,12 +533,9 @@ class _InfoRow extends StatelessWidget {
 /// avait. Le ClipRRect qui l'entoure vit chez l'appelant : il sert a la
 /// galerie, pas au repli, dont les coins sont deja arrondis.
 class _AccessoryCover extends StatelessWidget {
-  const _AccessoryCover({
-    required this.iconeDeRepli,
-    required this.cs,
-  });
+  const _AccessoryCover({required this.iconeDeRepli, required this.cs});
 
-  final IconData    iconeDeRepli;
+  final IconData iconeDeRepli;
   final ColorScheme cs;
 
   @override

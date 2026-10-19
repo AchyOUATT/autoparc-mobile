@@ -12,6 +12,7 @@ import '../../../../core/widgets/bande_filtres.dart';
 import '../../../../core/widgets/bouton_flottant_effacable.dart';
 import '../../../../core/widgets/brand_logo.dart';
 import '../../../../core/widgets/catalog_image.dart';
+import '../../../../core/widgets/titre_barre.dart';
 import '../../../../core/api/api_exception.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
@@ -82,7 +83,7 @@ class _VehicleListPageState extends ConsumerState<VehicleListPage> {
                   }
                 },
                 icon: const Icon(Icons.add),
-                label: const Text('Ajouter'),
+                label: Text(AppLocalizations.of(context).catalogVehicleAddCta),
               ),
             )
           : null,
@@ -94,13 +95,13 @@ class _VehicleListPageState extends ConsumerState<VehicleListPage> {
               ref.read(shellScaffoldKeyProvider).currentState?.openDrawer(),
         ),
         titleSpacing: 0,
-        title: Text(AppLocalizations.of(context).commonVehicles),
+        title: TitreBarre(AppLocalizations.of(context).commonVehicles),
         actions: [
           const NotificationIconButton(),
           if (!isStaff)
             IconButton(
               icon: const Icon(Icons.inbox_outlined),
-              tooltip: 'Exprimer un besoin',
+              tooltip: AppLocalizations.of(context).catalogNeedTooltip,
               onPressed: () => context.push('/needs/new?type=vehicle'),
             ),
         ],
@@ -114,7 +115,7 @@ class _VehicleListPageState extends ConsumerState<VehicleListPage> {
               // reduit ne ferait que la rogner.
               constraints: const BoxConstraints(minHeight: 40, maxHeight: 40),
               controller: _searchCtrl,
-              hintText: 'Marque, modèle, référence…',
+              hintText: AppLocalizations.of(context).catalogVehicleSearchHint,
               leading: const Icon(Icons.search),
               trailing: [
                 if (_searchCtrl.text.isNotEmpty)
@@ -213,6 +214,8 @@ class _FilterChips extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+
     void update(VehicleFilter Function(VehicleFilter) fn) {
       ref.read(vehicleFilterProvider.notifier).state = fn(
         ref.read(vehicleFilterProvider),
@@ -224,9 +227,9 @@ class _FilterChips extends ConsumerWidget {
       children: [
         BandeFiltres(
           children: [
-            const LibelleGroupeFiltres('Offre'),
+            LibelleGroupeFiltres(l10n.catalogFilterGroupOffer),
             FilterChip(
-              label: const Text('À vendre'),
+              label: Text(l10n.catalogOfferSale),
               selected: filter.availability == 'sale',
               onSelected: (_) => update(
                 (f) => f.copyWith(
@@ -237,7 +240,7 @@ class _FilterChips extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             FilterChip(
-              label: const Text('À louer'),
+              label: Text(l10n.catalogOfferRent),
               selected: filter.availability == 'rent',
               onSelected: (_) => update(
                 (f) => f.copyWith(
@@ -251,7 +254,7 @@ class _FilterChips extends ConsumerWidget {
             const SizedBox(width: 8),
             FilterChip(
               avatar: const Icon(Icons.verified_outlined, size: 14),
-              label: const Text('Dédouané'),
+              label: Text(l10n.catalogCustomsCleared),
               selected: filter.customsCleared == true,
               onSelected: (_) => update(
                 (f) => f.customsCleared == true
@@ -260,10 +263,10 @@ class _FilterChips extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 20),
-            const LibelleGroupeFiltres('Type'),
+            LibelleGroupeFiltres(l10n.catalogFilterGroupType),
             FilterChip(
               avatar: const Icon(Icons.airport_shuttle_outlined, size: 14),
-              label: const Text('Utilitaire'),
+              label: Text(l10n.catalogVehicleTypeUtility),
               selected: filter.vehicleType == 'utility',
               onSelected: (_) => update(
                 (f) => f.copyWith(
@@ -275,7 +278,7 @@ class _FilterChips extends ConsumerWidget {
             const SizedBox(width: 8),
             FilterChip(
               avatar: const Icon(Icons.local_shipping_outlined, size: 14),
-              label: const Text('Poids lourd'),
+              label: Text(l10n.catalogVehicleTypeHeavy),
               selected: filter.vehicleType == 'heavy',
               onSelected: (_) => update(
                 (f) => f.copyWith(
@@ -286,7 +289,7 @@ class _FilterChips extends ConsumerWidget {
             ),
             if (cities.isNotEmpty) ...[
               const SizedBox(width: 20),
-              const LibelleGroupeFiltres('Ville'),
+              LibelleGroupeFiltres(l10n.catalogFilterGroupCity),
               for (final city in cities) ...[
                 FilterChip(
                   avatar: const Icon(Icons.location_on_outlined, size: 14),
@@ -319,14 +322,14 @@ class _FilterChips extends ConsumerWidget {
         // peut pas avoir deux rangées ET la hauteur, seulement choisir.
         BandeFiltres(
           children: [
-            const LibelleGroupeFiltres('Carrosserie'),
+            LibelleGroupeFiltres(l10n.catalogFilterGroupBodyStyle),
             ..._bodyStyles.map((s) {
               final selected = filter.bodyStyle == s.value;
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: FilterChip(
                   avatar: Icon(s.icon, size: 14),
-                  label: Text(s.label),
+                  label: Text(libelleCarrosserieFiltre(l10n, s.value)),
                   selected: selected,
                   onSelected: (_) {
                     ref.read(vehicleFilterProvider.notifier).state = filter
@@ -400,7 +403,11 @@ class _DealChipState extends ConsumerState<_DealChip>
 
     final chip = FilterChip(
       avatar: const Icon(Icons.local_offer_outlined, size: 14),
-      label: Text(count > 0 ? 'Bonne affaire ($count)' : 'Bonne affaire'),
+      label: Text(
+        count > 0
+            ? AppLocalizations.of(context).catalogDealFilterCount(count)
+            : AppLocalizations.of(context).catalogDealFilter,
+      ),
       selected: selected,
       onSelected: (_) {
         ref.read(vehicleFilterProvider.notifier).state = selected
@@ -428,19 +435,56 @@ class _DealChipState extends ConsumerState<_DealChip>
 ///
 /// Elles avaient leur propre rangée ; elles sont le dernier groupe de la bande
 /// unique depuis ce lot — voir [_FilterChips] pour le compte et pour le coût.
+/// LE LIBELLÉ A QUITTÉ CE TABLEAU, et il ne pouvait pas y rester : une liste
+/// `const` est construite une fois pour toutes, avant qu'aucun `BuildContext`
+/// n'existe, donc avant que la langue active soit connue. Un libellé écrit ici
+/// ne pourrait jamais suivre un changement de langue — il serait figé au
+/// premier rendu, c'est-à-dire en français pour tout le monde.
+///
+/// Le tableau garde ce qui ne dépend pas de la langue — l'ordre, la valeur
+/// envoyée au serveur, l'icône —, et [libelleCarrosserieFiltre] rend le texte.
 const _bodyStyles = [
-  (value: 'sedan', label: 'Berline', icon: Icons.directions_car),
-  (value: 'suv', label: 'SUV / 4×4', icon: Icons.directions_car_filled),
-  (value: 'hatchback', label: 'Citadine', icon: Icons.directions_car_outlined),
-  (value: 'pickup', label: 'Pickup', icon: Icons.fire_truck),
-  (value: 'minibus', label: 'Minibus', icon: Icons.airport_shuttle),
-  (value: 'bus', label: 'Bus / Car', icon: Icons.directions_bus),
-  (value: 'van', label: 'Fourgon', icon: Icons.local_shipping),
-  (value: 'estate', label: 'Break', icon: Icons.drive_eta),
-  (value: 'truck', label: 'Camion', icon: Icons.local_shipping_outlined),
-  (value: 'convertible', label: 'Cabriolet', icon: Icons.wb_sunny_outlined),
-  (value: 'coupe', label: 'Coupé', icon: Icons.speed),
+  (value: 'sedan', icon: Icons.directions_car),
+  (value: 'suv', icon: Icons.directions_car_filled),
+  (value: 'hatchback', icon: Icons.directions_car_outlined),
+  (value: 'pickup', icon: Icons.fire_truck),
+  (value: 'minibus', icon: Icons.airport_shuttle),
+  (value: 'bus', icon: Icons.directions_bus),
+  (value: 'van', icon: Icons.local_shipping),
+  (value: 'estate', icon: Icons.drive_eta),
+  (value: 'truck', icon: Icons.local_shipping_outlined),
+  (value: 'convertible', icon: Icons.wb_sunny_outlined),
+  (value: 'coupe', icon: Icons.speed),
 ];
+
+/// Le libellé d'une puce de carrosserie, dans la langue active.
+///
+/// DISTINCT DE CELUI DE LA FICHE DÉTAILLÉE, et c'est un constat et non un
+/// choix : le français de `vehicle_detail_page.dart` dit « Citadine / Hayon »
+/// et « Fourgonnette » là où cette bande dit « Citadine » et « Fourgon », pour
+/// les mêmes valeurs `hatchback` et `van`. La divergence est antérieure à la
+/// traduction ; l'unifier aurait changé le français de l'un des deux écrans,
+/// ce qui n'est pas demandé. D'où deux jeux de clés, `catalogBodyStyle*` ici
+/// et `catalogBodyLabel*` là-bas.
+///
+/// Le repli rend la valeur brute du serveur : une carrosserie inconnue de ce
+/// tableau n'est pas censée arriver jusqu'ici — les puces viennent du tableau
+/// lui-même —, et afficher le code est plus honnête qu'une chaîne vide.
+String libelleCarrosserieFiltre(AppLocalizations l10n, String valeur) =>
+    switch (valeur) {
+      'sedan' => l10n.catalogBodyStyleSedan,
+      'suv' => l10n.catalogBodyStyleSuv,
+      'hatchback' => l10n.catalogBodyStyleHatchback,
+      'pickup' => l10n.catalogBodyStylePickup,
+      'minibus' => l10n.catalogBodyStyleMinibus,
+      'bus' => l10n.catalogBodyStyleBus,
+      'van' => l10n.catalogBodyStyleVan,
+      'estate' => l10n.catalogBodyStyleEstate,
+      'truck' => l10n.catalogBodyStyleTruck,
+      'convertible' => l10n.catalogBodyStyleConvertible,
+      'coupe' => l10n.catalogBodyStyleCoupe,
+      _ => valeur,
+    };
 
 // ── Deux colonnes en maçonnerie, et le seuil a disparu ──────────
 
@@ -563,7 +607,7 @@ class VehicleGrid extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
           sliver: SliverToBoxAdapter(
             child: Text(
-              '$total résultat${total > 1 ? 's' : ''}',
+              AppLocalizations.of(context).catalogResultCount(total),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
@@ -587,7 +631,7 @@ class VehicleGrid extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 20),
               child: Center(
                 child: Text(
-                  '— $total résultat${total > 1 ? 's' : ''} au total —',
+                  AppLocalizations.of(context).catalogResultTotal(total),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.outline,
                   ),
@@ -797,9 +841,10 @@ class _Colonne extends StatelessWidget {
 /// `engineType` arrive déjà libellé du serveur — « Essence », « Diesel »,
 /// « Électrique », « Hybride » sont les intitulés de la table de référence, et
 /// la fiche détaillée les affiche tels quels sous « Motorisation ».
-String? _ligneSpecs(Vehicle vehicle) {
+String? _ligneSpecs(AppLocalizations l10n, Vehicle vehicle) {
   final specs = <String>[
-    if (vehicle.mileageKm != null) '${formatEntier(vehicle.mileageKm!)} km',
+    if (vehicle.mileageKm != null)
+      l10n.commonMileageKm(formatEntier(vehicle.mileageKm!)),
     if (vehicle.identity.engineType != null) vehicle.identity.engineType!,
   ];
   return specs.isEmpty ? null : specs.join(' • ');
@@ -909,7 +954,7 @@ class _VehicleCardState extends State<VehicleCard> {
     final c = vehicle.commercial;
     final id = vehicle.identity;
     final cs = Theme.of(context).colorScheme;
-    final specs = _ligneSpecs(vehicle);
+    final specs = _ligneSpecs(AppLocalizations.of(context), vehicle);
 
     // Sans photo, le logo de la marque rend la grille identifiable — auparavant
     // les 80 cartes affichaient exactement la même icône grise. Il sert aussi
@@ -1155,7 +1200,7 @@ class _PhotoCount extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final libelle = Text(
-      '$count photos',
+      AppLocalizations.of(context).catalogPhotoCount(count),
       style: const TextStyle(
         color: Colors.white,
         fontSize: 10,
@@ -1237,11 +1282,12 @@ class _AvailabilityBadge extends StatelessWidget {
     // (le badge se lisait comme « indisponible ») et un `tertiary` lavande
     // étranger à la marque. Ces trois tons sont profonds et désaturés comme
     // le bleu de marque, et restent distincts entre eux.
+    final l10n = AppLocalizations.of(context);
     final (label, bg) = switch (c.availability) {
-      'both' => ('Vente & Location', const Color(0xFF2E6F6B)), // sarcelle
-      'sale' => ('À vendre', const Color(0xFF1F5C7A)), // ardoise
-      'rent' => ('À louer', const Color(0xFFB26A00)), // ocre
-      _ => ('Indisponible', cs.outline),
+      'both' => (l10n.catalogOfferBoth, const Color(0xFF2E6F6B)), // sarcelle
+      'sale' => (l10n.catalogOfferSale, const Color(0xFF1F5C7A)), // ardoise
+      'rent' => (l10n.catalogOfferRent, const Color(0xFFB26A00)), // ocre
+      _ => (l10n.catalogOfferNone, cs.outline),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1481,7 +1527,7 @@ class _PriceRow extends StatelessWidget {
       // nombre. Il n'y a aucun chiffre faux à craindre ici, donc rien à
       // réduire.
       prix = Text(
-        'Prix non communiqué',
+        AppLocalizations.of(context).catalogPriceOnRequest,
         style: Theme.of(context).textTheme.bodySmall,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
@@ -1554,59 +1600,100 @@ class _EmptyView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final f = ref.watch(vehicleFilterProvider);
     final actifs = <String>[
-      if (f.search?.isNotEmpty == true) '« ${f.search} »',
+      if (f.search?.isNotEmpty == true) l10n.catalogFilterTermQuery(f.search!),
       if (f.availability != null)
-        f.availability == 'sale' ? 'à vendre' : 'à louer',
-      if (f.deal == true) 'bonne affaire',
-      if (f.customsCleared == true) 'dédouané',
-      if (f.vehicleType != null) 'type de véhicule',
-      if (f.bodyStyle != null) 'carrosserie',
-      if (f.condition != null) 'état',
-      if (f.yearMin != null || f.yearMax != null) 'année',
-      if (f.priceMax != null) 'prix maximum',
+        f.availability == 'sale'
+            ? l10n.catalogFilterTermSale
+            : l10n.catalogFilterTermRent,
+      if (f.deal == true) l10n.catalogFilterTermDeal,
+      if (f.customsCleared == true) l10n.catalogFilterTermCustoms,
+      if (f.vehicleType != null) l10n.catalogFilterTermVehicleType,
+      if (f.bodyStyle != null) l10n.catalogFilterTermBodyStyle,
+      if (f.condition != null) l10n.catalogFilterTermCondition,
+      if (f.yearMin != null || f.yearMax != null) l10n.catalogFilterTermYear,
+      if (f.priceMax != null) l10n.catalogFilterTermPriceMax,
+      // La VILLE n'a pas de clé : son nom vient du référentiel du serveur et
+      // reste en français jusqu'à la vague serveur, comme les catégories de
+      // pièces et les intitulés de carburant.
       if (f.city != null) f.city!,
     ];
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.search_off, size: 56, color: cs.outline),
-            const SizedBox(height: 14),
-            Text(
-              'Aucun véhicule trouvé',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              actifs.isEmpty
-                  ? 'Le catalogue ne contient aucun véhicule pour le moment.'
-                  : 'Filtres actifs : ${actifs.join(', ')}.',
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-            ),
-            if (actifs.isNotEmpty) ...[
-              const SizedBox(height: 20),
-              FilledButton.tonalIcon(
-                onPressed: () =>
-                    ref.read(vehicleFilterProvider.notifier).state =
-                        const VehicleFilter(),
-                icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
-                label: const Text('Tout effacer'),
+    // ── IL DÉFILE, ET C'EST UN DÉFAUT MESURÉ, PAS UNE PRÉCAUTION ───────────
+    //
+    // Cet écran était un `Center` autour d'une `Column` : une boîte qui ne
+    // défile pas. Le nouveau banc « Les écrans vides du catalogue » de
+    // `bandes_filtres_test.dart` l'a pris en flagrant délit à 320 points et à
+    // l'échelle 2,0, SANS AUCUN FILTRE POSÉ et en FRANÇAIS :
+    //
+    //     A RenderFlex overflowed by 166 pixels on the bottom.
+    //
+    // Donc une bande rayée en jaune et noir, le lien « Dites-nous ce que vous
+    // cherchez » hors d'atteinte, et rien pour y accéder. `support/echelles.dart`
+    // ne rachète pas ce défaut-là : au-delà de 1,5 on cesse d'exiger la
+    // densité, jamais que l'écran ne jette ni que son bas soit atteignable.
+    // Avec quatre filtres posés, il dépassait déjà de 2 points à l'échelle 1,0.
+    //
+    // LE DÉFAUT EST ANTÉRIEUR À LA TRADUCTION : le texte français n'a pas
+    // changé d'un signe dans ce lot, et les deux langues débordaient
+    // exactement de la même hauteur. C'est le banc qui est neuf, pas le
+    // défaut.
+    //
+    // LE `ConstrainedBox` EST CE QUI PRÉSERVE L'APPARENCE. Un
+    // `SingleChildScrollView` seul colle le contenu en haut : l'écran vide
+    // cesserait d'être centré à l'échelle normale, c'est-à-dire dans le cas
+    // que tout le monde voit. En imposant au contenu une hauteur MINIMALE
+    // égale à la hauteur reçue, le `Center` garde son effet tant que ça tient,
+    // et le défilement n'apparaît que lorsqu'il ne tient plus.
+    return LayoutBuilder(
+      builder: (context, contraintes) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: contraintes.maxHeight),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.search_off, size: 56, color: cs.outline),
+                  const SizedBox(height: 14),
+                  Text(
+                    l10n.catalogVehicleNoneFound,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    actifs.isEmpty
+                        ? l10n.catalogVehicleCatalogEmpty
+                        : l10n.catalogActiveFilters(
+                            actifs.join(l10n.catalogFilterListSeparator),
+                          ),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                  if (actifs.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    FilledButton.tonalIcon(
+                      onPressed: () =>
+                          ref.read(vehicleFilterProvider.notifier).state =
+                              const VehicleFilter(),
+                      icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
+                      label: Text(l10n.catalogClearFilters),
+                    ),
+                  ],
+                  TextButton.icon(
+                    onPressed: () => context.push('/needs/new?type=vehicle'),
+                    icon: const Icon(Icons.inbox_outlined, size: 18),
+                    label: Text(l10n.catalogNeedCta),
+                  ),
+                ],
               ),
-            ],
-            TextButton.icon(
-              onPressed: () => context.push('/needs/new?type=vehicle'),
-              icon: const Icon(Icons.inbox_outlined, size: 18),
-              label: const Text('Dites-nous ce que vous cherchez'),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -1626,7 +1713,10 @@ class _ErrorView extends StatelessWidget {
         const SizedBox(height: 12),
         Text(error, textAlign: TextAlign.center),
         const SizedBox(height: 16),
-        FilledButton(onPressed: onRetry, child: const Text('Réessayer')),
+        FilledButton(
+          onPressed: onRetry,
+          child: Text(AppLocalizations.of(context).commonRetry),
+        ),
       ],
     ),
   );

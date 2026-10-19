@@ -18,29 +18,50 @@ import '../../../../core/api/api_exception.dart';
 import '../../../../core/widgets/product_gallery.dart';
 import '../../../../shared/data/media_repository.dart';
 import '../../../../shared/presentation/pages/media_upload_page.dart';
+import '../../../../l10n/app_localizations.dart';
 
-const _typeLabels = {
-  'oem':         'OEM — Constructeur d\'origine',
-  'oes':         'OES — Équipementier agréé',
-  'aftermarket': 'Aftermarket — Marché libre',
-  'salvage':     'Récupération / Occasion',
+/// La nature d'une pièce, DÉVELOPPÉE, dans la langue active.
+///
+/// Les deux tables de ce fichier étaient `const` : une constante est construite
+/// avant qu'aucun `BuildContext` n'existe, donc avant que la langue soit
+/// connue, et les sept libellés seraient restés français pour tout le monde.
+///
+/// LIBELLÉS DISTINCTS DE CEUX DE LA LISTE, et ce n'est pas une duplication :
+/// la carte du catalogue n'a de place que pour le sigle (« OEM »), la fiche
+/// développe (« OEM — Constructeur d'origine »). Les deux chaînes étaient déjà
+/// différentes en français, d'où `catalogPartType*Long` ici et
+/// `catalogPartType*` dans `part_list_page.dart`.
+///
+/// Le repli rend le code brut du serveur, comme avant : une nature inconnue de
+/// cette table doit se voir.
+String _libelleType(AppLocalizations l10n, String type) => switch (type) {
+  'oem' => l10n.catalogPartTypeOemLong,
+  'oes' => l10n.catalogPartTypeOesLong,
+  'aftermarket' => l10n.catalogPartTypeAftermarketLong,
+  'salvage' => l10n.catalogPartTypeSalvageLong,
+  _ => type,
 };
 
-const _conditionLabels = {
-  'new':         'Neuf',
-  'refurbished': 'Reconditionné',
-  'used':        'Usagé',
-};
+/// L'état d'une pièce dans la langue active.
+///
+/// Trois états et non deux : « Reconditionné » est remis en état par un atelier
+/// et garanti, « Usagé » est vendu tel quel. C'est une colonne INDÉPENDANTE de
+/// la nature — une pièce de récupération peut être reconditionnée —, et c'est
+/// pourquoi « Usagé » et le « Occasion » de `catalogPartTypeSalvage` ne
+/// partagent pas de clé.
+String _libelleEtat(AppLocalizations l10n, String condition) =>
+    switch (condition) {
+      'new' => l10n.catalogPartConditionNew,
+      'refurbished' => l10n.catalogPartConditionRefurbished,
+      'used' => l10n.catalogPartConditionUsed,
+      _ => condition,
+    };
 
 class PartDetailPage extends ConsumerWidget {
   final int partId;
   final Part? initialPart;
 
-  const PartDetailPage({
-    super.key,
-    required this.partId,
-    this.initialPart,
-  });
+  const PartDetailPage({super.key, required this.partId, this.initialPart});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -61,8 +82,9 @@ class PartDetailPage extends ConsumerWidget {
       );
     }
 
-    final cs      = Theme.of(context).colorScheme;
-    final auth    = ref.watch(authProvider);
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final auth = ref.watch(authProvider);
     final isStaff = auth.isStaff;
     final inStock = part.stock.quantity > 0;
 
@@ -70,15 +92,17 @@ class PartDetailPage extends ConsumerWidget {
       final ok = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text('Supprimer cette pièce ?'),
-          content: Text('« ${part.name} » sera supprimée définitivement.'),
+          title: Text(l10n.catalogPartDeleteTitle),
+          content: Text(l10n.catalogPartDeleteBody(part.name)),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false),
-                child: const Text('Annuler')),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.commonCancel),
+            ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: cs.error),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Supprimer'),
+              child: Text(l10n.catalogDeleteAction),
             ),
           ],
         ),
@@ -99,11 +123,14 @@ class PartDetailPage extends ConsumerWidget {
         }
       }
     }
-    final inCart  = ref.watch(cartProvider.select(
-      (items) => items.any(
-        (i) => i.id == part.id && i.itemType == CartItemType.part,
+
+    final inCart = ref.watch(
+      cartProvider.select(
+        (items) => items.any(
+          (i) => i.id == part.id && i.itemType == CartItemType.part,
+        ),
       ),
-    ));
+    );
 
     return Scaffold(
       body: CustomScrollView(
@@ -148,7 +175,7 @@ class PartDetailPage extends ConsumerWidget {
               if (part.aUnePagePublique)
                 IconButton(
                   icon: const Icon(Icons.share_outlined),
-                  tooltip: 'Partager',
+                  tooltip: l10n.catalogShareTooltip,
                   // LE NOM ET L'ADRESSE, RIEN D'AUTRE. Le prix, la catégorie,
                   // l'état et la référence partaient encore dans le texte ; la
                   // page `/p/{id}` les porte dans ses balises Open Graph, et
@@ -177,13 +204,16 @@ class PartDetailPage extends ConsumerWidget {
               if (auth.canManageCatalog)
                 IconButton(
                   icon: const Icon(Icons.add_a_photo_outlined),
-                  tooltip: 'Photos',
+                  tooltip: l10n.catalogPhotosTooltip,
                   onPressed: () => context
-                      .push('/media-upload', extra: MediaUploadConfig(
-                        type:  MediaOwnerType.part,
-                        id:    part.id,
-                        title: part.name,
-                      ))
+                      .push(
+                        '/media-upload',
+                        extra: MediaUploadConfig(
+                          type: MediaOwnerType.part,
+                          id: part.id,
+                          title: part.name,
+                        ),
+                      )
                       .then((_) {
                         ref.invalidate(partDetailProvider(part.id));
                         ref.invalidate(partListProvider);
@@ -192,7 +222,7 @@ class PartDetailPage extends ConsumerWidget {
               if (auth.canManageCatalog)
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
-                  tooltip: 'Modifier',
+                  tooltip: l10n.catalogEditTooltip,
                   onPressed: () => context
                       .push('/parts/${part.id}/edit', extra: part)
                       .then((_) => ref.invalidate(partDetailProvider(part.id))),
@@ -200,7 +230,7 @@ class PartDetailPage extends ConsumerWidget {
               if (auth.canDeleteCatalog)
                 IconButton(
                   icon: Icon(Icons.delete_outline, color: cs.error),
-                  tooltip: 'Supprimer',
+                  tooltip: l10n.catalogDeleteAction,
                   onPressed: deletePart,
                 ),
               if (!isStaff) const CartIconButton(),
@@ -215,8 +245,11 @@ class PartDetailPage extends ConsumerWidget {
               // l'image entiere. Le titre descend maintenant sous la photo,
               // sur la surface de l'application, ou son contraste est garanti
               // quelle que soit l'image.
-              titlePadding:
-                  const EdgeInsetsDirectional.only(start: 16, end: 16, bottom: 10),
+              titlePadding: const EdgeInsetsDirectional.only(
+                start: 16,
+                end: 16,
+                bottom: 10,
+              ),
               title: Text(
                 part.name,
                 style: TextStyle(
@@ -260,9 +293,24 @@ class PartDetailPage extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-
                 // ── SKU + Badge type ──────────────────────────────────
-                Row(
+                // `Wrap` ET NON `Row`, ET C'EST UN DÉBORDEMENT MESURÉ. Les deux
+                // pastilles réclamaient chacune sa largeur naturelle, et rien
+                // ne les repliait : à 320 points et à l'échelle 1,5 la rangée
+                // dépassait de 12 points, à 411 et 2,0 de 4,1 —
+                //
+                //     A RenderFlex overflowed by 12 pixels on the right.
+                //
+                // EN FRANÇAIS COMME EN ANGLAIS : le SKU est une valeur du
+                // serveur et « OEM » un sigle identique dans les deux langues,
+                // donc le défaut est antérieur à la traduction. C'est le banc
+                // « Les écrans de la vague 2 » qui est neuf.
+                //
+                // `spacing: 8` reprend exactement l'écart que le `SizedBox`
+                // posait : l'apparence ne change pas quand les deux tiennent.
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
                   children: [
                     if (part.sku != null)
                       Chip(
@@ -272,10 +320,15 @@ class PartDetailPage extends ConsumerWidget {
                         ),
                         avatar: const Icon(Icons.tag, size: 16),
                       ),
-                    if (part.sku != null) const SizedBox(width: 8),
                     if (part.isOem)
                       Chip(
-                        label: const Text('OEM'),
+                        // Le SIGLE seul, et non le libellé développé que la
+                        // carte d'informations affiche plus bas : cette
+                        // pastille vit dans une rangée avec le SKU, et
+                        // « OEM — Constructeur d'origine » y occuperait toute
+                        // la largeur. D'où `catalogPartTypeOem` ici et
+                        // `catalogPartTypeOemLong` là.
+                        label: Text(l10n.catalogPartTypeOem),
                         backgroundColor: cs.primaryContainer,
                         labelStyle: TextStyle(color: cs.onPrimaryContainer),
                       ),
@@ -296,9 +349,12 @@ class PartDetailPage extends ConsumerWidget {
                 const SizedBox(height: 12),
 
                 // ── Description ───────────────────────────────────────
-                if (part.description != null && part.description!.isNotEmpty) ...[
-                  Text('Description',
-                      style: Theme.of(context).textTheme.titleSmall),
+                if (part.description != null &&
+                    part.description!.isNotEmpty) ...[
+                  Text(
+                    l10n.catalogSectionDescription,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     part.description!,
@@ -325,11 +381,11 @@ class PartDetailPage extends ConsumerWidget {
                 // énumère. Seul le bouton de modification reste au staff.
                 CompatibilitesDeclarees(
                   lignes: part.fitments,
-                  rienDeclare: 'Aucune compatibilité déclarée. La pièce ne '
-                      'remonte pas dans une recherche par véhicule.',
+                  rienDeclare: l10n.catalogPartNoFitments,
                   onModifier: isStaff
-                      ? () => GoRouter.of(context)
-                          .push('/parts/${part.id}/edit', extra: part)
+                      ? () => GoRouter.of(
+                          context,
+                        ).push('/parts/${part.id}/edit', extra: part)
                       : null,
                 ),
 
@@ -337,8 +393,7 @@ class PartDetailPage extends ConsumerWidget {
                 PartPartnersSection(partId: part.id),
 
                 // ── Chargement en arrière-plan ────────────────────────
-                if (partAsync.isLoading)
-                  const LinearProgressIndicator(),
+                if (partAsync.isLoading) const LinearProgressIndicator(),
                 const SizedBox(height: 80),
               ]),
             ),
@@ -347,41 +402,45 @@ class PartDetailPage extends ConsumerWidget {
       ),
 
       // ── Bouton Commander (clients uniquement) ─────────────────────
-      bottomNavigationBar: isStaff ? null : SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: FilledButton.icon(
-            onPressed: inStock
-                ? () {
-                    ref
-                        .read(cartProvider.notifier)
-                        .add(CartItem.fromPart(part));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${part.name} ajouté au panier'),
-                        behavior: SnackBarBehavior.floating,
-                        action: SnackBarAction(
-                          label: 'Voir',
-                          onPressed: () => context.push('/cart'),
-                        ),
-                      ),
-                    );
-                  }
-                : null,
-            icon: Icon(inCart
-                ? Icons.shopping_cart
-                : Icons.shopping_cart_outlined),
-            label: Text(
-              inStock
-                  ? (inCart ? 'Ajouter à nouveau' : 'Ajouter au panier')
-                  : 'Rupture de stock',
+      bottomNavigationBar: isStaff
+          ? null
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: FilledButton.icon(
+                  onPressed: inStock
+                      ? () {
+                          ref
+                              .read(cartProvider.notifier)
+                              .add(CartItem.fromPart(part));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(l10n.catalogAddedToCart(part.name)),
+                              behavior: SnackBarBehavior.floating,
+                              action: SnackBarAction(
+                                label: l10n.catalogSeeCart,
+                                onPressed: () => context.push('/cart'),
+                              ),
+                            ),
+                          );
+                        }
+                      : null,
+                  icon: Icon(
+                    inCart ? Icons.shopping_cart : Icons.shopping_cart_outlined,
+                  ),
+                  label: Text(
+                    inStock
+                        ? (inCart
+                              ? l10n.catalogAddToCartAgain
+                              : l10n.catalogAddToCart)
+                        : l10n.catalogOutOfStock,
+                  ),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(52),
+                  ),
+                ),
+              ),
             ),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -402,27 +461,51 @@ class _PriceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Prix', style: Theme.of(context).textTheme.titleSmall),
+            Text(
+              AppLocalizations.of(context).catalogSectionPrice,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
             const SizedBox(height: 12),
             // Les deux textes étaient posés bruts : chacun réclamait sa
             // largeur naturelle, et la ligne débordait dès qu'un prix à sept
             // chiffres rencontrait un petit écran ou des caractères grossis.
-            // Le prix reste entier — il passe à la ligne plutôt que d'être
-            // tronqué, un montant abrégé valant moins que pas de montant.
+            //
+            // « IL PASSE À LA LIGNE PLUTÔT QUE D'ÊTRE TRONQUÉ » DISAIT CE
+            // COMMENTAIRE, ET C'ÉTAIT FAUX. Un montant est UN SEUL segment
+            // insécable — U+202F entre les milliers, U+00A0 devant la devise —,
+            // donc le moteur n'a aucune césure légale et ne passe pas à la
+            // ligne : il coupe DANS le mot. Mesuré par le banc « Les écrans de
+            // la vague 2 » à 320 points et à l'échelle 2,0 : « 3 000 FCFA »
+            // réclame 139,7 points pour la largeur reçue, « 3,000 FCFA » 143,6
+            // en anglais, et le `Flexible` les repliait en « 3 000 FCF » puis
+            // « A ». C'est le défaut que `coupeDansLeMot` existe pour voir, et
+            // le seul que l'échelle 2,0 ne rachète pas : un nombre coupé est
+            // FAUX, pas incomplet.
+            //
+            // `BoxFit.scaleDown` réduit le corps jusqu'à ce que tous les
+            // chiffres tiennent, et ne fait rien quand ils tiennent déjà.
+            // Même arbitrage que la carte de prix d'un véhicule et que
+            // `_PrixAjuste` sur la carte du catalogue.
             Row(
               children: [
                 Expanded(
-                  child: Text('Prix de vente',
-                      style: Theme.of(context).textTheme.bodyMedium),
+                  child: Text(
+                    AppLocalizations.of(context).catalogFieldSalePrice,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Flexible(
-                  child: Text(
-                    formatXof(pricing.sellingPrice),
-                    textAlign: TextAlign.end,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: cs.primary,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      formatXof(pricing.sellingPrice),
+                      textAlign: TextAlign.end,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: cs.primary,
+                      ),
                     ),
                   ),
                 ),
@@ -444,25 +527,31 @@ class _StockCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final color = inStock
         ? (stock.isLow ? Colors.orange : Colors.green)
         : Colors.red;
     final label = inStock
         ? (stock.isLow
-            ? '${stock.quantity} en stock — stock faible'
-            : '${stock.quantity} en stock')
-        : 'Rupture de stock';
+              ? l10n.catalogStockQuantityLow(stock.quantity)
+              : l10n.catalogStockQuantity(stock.quantity))
+        : l10n.catalogOutOfStock;
 
     return Card(
       color: color.withValues(alpha: 0.1),
       child: ListTile(
         leading: Icon(
-          inStock ? (stock.isLow ? Icons.warning_amber : Icons.check_circle) : Icons.cancel,
+          inStock
+              ? (stock.isLow ? Icons.warning_amber : Icons.check_circle)
+              : Icons.cancel,
           color: color,
         ),
-        title: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+        title: Text(
+          label,
+          style: TextStyle(color: color, fontWeight: FontWeight.w600),
+        ),
         subtitle: stock.location != null
-            ? Text('Emplacement : ${stock.location}')
+            ? Text(l10n.catalogStockLocation(stock.location!))
             : null,
       ),
     );
@@ -477,8 +566,9 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typeLabel      = _typeLabels[part.type] ?? part.type;
-    final conditionLabel = _conditionLabels[part.condition] ?? part.condition;
+    final l10n = AppLocalizations.of(context);
+    final typeLabel = _libelleType(l10n, part.type);
+    final conditionLabel = _libelleEtat(l10n, part.condition);
 
     return Card(
       child: Padding(
@@ -486,14 +576,20 @@ class _InfoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Informations', style: Theme.of(context).textTheme.titleSmall),
+            Text(
+              l10n.catalogSectionInformation,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
             const SizedBox(height: 12),
-            _InfoRow('Type',       typeLabel),
-            _InfoRow('État',       conditionLabel),
+            _InfoRow(l10n.catalogFieldType, typeLabel),
+            _InfoRow(l10n.catalogFieldState, conditionLabel),
+            // Le NOM de la catégorie et celui du fabricant viennent du
+            // référentiel du serveur et restent en français jusqu'à la vague
+            // serveur : seuls leurs libellés sont traduits.
             if (part.categoryName != null)
-              _InfoRow('Catégorie',  part.categoryName!),
+              _InfoRow(l10n.catalogFieldCategory, part.categoryName!),
             if (part.manufacturer != null)
-              _InfoRow('Fabricant',  part.manufacturer!),
+              _InfoRow(l10n.catalogFieldManufacturer, part.manufacturer!),
             // garantie désactivée temporairement
             // if (part.warrantyMonths != null)
             //   _InfoRow('Garantie', '${part.warrantyMonths} mois'),
@@ -517,10 +613,12 @@ class _InfoRow extends StatelessWidget {
       children: [
         SizedBox(
           width: 100,
-          child: Text(label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
-              )),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.outline,
+            ),
+          ),
         ),
         Expanded(
           child: Text(value, style: Theme.of(context).textTheme.bodyMedium),
@@ -556,7 +654,7 @@ class _GarageCompatibilitySection extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Vos véhicules',
+              AppLocalizations.of(context).catalogGarageSectionTitle,
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 8),
@@ -596,41 +694,37 @@ class CompatibilityTile extends StatelessWidget {
     // et en V6 essence 1GR. Sans le code moteur du véhicule, la recherche les
     // renvoie tous les deux — et les annonçait tous les deux en vert. L'un des
     // deux ne se visse pas.
-    final (IconData icon, Color color, String label, String? detail) =
-        switch ((item.compatible, item.compatibilityReady)) {
+    final l10n = AppLocalizations.of(context);
+    final (IconData icon, Color color, String label, String? detail) = switch ((
+      item.compatible,
+      item.compatibilityReady,
+    )) {
       (true, true) => (
-          Icons.check_circle,
-          Colors.green,
-          'Compatible',
-          null,
-        ),
+        Icons.check_circle,
+        Colors.green,
+        l10n.catalogFitmentYes,
+        null,
+      ),
       (true, false) => (
-          Icons.help_outline,
-          Colors.amber.shade700,
-          'À confirmer',
-          'Compatible avec ce modèle, mais la motorisation de votre véhicule '
-              'n\'est pas renseignée. Complétez-la pour être sûr.',
-        ),
-      (false, true) => (
-          Icons.cancel,
-          Colors.red,
-          'Non compatible',
-          null,
-        ),
+        Icons.help_outline,
+        Colors.amber.shade700,
+        l10n.catalogFitmentUnsure,
+        l10n.catalogFitmentUnsureDetail,
+      ),
+      (false, true) => (Icons.cancel, Colors.red, l10n.catalogFitmentNo, null),
       (false, false) => (
-          Icons.help_outline,
-          Colors.amber.shade700,
-          'Non déterminé',
-          'Renseignez la motorisation de votre véhicule pour obtenir une '
-              'réponse.',
-        ),
+        Icons.help_outline,
+        Colors.amber.shade700,
+        l10n.catalogFitmentUnknown,
+        l10n.catalogFitmentUnknownDetail,
+      ),
     };
 
     return ListTile(
       dense: true,
       leading: Icon(icon, color: color, size: 22),
       title: Text(
-        '${item.displayName} (${item.year})',
+        l10n.catalogVehicleWithYear(item.displayName, item.year),
         style: Theme.of(context).textTheme.bodyMedium,
       ),
       subtitle: detail == null
@@ -638,8 +732,8 @@ class CompatibilityTile extends StatelessWidget {
           : Text(
               detail,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                color: Theme.of(context).colorScheme.outline,
+              ),
             ),
       isThreeLine: detail != null,
       trailing: Text(

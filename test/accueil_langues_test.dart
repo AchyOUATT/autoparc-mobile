@@ -1,14 +1,26 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:auto/core/theme/app_theme.dart';
 import 'package:auto/core/utils/currency_format.dart';
 import 'package:auto/core/widgets/navigation_bar_theme.dart';
 import 'package:auto/features/auth/data/auth_repository.dart';
 import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
 import 'package:auto/features/catalog/data/catalog_repository.dart';
+import 'package:auto/features/catalog/data/models/accessory.dart';
 import 'package:auto/features/catalog/data/models/part.dart';
 import 'package:auto/features/catalog/data/models/vehicle.dart';
+import 'package:auto/features/catalog/presentation/pages/accessory_detail_page.dart';
 import 'package:auto/features/catalog/presentation/pages/accessory_list_page.dart';
+import 'package:auto/features/catalog/presentation/pages/part_detail_page.dart';
 import 'package:auto/features/catalog/presentation/pages/part_list_page.dart';
+import 'package:auto/features/catalog/presentation/pages/vehicle_detail_page.dart';
 import 'package:auto/features/catalog/presentation/pages/vehicle_list_page.dart';
+import 'package:auto/features/auth/presentation/pages/login_page.dart';
+import 'package:auto/features/cart/data/models/cart_item.dart';
+import 'package:auto/features/cart/presentation/pages/cart_page.dart';
+import 'package:auto/features/cart/presentation/providers/cart_provider.dart';
+import 'package:auto/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:auto/features/garage/data/models/owned_vehicle.dart';
 import 'package:auto/features/garage/presentation/providers/garage_provider.dart';
 import 'package:auto/features/garage/presentation/widgets/engine_prompt.dart';
@@ -26,6 +38,7 @@ import 'support/echelles.dart';
 import 'support/langues.dart';
 import 'support/mesures.dart';
 import 'support/polices.dart';
+import 'support/troncature.dart';
 
 /// LES ÉCRANS TRADUITS PAR CE LOT NE TRONQUENT PAS EN ANGLAIS.
 ///
@@ -323,126 +336,11 @@ void main() {
     return tester.takeException();
   }
 
-  /// Tous les paragraphes peints sous [racine], chacun contrôlé sur les deux
-  /// troncatures : celle que le `TextPainter` déclare, et celle qu'il ne déclare
-  /// pas.
-  ///
-  /// ── LA RÈGLE, ET SON UNIQUE EXCEPTION ──────────────────────────────────────
-  ///
-  /// UNE CHAÎNE DE L'APPLICATION NE DOIT JAMAIS SE COUPER. C'est nous qui
-  /// l'écrivons, nous qui la traduisons, et sa longueur est donc notre
-  /// responsabilité : « Mettre à jour le kilométrage » tronqué en « Mettre à
-  /// jour le kilo… » est un défaut, pas un compromis.
-  ///
-  /// UNE VALEUR SANS BORNE, elle, a le droit de s'ellipser, et plusieurs le
-  /// font par construction (`maxLines: 1, overflow: ellipsis` écrit dans
-  /// `_SectionTitle`, `_VehicleCard`, `_PartTile`, `_DealTile`) : le surnom
-  /// qu'un propriétaire tape, un nom de modèle ou de pièce que le serveur
-  /// envoie. Aucune largeur d'écran ne peut les garantir, et les refuser
-  /// voudrait dire replier des cartes sur quatre lignes pour un nom de
-  /// fantaisie.
-  ///
-  /// [valeursSansBorne] porte donc ces valeurs, nommément, telles que la
-  /// fixture les pose. Un texte qui en CONTIENT une est exempté ; tous les
-  /// autres sont tenus à la règle. C'est volontairement une liste à tenir à
-  /// jour plutôt qu'un assouplissement général : le jour où une chaîne de
-  /// l'application se coupe, il faut qu'elle tombe, et non qu'elle glisse dans
-  /// une exception écrite pour quelqu'un d'autre.
-  /// ── ET CE QUE L'ÉCHELLE CHANGE ─────────────────────────────────────────────
-  ///
-  /// [echelle] décide de la SÉVÉRITÉ, pas de ce qui est mesuré : tout est
-  /// mesuré à toutes les échelles, et le relevé des défauts est IMPRIMÉ dans
-  /// tous les cas. Jusqu'à 1,5 un défaut fait tomber le test. À 2,0 il ne fait
-  /// plus tomber que s'il rend une information FAUSSE — voir [porteUnNombre] et
-  /// `support/echelles.dart` pour la raison de cette frontière-là.
-  void aucuneTroncature(
-    WidgetTester tester, {
-    required Finder racine,
-    required String ou,
-    required double echelle,
-    Set<String> valeursSansBorne = const {},
-  }) {
-    final paragraphes = tester
-        .renderObjectList<RenderParagraph>(
-          find.descendant(of: racine, matching: find.byType(RichText)),
-        )
-        .toList();
-
-    expect(
-      paragraphes,
-      isNotEmpty,
-      reason:
-          'Aucun paragraphe peint sous $ou : la page est restée sur son '
-          'indicateur de chargement, et ce test ne mesure rien.',
-    );
-
-    // Le relevé, construit pour TOUTES les échelles et imprimé dès qu'il n'est
-    // pas vide. C'est lui qui remplace l'assertion à 2,0 : on ne compte plus
-    // ces défauts comme des échecs, on continue de les voir.
-    final releve = <String>[];
-
-    for (final p in paragraphes) {
-      final texte = texteDe(p);
-      // Les valeurs sans borne sont écartées AVANT tout le reste, y compris
-      // avant la règle du chiffre : un nom de pièce qui porte une référence
-      // — « Filtre à huile moteur cartouche 04152-YZZA1 » — contient des
-      // chiffres sans être un nombre, et sa longueur n'est pas la nôtre.
-      if (valeursSansBorne.any(texte.contains)) continue;
-
-      final coupe = p.didExceedMaxLines;
-      final deborde = motLePlusLarge(p) > recue(p) + 0.01;
-      if (!coupe && !deborde) continue;
-
-      releve.add(
-        '«$texte» '
-        '${voulue(p).toStringAsFixed(1)} voulus / '
-        '${recue(p).toStringAsFixed(1)} reçus, '
-        'mot ${motLePlusLarge(p).toStringAsFixed(1)}'
-        '${coupe ? ", COUPÉ peint «${peint(p, recue(p))}»" : ""}'
-        '${deborde ? ", DÉBORDE sans ellipse" : ""}'
-        '${porteUnNombre(texte) ? ", PORTE UN CHIFFRE" : ""}',
-      );
-
-      // Un paragraphe qui porte un chiffre est tenu à la règle stricte À TOUTE
-      // ÉCHELLE : « 18 000 FC » se lit comme un prix entier, et comme un autre
-      // prix que celui du serveur. C'est le seul défaut que 2,0 ne rachète pas.
-      if (tenue(echelle) || porteUnNombre(texte)) {
-        expect(
-          coupe,
-          isFalse,
-          reason:
-              '$ou : « $texte » est COUPÉ — '
-              '${voulue(p).toStringAsFixed(1)} points voulus pour '
-              '${recue(p).toStringAsFixed(1)} reçus, et il n\'en reste peint '
-              'que « ${peint(p, recue(p))} ».'
-              '${tenue(echelle) ? "" : " Ce paragraphe porte un CHIFFRE : la "
-                  "règle de l’échelle 2,0 ne l’exempte pas, parce qu’un "
-                  "nombre coupé est FAUX et non seulement incomplet."}',
-        );
-
-        expect(
-          motLePlusLarge(p),
-          lessThanOrEqualTo(recue(p) + 0.01),
-          reason:
-              '$ou : un mot de « $texte » fait '
-              '${motLePlusLarge(p).toStringAsFixed(1)} points pour '
-              '${recue(p).toStringAsFixed(1)} reçus. Il sera rogné sans '
-              'ellipse, donc en silence : `didExceedMaxLines` ne voit pas ce '
-              'cas.',
-        );
-      }
-    }
-
-    if (releve.isNotEmpty) {
-      // ignore: avoid_print
-      print(
-        '@@RELEVÉ $ou — ${releve.length} paragraphe(s) en défaut sur '
-        '${paragraphes.length}'
-        '${tenue(echelle) ? " (ÉCHELLE ASSERTÉE : le test tombe)" : " (échelle 2,0 : dégradation acceptée, voir support/echelles.dart)"}'
-        '\n   ${releve.join('\n   ')}',
-      );
-    }
-  }
+  // L'assertion « rien ne se coupe » vivait ICI, locale à ce fichier. Elle
+  // est passée dans test/support/troncature.dart quand la vague 2 lui a
+  // donné un second appelant — `bandes_filtres_test.dart`, qui monte les
+  // trois listes du catalogue dans les deux langues. Le fichier déplacé
+  // porte la raison du déplacement ; rien de la fonction n'a changé.
 
   // ── L'accueil ─────────────────────────────────────────────────────────────
 
@@ -455,8 +353,9 @@ void main() {
 
     setUpAll(() async {
       for (final langue in langues.entries) {
-        titreVitrine[langue.key] =
-            (await chargerTextes(langue.value)).homeDealsSection;
+        titreVitrine[langue.key] = (await chargerTextes(
+          langue.value,
+        )).homeDealsSection;
       }
     });
     for (final ecran in ecrans.entries) {
@@ -1010,6 +909,331 @@ void main() {
       }
     }
   });
+
+  // ── LES ÉCRANS DE LA VAGUE 2 ──────────────────────────────────────────────
+
+  /// Les sept poses des six écrans que la vague 2 a traduits et qui portent
+  /// leur PROPRE coque.
+  ///
+  /// ── POURQUOI UNE SECONDE COQUE DANS CE FICHIER ──────────────────────────
+  ///
+  /// [poser], plus haut, monte une page DANS la coque de l'application : un
+  /// `Scaffold` qui lui prend ses 112 points de barre de navigation. C'est
+  /// juste pour l'accueil et pour les trois listes du catalogue, qui sont des
+  /// destinations d'onglet. Les écrans ci-dessous n'en sont pas : les trois
+  /// fiches, le panier, l'identification et la démonstration de première
+  /// utilisation s'ouvrent PAR-DESSUS la coque, portent leur propre `Scaffold`,
+  /// et trois d'entre eux ont leur propre barre du bas — la barre d'action
+  /// d'une fiche, le bouton de commande du panier. Les monter dans la coque des
+  /// onglets leur retirerait 112 points qu'ils ont en vrai, et ferait tomber
+  /// des cases que l'application ne produit pas.
+  ///
+  /// ── CE QUI EST MESURÉ, ET CE QUI EST ÉCARTÉ ─────────────────────────────
+  ///
+  /// Tous les paragraphes PEINTS de l'écran, par [aucuneTroncature], dans les
+  /// deux langues et aux douze configurations de l'accueil. Les valeurs qui
+  /// viennent du serveur ou de l'utilisateur sont écartées nommément : un nom de
+  /// pièce de 43 signes n'a aucune borne, et sa longueur n'est pas la nôtre.
+  ///
+  /// La démonstration ne monte QUE sa première diapositive : un `PageView` ne
+  /// construit pas celles qui sont hors champ. C'est aussi celle dont le corps
+  /// est le plus long des trois, dans les deux langues.
+  group('Les écrans de la vague 2', () {
+    /// La fiche du Tucson, telle que le serveur la rend : c'est la fixture de
+    /// la fiche de détail, donc un véhicule qui porte TOUT le bloc technique —
+    /// puissance, cylindrée, couple, consommation, couleur métallisée, import.
+    /// Une fiche pauvre ne mesurerait qu'un tiers des lignes traduites.
+    Vehicle tucson() => Vehicle.fromJson(
+      (jsonDecode(File('test/fixtures/vehicle_detail.json').readAsStringSync())
+              as Map<String, dynamic>)['data']
+          as Map<String, dynamic>,
+    );
+
+    /// Une pièce au nom long À DESSEIN : c'est lui qui pousse la barre de titre
+    /// et la confirmation d'ajout au panier. `refurbished` et un stock FAIBLE,
+    /// pour que « Reconditionné » et « 2 en stock — stock faible » soient
+    /// peints : ce sont les deux valeurs les plus larges de leurs lignes.
+    Part piece() => Part.fromJson({
+      'id': 1,
+      'name': 'Filtre à huile moteur cartouche 04152-YZZA1',
+      'sku': '04152-YZZA1',
+      'type': 'aftermarket',
+      'condition': 'refurbished',
+      'description':
+          'Cartouche de filtration à haut débit, compatible avec les '
+          'moteurs essence et diesel de la gamme.',
+      'category_name': 'Filtre à huile',
+      'manufacturer': 'Denso',
+      'pricing': {
+        'selling_price': 3000,
+        'currency': 'XOF',
+        'vat_rate': 0,
+        'price_including_vat': 3000,
+      },
+      'stock': {
+        'is_available': true,
+        'quantity': 2,
+        'alert_threshold': 5,
+        'is_low': true,
+        'storage_location': 'Allee B - etagere 3',
+      },
+      // DEUX LIGNES DE COMPATIBILITÉ, DONT UNE PROPOSÉE : sans elles, le bloc
+      // `CompatibilitesDeclarees` rend `SizedBox.shrink()` et la vague 2 n'y
+      // mesurerait rien. L'une porte une fourchette d'années et une position,
+      // donc les trois connecteurs traduits de `labelDans` ; `source:
+      // generated` fait apparaître l'avertissement « {n} sur {total} proposées
+      // automatiquement », la plus longue phrase du bloc.
+      'fitments': const [
+        {
+          'vehicle_model_id': 11,
+          'vehicle_model': 'Corolla',
+          'trim': 'XLE',
+          'year_from': 2015,
+          'year_to': 2020,
+          'position': 'Avant gauche',
+          'source': 'manual',
+        },
+        {
+          'vehicle_model_id': 12,
+          'vehicle_model': 'Hilux',
+          'year_from': 2012,
+          'source': 'generated',
+        },
+      ],
+    });
+
+    /// Un accessoire au stock faible, pour la même raison : c'est la pastille
+    /// « Stock bas » qui partage la ligne avec la quantité et l'emplacement.
+    Accessory accessoire() => Accessory.fromJson({
+      'id': 1,
+      'name': 'Tapis de sol caoutchouc toutes saisons',
+      'sku': 'TAP-4S-001',
+      // La catégorie est un OBJET {value, label} : c'est le serveur qui rend le
+      // libellé, et c'est lui que la fiche affiche. Les cinq libellés des
+      // PUCES de la liste, eux, sont écrits dans l'application et traduits —
+      // voir `_libelleCategorie` dans `accessory_list_page.dart`. Les deux ne
+      // sont donc pas la même chaîne, et le libellé reçu ici reste français.
+      'category': {'value': 'confort', 'label': 'Confort'},
+      'manufacturer': 'Novline',
+      'description': 'Jeu de quatre tapis moules, rebords hauts.',
+      'pricing': {
+        'selling_price': 18000,
+        'currency': 'XOF',
+        'vat_rate': 0,
+        'price_including_vat': 18000,
+      },
+      'stock': {
+        'is_available': true,
+        'quantity': 3,
+        'alert_threshold': 5,
+        'is_low': true,
+        'storage_location': 'Allee C - etagere 1',
+      },
+    });
+
+    /// Les valeurs que le SERVEUR ou l'UTILISATEUR écrit, et qui ont donc le
+    /// droit de s'ellipser. La règle et son unique exception sont écrites dans
+    /// `support/troncature.dart` : c'est volontairement une liste à tenir à
+    /// jour plutôt qu'un assouplissement général, pour que le jour où une
+    /// chaîne de l'APPLICATION se coupe, elle tombe.
+    const sansBorne = <String>{
+      'Filtre à huile moteur cartouche 04152-YZZA1',
+      'Tapis de sol caoutchouc toutes saisons',
+      'Hyundai Tucson',
+      'Allee B - etagere 3',
+      'Allee C - etagere 1',
+      // Les deux SKU, que le personnel saisit : la pastille du panier les rend
+      // en monospace, donc en un seul segment insecable que rien ne borne.
+      '04152-YZZA1',
+      'TAP-4S-001',
+      'Cartouche de filtration',
+      'Jeu de quatre tapis',
+      'Filtre à huile',
+      'Denso',
+      'Novline',
+      // Les lignes de la fiche dont la VALEUR arrive déjà rédigée du
+      // référentiel : motorisation, roues motrices, couleur, carburant.
+      'Électrique',
+      '4WD',
+      'Argent',
+      // Les deux lignes de compatibilité : le nom du modèle, la finition et la
+      // position viennent du référentiel et de la saisie du personnel. Seuls
+      // les CONNECTEURS de la ligne sont à nous, et ils sont trop courts pour
+      // décider d'une troncature à eux seuls.
+      'Corolla',
+      'Hilux',
+    };
+
+    /// Monte [page] SEULE, dans sa propre coque, à la taille, à l'échelle et
+    /// dans la langue demandées.
+    Future<Object?> poserEcran(
+      WidgetTester tester, {
+      required Widget page,
+      required Size ecran,
+      required double echelle,
+      required Locale locale,
+      List<Override> surcharges = const [],
+      AuthState session = const AuthState(type: AuthType.client),
+    }) async {
+      // Le format des montants est un réglage de module, posé par
+      // `AutoParcApp.build` dans l'application. Sans cette ligne, le panier et
+      // les trois fiches mesureraient des prix FRANÇAIS sous une interface
+      // anglaise — et le prix est la ligne la plus large de chacun d'eux.
+      definirLocaleMontants(locale);
+
+      tester.view.physicalSize = ecran;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.binding.setSurfaceSize(ecran);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          // Une clé neuve à chaque pose : sans elle, Flutter réutilise
+          // l'élément du `ProviderScope`, donc son conteneur, donc l'état déjà
+          // chargé des providers.
+          key: UniqueKey(),
+          overrides: [
+            authProvider.overrideWith((_) => _FauxAuth(session)),
+            catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
+            catalogRefsProvider.overrideWith(
+              (_) async => const CatalogRefs(
+                brands: [],
+                vehicleModels: [],
+                trims: [],
+                engineTypes: [],
+                drivetrains: [],
+                colors: [],
+                features: [],
+                locations: [],
+              ),
+            ),
+            ...surcharges,
+          ],
+          child: MaterialApp(
+            theme: themeAutoParc(Brightness.light),
+            locale: locale,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MediaQuery(
+              data: MediaQueryData(
+                size: ecran,
+                textScaler: TextScaler.linear(echelle),
+                padding: const EdgeInsets.only(top: 24, bottom: 48),
+                viewPadding: const EdgeInsets.only(top: 24, bottom: 48),
+              ),
+              child: page,
+            ),
+          ),
+        ),
+      );
+
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      return tester.takeException();
+    }
+
+    /// Les sept poses, avec la session et les surcharges que chacune demande.
+    ///
+    /// TOUTES MONTENT UN CLIENT, et c'est le rôle qui voit le plus de texte sur
+    /// ces écrans-là — l'inverse des barres de titre du catalogue, où c'est le
+    /// personnel. La fiche d'un véhicule ne porte sa barre d'action « Appeler /
+    /// WhatsApp » que pour un client ; les deux autres fiches ne portent leur
+    /// bouton « Ajouter au panier » que pour lui, et c'est le plus large de
+    /// leur écran.
+    final poses = <String, (Widget, List<Override>, AuthState)>{
+      'la fiche d\'un véhicule': (
+        VehicleDetailPage(vehicleId: 1, initialVehicle: tucson()),
+        const <Override>[],
+        const AuthState(type: AuthType.client),
+      ),
+      'la fiche d\'une pièce': (
+        PartDetailPage(partId: 1, initialPart: piece()),
+        const <Override>[],
+        const AuthState(type: AuthType.client),
+      ),
+      'la fiche d\'un accessoire': (
+        AccessoryDetailPage(accessoryId: 1, initialAccessory: accessoire()),
+        const <Override>[],
+        const AuthState(type: AuthType.client),
+      ),
+      'le panier': (
+        const CartPage(),
+        [
+          // Deux lignes, et la ligne de calcul « prix × quantité = total » est
+          // la plus large du panier. Elle porte TROIS nombres, donc la règle
+          // stricte s'y applique à toutes les échelles, 2,0 comprise.
+          cartProvider.overrideWith(
+            () => _FauxPanier([
+              CartItem.fromPart(piece()),
+              CartItem.fromAccessory(accessoire()),
+            ]),
+          ),
+        ],
+        const AuthState(type: AuthType.client),
+      ),
+      'le panier vide': (
+        const CartPage(),
+        [cartProvider.overrideWith(() => _FauxPanier(const []))],
+        const AuthState(type: AuthType.client),
+      ),
+      'l\'identification': (
+        const LoginPage(),
+        const <Override>[],
+        const AuthState(type: AuthType.none),
+      ),
+      'la démonstration': (
+        const OnboardingPage(),
+        const <Override>[],
+        const AuthState(type: AuthType.none),
+      ),
+    };
+
+    for (final pose in poses.entries) {
+      for (final format in ecrans.entries) {
+        for (final echelle in echelles) {
+          for (final langue in langues.entries) {
+            testWidgets(
+              '${pose.key} en ${format.key}, texte x$echelle, ${langue.key}',
+              (tester) async {
+                final exception = await poserEcran(
+                  tester,
+                  page: pose.value.$1,
+                  ecran: format.value,
+                  echelle: echelle,
+                  locale: langue.value,
+                  surcharges: pose.value.$2,
+                  session: pose.value.$3,
+                );
+
+                expect(
+                  exception,
+                  isNull,
+                  reason:
+                      '${pose.key} JETTE en ${format.key} à l\'échelle '
+                      '$echelle, en ${langue.key}. C\'est le point 2 des '
+                      'quatre non négociables de support/echelles.dart, et '
+                      'l\'échelle 2,0 ne le rachète pas : une bande rayée de '
+                      '`RenderFlex` cache ce qui est dessous.',
+                );
+
+                aucuneTroncature(
+                  tester,
+                  racine: find.byType(Scaffold).first,
+                  ou:
+                      '${pose.key} en ${format.key} à l\'échelle $echelle, '
+                      'en ${langue.key}',
+                  echelle: echelle,
+                  valeursSansBorne: sansBorne,
+                );
+              },
+            );
+          }
+        }
+      }
+    }
+  });
 }
 
 /// Le garage du Prado, sans réseau.
@@ -1076,4 +1300,21 @@ class _FauxAuth extends StateNotifier<AuthState> implements AuthNotifier {
 
   @override
   Object? noSuchMethod(Invocation invocation) => null;
+}
+
+/// Un panier figé.
+///
+/// `CartNotifier` construit un panier VIDE — `build() => const []` —, ce qui
+/// est juste dans l'application mais ne mesure rien ici : un panier vide ne
+/// porte ni ligne de calcul, ni récapitulatif, ni bouton de commande, et ce
+/// sont les trois blocs que la vague 2 a traduits. La pose « le panier vide »
+/// l'emploie aussi, avec une liste vide, parce que son écran a ses propres
+/// chaînes.
+class _FauxPanier extends CartNotifier {
+  _FauxPanier(this.articles);
+
+  final List<CartItem> articles;
+
+  @override
+  List<CartItem> build() => articles;
 }

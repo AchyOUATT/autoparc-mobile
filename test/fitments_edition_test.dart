@@ -15,6 +15,9 @@ import 'package:auto/features/catalog/presentation/providers/catalog_providers.d
 import 'package:auto/features/catalog/presentation/widgets/fitments_section.dart';
 import 'package:auto/features/vehicles/data/models/catalog_refs.dart';
 import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provider.dart';
+import 'package:auto/l10n/app_localizations.dart';
+
+import 'support/langues.dart';
 
 /// Déclarer les véhicules compatibles d'une pièce existante.
 ///
@@ -39,6 +42,18 @@ import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provi
 /// être relues, l'enregistrement est refusé plutôt que de partir avec une
 /// liste vide.
 void main() {
+  /// Les traductions FRANÇAISES, chargées une fois.
+  ///
+  /// `FitmentEntry.labelDans` les demande depuis la vague 2 : les connecteurs
+  /// de la ligne — le point médian, la fourchette d'années, « depuis »,
+  /// « jusqu'à » — viennent des `.arb`. Le français parce que c'est la langue
+  /// de tout ce fichier, et nommé plutôt que résolu : voir
+  /// test/support/langues.dart.
+  late AppLocalizations textesFr;
+  setUpAll(() async {
+    textesFr = await chargerTextes(localeFr);
+  });
+
   // ── Référentiel de test ────────────────────────────────────────
 
   const marque = BrandRef(id: 3, name: 'Toyota', isActive: true);
@@ -62,78 +77,84 @@ void main() {
     int modele = 11,
     String libelle = 'Toyota Corolla',
     String source = 'declared',
-  }) =>
-      {
-        'id': modele,
-        'vehicle_model_id': modele,
-        'vehicle_model': libelle,
-        'brand_id': 3,
-        'trim_id': 5,
-        'trim': 'Luxe',
-        'engine_type_id': 8,
-        'engine_type': '1.4 D-4D',
-        'drivetrain_id': 2,
-        'engine_code': '1ND-TV',
-        'year_from': 2010,
-        'year_to': 2014,
-        'position': 'avant gauche',
-        'notes': 'releve sur le vehicule du client',
-        'source': source,
-      };
+  }) => {
+    'id': modele,
+    'vehicle_model_id': modele,
+    'vehicle_model': libelle,
+    'brand_id': 3,
+    'trim_id': 5,
+    'trim': 'Luxe',
+    'engine_type_id': 8,
+    'engine_type': '1.4 D-4D',
+    'drivetrain_id': 2,
+    'engine_code': '1ND-TV',
+    'year_from': 2010,
+    'year_to': 2014,
+    'position': 'avant gauche',
+    'notes': 'releve sur le vehicule du client',
+    'source': source,
+  };
 
   Part piece({List<Map<String, dynamic>>? fitments}) => Part(
-        id: 42,
-        sku: 'ESSAI-1',
-        name: 'Filtre a huile',
-        type: 'aftermarket',
-        condition: 'new',
-        categoryId: 1,
-        pricing: const PartPricing(
-          sellingPrice: 5000,
-          currency: 'XOF',
-          vatRate: 18,
-          priceIncludingVat: 5900,
-        ),
-        stock: const PartStock(
-          isAvailable: true,
-          quantity: 4,
-          alertThreshold: 1,
-          isLow: false,
-        ),
-        isActive: true,
-        fitments: fitments,
-      );
+    id: 42,
+    sku: 'ESSAI-1',
+    name: 'Filtre a huile',
+    type: 'aftermarket',
+    condition: 'new',
+    categoryId: 1,
+    pricing: const PartPricing(
+      sellingPrice: 5000,
+      currency: 'XOF',
+      vatRate: 18,
+      priceIncludingVat: 5900,
+    ),
+    stock: const PartStock(
+      isAvailable: true,
+      quantity: 4,
+      alertThreshold: 1,
+      isLow: false,
+    ),
+    isActive: true,
+    fitments: fitments,
+  );
 
   // ── L'aller-retour ─────────────────────────────────────────────
 
   group('Aller-retour d\'une compatibilité', () {
-    test('toutes les colonnes écrites par l\'API reviennent dans le renvoi', () {
-      final renvoi = FitmentEntry.depuisJson(ligneApi(), refs: refs).toJson();
+    test(
+      'toutes les colonnes écrites par l\'API reviennent dans le renvoi',
+      () {
+        final renvoi = FitmentEntry.depuisJson(ligneApi(), refs: refs).toJson();
 
-      expect(renvoi, {
-        'vehicle_model_id': 11,
-        'trim_id': 5,
-        'engine_type_id': 8,
-        'drivetrain_id': 2,
-        'engine_code': '1ND-TV',
-        'year_from': 2010,
-        'year_to': 2014,
-        'position': 'avant gauche',
-        'notes': 'releve sur le vehicule du client',
-      });
-    });
+        expect(renvoi, {
+          'vehicle_model_id': 11,
+          'trim_id': 5,
+          'engine_type_id': 8,
+          'drivetrain_id': 2,
+          'engine_code': '1ND-TV',
+          'year_from': 2010,
+          'year_to': 2014,
+          'position': 'avant gauche',
+          'notes': 'releve sur le vehicule du client',
+        });
+      },
+    );
 
     test('l\'origine ne repart jamais : c\'est au serveur d\'en décider', () {
-      final renvoi =
-          FitmentEntry.depuisJson(ligneApi(source: 'generated'), refs: refs)
-              .toJson();
+      final renvoi = FitmentEntry.depuisJson(
+        ligneApi(source: 'generated'),
+        refs: refs,
+      ).toJson();
 
       expect(renvoi.containsKey('source'), isFalse);
     });
 
     test('une ligne proposée est reconnue comme telle', () {
       expect(
-        FitmentEntry.depuisJson(ligneApi(source: 'generated'), refs: refs).origin,
+        FitmentEntry.depuisJson(
+          ligneApi(source: 'generated'),
+          refs: refs,
+        ).origin,
         FitmentOrigin.proposee,
       );
       expect(
@@ -153,7 +174,11 @@ void main() {
 
       expect(entree.vehicleModelId, 999);
       expect(entree.toJson()['vehicle_model_id'], 999);
-      expect(entree.label, contains('Modele Y'));
+      // Le libellé demande les traductions depuis la vague 2 : ses connecteurs
+      // — le point médian, la fourchette d'années — viennent des `.arb`. Le NOM
+      // du modèle, lui, vient de l'API et ne change pas de langue, et c'est lui
+      // que ce test cherche.
+      expect(entree.labelDans(textesFr), contains('Modele Y'));
     });
 
     /// La distinction qui tient tout l'écran, éprouvée à la source.
@@ -163,30 +188,39 @@ void main() {
     /// dire « aucune ». Les confondre fait effacer.
     test('clé absente et liste vide ne se confondent pas', () {
       Map<String, dynamic> base() => {
-            'id': 1,
-            'name': 'P',
-            'type': 'aftermarket',
-            'condition': 'new',
-            'pricing': {
-              'selling_price': 1,
-              'currency': 'XOF',
-              'vat_rate': 0,
-              'price_including_vat': 1,
-            },
-            'stock': {
-              'is_available': true,
-              'quantity': 0,
-              'alert_threshold': 0,
-              'is_low': false,
-            },
-          };
+        'id': 1,
+        'name': 'P',
+        'type': 'aftermarket',
+        'condition': 'new',
+        'pricing': {
+          'selling_price': 1,
+          'currency': 'XOF',
+          'vat_rate': 0,
+          'price_including_vat': 1,
+        },
+        'stock': {
+          'is_available': true,
+          'quantity': 0,
+          'alert_threshold': 0,
+          'is_low': false,
+        },
+      };
 
-      expect(Part.fromJson(base()).fitments, isNull,
-          reason: 'Clé absente : la réponse ne le dit pas.');
-      expect(Part.fromJson({...base(), 'fitments': []}).fitments, isEmpty,
-          reason: 'Liste vide : la pièce n\'en déclare aucune.');
       expect(
-        Part.fromJson({...base(), 'fitments': [ligneApi()]}).fitments,
+        Part.fromJson(base()).fitments,
+        isNull,
+        reason: 'Clé absente : la réponse ne le dit pas.',
+      );
+      expect(
+        Part.fromJson({...base(), 'fitments': []}).fitments,
+        isEmpty,
+        reason: 'Liste vide : la pièce n\'en déclare aucune.',
+      );
+      expect(
+        Part.fromJson({
+          ...base(),
+          'fitments': [ligneApi()],
+        }).fitments,
         hasLength(1),
       );
     });
@@ -194,7 +228,7 @@ void main() {
     test('sans libellé ni référentiel, la ligne reste identifiable', () {
       final entree = FitmentEntry.depuisJson({'vehicle_model_id': 77});
 
-      expect(entree.label, contains('77'));
+      expect(entree.labelDans(textesFr), contains('77'));
       expect(entree.initiale, isNotEmpty);
       expect(entree.toJson(), {'vehicle_model_id': 77});
     });
@@ -203,52 +237,67 @@ void main() {
   // ── La section ─────────────────────────────────────────────────
 
   group('Section des compatibilités', () {
-    Widget hote(List<FitmentEntry> initiales,
-            {void Function(List<FitmentEntry>)? onChanged}) =>
-        MaterialApp(
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: FitmentsSection(
-                refs: refs,
-                showPosition: true,
-                initiales: initiales,
-                onChanged: onChanged ?? (_) {},
-              ),
-            ),
+    Widget hote(
+      List<FitmentEntry> initiales, {
+      void Function(List<FitmentEntry>)? onChanged,
+    }) => MaterialApp(
+      // Les délégués et la locale : la ligne de compatibilité lit les
+      // traductions depuis la vague 2 — ses connecteurs viennent des `.arb` —
+      // et `AppLocalizations.of` lève sur une coque qui ne les pose pas.
+      // `locale:` nommée même pour le français : voir test/support/langues.dart.
+      locale: localeFr,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: FitmentsSection(
+            refs: refs,
+            showPosition: true,
+            initiales: initiales,
+            onChanged: onChanged ?? (_) {},
           ),
-        );
+        ),
+      ),
+    );
 
-    testWidgets('elle affiche les compatibilités déjà enregistrées',
-        (tester) async {
-      await tester.pumpWidget(hote([
-        FitmentEntry.depuisJson(ligneApi(), refs: refs),
-      ]));
+    testWidgets('elle affiche les compatibilités déjà enregistrées', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        hote([FitmentEntry.depuisJson(ligneApi(), refs: refs)]),
+      );
 
       expect(find.textContaining('Toyota Corolla'), findsOneWidget);
       expect(find.text('Aucune compatibilité déclarée'), findsNothing);
     });
 
-    testWidgets('elle dit lesquelles n\'ont été vérifiées par personne',
-        (tester) async {
-      await tester.pumpWidget(hote([
-        FitmentEntry.depuisJson(ligneApi(source: 'generated'), refs: refs),
-      ]));
+    testWidgets('elle dit lesquelles n\'ont été vérifiées par personne', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        hote([
+          FitmentEntry.depuisJson(ligneApi(source: 'generated'), refs: refs),
+        ]),
+      );
 
-      expect(find.text('Proposée automatiquement, non vérifiée'), findsOneWidget);
+      expect(
+        find.text('Proposée automatiquement, non vérifiée'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('retirer une ligne ne retire que celle-là', (tester) async {
       var dernier = <FitmentEntry>[];
 
-      await tester.pumpWidget(hote(
-        [
+      await tester.pumpWidget(
+        hote([
           FitmentEntry.depuisJson(ligneApi(), refs: refs),
           FitmentEntry.depuisJson(
-              ligneApi(modele: 12, libelle: 'Toyota Hilux'),
-              refs: refs),
-        ],
-        onChanged: (l) => dernier = l,
-      ));
+            ligneApi(modele: 12, libelle: 'Toyota Hilux'),
+            refs: refs,
+          ),
+        ], onChanged: (l) => dernier = l),
+      );
 
       await tester.tap(find.byIcon(Icons.close).first);
       await tester.pump();
@@ -274,12 +323,18 @@ void main() {
 
   group('Écran de modification', () {
     Widget ecran(_FauxDepot depot, Part existante) => ProviderScope(
-          overrides: [
-            catalogRepositoryProvider.overrideWithValue(depot),
-            catalogRefsProvider.overrideWith((_) async => refs),
-          ],
-          child: MaterialApp(home: AddPartPage(existing: existante)),
-        );
+      overrides: [
+        catalogRepositoryProvider.overrideWithValue(depot),
+        catalogRefsProvider.overrideWith((_) async => refs),
+      ],
+      child: MaterialApp(
+        // Mêmes délégués et même locale explicite que la coque de la section.
+        locale: localeFr,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AddPartPage(existing: existante),
+      ),
+    );
 
     /// Le test central : le geste même qui détruisait.
     ///
@@ -287,8 +342,9 @@ void main() {
     /// formulaire, et l'envoi doit en contenir trois. Avant, la section
     /// démarrait vide : l'ajout remontait une liste d'un seul élément, et le
     /// `PUT` remplaçait les deux autres par celle-là.
-    testWidgets('ajouter une compatibilité conserve les existantes',
-        (tester) async {
+    testWidgets('ajouter une compatibilité conserve les existantes', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1000, 3000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -296,10 +352,12 @@ void main() {
       // Les deux existantes portent des modèles que l'ajout n'utilisera pas,
       // sans quoi la ligne ajoutée serait indistinguable d'une survivante.
       final depot = _FauxDepot(
-        complete: piece(fitments: [
-          ligneApi(),
-          ligneApi(modele: 999, libelle: 'Marque X Ancien'),
-        ]),
+        complete: piece(
+          fitments: [
+            ligneApi(),
+            ligneApi(modele: 999, libelle: 'Marque X Ancien'),
+          ],
+        ),
       );
 
       await tester.pumpWidget(ecran(depot, piece()));
@@ -328,8 +386,12 @@ void main() {
       final envoyees = depot.dernierEnvoi?['fitments'] as List?;
 
       expect(envoyees, isNotNull, reason: 'La clé doit toujours partir.');
-      expect(envoyees!.length, 3,
-          reason: 'Les deux compatibilités existantes doivent survivre à l\'ajout.');
+      expect(
+        envoyees!.length,
+        3,
+        reason:
+            'Les deux compatibilités existantes doivent survivre à l\'ajout.',
+      );
       expect(
         envoyees.map((f) => (f as Map)['vehicle_model_id']).toList(),
         [11, 999, 12],
@@ -338,62 +400,74 @@ void main() {
     });
 
     /// Relire et renvoyer sans rien toucher ne doit rien changer.
-    testWidgets('enregistrer sans toucher aux compatibilités les renvoie toutes',
-        (tester) async {
-      tester.view.physicalSize = const Size(1000, 3000);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+    testWidgets(
+      'enregistrer sans toucher aux compatibilités les renvoie toutes',
+      (tester) async {
+        tester.view.physicalSize = const Size(1000, 3000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
 
-      final depot = _FauxDepot(
-        complete: piece(fitments: [
-          ligneApi(),
-          ligneApi(modele: 12, libelle: 'Toyota Hilux'),
-        ]),
-      );
+        final depot = _FauxDepot(
+          complete: piece(
+            fitments: [
+              ligneApi(),
+              ligneApi(modele: 12, libelle: 'Toyota Hilux'),
+            ],
+          ),
+        );
 
-      // La pièce arrive de la liste, qui ne porte pas les compatibilités.
-      await tester.pumpWidget(ecran(depot, piece()));
-      await poser(tester);
+        // La pièce arrive de la liste, qui ne porte pas les compatibilités.
+        await tester.pumpWidget(ecran(depot, piece()));
+        await poser(tester);
 
-      expect(depot.pieceRelue, 42, reason: 'La fiche doit être relue.');
-      expect(find.textContaining('Toyota Corolla'), findsWidgets);
-      expect(find.textContaining('Toyota Hilux'), findsWidgets);
+        expect(depot.pieceRelue, 42, reason: 'La fiche doit être relue.');
+        expect(find.textContaining('Toyota Corolla'), findsWidgets);
+        expect(find.textContaining('Toyota Hilux'), findsWidgets);
 
-      await tester.tap(find.text('Enregistrer'));
-      await poser(tester);
+        await tester.tap(find.text('Enregistrer'));
+        await poser(tester);
 
-      final envoyees = depot.dernierEnvoi?['fitments'] as List?;
+        final envoyees = depot.dernierEnvoi?['fitments'] as List?;
 
-      expect(envoyees, isNotNull, reason: 'La clé doit partir.');
-      expect(envoyees!.length, 2,
-          reason: 'Les deux compatibilités existantes doivent repartir.');
-      expect(
-        envoyees.map((f) => (f as Map)['vehicle_model_id']).toList(),
-        [11, 12],
-      );
+        expect(envoyees, isNotNull, reason: 'La clé doit partir.');
+        expect(
+          envoyees!.length,
+          2,
+          reason: 'Les deux compatibilités existantes doivent repartir.',
+        );
+        expect(envoyees.map((f) => (f as Map)['vehicle_model_id']).toList(), [
+          11,
+          12,
+        ]);
 
-      // Et elles repartent entières, pas réduites à leur modèle.
-      expect((envoyees.first as Map)['trim_id'], 5);
-      expect((envoyees.first as Map)['engine_code'], '1ND-TV');
-      expect((envoyees.first as Map)['notes'], 'releve sur le vehicule du client');
-    });
+        // Et elles repartent entières, pas réduites à leur modèle.
+        expect((envoyees.first as Map)['trim_id'], 5);
+        expect((envoyees.first as Map)['engine_code'], '1ND-TV');
+        expect(
+          (envoyees.first as Map)['notes'],
+          'releve sur le vehicule du client',
+        );
+      },
+    );
 
-    testWidgets('une pièce sans compatibilité envoie une liste vide, pas rien',
-        (tester) async {
-      tester.view.physicalSize = const Size(1000, 3000);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+    testWidgets(
+      'une pièce sans compatibilité envoie une liste vide, pas rien',
+      (tester) async {
+        tester.view.physicalSize = const Size(1000, 3000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
 
-      final depot = _FauxDepot(complete: piece(fitments: const []));
+        final depot = _FauxDepot(complete: piece(fitments: const []));
 
-      await tester.pumpWidget(ecran(depot, piece()));
-      await poser(tester);
+        await tester.pumpWidget(ecran(depot, piece()));
+        await poser(tester);
 
-      await tester.tap(find.text('Enregistrer'));
-      await poser(tester);
+        await tester.tap(find.text('Enregistrer'));
+        await poser(tester);
 
-      expect(depot.dernierEnvoi?['fitments'], isEmpty);
-    });
+        expect(depot.dernierEnvoi?['fitments'], isEmpty);
+      },
+    );
 
     /// Le réseau flanche au mauvais moment.
     ///
@@ -401,37 +475,44 @@ void main() {
     /// l'enregistrement ferait de l'écran un cul-de-sac — plus moyen de
     /// corriger un prix. L'API ne touche aux compatibilités que si la clé est
     /// présente : on l'omet, et le reste part.
-    testWidgets('compatibilités illisibles : la clé est omise, le reste passe',
-        (tester) async {
-      tester.view.physicalSize = const Size(1000, 3000);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+    testWidgets(
+      'compatibilités illisibles : la clé est omise, le reste passe',
+      (tester) async {
+        tester.view.physicalSize = const Size(1000, 3000);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
 
-      final depot = _FauxDepot(echoueRelecture: true);
+        final depot = _FauxDepot(echoueRelecture: true);
 
-      await tester.pumpWidget(ecran(depot, piece()));
-      await poser(tester);
+        await tester.pumpWidget(ecran(depot, piece()));
+        await poser(tester);
 
-      expect(find.text('Compatibilités non relues'), findsOneWidget);
+        expect(find.text('Compatibilités non relues'), findsOneWidget);
 
-      await tester.tap(find.text('Enregistrer'));
-      await poser(tester);
+        await tester.tap(find.text('Enregistrer'));
+        await poser(tester);
 
-      expect(depot.dernierEnvoi, isNotNull,
-          reason: 'Le reste de la fiche doit rester enregistrable.');
-      expect(
-        depot.dernierEnvoi!.containsKey('fitments'),
-        isFalse,
-        reason: 'Sans la liste relue, la clé ne doit pas partir : '
-            'l\'API remplacerait tout par ce qu\'elle reçoit.',
-      );
-      expect(depot.dernierEnvoi!['name'], 'Filtre a huile');
-    });
+        expect(
+          depot.dernierEnvoi,
+          isNotNull,
+          reason: 'Le reste de la fiche doit rester enregistrable.',
+        );
+        expect(
+          depot.dernierEnvoi!.containsKey('fitments'),
+          isFalse,
+          reason:
+              'Sans la liste relue, la clé ne doit pas partir : '
+              'l\'API remplacerait tout par ce qu\'elle reçoit.',
+        );
+        expect(depot.dernierEnvoi!['name'], 'Filtre a huile');
+      },
+    );
 
     /// Tant que la relecture est en cours, l'écran ne doit pas annoncer un
     /// échec — ni laisser enregistrer une liste vide.
-    testWidgets('pendant la relecture, aucun échec n\'est annoncé',
-        (tester) async {
+    testWidgets('pendant la relecture, aucun échec n\'est annoncé', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(1000, 3000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -443,8 +524,11 @@ void main() {
       await poser(tester);
 
       expect(find.text('Compatibilités non relues'), findsNothing);
-      expect(find.byType(FitmentsSection), findsNothing,
-          reason: 'Une section vide inviterait à saisir en double.');
+      expect(
+        find.byType(FitmentsSection),
+        findsNothing,
+        reason: 'Une section vide inviterait à saisir en double.',
+      );
 
       attente.complete(piece(fitments: [ligneApi()]));
       await poser(tester);
@@ -473,7 +557,7 @@ void main() {
 /// Dépôt qui répond depuis un scénario en mémoire et retient ce qu'on envoie.
 class _FauxDepot extends CatalogRepository {
   _FauxDepot({this.complete, this.echoueRelecture = false, this.relecture})
-      : super(ApiClient(), CatalogLocalCache());
+    : super(ApiClient(), CatalogLocalCache());
 
   final Part? complete;
   final bool echoueRelecture;
@@ -499,10 +583,12 @@ class _FauxDepot extends CatalogRepository {
   }
 
   @override
-  Future<List<PartCategory>> getPartCategories() async =>
-      const [PartCategory(id: 1, name: 'Filtration')];
+  Future<List<PartCategory>> getPartCategories() async => const [
+    PartCategory(id: 1, name: 'Filtration'),
+  ];
 
   @override
-  Future<List<Manufacturer>> getManufacturers() async =>
-      const [Manufacturer(id: 1, name: 'Bosch')];
+  Future<List<Manufacturer>> getManufacturers() async => const [
+    Manufacturer(id: 1, name: 'Bosch'),
+  ];
 }

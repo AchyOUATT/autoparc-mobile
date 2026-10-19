@@ -10,6 +10,7 @@ import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/bande_filtres.dart';
 import '../../../../core/widgets/bouton_flottant_effacable.dart';
 import '../../../../core/widgets/catalog_image.dart';
+import '../../../../core/widgets/titre_barre.dart';
 import '../../../../core/api/api_exception.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../../features/cart/presentation/pages/cart_page.dart';
@@ -19,13 +20,39 @@ import '../../../../core/providers/shell_scaffold_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../widgets/ligne_compatibilite.dart';
 
+/// LE LIBELLÉ A QUITTÉ CE TABLEAU : une liste `const` est construite avant
+/// qu'aucun `BuildContext` n'existe, donc avant que la langue active soit
+/// connue — un libellé écrit ici serait resté français pour tout le monde.
+/// Le tableau garde l'ordre, la valeur envoyée au serveur et l'icône ;
+/// [_libelleCategorie] rend le texte.
 const _categories = [
-  (value: 'esthetique',  label: 'Esthétique',  icon: Icons.auto_awesome),
-  (value: 'confort',     label: 'Confort',      icon: Icons.airline_seat_recline_normal),
-  (value: 'securite',    label: 'Sécurité',     icon: Icons.shield),
-  (value: 'multimedia',  label: 'Multimédia',   icon: Icons.speaker),
-  (value: 'utilitaire',  label: 'Utilitaire',   icon: Icons.build),
+  (value: 'esthetique', icon: Icons.auto_awesome),
+  (value: 'confort', icon: Icons.airline_seat_recline_normal),
+  (value: 'securite', icon: Icons.shield),
+  (value: 'multimedia', icon: Icons.speaker),
+  (value: 'utilitaire', icon: Icons.build),
 ];
+
+/// Le libellé d'une des cinq catégories d'accessoires, dans la langue active.
+///
+/// CES CINQ-LÀ ENTRENT BIEN DANS LES `.arb`, et c'est ce qui les distingue des
+/// catégories de PIÈCES : l'API ne fournit pour les accessoires ni libellé ni
+/// icône — elle dit seulement lesquelles portent un article en vente —, donc
+/// les cinq noms sont écrits dans l'application et nous appartiennent. Les
+/// catégories de pièces, elles, arrivent nommées du référentiel du serveur et
+/// restent en français jusqu'à la vague serveur.
+///
+/// Le repli rend la valeur brute : une catégorie inconnue de ce tableau ne peut
+/// pas atteindre les puces, qui sont construites depuis le tableau lui-même.
+String _libelleCategorie(AppLocalizations l10n, String valeur) =>
+    switch (valeur) {
+      'esthetique' => l10n.catalogAccessoryCategoryStyling,
+      'confort' => l10n.catalogAccessoryCategoryComfort,
+      'securite' => l10n.catalogAccessoryCategorySafety,
+      'multimedia' => l10n.catalogAccessoryCategoryMultimedia,
+      'utilitaire' => l10n.catalogAccessoryCategoryUtility,
+      _ => valeur,
+    };
 
 class AccessoryListPage extends ConsumerStatefulWidget {
   const AccessoryListPage({super.key});
@@ -60,10 +87,11 @@ class _AccessoryListPageState extends ConsumerState<AccessoryListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final paged   = ref.watch(accessoryListProvider);
-    final filter  = ref.watch(accessoryFilterProvider);
-    final cities  = ref.watch(catalogRefsProvider).valueOrNull?.cities ?? const <String>[];
-    final auth    = ref.watch(authProvider);
+    final paged = ref.watch(accessoryListProvider);
+    final filter = ref.watch(accessoryFilterProvider);
+    final cities =
+        ref.watch(catalogRefsProvider).valueOrNull?.cities ?? const <String>[];
+    final auth = ref.watch(authProvider);
     final isStaff = auth.isStaff;
 
     return Scaffold(
@@ -78,7 +106,9 @@ class _AccessoryListPageState extends ConsumerState<AccessoryListPage> {
                   ref.read(accessoryListProvider.notifier).refresh();
                 },
                 icon: const Icon(Icons.add),
-                label: const Text('Nouvel accessoire'),
+                label: Text(
+                  AppLocalizations.of(context).catalogAccessoryAddCta,
+                ),
               ),
             )
           : null,
@@ -90,13 +120,13 @@ class _AccessoryListPageState extends ConsumerState<AccessoryListPage> {
               ref.read(shellScaffoldKeyProvider).currentState?.openDrawer(),
         ),
         titleSpacing: 0,
-        title: Text(AppLocalizations.of(context).commonAccessories),
+        title: TitreBarre(AppLocalizations.of(context).commonAccessories),
         actions: [
           const NotificationIconButton(),
           if (!isStaff) ...[
             IconButton(
               icon: const Icon(Icons.inbox_outlined),
-              tooltip: 'Exprimer un besoin',
+              tooltip: AppLocalizations.of(context).catalogNeedTooltip,
               onPressed: () => context.push('/needs/new?type=accessory'),
             ),
             const CartIconButton(),
@@ -112,7 +142,7 @@ class _AccessoryListPageState extends ConsumerState<AccessoryListPage> {
             child: SearchBar(
               constraints: const BoxConstraints(minHeight: 40, maxHeight: 40),
               controller: _searchCtrl,
-              hintText: 'Nom ou SKU…',
+              hintText: AppLocalizations.of(context).catalogAccessorySearchHint,
               leading: const Icon(Icons.search),
               trailing: [
                 if (_searchCtrl.text.isNotEmpty)
@@ -120,13 +150,14 @@ class _AccessoryListPageState extends ConsumerState<AccessoryListPage> {
                     icon: const Icon(Icons.clear),
                     onPressed: () {
                       _searchCtrl.clear();
-                      ref.read(accessoryFilterProvider.notifier)
-                          .state = filter.copyWith(clearSearch: true);
+                      ref.read(accessoryFilterProvider.notifier).state = filter
+                          .copyWith(clearSearch: true);
                     },
                   ),
               ],
-              onChanged: (q) => ref.read(accessoryFilterProvider.notifier)
-                  .state = filter.copyWith(search: q.isEmpty ? null : q),
+              onChanged: (q) =>
+                  ref.read(accessoryFilterProvider.notifier).state = filter
+                      .copyWith(search: q.isEmpty ? null : q),
             ),
           ),
         ),
@@ -189,8 +220,9 @@ class _FilterBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     void update(AccessoryFilter Function(AccessoryFilter) fn) {
-      ref.read(accessoryFilterProvider.notifier).state =
-          fn(ref.read(accessoryFilterProvider));
+      ref.read(accessoryFilterProvider.notifier).state = fn(
+        ref.read(accessoryFilterProvider),
+      );
     }
 
     // Les cinq catégories sont codées en dur ici, avec leur libellé et leur
@@ -227,45 +259,51 @@ class _FilterBar extends ConsumerWidget {
     // et les bords s'estompent — voir `BandeFiltres`.
     return BandeFiltres(
       children: [
-          // Chips de catégorie
-          ...categories.map((cat) {
-            final selected = filter.category == cat.value;
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                avatar: Icon(cat.icon, size: 16),
-                label: Text(cat.label),
-                selected: selected,
-                onSelected: (_) => update((f) => f.copyWith(
-                  category:      selected ? null : cat.value,
-                  clearCategory: selected,
-                )),
+        // Chips de catégorie
+        ...categories.map((cat) {
+          final selected = filter.category == cat.value;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              avatar: Icon(cat.icon, size: 16),
+              label: Text(
+                _libelleCategorie(AppLocalizations.of(context), cat.value),
               ),
-            );
-          }),
-          // Chips de ville
-          //
-          // Un blanc de 20 points au lieu du `VerticalDivider` d'avant, et pour
-          // une raison de mise en page, pas de goût : la bande ne fixe plus sa
-          // hauteur, elle la lit sur ses puces. Un `VerticalDivider` n'a alors
-          // plus aucune contrainte verticale à remplir et se réduit à rien —
-          // le séparateur aurait disparu en silence. Vingt points est l'écart
-          // qui sépare déjà les groupes sur la page des véhicules.
-          if (cities.isNotEmpty) const SizedBox(width: 20),
-          for (final city in cities)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                avatar: const Icon(Icons.location_on_outlined, size: 14),
-                label: Text(city),
-                selected: filter.city == city,
-                onSelected: (_) => update((f) => f.copyWith(
-                  city:          f.city == city ? null : city,
-                  clearCity:     f.city == city,
-                  clearLocation: f.city == city,
-                )),
+              selected: selected,
+              onSelected: (_) => update(
+                (f) => f.copyWith(
+                  category: selected ? null : cat.value,
+                  clearCategory: selected,
+                ),
               ),
             ),
+          );
+        }),
+        // Chips de ville
+        //
+        // Un blanc de 20 points au lieu du `VerticalDivider` d'avant, et pour
+        // une raison de mise en page, pas de goût : la bande ne fixe plus sa
+        // hauteur, elle la lit sur ses puces. Un `VerticalDivider` n'a alors
+        // plus aucune contrainte verticale à remplir et se réduit à rien —
+        // le séparateur aurait disparu en silence. Vingt points est l'écart
+        // qui sépare déjà les groupes sur la page des véhicules.
+        if (cities.isNotEmpty) const SizedBox(width: 20),
+        for (final city in cities)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              avatar: const Icon(Icons.location_on_outlined, size: 14),
+              label: Text(city),
+              selected: filter.city == city,
+              onSelected: (_) => update(
+                (f) => f.copyWith(
+                  city: f.city == city ? null : city,
+                  clearCity: f.city == city,
+                  clearLocation: f.city == city,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -280,11 +318,11 @@ const _imgHeight = 140.0;
 
 // Icônes par catégorie d'accessoire
 const _categoryIcons = <String, IconData>{
-  'esthetique':  Icons.auto_awesome,
-  'confort':     Icons.airline_seat_recline_normal,
-  'securite':    Icons.shield_outlined,
-  'multimedia':  Icons.speaker_outlined,
-  'utilitaire':  Icons.build_outlined,
+  'esthetique': Icons.auto_awesome,
+  'confort': Icons.airline_seat_recline_normal,
+  'securite': Icons.shield_outlined,
+  'multimedia': Icons.speaker_outlined,
+  'utilitaire': Icons.build_outlined,
 };
 
 class _AccessoryList extends StatelessWidget {
@@ -310,7 +348,7 @@ class _AccessoryList extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           sliver: SliverToBoxAdapter(
             child: Text(
-              '$total résultat${total > 1 ? 's' : ''}',
+              AppLocalizations.of(context).catalogResultCount(total),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -331,7 +369,7 @@ class _AccessoryList extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 20),
               child: Center(
                 child: Text(
-                  '— $total résultat${total > 1 ? 's' : ''} au total —',
+                  AppLocalizations.of(context).catalogResultTotal(total),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.outline,
                   ),
@@ -353,12 +391,14 @@ class _StaggeredAccessoryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final left  = <(Accessory, double)>[];
+    final left = <(Accessory, double)>[];
     final right = <(Accessory, double)>[];
     for (int i = 0; i < accessories.length; i++) {
       const h = _imgHeight;
-      if (i.isEven) left.add((accessories[i], h));
-      else          right.add((accessories[i], h));
+      if (i.isEven)
+        left.add((accessories[i], h));
+      else
+        right.add((accessories[i], h));
     }
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
@@ -366,13 +406,23 @@ class _StaggeredAccessoryGrid extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Column(children: left.map((e) =>
-                _AccessoryCard(accessory: e.$1, imageHeight: e.$2)).toList()),
+            child: Column(
+              children: left
+                  .map(
+                    (e) => _AccessoryCard(accessory: e.$1, imageHeight: e.$2),
+                  )
+                  .toList(),
+            ),
           ),
           const SizedBox(width: 6),
           Expanded(
-            child: Column(children: right.map((e) =>
-                _AccessoryCard(accessory: e.$1, imageHeight: e.$2)).toList()),
+            child: Column(
+              children: right
+                  .map(
+                    (e) => _AccessoryCard(accessory: e.$1, imageHeight: e.$2),
+                  )
+                  .toList(),
+            ),
           ),
         ],
       ),
@@ -396,7 +446,8 @@ class _AccessoryCardState extends ConsumerState<_AccessoryCard> {
     if (_toggling) return;
     setState(() => _toggling = true);
     try {
-      await ref.read(catalogRepositoryProvider)
+      await ref
+          .read(catalogRepositoryProvider)
           .toggleAccessoryAvailability(widget.accessory.id);
       ref.read(accessoryListProvider.notifier).refresh();
     } finally {
@@ -406,9 +457,9 @@ class _AccessoryCardState extends ConsumerState<_AccessoryCard> {
 
   @override
   Widget build(BuildContext context) {
-    final cs        = Theme.of(context).colorScheme;
-    final auth      = ref.watch(authProvider);
-    final isStaff   = auth.isStaff;
+    final cs = Theme.of(context).colorScheme;
+    final auth = ref.watch(authProvider);
+    final isStaff = auth.isStaff;
     final accessory = widget.accessory;
 
     return Card(
@@ -418,7 +469,8 @@ class _AccessoryCardState extends ConsumerState<_AccessoryCard> {
       shadowColor: cs.shadow.withValues(alpha: 0.12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: () => context.push('/accessories/${accessory.id}', extra: accessory),
+        onTap: () =>
+            context.push('/accessories/${accessory.id}', extra: accessory),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -431,8 +483,10 @@ class _AccessoryCardState extends ConsumerState<_AccessoryCard> {
                   child: accessory.coverUrl != null
                       ? CatalogImage(
                           url: accessory.coverUrl!,
-                          fallback:
-                              _AccessoryPlaceholder(accessory: accessory, cs: cs),
+                          fallback: _AccessoryPlaceholder(
+                            accessory: accessory,
+                            cs: cs,
+                          ),
                         )
                       : _AccessoryPlaceholder(accessory: accessory, cs: cs),
                 ),
@@ -440,14 +494,19 @@ class _AccessoryCardState extends ConsumerState<_AccessoryCard> {
                 // le stock (direction et magasin), pas a tout le personnel.
                 if (auth.canManageStock)
                   Positioned(
-                    top: 6, right: 6,
+                    top: 6,
+                    right: 6,
                     child: _toggling
-                        ? const SizedBox(width: 18, height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : GestureDetector(
                             onTap: _toggle,
                             child: _SmallAvailabilityBadge(
-                                isAvailable: accessory.stock.isAvailable),
+                              isAvailable: accessory.stock.isAvailable,
+                            ),
                           ),
                   ),
               ],
@@ -468,10 +527,11 @@ class _AccessoryCardState extends ConsumerState<_AccessoryCard> {
                   // labelSmall, sans surcharge de graisse. Seule la couleur
                   // change : onSurface et non outline, le nom etant le contenu
                   // principal de la carte.
-                  Text(accessory.name,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: cs.onSurface,
-                    ),
+                  Text(
+                    accessory.name,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: cs.onSurface),
                   ),
                   // LES MODÈLES AUXQUELS L'ACCESSOIRE SE DESTINE, à la même
                   // place et avec le même widget que sur la carte des pièces.
@@ -490,7 +550,9 @@ class _AccessoryCardState extends ConsumerState<_AccessoryCard> {
                   ),
                   if (!isStaff) ...[
                     const SizedBox(height: 4),
-                    _AvailabilityBadge(isAvailable: accessory.stock.isAvailable),
+                    _AvailabilityBadge(
+                      isAvailable: accessory.stock.isAvailable,
+                    ),
                   ],
                 ],
               ),
@@ -510,7 +572,8 @@ class _AccessoryPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = _categoryIcons[accessory.categoryValue] ?? Icons.inventory_2_outlined;
+    final icon =
+        _categoryIcons[accessory.categoryValue] ?? Icons.inventory_2_outlined;
     return Container(
       // `tertiary` est le lavande que Material derive du seed bleu ardoise :
       // il n'appartient pas a la gamme de la marque. On reste sur les surfaces
@@ -519,10 +582,7 @@ class _AccessoryPlaceholder extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            cs.surfaceContainerHighest,
-            cs.surfaceContainerHigh,
-          ],
+          colors: [cs.surfaceContainerHighest, cs.surfaceContainerHigh],
         ),
       ),
       child: Center(
@@ -553,7 +613,11 @@ class _SmallAvailabilityBadge extends StatelessWidget {
     ),
     child: Text(
       isAvailable ? '✓' : '✗',
-      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 10,
+        fontWeight: FontWeight.bold,
+      ),
     ),
   );
 }
@@ -573,13 +637,13 @@ class _AvailabilityBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: isAvailable
-            ? Colors.green.withOpacity(0.12)
-            : cs.surfaceVariant,
+        color: isAvailable ? Colors.green.withOpacity(0.12) : cs.surfaceVariant,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        isAvailable ? 'Disponible' : 'Indisponible',
+        isAvailable
+            ? AppLocalizations.of(context).catalogStockIn
+            : AppLocalizations.of(context).catalogStockOut,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
           color: isAvailable ? Colors.green.shade700 : cs.onSurfaceVariant,
           fontWeight: FontWeight.w600,
@@ -597,51 +661,72 @@ class _EmptyView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs     = Theme.of(context).colorScheme;
-    final f      = ref.watch(accessoryFilterProvider);
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final f = ref.watch(accessoryFilterProvider);
     final actifs = <String>[
-      if (f.search?.isNotEmpty == true) '« ${f.search} »',
-      if (f.category != null)           'une catégorie',
-      if (f.priceMax != null)           'prix maximum',
-      if (f.city != null)               f.city!,
+      if (f.search?.isNotEmpty == true) l10n.catalogFilterTermQuery(f.search!),
+      if (f.category != null) l10n.catalogFilterTermCategory,
+      if (f.priceMax != null) l10n.catalogFilterTermPriceMax,
+      // Le nom de la ville vient du référentiel du serveur et reste en
+      // français jusqu'à la vague serveur : pas de clé.
+      if (f.city != null) f.city!,
     ];
 
-    return Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.inventory_2_outlined, size: 56, color: cs.outline),
-        const SizedBox(height: 14),
-        Text('Aucun accessoire trouvé',
-            style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Text(
-            actifs.isEmpty
-                ? 'Le catalogue ne contient aucun accessoire pour le moment.'
-                : 'Filtres actifs : ${actifs.join(', ')}.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium
-                ?.copyWith(color: cs.onSurfaceVariant),
+    // Il défile, pour la raison mesurée et écrite dans `_EmptyView` de
+    // `vehicle_list_page.dart` : un `Center` autour d'une `Column` dépassait de
+    // 166 points à 320 × 2,0, en français et sans aucun filtre posé, et son
+    // dernier lien était hors d'atteinte. Le `ConstrainedBox` garde le contenu
+    // centré tant qu'il tient.
+    return LayoutBuilder(
+      builder: (context, contraintes) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: contraintes.maxHeight),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.inventory_2_outlined, size: 56, color: cs.outline),
+                const SizedBox(height: 14),
+                Text(
+                  l10n.catalogAccessoryNoneFound,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: Text(
+                    actifs.isEmpty
+                        ? l10n.catalogAccessoryCatalogEmpty
+                        : l10n.catalogActiveFilters(
+                            actifs.join(l10n.catalogFilterListSeparator),
+                          ),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                if (actifs.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  FilledButton.tonalIcon(
+                    onPressed: () =>
+                        ref.read(accessoryFilterProvider.notifier).state =
+                            const AccessoryFilter(),
+                    icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
+                    label: Text(l10n.catalogClearFilters),
+                  ),
+                ],
+                TextButton.icon(
+                  onPressed: () => context.push('/needs/new?type=accessory'),
+                  icon: const Icon(Icons.inbox_outlined, size: 18),
+                  label: Text(l10n.catalogNeedCta),
+                ),
+              ],
+            ),
           ),
         ),
-        if (actifs.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          FilledButton.tonalIcon(
-            onPressed: () =>
-                ref.read(accessoryFilterProvider.notifier).state = const AccessoryFilter(),
-            icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
-            label: const Text('Tout effacer'),
-          ),
-        ],
-        TextButton.icon(
-          onPressed: () => context.push('/needs/new?type=accessory'),
-          icon: const Icon(Icons.inbox_outlined, size: 18),
-          label: const Text('Dites-nous ce que vous cherchez'),
-        ),
-      ],
-    ),
+      ),
     );
   }
 }
@@ -660,7 +745,10 @@ class _ErrorView extends StatelessWidget {
         const SizedBox(height: 12),
         Text(error, textAlign: TextAlign.center),
         const SizedBox(height: 16),
-        FilledButton(onPressed: onRetry, child: const Text('Réessayer')),
+        FilledButton(
+          onPressed: onRetry,
+          child: Text(AppLocalizations.of(context).commonRetry),
+        ),
       ],
     ),
   );

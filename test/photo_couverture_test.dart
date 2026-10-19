@@ -11,7 +11,10 @@ import 'package:auto/features/catalog/data/models/accessory.dart';
 import 'package:auto/features/catalog/data/models/part.dart';
 import 'package:auto/features/catalog/data/models/vehicle.dart';
 import 'package:auto/features/catalog/presentation/pages/vehicle_list_page.dart';
+import 'package:auto/l10n/app_localizations.dart';
 import 'package:auto/shared/models/paginated_response.dart';
+
+import 'support/langues.dart';
 
 /// La photo de couverture arrive-t-elle bien en tête, sur les TROIS modèles ?
 ///
@@ -331,8 +334,16 @@ void main() {
       // son contenu, et un `SizedBox` à hauteur fixe ferait déborder une carte
       // qui, dans la vraie liste, se contente d'être plus haute. Seule la
       // largeur est contrainte — 188,5 points, la carte d'un écran de 411.
+      // Les délégués et la locale : depuis la vague 2, la carte lit
+      // `AppLocalizations.of(context)` pour son badge d'offre, et cette
+      // méthode lève sur une coque qui ne les pose pas. `locale:` est
+      // explicite pour la raison écrite dans test/support/langues.dart — un
+      // banc sans elle résout l'anglais.
       await tester.pumpWidget(ProviderScope(
         child: MaterialApp(
+          locale: localeFr,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: SingleChildScrollView(
               child: Center(

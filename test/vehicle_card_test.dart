@@ -4,12 +4,14 @@ import 'dart:math' as math;
 
 import 'package:auto/features/catalog/data/models/vehicle.dart';
 import 'package:auto/features/catalog/presentation/pages/vehicle_list_page.dart';
+import 'package:auto/l10n/app_localizations.dart';
 import 'package:auto/shared/models/paginated_response.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/echelles.dart';
+import 'support/langues.dart';
 
 /// Tenue des fiches du catalogue, à la largeur près.
 ///
@@ -64,6 +66,23 @@ void main() {
   }) =>
       ProviderScope(
         child: MaterialApp(
+          // LES DÉLÉGUÉS ET LA LOCALE, depuis la vague 2 de traduction. La
+          // carte lit désormais `AppLocalizations.of(context)` pour son badge
+          // d'offre, son compteur de photos et « Prix non communiqué », et
+          // cette méthode LÈVE sur une coque qui ne pose pas les délégués :
+          // « Null check operator used on a null value ». Les vingt-sept tests
+          // de ce fichier sont tombés d'un coup là-dessus.
+          //
+          // `locale: localeFr` EXPLICITEMENT, et c'est la règle de
+          // test/support/langues.dart : sans elle, un banc résout
+          // `[en_US]` contre une liste de locales qui commence par `en`, donc
+          // mesure l'ANGLAIS tout en assertant du français. Ce fichier compare
+          // des textes VOULUS — c'est sa prémisse —, il tomberait donc
+          // bruyamment ; mais ses voisins qui ne comparent que des largeurs
+          // resteraient verts sur la mauvaise langue.
+          locale: localeFr,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: MediaQuery(
             data: MediaQueryData(textScaler: TextScaler.linear(echelleTexte)),
             child: Scaffold(
@@ -477,6 +496,12 @@ void main() {
           ]) {
             await tester.pumpWidget(ProviderScope(
               child: MaterialApp(
+                // Mêmes délégués et même locale explicite que dans `carte` :
+                // la raison y est écrite une fois.
+                locale: localeFr,
+                localizationsDelegates:
+                    AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 home: MediaQuery(
                   data: MediaQueryData(
                     textScaler: TextScaler.linear(echelle),

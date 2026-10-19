@@ -3,6 +3,7 @@ import '../../../../core/api/api_exception.dart';
 import 'package:flutter/services.dart';
 
 import '../../../vehicles/data/models/catalog_refs.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// D'où vient une ligne de compatibilité.
 ///
@@ -17,7 +18,8 @@ enum FitmentOrigin {
   static FitmentOrigin depuisApi(String? valeur) =>
       valeur == 'generated' ? FitmentOrigin.proposee : FitmentOrigin.declaree;
 
-  String get libelle => this == FitmentOrigin.proposee ? 'Proposée' : 'Déclarée';
+  String get libelle =>
+      this == FitmentOrigin.proposee ? 'Proposée' : 'Déclarée';
 }
 
 /// Un fitment = compatibilité déclarée entre une pièce/accessoire et un modèle.
@@ -34,17 +36,17 @@ enum FitmentOrigin {
 /// catalogue, par exemple — garde ainsi son identifiant et survit à
 /// l'aller-retour, même si son nom ne peut plus être affiché.
 class FitmentEntry {
-  final int     vehicleModelId;
-  final int?    brandId;
-  final String  brandName;
-  final String  modelName;
-  final int?    trimId;
+  final int vehicleModelId;
+  final int? brandId;
+  final String brandName;
+  final String modelName;
+  final int? trimId;
   final String? trimName;
-  final int?    engineTypeId;
-  final int?    drivetrainId;
+  final int? engineTypeId;
+  final int? drivetrainId;
   final String? engineCode;
-  final int?    yearFrom;
-  final int?    yearTo;
+  final int? yearFrom;
+  final int? yearTo;
   final String? position; // pour les pièces uniquement
   final String? notes;
   final FitmentOrigin origin;
@@ -74,18 +76,17 @@ class FitmentEntry {
     int? yearFrom,
     int? yearTo,
     String? position,
-  }) =>
-      FitmentEntry(
-        vehicleModelId: model.id,
-        brandId:        brand.id,
-        brandName:      brand.name,
-        modelName:      model.displayName,
-        trimId:         trim?.id,
-        trimName:       trim?.name,
-        yearFrom:       yearFrom,
-        yearTo:         yearTo,
-        position:       position,
-      );
+  }) => FitmentEntry(
+    vehicleModelId: model.id,
+    brandId: brand.id,
+    brandName: brand.name,
+    modelName: model.displayName,
+    trimId: trim?.id,
+    trimName: trim?.name,
+    yearFrom: yearFrom,
+    yearTo: yearTo,
+    position: position,
+  );
 
   /// Une ligne relue depuis l'API.
   ///
@@ -108,39 +109,60 @@ class FitmentEntry {
 
     return FitmentEntry(
       vehicleModelId: modelId,
-      brandId:        brandId ?? modele?.brandId,
-      brandName:      marque?.name ?? '',
-      modelName:      modele?.displayName
-          ?? json['vehicle_model'] as String?
-          ?? 'Modèle n° $modelId',
-      trimId:         json['trim_id'] as int?,
-      trimName:       json['trim'] as String?,
-      engineTypeId:   json['engine_type_id'] as int?,
-      drivetrainId:   json['drivetrain_id'] as int?,
-      engineCode:     json['engine_code'] as String?,
-      yearFrom:       json['year_from'] as int?,
-      yearTo:         json['year_to'] as int?,
-      position:       json['position'] as String?,
-      notes:          json['notes'] as String?,
-      origin:         FitmentOrigin.depuisApi(json['source'] as String?),
+      brandId: brandId ?? modele?.brandId,
+      brandName: marque?.name ?? '',
+      modelName:
+          modele?.displayName ??
+          json['vehicle_model'] as String? ??
+          'Modèle n° $modelId',
+      trimId: json['trim_id'] as int?,
+      trimName: json['trim'] as String?,
+      engineTypeId: json['engine_type_id'] as int?,
+      drivetrainId: json['drivetrain_id'] as int?,
+      engineCode: json['engine_code'] as String?,
+      yearFrom: json['year_from'] as int?,
+      yearTo: json['year_to'] as int?,
+      position: json['position'] as String?,
+      notes: json['notes'] as String?,
+      origin: FitmentOrigin.depuisApi(json['source'] as String?),
     );
   }
 
-  /// Libellé affiché dans la liste.
-  String get label {
+  /// Libellé affiché dans la liste, dans la langue active.
+  ///
+  /// ── POURQUOI UN PARAMÈTRE PLUTÔT QU'UN GETTER ──────────────────────────
+  ///
+  /// C'était `String get label`, et les quatre connecteurs — le point médian,
+  /// la fourchette d'années, « depuis », « jusqu'à » — y étaient écrits en
+  /// dur. Ce libellé s'affiche dans DEUX blocs : l'éditeur du personnel, que
+  /// la vague 2 ne traduit pas, et [CompatibilitesDeclarees], qui est sur la
+  /// fiche d'une pièce et d'un accessoire, donc CLIENT. Un getter sans
+  /// `BuildContext` ne pouvait pas suivre la langue.
+  ///
+  /// Les deux appelants passent leur `AppLocalizations` : l'éditeur n'est pas
+  /// traduit pour autant, mais ses lignes de compatibilité le sont, et c'est
+  /// préférable à DEUX libellés qui divergeraient en silence — le défaut que
+  /// `libelles_vehicule.dart` raconte pour les carrosseries.
+  ///
+  /// Le NOM DE LA MARQUE, celui du MODÈLE, la FINITION et la POSITION viennent
+  /// du référentiel du serveur ou de la saisie du personnel : ils restent tels
+  /// quels. Seuls les connecteurs sont à nous.
+  String labelDans(AppLocalizations l10n) {
     final buf = StringBuffer(
       brandName.isEmpty ? modelName : '$brandName $modelName',
     );
-    if (trimName != null) buf.write(' · $trimName');
+    if (trimName != null) {
+      buf.write('${l10n.catalogFitmentSeparator}$trimName');
+    }
     if (yearFrom != null && yearTo != null) {
-      buf.write(' ($yearFrom – $yearTo)');
+      buf.write(l10n.catalogFitmentYearRange(yearFrom!, yearTo!));
     } else if (yearFrom != null) {
-      buf.write(' (depuis $yearFrom)');
+      buf.write(l10n.catalogFitmentYearFrom(yearFrom!));
     } else if (yearTo != null) {
-      buf.write(' (jusqu\'à $yearTo)');
+      buf.write(l10n.catalogFitmentYearTo(yearTo!));
     }
     if (position != null && position!.isNotEmpty) {
-      buf.write(' · ${position!}');
+      buf.write('${l10n.catalogFitmentSeparator}${position!}');
     }
     return buf.toString();
   }
@@ -159,14 +181,14 @@ class FitmentEntry {
   /// une saisie pour une proposition.
   Map<String, dynamic> toJson() => {
     'vehicle_model_id': vehicleModelId,
-    if (trimId       != null) 'trim_id':        trimId,
+    if (trimId != null) 'trim_id': trimId,
     if (engineTypeId != null) 'engine_type_id': engineTypeId,
-    if (drivetrainId != null) 'drivetrain_id':  drivetrainId,
-    if (engineCode   != null && engineCode!.isNotEmpty) 'engine_code': engineCode,
-    if (yearFrom     != null) 'year_from':      yearFrom,
-    if (yearTo       != null) 'year_to':        yearTo,
-    if (position     != null && position!.isNotEmpty) 'position': position,
-    if (notes        != null && notes!.isNotEmpty)    'notes':    notes,
+    if (drivetrainId != null) 'drivetrain_id': drivetrainId,
+    if (engineCode != null && engineCode!.isNotEmpty) 'engine_code': engineCode,
+    if (yearFrom != null) 'year_from': yearFrom,
+    if (yearTo != null) 'year_to': yearTo,
+    if (position != null && position!.isNotEmpty) 'position': position,
+    if (notes != null && notes!.isNotEmpty) 'notes': notes,
   };
 }
 
@@ -219,10 +241,8 @@ class _FitmentsSectionState extends State<FitmentsSection> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => _FitmentSheet(
-        refs: widget.refs,
-        showPosition: widget.showPosition,
-      ),
+      builder: (_) =>
+          _FitmentSheet(refs: widget.refs, showPosition: widget.showPosition),
     );
     if (entry != null) _add(entry);
   }
@@ -245,8 +265,11 @@ class _FitmentsSectionState extends State<FitmentsSection> {
             ),
             child: Column(
               children: [
-                Icon(Icons.directions_car_outlined,
-                    size: 32, color: cs.outline),
+                Icon(
+                  Icons.directions_car_outlined,
+                  size: 32,
+                  color: cs.outline,
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'Aucune compatibilité déclarée',
@@ -255,8 +278,9 @@ class _FitmentsSectionState extends State<FitmentsSection> {
                 const SizedBox(height: 4),
                 Text(
                   'La pièce sera trouvable uniquement par SKU.',
-                  style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: cs.outline),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: cs.outline),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -286,15 +310,19 @@ class _FitmentsSectionState extends State<FitmentsSection> {
                       ),
                     ),
                   ),
-                  title: Text(e.label, style: const TextStyle(fontSize: 13)),
+                  title: Text(
+                    e.labelDans(AppLocalizations.of(context)),
+                    style: const TextStyle(fontSize: 13),
+                  ),
                   // Une ligne proposée n'a été vérifiée par personne : elle
                   // vient du remplissage automatique du catalogue. La garder
                   // en enregistrant, c'est en répondre.
                   subtitle: e.origin == FitmentOrigin.proposee
                       ? Text(
                           'Proposée automatiquement, non vérifiée',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: cs.outline),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(color: cs.outline),
                         )
                       : null,
                   trailing: IconButton(
@@ -320,8 +348,9 @@ class _FitmentsSectionState extends State<FitmentsSection> {
               'deviennent des compatibilités déclarées : elles ne seront plus '
               'recalculées, et vous en répondez. Retirez celles que vous ne '
               'pouvez pas confirmer.',
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: cs.outline),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: cs.outline),
             ),
           ),
 
@@ -356,12 +385,12 @@ class _FitmentSheet extends StatefulWidget {
 }
 
 class _FitmentSheetState extends State<_FitmentSheet> {
-  BrandRef?  _brand;
-  ModelRef?  _model;
-  TrimRef?   _trim;
+  BrandRef? _brand;
+  ModelRef? _model;
+  TrimRef? _trim;
   final _yearFromCtrl = TextEditingController();
-  final _yearToCtrl   = TextEditingController();
-  final _posCtrl      = TextEditingController();
+  final _yearToCtrl = TextEditingController();
+  final _posCtrl = TextEditingController();
 
   @override
   void dispose() {
@@ -386,11 +415,11 @@ class _FitmentSheetState extends State<_FitmentSheet> {
     }
 
     final entry = FitmentEntry.saisie(
-      brand:    _brand!,
-      model:    _model!,
-      trim:     _trim,
+      brand: _brand!,
+      model: _model!,
+      trim: _trim,
       yearFrom: int.tryParse(_yearFromCtrl.text),
-      yearTo:   int.tryParse(_yearToCtrl.text),
+      yearTo: int.tryParse(_yearToCtrl.text),
       position: widget.showPosition ? _posCtrl.text.trim() : null,
     );
 
@@ -403,7 +432,9 @@ class _FitmentSheetState extends State<_FitmentSheet> {
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        16, 16, 16,
+        16,
+        16,
+        16,
         MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: Column(
@@ -413,7 +444,8 @@ class _FitmentSheetState extends State<_FitmentSheet> {
           // Handle
           Center(
             child: Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
@@ -423,8 +455,9 @@ class _FitmentSheetState extends State<_FitmentSheet> {
           const SizedBox(height: 16),
           Text(
             'Compatibilité véhicule',
-            style: Theme.of(context).textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
 
@@ -439,14 +472,13 @@ class _FitmentSheetState extends State<_FitmentSheet> {
             ),
             isExpanded: true,
             hint: const Text('Sélectionner…'),
-            items: brands.map((b) => DropdownMenuItem(
-              value: b,
-              child: Text(b.name),
-            )).toList(),
+            items: brands
+                .map((b) => DropdownMenuItem(value: b, child: Text(b.name)))
+                .toList(),
             onChanged: (b) => setState(() {
               _brand = b;
               _model = null;
-              _trim  = null;
+              _trim = null;
             }),
           ),
           const SizedBox(height: 12),
@@ -463,14 +495,17 @@ class _FitmentSheetState extends State<_FitmentSheet> {
             ),
             isExpanded: true,
             hint: const Text('Sélectionner…'),
-            items: _models.map((m) => DropdownMenuItem(
-              value: m,
-              child: Text(m.displayName),
-            )).toList(),
-            onChanged: _brand == null ? null : (m) => setState(() {
-              _model = m;
-              _trim  = null;
-            }),
+            items: _models
+                .map(
+                  (m) => DropdownMenuItem(value: m, child: Text(m.displayName)),
+                )
+                .toList(),
+            onChanged: _brand == null
+                ? null
+                : (m) => setState(() {
+                    _model = m;
+                    _trim = null;
+                  }),
           ),
           const SizedBox(height: 12),
 
@@ -487,11 +522,13 @@ class _FitmentSheetState extends State<_FitmentSheet> {
               isExpanded: true,
               hint: const Text('Toutes finitions'),
               items: [
-                const DropdownMenuItem(value: null, child: Text('— Toutes finitions —')),
-                ..._trims.map((t) => DropdownMenuItem(
-                  value: t,
-                  child: Text(t.name),
-                )),
+                const DropdownMenuItem(
+                  value: null,
+                  child: Text('— Toutes finitions —'),
+                ),
+                ..._trims.map(
+                  (t) => DropdownMenuItem(value: t, child: Text(t.name)),
+                ),
               ],
               onChanged: (t) => setState(() => _trim = t),
             ),
@@ -499,37 +536,43 @@ class _FitmentSheetState extends State<_FitmentSheet> {
           ],
 
           // ── Années ───────────────────────────────────────────────
-          Row(children: [
-            Expanded(child: TextFormField(
-              controller: _yearFromCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Année de',
-                prefixIcon: Icon(Icons.calendar_today),
-                border: OutlineInputBorder(),
-                isDense: true,
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _yearFromCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Année de',
+                    prefixIcon: Icon(Icons.calendar_today),
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(4),
+                  ],
+                ),
               ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(4),
-              ],
-            )),
-            const SizedBox(width: 10),
-            Expanded(child: TextFormField(
-              controller: _yearToCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Année à',
-                prefixIcon: Icon(Icons.calendar_today),
-                border: OutlineInputBorder(),
-                isDense: true,
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextFormField(
+                  controller: _yearToCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Année à',
+                    prefixIcon: Icon(Icons.calendar_today),
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(4),
+                  ],
+                ),
               ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(4),
-              ],
-            )),
-          ]),
+            ],
+          ),
 
           // ── Position (pièces seulement) ──────────────────────────
           if (widget.showPosition) ...[
@@ -612,14 +655,16 @@ class CompatibilitesIllisibles extends StatelessWidget {
             'pour l\'instant. Elles seront conservées telles quelles : '
             'enregistrer les autres champs ne leur fera rien. Rouvrez cet '
             'écran une fois la connexion revenue pour y toucher.',
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: cs.onErrorContainer),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: cs.onErrorContainer),
           ),
           const SizedBox(height: 6),
           Text(
             messageFor(erreur),
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: cs.onErrorContainer.withValues(alpha: 0.75)),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: cs.onErrorContainer.withValues(alpha: 0.75),
+            ),
           ),
         ],
       ),
@@ -654,25 +699,34 @@ class CompatibilitesDeclarees extends StatelessWidget {
   /// Null pour un client : il consulte, il ne modifie pas.
   final VoidCallback? onModifier;
 
+  /// REQUIS DEPUIS LA VAGUE 2, et le défaut qui disparaît était en français.
+  ///
+  /// Il disait « L'article ne remonte pas… », une formule générique que ni la
+  /// fiche d'une pièce ni celle d'un accessoire n'employaient — les deux
+  /// passent leur propre phrase, parce que le français élide l'article
+  /// différemment selon l'initiale du nom (« La pièce » contre
+  /// « L'accessoire »). Le défaut était donc déjà mort ; le laisser en place
+  /// aurait seulement garanti qu'un futur appelant affiche du français au
+  /// milieu d'un écran anglais sans que rien ne le signale.
   const CompatibilitesDeclarees({
     super.key,
     required this.lignes,
+    required this.rienDeclare,
     this.onModifier,
-    this.rienDeclare =
-        'Aucune compatibilité déclarée. L\'article ne remonte pas dans une '
-        'recherche par véhicule.',
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     final brutes = lignes;
 
     if (brutes == null) return const SizedBox.shrink();
 
     final entrees = brutes.map(FitmentEntry.depuisJson).toList();
-    final proposees =
-        entrees.where((e) => e.origin == FitmentOrigin.proposee).length;
+    final proposees = entrees
+        .where((e) => e.origin == FitmentOrigin.proposee)
+        .length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -681,8 +735,10 @@ class CompatibilitesDeclarees extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: Text('Véhicules compatibles',
-                  style: Theme.of(context).textTheme.titleSmall),
+              child: Text(
+                l10n.catalogFitmentsTitle,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
             ),
             // Absent pour un client : il consulte la liste, il ne la modifie
             // pas. Un bouton désactivé laisserait croire à un droit qu'il
@@ -690,7 +746,7 @@ class CompatibilitesDeclarees extends StatelessWidget {
             if (onModifier != null)
               TextButton.icon(
                 icon: const Icon(Icons.edit_outlined, size: 16),
-                label: const Text('Modifier'),
+                label: Text(l10n.catalogEditTooltip),
                 onPressed: onModifier,
               ),
           ],
@@ -698,8 +754,9 @@ class CompatibilitesDeclarees extends StatelessWidget {
         if (entrees.isEmpty)
           Text(
             rienDeclare,
-            style:
-                Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.outline),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: cs.outline),
           )
         else ...[
           if (proposees > 0)
@@ -707,11 +764,14 @@ class CompatibilitesDeclarees extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
                 proposees == entrees.length
-                    ? 'Toutes proposées automatiquement : aucune n\'a été vérifiée.'
-                    : '$proposees sur ${entrees.length} proposées automatiquement, '
-                        'non vérifiées.',
-                style: Theme.of(context).textTheme.bodySmall
-                    ?.copyWith(color: cs.error),
+                    ? l10n.catalogFitmentsAllProposed
+                    : l10n.catalogFitmentsSomeProposed(
+                        proposees,
+                        entrees.length,
+                      ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: cs.error),
               ),
             ),
           ...entrees.map(
@@ -731,8 +791,10 @@ class CompatibilitesDeclarees extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(e.label,
-                        style: Theme.of(context).textTheme.bodySmall),
+                    child: Text(
+                      e.labelDans(l10n),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ),
                 ],
               ),

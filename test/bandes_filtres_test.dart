@@ -32,6 +32,7 @@ import 'support/echelles.dart';
 import 'support/langues.dart';
 import 'support/mesures.dart';
 import 'support/polices.dart';
+import 'support/troncature.dart';
 
 /// LES BANDES DE FILTRES DU CATALOGUE : ce qui se tape, ce qui se peint, et ce
 /// qu'elles laissent à la liste.
@@ -91,6 +92,27 @@ import 'support/polices.dart';
 ///    une rangée.
 void main() {
   setUpAll(() => chargerPolices());
+
+  /// Les deux libellés de puce que ce fichier cherche PAR LEUR NOM, lus dans
+  /// les `.arb` au lieu d'être recopiés.
+  ///
+  /// Ils y étaient en dur, et le groupe « Les libellés des puces » est tombé
+  /// sur ses douze cases ANGLAISES dès que la vague 2 a traduit la bande :
+  /// `find.textContaining('Bonne affaire')` ne trouve rien dans une bande qui
+  /// dit « Good deal ». Les lire ici fait suivre les assertions au fichier de
+  /// traduction, ce que le commentaire du groupe promettait déjà — « les
+  /// libellés des puces viennent des `.arb` et du référentiel » — alors qu'il
+  /// n'était pas encore vrai.
+  final puceAffaire = <String, String>{};
+  final puceSuv = <String, String>{};
+
+  setUpAll(() async {
+    for (final langue in langues.entries) {
+      final textes = await chargerTextes(langue.value);
+      puceAffaire[langue.key] = textes.catalogDealFilter;
+      puceSuv[langue.key] = textes.catalogBodyStyleSuv;
+    }
+  });
 
   final gabarit =
       (jsonDecode(File('test/fixtures/vehicles_list.json').readAsStringSync())
@@ -840,24 +862,37 @@ void main() {
           }
 
           // Les deux libellés nommés par la demande, vérifiés par leur nom et
-          // pas seulement par le lot. `textContaining` pour « Bonne affaire » :
-          // la puce y accole le nombre de promotions quand il y en a, et le
-          // dépôt du banc en rend autant qu'il a de véhicules.
+          // pas seulement par le lot. `textContaining` pour la puce des
+          // promotions : elle accole le nombre entre parenthèses quand il y en
+          // a, et le dépôt du banc en rend autant qu'il a de véhicules.
+          //
+          // CETTE ASSERTION EST AUSSI LA NON-VACUITÉ DE LA COLONNE ANGLAISE.
+          // Les deux libellés sont lus dans la langue montée : si la coque
+          // servait du français en annonçant l'anglais, la puce cherchée
+          // n'existerait pas et le test tomberait, au lieu de mesurer la
+          // mauvaise langue en silence — le défaut que `support/polices.dart`
+          // raconte pour la police de repli.
           expect(
             find.descendant(
               of: find.byType(BandeFiltres),
-              matching: find.textContaining('Bonne affaire'),
+              matching: find.textContaining(puceAffaire[langue.key]!),
             ),
             findsOneWidget,
-            reason: '« Bonne affaire » a disparu de la bande.',
+            reason:
+                '« ${puceAffaire[langue.key]} » a disparu de la bande en '
+                '${langue.key}.',
           );
           expect(
             find.descendant(
               of: find.byType(BandeFiltres),
-              matching: find.text('SUV / 4×4'),
+              matching: find.text(puceSuv[langue.key]!),
             ),
             findsOneWidget,
-            reason: '« SUV / 4×4 » a disparu de la bande.',
+            reason:
+                '« ${puceSuv[langue.key]} » a disparu de la bande en '
+                '${langue.key}. Le signe « × » de ce libellé est une '
+                'MULTIPLICATION (U+00D7) : une lettre x dans l\'un des deux '
+                '`.arb` ferait tomber cette seule case.',
           );
         });
         }
@@ -2234,10 +2269,24 @@ void main() {
     /// case à 1,5 aurait dû être corrigée et non requalifiée.
     ///
     /// La vérification ne pouvait pas se faire sur trois cases choisies. Le
-    /// tableau parcourt donc les VINGT-QUATRE — deux listes, trois largeurs,
-    /// quatre échelles — imprime le relevé de chacune, et asserte selon
-    /// l'échelle. C'est la forme qui répond à la question posée au lieu de
-    /// répéter la réponse qu'on avait déjà.
+    /// tableau parcourt donc les QUARANTE-HUIT — deux listes, trois largeurs,
+    /// quatre échelles, DEUX LANGUES — imprime le relevé de chacune, et
+    /// asserte selon l'échelle. C'est la forme qui répond à la question posée
+    /// au lieu de répéter la réponse qu'on avait déjà.
+    ///
+    /// LA LANGUE EST ENTRÉE DANS LA MATRICE APRÈS COUP, et le relevé cité plus
+    /// bas disait pourquoi il le fallait : ce groupe tournait avec
+    /// `locale: localeFr` en dur, et présentait donc une mesure FRANÇAISE
+    /// comme la mesure du dépôt. Le prix est l'un des rares paragraphes de
+    /// l'application dont la LARGEUR dépend de la langue sans qu'un seul mot
+    /// change : `formatXof` pose une espace fine insécable U+202F entre les
+    /// milliers en français, et la virgule de `NumberFormat.decimalPattern`
+    /// en anglais — voir `core/utils/currency_format.dart`. La virgule est
+    /// plus LARGE que l'espace fine, donc l'anglais est systématiquement le
+    /// plus serré des deux : sur les 36 cases assertées il réclame de 1,55 à
+    /// 2,34 points de plus que le français, et 3,11 de plus sur les douze
+    /// cases seulement mesurées à 2,0. C'est lui qui atteindra la bordure le
+    /// premier, à chaque case.
     ///
     /// LE DÉFAUT, ET SA FORME. Le prix d'une carte de PIÈCE ou d'ACCESSOIRE est
     /// un `Text` nu : pas de `FittedBox`, contrairement à la carte d'un
@@ -2259,27 +2308,37 @@ void main() {
     /// compare cette largeur minimale à celle du même paragraphe remis en page
     /// SANS BORNE.
     ///
-    /// CE QUE LA VÉRIFICATION A DONNÉ, et c'est le résultat attendu : les TROIS
-    /// cases en défaut sont bien les trois déjà nommées, et les trois sont à
-    /// 2,0. Aucune case à 1,0, 1,3 ou 1,5 ne replie son prix, sur aucune des
-    /// deux listes, à aucune des trois largeurs. Les trois passent donc en
+    /// CE QUE LA VÉRIFICATION A DONNÉ, et c'est le résultat attendu : les
+    /// cases en défaut sont bien les trois déjà nommées, DANS LES DEUX
+    /// LANGUES — six tests —, et toutes à 2,0. Aucune case à 1,0, 1,3 ou 1,5
+    /// ne replie son prix, sur aucune des deux listes, à aucune des trois
+    /// largeurs, dans aucune des deux langues. Les six passent donc en
     /// DÉGRADATION ACCEPTÉE.
     ///
-    ///   pièces      320 × 2,0   « 4 500 FCFA »     132,44 voulus / 129,0 reçus
-    ///   accessoires 320 × 2,0   « 109 500 FCFA »   162,77 voulus / 129,0 reçus
-    ///   accessoires 360 × 2,0   « 109 500 FCFA »   162,77 voulus / 149,0 reçus
+    ///   pièces      320 × 2,0  fr « 4 500 FCFA »     132,44 / 129,00 reçus
+    ///                          en « 4,500 FCFA »     135,55 / 129,00 reçus
+    ///   accessoires 320 × 2,0  fr « 109 500 FCFA »   162,77 / 129,00 reçus
+    ///                          en « 109,500 FCFA »   165,88 / 129,00 reçus
+    ///   accessoires 360 × 2,0  fr « 109 500 FCFA »   162,77 / 149,00 reçus
+    ///                          en « 109,500 FCFA »   165,88 / 149,00 reçus
     ///
     /// LA MARGE QUI RESTE À 1,5, et c'est elle qu'il faut surveiller : la case
-    /// la plus serrée est « 109 500 FCFA » sur un accessoire à 320 points, qui
-    /// réclame 122,83 points pour 129,00 reçus. SIX POINTS ET DEMI. Un montant à
-    /// sept chiffres, une devise d'un signe de plus, ou deux points de marge
-    /// rognés sur la carte, et le repli descend à 1,5 — où il faudra le
-    /// corriger. Les autres cases ont de 26 à 107 points de marge.
+    /// la plus serrée est « 109,500 FCFA » — l'ANGLAIS — sur un accessoire à
+    /// 320 points, qui réclame 125,16 points pour 129,00 reçus. TROIS POINTS
+    /// ET DEMI. Le français, sur la même case, en laisse 6,17 : ce commentaire
+    /// citait ce 6,17 comme la marge du dépôt, alors que la vraie est 38 %
+    /// plus courte — conséquence directe du `localeFr` en dur qui tenait ce
+    /// groupe à une seule langue. Un montant à sept chiffres, une devise d'un
+    /// signe de plus, ou deux points de marge rognés sur la carte, et le repli
+    /// descend à 1,5 — où il faudra le corriger. Les 34 autres cases assertées
+    /// ont de 20 à 107 points de marge, et la deuxième plus serrée est encore
+    /// l'anglais : 20,13 points sur l'accessoire à 320 × 1,3.
     ///
     /// LA FORME DU REPLI VARIE, ce qui est un détail utile : la coupure tombe
     /// après « FCF » sur l'accessoire à 320 — le segment posé mesure alors
-    /// 145,03 points pour 162,77 libres — et le paragraphe s'effondre à 17,74,
-    /// soit UN caractère, dans les deux autres cases. C'est la même cause et
+    /// 145,03 points pour 162,77 libres en français, 148,14 pour 165,88 en
+    /// anglais — et le paragraphe s'effondre à 17,74, soit UN caractère, dans
+    /// les deux autres cases et dans les deux langues. C'est la même cause et
     /// deux relevés différents : raison de plus pour comparer les deux largeurs
     /// minimales plutôt que de guetter un chiffre.
     ///
@@ -2298,92 +2357,99 @@ void main() {
     for (final poseur in poseurs.entries) {
       for (final ecran in ecrans.entries) {
         for (final echelle in echelles) {
-          testWidgets(
-            '${poseur.key} en ${ecran.key}, texte x$echelle : le prix tient '
-            'sur une ligne tant qu\'on l\'exige',
-            (tester) async {
-              await poseur.value(
-                tester,
-                ecran: ecran.value,
-                echelle: echelle,
-                locale: localeFr,
-                compat: maquette(),
-              );
+          for (final langue in langues.entries) {
+            testWidgets(
+              '${poseur.key} en ${ecran.key}, texte x$echelle, ${langue.key} : '
+              'le prix tient sur une ligne tant qu\'on l\'exige',
+              (tester) async {
+                await poseur.value(
+                  tester,
+                  ecran: ecran.value,
+                  echelle: echelle,
+                  locale: langue.value,
+                  compat: maquette(),
+                );
 
-              // LE PRIX EST TROUVÉ PAR SA FORME ET NON PAR SA CHAÎNE. Les deux
-              // listes n'ont pas le même montant — 4 500 pour la pièce,
-              // 109 500 pour l'accessoire — et les recopier ferait de ce
-              // tableau deux tableaux. `textContaining` sur la devise suffit :
-              // c'est le seul paragraphe de la carte qui la porte.
-              final prix = tester
-                  .renderObjectList<RenderParagraph>(
-                    find.descendant(
-                      of: find.byType(Card).first,
-                      matching: find.textContaining('FCFA'),
-                    ),
-                  )
-                  .first;
+                // LE PRIX EST TROUVÉ PAR SA FORME ET NON PAR SA CHAÎNE. Les
+                // deux listes n'ont pas le même montant — 4 500 pour la
+                // pièce, 109 500 pour l'accessoire — et les recopier ferait
+                // de ce tableau deux tableaux. `textContaining` sur la devise
+                // suffit : c'est le seul paragraphe de la carte qui la porte,
+                // et « FCFA » ne change pas d'une langue à l'autre — seuls le
+                // séparateur de milliers et l'espace qui précède la devise
+                // bougent, ce qui est précisément ce qu'on mesure.
+                final prix = tester
+                    .renderObjectList<RenderParagraph>(
+                      find.descendant(
+                        of: find.byType(Card).first,
+                        matching: find.textContaining('FCFA'),
+                      ),
+                    )
+                    .first;
 
-              final casse = coupeDansLeMot(prix);
+                final casse = coupeDansLeMot(prix);
 
-              // ignore: avoid_print
-              print(
-                '@@PRIX ${poseur.key} ${ecran.key} x$echelle : '
-                '«${texteDe(prix)}» '
-                '${voulue(prix).toStringAsFixed(2)} voulus / '
-                '${recue(prix).toStringAsFixed(2)} reçus, '
-                '${lignesPosees(prix)} ligne(s), '
-                'mot ${motLePlusLarge(prix).toStringAsFixed(2)} posé pour '
-                '${motLePlusLargeLibre(prix).toStringAsFixed(2)} libre'
-                '${casse ? " — COUPÉ DANS LE MOT" : ""}',
-              );
+                // ignore: avoid_print
+                print(
+                  '@@PRIX ${poseur.key} ${ecran.key} x$echelle ${langue.key} : '
+                  '«${texteDe(prix)}» '
+                  '${voulue(prix).toStringAsFixed(2)} voulus / '
+                  '${recue(prix).toStringAsFixed(2)} reçus, '
+                  '${lignesPosees(prix)} ligne(s), '
+                  'mot ${motLePlusLarge(prix).toStringAsFixed(2)} posé pour '
+                  '${motLePlusLargeLibre(prix).toStringAsFixed(2)} libre'
+                  '${casse ? " — COUPÉ DANS LE MOT" : ""}',
+                );
 
-              if (tenue(echelle)) {
+                if (tenue(echelle)) {
+                  expect(
+                    casse,
+                    isFalse,
+                    reason:
+                        'Le prix « ${texteDe(prix)} » est coupé DANS LE MOT en '
+                        '${ecran.key} à l\'échelle $echelle, en '
+                        '${langue.key}, sur les ${poseur.key} : '
+                        '${voulue(prix).toStringAsFixed(2)} '
+                        'points voulus pour ${recue(prix).toStringAsFixed(2)} '
+                        'reçus, sur ${lignesPosees(prix)} lignes. UN PRIX '
+                        'COUPÉ EST UN PRIX FAUX, et cette échelle est en deçà '
+                        'de la frontière de $echelleTenue : il faut le '
+                        'CORRIGER — un `FittedBox` comme sur la carte d\'un '
+                        'véhicule — et non l\'accepter. Le repli ne touchait '
+                        'que l\'échelle 2,0 ; il est descendu.',
+                  );
+
+                  expect(
+                    lignesPosees(prix),
+                    1,
+                    reason:
+                        'Le prix « ${texteDe(prix)} » occupe '
+                        '${lignesPosees(prix)} lignes en ${ecran.key} à '
+                        'l\'échelle $echelle, en ${langue.key} : '
+                        '${voulue(prix).toStringAsFixed(2)} points voulus pour '
+                        '${recue(prix).toStringAsFixed(2)} reçus. Même replié '
+                        'proprement, un montant sur deux lignes se lit mal ; '
+                        'et la coupure la plus probable tombe dans le mot.',
+                  );
+                }
+
+                // NON NÉGOCIABLE À TOUTE ÉCHELLE : le prix ne se DÉCLARE pas
+                // tronqué. C'est une AUTRE façon de le perdre — l'ellipse
+                // mange la fin du montant — et aucune mesure de repli n'en
+                // rendrait compte.
                 expect(
-                  casse,
+                  prix.didExceedMaxLines,
                   isFalse,
                   reason:
-                      'Le prix « ${texteDe(prix)} » est coupé DANS LE MOT en '
-                      '${ecran.key} à l\'échelle $echelle, sur les '
-                      '${poseur.key} : ${voulue(prix).toStringAsFixed(2)} '
-                      'points voulus pour ${recue(prix).toStringAsFixed(2)} '
-                      'reçus, sur ${lignesPosees(prix)} lignes. UN PRIX COUPÉ '
-                      'EST UN PRIX FAUX, et cette échelle est en deçà de la '
-                      'frontière de $echelleTenue : il faut le CORRIGER — un '
-                      '`FittedBox` comme sur la carte d\'un véhicule — et non '
-                      'l\'accepter. Le repli ne touchait que l\'échelle 2,0 ; '
-                      'il est descendu.',
+                      'Le prix « ${texteDe(prix)} » se déclare TRONQUÉ en '
+                      '${ecran.key} à l\'échelle $echelle, en ${langue.key} : '
+                      'un `maxLines` a-t-il été posé dessus ? Un montant '
+                      'ellipsé est faux comme un montant coupé, et à 2,0 '
+                      'comme à 1,0.',
                 );
-
-                expect(
-                  lignesPosees(prix),
-                  1,
-                  reason:
-                      'Le prix « ${texteDe(prix)} » occupe '
-                      '${lignesPosees(prix)} lignes en ${ecran.key} à '
-                      'l\'échelle $echelle : '
-                      '${voulue(prix).toStringAsFixed(2)} points voulus pour '
-                      '${recue(prix).toStringAsFixed(2)} reçus. Même replié '
-                      'proprement, un montant sur deux lignes se lit mal ; et '
-                      'la coupure la plus probable tombe dans le mot.',
-                );
-              }
-
-              // NON NÉGOCIABLE À TOUTE ÉCHELLE : le prix ne se DÉCLARE pas
-              // tronqué. C'est une AUTRE façon de le perdre — l'ellipse mange
-              // la fin du montant — et aucune mesure de repli n'en rendrait
-              // compte.
-              expect(
-                prix.didExceedMaxLines,
-                isFalse,
-                reason:
-                    'Le prix « ${texteDe(prix)} » se déclare TRONQUÉ en '
-                    '${ecran.key} à l\'échelle $echelle : un `maxLines` a-t-il '
-                    'été posé dessus ? Un montant ellipsé est faux comme un '
-                    'montant coupé, et à 2,0 comme à 1,0.',
-              );
-            },
-          );
+              },
+            );
+          }
         }
       }
     }
@@ -2604,6 +2670,200 @@ void main() {
             );
           },
         );
+      }
+    }
+  });
+
+  // ── 9. LES ÉCRANS VIDES DU CATALOGUE, DANS LES DEUX LANGUES ───────────────
+
+  /// Les trois écrans « aucun résultat », et c'est la vague 2 qui les amène
+  /// ici.
+  ///
+  /// ── POURQUOI CE GROUPE, ET POURQUOI DANS CE FICHIER ─────────────────────
+  ///
+  /// La vague 2 a traduit les trois listes. Les puces sont déjà mesurées par
+  /// la section 6 et les cartes par `carte_geometrie_test.dart`, mais l'écran
+  /// VIDE ne l'était par personne, et il porte les chaînes les plus longues
+  /// du lot — « Le catalogue ne contient aucun véhicule pour le moment. » /
+  /// « The catalogue has no vehicles at the moment. », « Dites-nous ce que
+  /// vous cherchez » / « Tell us what you are looking for » — dans une colonne
+  /// de 28 points de marge intérieure, à 320 points d'écran.
+  ///
+  /// Il est ici et non dans un fichier neuf parce que ce fichier monte DÉJÀ les
+  /// trois listes dans les deux langues, avec leurs dépôts, leurs catégories et
+  /// leur coque complète. `poserPage` ne demandait qu'un dépôt vide.
+  ///
+  /// ── LES DEUX ÉTATS SONT MESURÉS, ET ILS N'AFFICHENT PAS LA MÊME CHOSE ────
+  ///
+  /// Sans filtre, l'écran dit que le CATALOGUE est vide. Avec un filtre, il
+  /// NOMME les filtres posés — c'est la phrase `catalogActiveFilters`, et c'est
+  /// la plus longue des deux parce qu'elle énumère. Les deux chemins sont
+  /// exclusifs dans le code (`actifs.isEmpty ? … : …`), donc mesurer un seul
+  /// état laisserait l'autre phrase sans aucun banc.
+  group('Les écrans vides du catalogue', () {
+    /// Les surcharges d'un catalogue qui répond VIDE : pas d'erreur, pas de
+    /// chargement, zéro article. C'est ce qui fait rendre `_EmptyView` —
+    /// `paged.isEmpty` — et non l'indicateur de chargement, qui ne mesurerait
+    /// rien.
+    List<Override> depotVide() => [
+      catalogRepositoryProvider.overrideWithValue(_Depot(const [])),
+      partCategoriesProvider.overrideWith((_) async => <PartCategory>[]),
+      categoriesAvecPiecesProvider.overrideWith((_) async => <PartCategory>[]),
+      categoriesAccessoiresOccupeesProvider.overrideWith(
+        (_) async => <String>{},
+      ),
+    ];
+
+    /// Les trois pages, et le filtre à poser pour faire parler la phrase qui
+    /// énumère.
+    ///
+    /// Le texte cherché est volontairement COURT — « Corolla » — et ce n'est
+    /// pas de la complaisance : la phrase le cite entre guillemets, qui
+    /// changent avec la langue (« » contre “ ”), et c'est ce changement-là
+    /// qu'on veut mesurer. Un texte long mesurerait la saisie de
+    /// l'utilisateur, qui n'est pas notre chaîne et qui n'a aucune borne.
+    final pages =
+        <String, (Widget, int, void Function(ProviderContainer))>{
+          'véhicules': (
+            const VehicleListPage(),
+            1,
+            (c) => c.read(vehicleFilterProvider.notifier).state =
+                const VehicleFilter(
+                  search: 'Corolla',
+                  availability: 'sale',
+                  customsCleared: true,
+                  deal: true,
+                ),
+          ),
+          'pièces': (
+            const PartListPage(),
+            3,
+            (c) => c.read(partFilterProvider.notifier).state = const PartFilter(
+              search: 'Corolla',
+              oem: '04152-YZZA1',
+              inStockOnly: true,
+            ),
+          ),
+          'accessoires': (
+            const AccessoryListPage(),
+            2,
+            (c) => c.read(accessoryFilterProvider.notifier).state =
+                const AccessoryFilter(search: 'Corolla', priceMax: 50000),
+          ),
+        };
+
+    /// LES DEUX RÔLES, ET POURQUOI LE CLIENT MANQUAIT.
+    ///
+    /// `poserPage` monte le PERSONNEL par défaut, et tout ce fichier s'en
+    /// contentait. Or la barre de titre ne porte PAS les mêmes commandes selon
+    /// le rôle : pour un client, `accessory_list_page.dart` et
+    /// `part_list_page.dart` ajoutent sous `if (!isStaff)` le bouton du besoin
+    /// et celui du panier, soit DEUX cibles tactiles de 48 points de plus. À
+    /// 320 points d'écran, le titre reçoit 120,0 points pour un client contre
+    /// 224,0 pour le personnel.
+    ///
+    /// C'est ce qui a laissé passer « Accessoires » / « Accessories » :
+    /// 129,3 et 129,5 points réclamés pour 120,0 reçus dès l'échelle 1,3, dans
+    /// les DEUX langues, et un mot de 121,1 points qui débordait SANS ellipse à
+    /// 1,5. Le rôle que l'écran sert le plus — le client est le seul à voir le
+    /// panier — était le seul qu'aucun banc ne montait.
+    final roles = <String, AuthState>{
+      'personnel': const AuthState(
+        type: AuthType.staff,
+        staffUser: StaffUser(
+          id: 1,
+          name: 'Administrateur',
+          email: 'admin@autoparc.bf',
+          role: 'admin',
+        ),
+      ),
+      'client': const AuthState(type: AuthType.client),
+    };
+
+    for (final page in pages.entries) {
+      for (final role in roles.entries) {
+        for (final avecFiltres in [false, true]) {
+          for (final ecran in ecrans.entries) {
+            for (final echelle in echelles) {
+              for (final langue in langues.entries) {
+                testWidgets(
+                  '${page.key}, ${role.key}'
+                  '${avecFiltres ? ", filtres posés" : ""} '
+                  'en ${ecran.key}, texte x$echelle, ${langue.key}',
+                  (tester) async {
+                    await poserPage(
+                      tester,
+                      ecran: ecran.value,
+                      echelle: echelle,
+                      locale: langue.value,
+                      barreDuBas: true,
+                      session: role.value,
+                      page: page.value.$1,
+                      surcharges: depotVide(),
+                    );
+
+                    if (avecFiltres) {
+                      // Le filtre est posé APRÈS la première pose : les
+                      // providers de filtre sont des `StateProvider`, et les
+                      // surcharger à la construction ne ferait pas repasser la
+                      // liste par son dépôt. On pose, on laisse la trame se
+                      // reconstruire, et l'écran vide affiche alors sa phrase
+                      // qui énumère.
+                      final conteneur = ProviderScope.containerOf(
+                        tester.element(find.byType(MaterialApp)),
+                      );
+                      page.value.$3(conteneur);
+                      for (var i = 0; i < 6; i++) {
+                        await tester.pump(const Duration(milliseconds: 50));
+                      }
+                    }
+
+                    // LA RACINE EST LE `Scaffold`, ET C'EST UNE CORRECTION.
+                    //
+                    // Elle était `find.byType(SingleChildScrollView).first`,
+                    // c'est-à-dire l'écran vide SEUL : la barre de recherche
+                    // et la barre de titre restaient hors de la matrice. Le
+                    // commentaire qui défendait ce choix nommait un défaut
+                    // FRANÇAIS de l'invite des véhicules et concluait qu'un
+                    // lot de traduction n'avait pas à y toucher — mais la même
+                    // exclusion a laissé passer `catalogPartSearchHint`,
+                    // écrite par ce chantier-là, PLUS LONGUE que le français
+                    // et tronquée dès 1,3. Une racine qui écarte précisément
+                    // les chaînes qu'un lot ajoute ne mesure pas ce lot.
+                    //
+                    // Sur le `Scaffold`, les TROIS barres de recherche et les
+                    // TROIS barres de titre entrent dans la matrice, aux trois
+                    // largeurs, aux quatre échelles, dans les deux langues et
+                    // dans les deux rôles.
+                    aucuneTroncature(
+                      tester,
+                      racine: find.byType(Scaffold).first,
+                      ou:
+                          'L\'écran vide des ${page.key} en ${ecran.key} à '
+                          'l\'échelle $echelle, en ${langue.key}, '
+                          '${role.key}'
+                          '${avecFiltres ? " (filtres posés)" : ""}',
+                      echelle: echelle,
+                      // PAS D'EXEMPTION ICI, ET C'EST MESURÉ. Ce groupe en
+                      // portait une — {'Corolla', '04152-YZZA1'}, le `search`
+                      // et le `oem` que le test pose lui-même dans le filtre et
+                      // que la phrase « Filtres actifs : … » récite. Elle a été
+                      // retirée pour deux raisons : ce sont des saisies, pas des
+                      // valeurs venues du serveur, et surtout elle n'achetait
+                      // rien. Les 288 cas de ce groupe rejoués exemption vide :
+                      // zéro défaut à 1,0, 1,3 et 1,5, et à 2,0 seulement les
+                      // trois invites de recherche, qui ne portent pas de
+                      // chiffre et ne sont donc pas assertées.
+                      //
+                      // Une exemption inerte est pire qu'inutile : elle fait
+                      // croire qu'un défaut existe et serait toléré.
+                    );
+                  },
+                );
+              }
+            }
+          }
+        }
       }
     }
   });
