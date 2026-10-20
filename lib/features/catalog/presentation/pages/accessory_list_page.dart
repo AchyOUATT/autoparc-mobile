@@ -155,9 +155,12 @@ class _AccessoryListPageState extends ConsumerState<AccessoryListPage> {
                     },
                   ),
               ],
+              // Voir vehicle_list_page.dart : `null` signifie « ne change pas »
+              // dans ce `copyWith`, donc effacer au clavier ne faisait rien.
               onChanged: (q) =>
-                  ref.read(accessoryFilterProvider.notifier).state = filter
-                      .copyWith(search: q.isEmpty ? null : q),
+                  ref.read(accessoryFilterProvider.notifier).state = q.isEmpty
+                      ? filter.copyWith(clearSearch: true)
+                      : filter.copyWith(search: q),
             ),
           ),
         ),

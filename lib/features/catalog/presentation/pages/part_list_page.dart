@@ -153,12 +153,17 @@ class _PartListPageState extends ConsumerState<PartListPage> {
                     onPressed: () {
                       _searchCtrl.clear();
                       ref.read(partFilterProvider.notifier).state = filter
-                          .copyWith(search: null);
+                          .copyWith(clearSearch: true);
                     },
                   ),
               ],
+              // Voir vehicle_list_page.dart. Sur CETTE liste le defaut etait
+              // total : `PartFilter` n'avait pas de `clearSearch`, donc le
+              // bouton « ✕ » ne nettoyait pas davantage que le clavier.
               onChanged: (q) => ref.read(partFilterProvider.notifier).state =
-                  filter.copyWith(search: q.isEmpty ? null : q),
+                  q.isEmpty
+                      ? filter.copyWith(clearSearch: true)
+                      : filter.copyWith(search: q),
             ),
           ),
         ),

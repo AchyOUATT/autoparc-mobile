@@ -50,6 +50,7 @@
   "catalogNeedTooltip": "Submit a request",
   "catalogNeedCta": "Tell us what you are looking for",
   "catalogClearFilters": "Clear all",
+  "catalogPricesIncludeVat": "Prices incl. VAT",
   "catalogResultCount": "{count, plural, one{{count} result} other{{count} results}}",
   "catalogResultTotal": "— {count, plural, one{{count} result} other{{count} results}} in total —",
   "catalogActiveFilters": "Active filters: {terms}.",

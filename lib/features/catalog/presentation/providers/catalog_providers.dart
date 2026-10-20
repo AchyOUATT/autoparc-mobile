@@ -161,10 +161,21 @@ class PartFilter {
     bool clearLocation = false,
     bool clearVehicleModel = false,
     bool clearCategory = false,
+    // `clearSearch` ET `clearOem` MANQUAIENT, et leur absence rendait ces deux
+    // filtres INEFFACABLES. Dans ce `copyWith`, `null` veut dire « ne change
+    // pas » : `copyWith(search: null)` — ce que faisait le bouton « ✕ » de la
+    // liste des pieces — ne faisait donc RIEN. Une fois une recherche saisie,
+    // la liste restait filtree pour de bon, au clavier comme au bouton.
+    //
+    // VehicleFilter et AccessoryFilter portaient deja `clearSearch` ; seul
+    // celui-ci ne l'avait pas, et c'est pourquoi le defaut y etait total
+    // plutot que partiel.
+    bool clearSearch = false,
+    bool clearOem = false,
   }) =>
       PartFilter(
-        search:        search        ?? this.search,
-        oem:           oem           ?? this.oem,
+        search:        clearSearch   ? null : (search     ?? this.search),
+        oem:           clearOem      ? null : (oem        ?? this.oem),
         categoryId:    clearCategory ? null : (categoryId ?? this.categoryId),
         inStockOnly:   inStockOnly   ?? this.inStockOnly,
         vehicleModelId:clearVehicleModel ? null : (vehicleModelId ?? this.vehicleModelId),

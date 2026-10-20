@@ -144,6 +144,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get catalogClearFilters => 'Tout effacer';
 
   @override
+  String get catalogPricesIncludeVat => 'Prix TTC';
+
+  @override
   String catalogResultCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -128,8 +128,23 @@ class _VehicleListPageState extends ConsumerState<VehicleListPage> {
                     },
                   ),
               ],
+              // `clearSearch` ET NON `search: null` QUAND LE CHAMP SE VIDE.
+              //
+              // Dans ce `copyWith`, `null` signifie « ne change pas » :
+              //     search: clearSearch ? null : (search ?? this.search)
+              // Passer `search: null` laissait donc le terme PRECEDENT en
+              // place. Signale par le proprietaire : « apres une recherche
+              // dans la barre de recherche de vehicules je ne retrouve plus
+              // tous les vehicules, d'autres ne s'affichent plus ».
+              //
+              // Le bouton « ✕ » juste au-dessus passait bien `clearSearch`,
+              // ce qui masquait le defaut : effacer d'un geste marchait,
+              // effacer au CLAVIER ne marchait pas. Deux chemins pour la meme
+              // intention, un seul correct.
               onChanged: (q) => ref.read(vehicleFilterProvider.notifier).state =
-                  filter.copyWith(search: q.isEmpty ? null : q),
+                  q.isEmpty
+                      ? filter.copyWith(clearSearch: true)
+                      : filter.copyWith(search: q),
             ),
           ),
         ),
@@ -606,12 +621,40 @@ class VehicleGrid extends StatelessWidget {
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
           sliver: SliverToBoxAdapter(
-            child: Text(
-              AppLocalizations.of(context).catalogResultCount(total),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
+            // LA MENTION DE TVA PARTAGE CETTE LIGNE, et ne va pas sur les
+            // cartes. Demande du propriétaire : « n'affiche pas TTC sur les
+            // widgets de présentation, floque l'info en même alignement que
+            // résultats trouvés, juste en bas de carrosserie, peut excentré à
+            // droite ». Une étiquette par carte aurait dit douze fois ce qui se
+            // dit une, sur une carte qu'on a passé du temps à désencombrer.
+            //
+            // `Expanded` sur le compte, et pas sur les deux : c'est LUI qui
+            // grandit — « 1 résultat » contre « 148 résultats », et davantage
+            // en anglais. La mention est courte et fixe, donc elle garde sa
+            // largeur et c'est le compte qui s'ellipse si la place manque.
+            // L'inverse effacerait l'information fiscale pour sauver un
+            // nombre que la liste elle-même donne déjà.
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Expanded(
+                  child: Text(
+                    AppLocalizations.of(context).catalogResultCount(total),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  AppLocalizations.of(context).catalogPricesIncludeVat,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

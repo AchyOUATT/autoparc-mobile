@@ -144,6 +144,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogClearFilters => 'Clear all';
 
   @override
+  String get catalogPricesIncludeVat => 'Prices incl. VAT';
+
+  @override
   String catalogResultCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

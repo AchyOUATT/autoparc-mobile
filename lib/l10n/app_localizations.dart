@@ -350,6 +350,12 @@ abstract class AppLocalizations {
   /// **'Tout effacer'**
   String get catalogClearFilters;
 
+  /// Mention posée UNE FOIS en tête de la liste des véhicules, à droite du compte de résultats, et non sur chaque carte — demande du propriétaire : « n'affiche pas TTC sur les widgets de présentation, floque l'info en même alignement que résultats trouvés, juste en bas de carrosserie, peut excentré à droite ». Répétée sur chaque carte elle aurait coûté de la place sur une carte qu'on a passé du temps à désencombrer, et dit douze fois ce qui se dit une. Volontairement courte : elle partage sa ligne avec le compte, qui grandit avec le nombre de résultats.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prix TTC'**
+  String get catalogPricesIncludeVat;
+
   /// Le compte de résultats, en tête des trois listes. PASSE PAR UN PLURIEL ICU, et c'était la seule façon de ne pas casser l'anglais : le code écrivait `'$total résultat${total > 1 ? "s" : ""}'`, donc une règle de pluriel française codée en dur — zéro au singulier. L'anglais met zéro au pluriel (« 0 results »), et la forme `one` d'ICU rend exactement cette différence sans que le site d'appel la connaisse. Le français ne bouge pas : la règle ICU `one` du français couvre 0 et 1, comme le faisait `total > 1`.
   ///
   /// In fr, this message translates to:
