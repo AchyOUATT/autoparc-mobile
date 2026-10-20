@@ -208,6 +208,14 @@ class _VehicleDetailView extends ConsumerWidget {
                     // « VH-… » n'existe que pour les humains du parc.
                     type: TypeArticle.vehicule,
                     id: vehicle.id,
+                    // Le marqueur de version, qui fait que WhatsApp
+                    // reconstruit sa vignette après une modification au lieu
+                    // de ressortir celle du premier partage — le défaut
+                    // signalé par le propriétaire, « un véhicule déjà partagé
+                    // ne met pas à jour ses données de partage après maj ».
+                    // Null quand la réponse ne le dit pas : l'adresse reste
+                    // nue et le bouton marche. Voir `adresseArticle`.
+                    version: vehicle.shareVersion,
                   ),
                 ),
               if (auth.canManageCatalog)

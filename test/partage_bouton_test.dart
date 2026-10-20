@@ -610,6 +610,108 @@ void main() {
     }
   });
 
+  // ── Le marqueur de version, de bout en bout ───────────────────────────────
+
+  /// **Le défaut que ce lot répare**, signalé par le propriétaire : « un
+  /// véhicule déjà partagé ne met pas à jour ses données de partage après
+  /// maj ». Le serveur n'y est pour rien — `/v/86` annonce bien
+  /// « Mazda CX-9 2018 — 9 500 000 FCFA » et l'API rend `sale_price:
+  /// 9500000.00`. Ce qui ne bouge pas, c'est la vignette DÉJÀ CONSTRUITE chez
+  /// l'opérateur : WhatsApp clefe la sienne sur l'adresse qu'il a APPELÉE,
+  /// donc seule une adresse différente la fait refaire.
+  ///
+  /// `partage_test.dart` mesure la composition de l'adresse ; ici on mesure la
+  /// CHAÎNE ENTIÈRE, et c'est ce qui manquait au lot `publishedAt` : modèle
+  /// Dart → fiche → `partagerArticle` → `composerMessagePartage` →
+  /// `adresseArticle` → ce qui part vraiment vers `share_plus`. Un maillon
+  /// oublié — une fiche qui ne passerait pas `version:` — reste invisible aux
+  /// tests unitaires des deux bouts.
+  group('le marqueur de version part avec l\'adresse', () {
+    /// La forme que le serveur produit : la seconde UNIX d'`updated_at` en
+    /// base 36, `base_convert('1760000000', 10, 36)`. Échantillon, pas
+    /// contrat — le format appartient à `app/Support/VersionPartage.php`.
+    const marqueur = 't3uwow';
+
+    final versionnees = <String, ({Widget fiche, String adresse})>{
+      'pièce': (
+        fiche: PartDetailPage(
+          partId: _idPiece,
+          initialPart: _piece(version: marqueur),
+        ),
+        adresse: '${adresseArticle(TypeArticle.piece, _idPiece)}?m=$marqueur',
+      ),
+      'accessoire': (
+        fiche: AccessoryDetailPage(
+          accessoryId: _idAccessoire,
+          initialAccessory: _accessoire(version: marqueur),
+        ),
+        adresse:
+            '${adresseArticle(TypeArticle.accessoire, _idAccessoire)}?m=$marqueur',
+      ),
+      'véhicule': (
+        fiche: VehicleDetailPage(
+          vehicleId: _idVehicule,
+          initialVehicle: _vehicule(version: marqueur),
+        ),
+        adresse:
+            '${adresseArticle(TypeArticle.vehicule, _idVehicule)}?m=$marqueur',
+      ),
+    };
+
+    for (final entree in versionnees.entries) {
+      testWidgets('fiche d\'une ${entree.key}', (tester) async {
+        await poser(tester, entree.value.fiche, session: _client());
+
+        await tester.tap(find.byTooltip(partagerFr()));
+        await tester.pumpAndSettle();
+
+        final texte = envois.single['text'] as String;
+
+        expect(texte, endsWith(entree.value.adresse));
+        // Le marqueur vit dans l'adresse et NULLE PART dans le texte : le
+        // destinataire ne doit pas lire une chaîne technique sous le titre.
+        expect(texte.split('\n'), hasLength(2));
+        expect(texte.split('\n').first, isNot(contains(marqueur)));
+      });
+    }
+
+    /// **Le repli, et c'est lui que le propriétaire verra en premier si on se
+    /// trompe.** Les fiches par défaut n'ont pas la clef `share_version` au
+    /// JSON — l'état d'une instance du serveur antérieure à ce lot, ou d'un
+    /// chemin d'API qui ne l'expose pas. Le bouton doit rester entier et
+    /// l'adresse nue, jamais `?m=null`.
+    ///
+    /// Ce dépôt a déjà payé ce piège : le partage d'un véhicule a été MORT
+    /// pour tout le parc parce qu'une règle exigeait `publishedAt`, que rien
+    /// ne peuple. Trois relectures adversariales l'ont manqué ; le
+    /// propriétaire l'a vu en une minute.
+    for (final fiche in fiches.entries) {
+      testWidgets(
+        'sans la clef au JSON, la fiche d\'une ${fiche.key} partage l\'adresse nue',
+        (tester) async {
+          await poser(tester, fiche.value, session: _client());
+
+          // Le bouton existe toujours : un champ cosmétique absent ne doit pas
+          // faire disparaître le partage, qui est la fonction de l'écran.
+          expect(find.byTooltip(partagerFr()), findsOneWidget);
+
+          await tester.tap(find.byTooltip(partagerFr()));
+          await tester.pumpAndSettle();
+
+          final texte = envois.single['text'] as String;
+          final adresse = texte.split('\n').last;
+
+          expect(adresse, adressesAttendues[fiche.key]!);
+          expect(adresse, isNot(contains('?')));
+          expect(adresse, isNot(contains('null')));
+          // L'adresse nue mène bien quelque part : c'est tout ce qu'on perd —
+          // le rafraîchissement de la vignette, jamais la destination.
+          expect(Uri.parse(adresse).hasScheme, isTrue);
+        },
+      );
+    }
+  });
+
   // ── Aucun fichier joint ───────────────────────────────────────────────────
 
   /// La régression à empêcher, et elle serait muette : rejoindre la photo de
@@ -659,8 +761,13 @@ const _idVehicule = 305;
 
 /// [actif] porte `is_active`, la seule condition de la page `/p/{id}` : le
 /// stock n'y entre pas, le catalogue des pièces montrant les ruptures.
-Part _piece({bool actif = true}) => Part.fromJson({
+/// [version] porte `share_version`. Par défaut la clef est ABSENTE du JSON, et
+/// c'est le cas qui compte le plus : c'est ce que rend une instance du serveur
+/// antérieure à ce lot, ou un chemin d'API qui ne l'expose pas. Tout le reste
+/// de ce fichier mesure donc le repli sur l'adresse nue sans avoir à le dire.
+Part _piece({bool actif = true, String? version}) => Part.fromJson({
   'id': _idPiece,
+  'share_version': ?version,
   'name': 'Filtre à huile moteur cartouche 04152-YZZA1',
   'sku': '04152-YZZA1',
   'type': 'aftermarket',
@@ -682,9 +789,15 @@ Part _piece({bool actif = true}) => Part.fromJson({
 });
 
 /// [actif] et [disponible] portent les DEUX conditions de `/a/{id}`.
-Accessory _accessoire({bool actif = true, bool disponible = true}) =>
+/// [version] porte `share_version` — voir `_piece`, clef absente par défaut.
+Accessory _accessoire({
+  bool actif = true,
+  bool disponible = true,
+  String? version,
+}) =>
     Accessory.fromJson({
       'id': _idAccessoire,
+      'share_version': ?version,
       'name': 'Tapis de sol caoutchouc toutes saisons, jeu de quatre',
       'sku': 'TAP-4S-001',
       'category': {'value': 'confort', 'label': 'Confort'},
@@ -723,11 +836,15 @@ Accessory _accessoire({bool actif = true, bool disponible = true}) =>
 /// [statut] et [publie] portent la seule chose qui décide maintenant de la
 /// PRÉSENCE du bouton : `published_at` et le statut commercial. Par défaut,
 /// un véhicule en stock et publié — le cas partageable.
+///
+/// [version] porte `share_version` — voir `_piece`, clef absente par défaut.
 Vehicle _vehicule({
   String statut = 'in_stock',
   bool publie = true,
+  String? version,
 }) => Vehicle.fromJson({
   'id': _idVehicule,
+  'share_version': ?version,
   'reference': 'VH-WHVQKVHM',
   'designation': 'Hyundai Tucson Base 2023',
   'vehicle_type': 'passenger',

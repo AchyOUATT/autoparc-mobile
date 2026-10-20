@@ -181,6 +181,10 @@ class _AccessoryDetailView extends ConsumerWidget {
                 // attend. Le partage ne fabrique aucune autre adresse.
                 type: TypeArticle.accessoire,
                 id: accessory.id,
+                // Le marqueur de version — voir la fiche véhicule, où le
+                // défaut a été signalé, et `adresseArticle`. Null quand la
+                // réponse ne le dit pas : adresse nue, bouton intact.
+                version: accessory.shareVersion,
               ),
             ),
           // Voir la fiche piece : l'ecran de televersement n'etait atteignable

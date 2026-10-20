@@ -193,6 +193,10 @@ class PartDetailPage extends ConsumerWidget {
                     // tout — il n'était qu'une précision parmi les autres.
                     type: TypeArticle.piece,
                     id: part.id,
+                    // Le marqueur de version — voir la fiche véhicule, où le
+                    // défaut a été signalé, et `adresseArticle`. Null quand
+                    // la réponse ne le dit pas : adresse nue, bouton intact.
+                    version: part.shareVersion,
                   ),
                 ),
               // Les photos s'ajoutaient uniquement dans la seconde qui suivait

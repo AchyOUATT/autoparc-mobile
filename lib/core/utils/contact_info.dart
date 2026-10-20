@@ -102,5 +102,70 @@ String racineSiteDepuisApi(String urlApi) {
 /// conversation.
 ///
 /// [id] est la clef primaire de l'article, celle que ces routes attendent.
-String adresseArticle(TypeArticle type, int id) =>
-    '$kSiteUrl/${type.segment}/$id';
+///
+/// ## [version] : pourquoi l'adresse doit CHANGER quand l'article change
+///
+/// Signalé par le propriétaire : « un véhicule déjà partagé ne met pas à jour
+/// ses données de partage après maj ». Le serveur n'y est pour rien, et c'est
+/// mesuré — la page `/v/86` annonce « Mazda CX-9 2018 — 9 500 000 FCFA » et
+/// l'API rend `sale_price: 9500000.00`. Les deux concordent.
+///
+/// Ce qui ne bouge pas, c'est la VIGNETTE DÉJÀ CONSTRUITE chez l'opérateur de
+/// messagerie. WhatsApp et Facebook la fabriquent au premier partage et la
+/// gardent ; aucun en-tête HTTP ne les en fait changer — ni `Cache-Control`,
+/// ni `Expires`, ni `ETag`. La seule prise qu'on ait sur eux est l'ADRESSE
+/// APPELÉE, et c'est tout l'objet de ce paramètre :
+///
+///     sans version   https://autoparc-backend.onrender.com/v/86
+///     avec version   https://autoparc-backend.onrender.com/v/86?m=t3uwow
+///
+/// **Et pourquoi ce côté-ci, alors que le serveur pose déjà le marqueur dans
+/// son `og:url`.** Facebook identifie un objet par son `og:url` : pour lui, le
+/// serveur suffirait. WhatsApp non — il clef sa vignette sur l'adresse qu'il a
+/// APPELÉE. Tant que l'application partage `/v/86`, il ressort la vignette du
+/// premier partage, quel que soit le contenu de la page. WhatsApp est le canal
+/// principal de cette boutique : sans ce paramètre, le lot serveur ne répare
+/// rien là où le défaut a été vu.
+///
+/// [version] est le `share_version` de l'API, recopié TEL QUEL. L'application
+/// ne le lit pas, ne le compare pas, ne le fabrique pas : c'est une chaîne
+/// opaque dont le serveur choisit le format (la seconde UNIX d'`updated_at` en
+/// base 36 — voir `app/Support/VersionPartage.php`). Rien ici ne dépend de ce
+/// format, et c'est voulu : le jour où il change, ce fichier n'a pas à suivre.
+///
+/// ## Null et chaîne vide rendent l'adresse NUE, à l'identique d'avant
+///
+/// C'est la garantie que rien ne casse. Un serveur d'une version antérieure,
+/// un chemin d'API qui ne rend pas la clef, un `updated_at` nul : dans les
+/// trois cas [version] arrive nulle, et l'adresse est exactement celle que
+/// cette fonction rendait auparavant. Elle reste valable — elle perd seulement
+/// le rafraîchissement de vignette.
+///
+/// **Ce dont ce dépôt a déjà payé le prix.** Le partage d'un véhicule a été
+/// MORT pour tout le parc parce qu'une règle exigeait `publishedAt`, que rien
+/// ne peuple — voir `Vehicle.aUnePagePublique`. Trois relectures adversariales
+/// l'ont manqué ; le propriétaire l'a vu en une minute. Un champ cosmétique ne
+/// doit donc jamais pouvoir fabriquer une adresse fausse : ni `?m=null`, ni
+/// `?m=`, ni un bouton inerte.
+///
+/// La chaîne vide est traitée comme l'absence, et ce n'est pas théorique : ce
+/// dépôt normalise déjà de cette façon, `json['published_at'] as String? ?? ''`
+/// dans `Vehicle.fromJson`. Un appelant qui ferait de même obtiendrait
+/// `/v/86?m=` — une adresse neuve pour chaque article, donc une vignette
+/// fabriquée depuis cette adresse-là et mise en cache à la place de la bonne.
+///
+/// Le marqueur est échappé avant d'être collé. L'alphabet de la base 36 est
+/// `[0-9a-z]`, et l'échappement ne change donc RIEN sur le format réel —
+/// mesuré par le test « un marqueur de base 36 traverse sans être échappé ».
+/// Il n'est là que parce que cette chaîne vient du réseau et que l'application
+/// n'en choisit pas le format : un « & » y inventerait un second paramètre, et
+/// un « # » couperait l'adresse — le marqueur partirait en fragment, que le
+/// robot d'aperçu n'envoie jamais au serveur, et la vignette resterait figée
+/// sans que rien ne le signale.
+String adresseArticle(TypeArticle type, int id, {String? version}) {
+  final nue = '$kSiteUrl/${type.segment}/$id';
+
+  if (version == null || version.isEmpty) return nue;
+
+  return '$nue?m=${Uri.encodeQueryComponent(version)}';
+}

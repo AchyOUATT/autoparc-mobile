@@ -314,6 +314,267 @@ ${adresseArticle(TypeArticle.vehicule, 86)}''');
     });
   });
 
+  // ── Le marqueur de version ───────────────────────────────────────────────
+
+  /// **Le défaut que ce lot répare**, signalé par le propriétaire : « un
+  /// véhicule déjà partagé ne met pas à jour ses données de partage après
+  /// maj ».
+  ///
+  /// Le serveur n'y est pour rien, et c'est mesuré — `/v/86` annonce
+  /// « Mazda CX-9 2018 — 9 500 000 FCFA », l'API rend `sale_price: 9500000.00`.
+  /// Ce qui ne bouge pas, c'est la vignette DÉJÀ CONSTRUITE chez l'opérateur
+  /// de messagerie. WhatsApp clef la sienne sur l'adresse qu'il a APPELÉE :
+  /// tant que l'application partage `/v/86`, il ressort celle du premier
+  /// partage. D'où un marqueur dans l'adresse, et d'où ce groupe.
+  ///
+  /// Les assertions portent sur la FORME de l'adresse — « `?m=` suivi de ce
+  /// que le serveur a dit » —, jamais sur le format du marqueur lui-même. Ce
+  /// format est à `app/Support/VersionPartage.php` et à lui seul ; le fixer
+  /// ici obligerait deux dépôts à bouger ensemble, ce que le contrat refuse
+  /// précisément.
+  group('le marqueur de version dans l\'adresse', () {
+    /// Un marqueur de la forme que le serveur produit : la seconde UNIX
+    /// d'`updated_at` en base 36. `base_convert('1760000000', 10, 36)` rend
+    /// « t3uwow », mesure recopiée de `VersionPartage`. Il sert d'échantillon,
+    /// pas de contrat — voir le préambule du groupe.
+    const marqueur = 't3uwow';
+
+    // ── Le repli, et c'est lui qui compte ──────────────────────────────────
+
+    /// **Le piège a déjà mordu ce dépôt.** Le partage d'un véhicule a été MORT
+    /// pour tout le parc parce qu'une règle exigeait `publishedAt`, que rien
+    /// ne peuple ; trois relectures adversariales l'ont manqué, le
+    /// propriétaire l'a vu en une minute.
+    ///
+    /// Le marqueur est le même genre de champ : cosmétique, venu du serveur,
+    /// absent dès qu'une instance n'est pas à jour ou qu'un chemin d'API ne le
+    /// rend pas. Ces tests affirment qu'il ne peut RIEN casser — sans lui,
+    /// l'adresse est exactement celle d'avant ce lot, caractère pour
+    /// caractère.
+    group('sans marqueur, l\'adresse ne bouge pas', () {
+      final segments = <TypeArticle, String>{
+        TypeArticle.vehicule: 'v',
+        TypeArticle.piece: 'p',
+        TypeArticle.accessoire: 'a',
+      };
+
+      segments.forEach((type, segment) {
+        test('${type.name} : la forme nue, à l\'identique', () {
+          // La forme écrite en clair, et non `adresseArticle(type, id)` : se
+          // comparer à soi-même laisserait passer un « ?m= » posé sans
+          // condition. Seule la racine est empruntée, parce qu'elle dépend du
+          // `--dart-define` du build.
+          const nue = 42;
+          final attendue = '$kSiteUrl/$segment/$nue';
+
+          expect(adresseArticle(type, nue), attendue);
+          expect(adresseArticle(type, nue, version: null), attendue);
+
+          // La chaîne vide compte comme l'absence. Ce n'est pas théorique :
+          // `Vehicle.fromJson` normalise déjà un champ par `as String? ?? ''`,
+          // et un appelant qui ferait de même sur le marqueur produirait
+          // « /v/42?m= » — une adresse neuve par article, donc une vignette
+          // fabriquée depuis celle-là et mise en cache à la place de la bonne.
+          expect(adresseArticle(type, nue, version: ''), attendue);
+        });
+      });
+
+      /// L'erreur à ne jamais commettre, et elle serait muette : l'adresse
+      /// partirait, WhatsApp la clefferait, et personne ne verrait rien avant
+      /// qu'un client ne clique.
+      test('jamais « ?m=null », jamais « ?m= » vide, jamais de « ? » seul', () {
+        for (final type in TypeArticle.values) {
+          for (final version in <String?>[null, '']) {
+            final adresse = adresseArticle(type, 42, version: version);
+
+            expect(adresse, isNot(contains('?')));
+            expect(adresse, isNot(contains('null')));
+            expect(adresse, isNot(contains('m=')));
+          }
+        }
+      });
+
+      /// Le message complet, sans marqueur : deux lignes, et la seconde est
+      /// l'adresse nue. C'est l'état d'avant ce lot, figé.
+      test('le message entier reste celui d\'avant', () {
+        final message = composerMessagePartage(
+          titre: 'Mazda CX-9 (2018)',
+          mentionBoutique: mentionFr,
+          type: TypeArticle.vehicule,
+          id: 86,
+        );
+
+        expect(message, '''
+*Mazda CX-9 (2018)* — $mentionFr
+$kSiteUrl/v/86''');
+      });
+    });
+
+    // ── Le marqueur présent ────────────────────────────────────────────────
+
+    group('avec marqueur, l\'adresse porte « ?m= »', () {
+      final segments = <TypeArticle, String>{
+        TypeArticle.vehicule: 'v',
+        TypeArticle.piece: 'p',
+        TypeArticle.accessoire: 'a',
+      };
+
+      segments.forEach((type, segment) {
+        test('${type.name} : /$segment/{id}?m={marqueur}', () {
+          expect(
+            adresseArticle(type, 42, version: marqueur),
+            '$kSiteUrl/$segment/42?m=$marqueur',
+          );
+
+          // Le chemin est INTACT : le marqueur s'ajoute, il ne déplace ni ne
+          // remplace rien. Le serveur accepte « m » sans que ni le routage ni
+          // le contenu n'en dépendent ; une adresse dont le chemin bougerait
+          // rendrait 404 au lieu d'une vignette fraîche.
+          expect(
+            adresseArticle(type, 42, version: marqueur),
+            startsWith(adresseArticle(type, 42)),
+          );
+        });
+      });
+
+      /// Deux versions d'un même article donnent deux adresses DIFFÉRENTES —
+      /// c'est l'unique propriété dont dépend le rafraîchissement de la
+      /// vignette, tout le reste n'étant que plomberie.
+      test('deux marqueurs donnent deux adresses distinctes', () {
+        final adresses = <String>{
+          adresseArticle(TypeArticle.vehicule, 86, version: 't3uwow'),
+          adresseArticle(TypeArticle.vehicule, 86, version: 't3uwox'),
+          adresseArticle(TypeArticle.vehicule, 86),
+        };
+
+        expect(adresses, hasLength(3));
+      });
+
+      /// L'échappement ne doit RIEN changer sur le format réel : l'alphabet de
+      /// la base 36 est `[0-9a-z]`, que `Uri.encodeQueryComponent` laisse
+      /// passer tel quel. Cette mesure est citée dans `adresseArticle`.
+      test('un marqueur de base 36 traverse sans être échappé', () {
+        expect(
+          adresseArticle(TypeArticle.vehicule, 86, version: 't3uwow'),
+          endsWith('?m=t3uwow'),
+        );
+        // Les bornes de l'alphabet, pour qu'aucun caractère ne s'échappe un
+        // jour sans qu'on le voie : six chiffres, puis six lettres.
+        for (final echantillon in ['000000', 'zzzzzz', '0z9a8b']) {
+          expect(
+            adresseArticle(TypeArticle.vehicule, 86, version: echantillon),
+            endsWith('?m=$echantillon'),
+          );
+        }
+      });
+
+      /// Ce que l'échappement protège. L'application ne choisit pas le format
+      /// du marqueur — il vient du réseau — et deux caractères casseraient
+      /// l'adresse : « & » inventerait un second paramètre, « # » couperait
+      /// tout ce qui suit en fragment, que le robot d'aperçu n'envoie jamais
+      /// au serveur. La vignette resterait alors figée sans que rien ne le
+      /// signale.
+      test('un marqueur inattendu est échappé, pas recopié', () {
+        final avecEsperluette =
+            adresseArticle(TypeArticle.vehicule, 86, version: 'a&utm=x');
+        expect(avecEsperluette, isNot(contains('&')));
+        expect(avecEsperluette, contains('?m='));
+
+        final avecDiese =
+            adresseArticle(TypeArticle.vehicule, 86, version: 'a#b');
+        expect(avecDiese, isNot(contains('#')));
+
+        // Dans les deux cas l'adresse reste analysable, et son chemin reste
+        // celui de l'article : c'est ce qui garantit une page, pas une 404.
+        for (final adresse in [avecEsperluette, avecDiese]) {
+          expect(Uri.parse(adresse).path, endsWith('/v/86'));
+          expect(Uri.parse(adresse).queryParameters.keys, ['m']);
+        }
+      });
+    });
+
+    // ── Le message rendu, dans les deux langues et dans les deux cas ───────
+
+    /// Le marqueur n'est PAS un texte traduit : l'adresse est la même ligne
+    /// dans les deux langues, et rien de `lib/l10n/` n'a bougé pour ce lot.
+    /// Ce groupe le mesure plutôt que de l'affirmer — c'est la seule façon de
+    /// voir qu'une adresse ne s'est pas mise à suivre la locale.
+    group('le message rendu, dans les deux langues', () {
+      const mentions = <String, String>{
+        'fr': 'sur AutoParc',
+        'en': 'on AutoParc',
+      };
+
+      langues.forEach((nom, locale) {
+        test('$nom : avec marqueur, puis sans', () async {
+          final textes = await chargerTextes(locale);
+          final mention = textes.partageMentionBoutique;
+
+          expect(mention, mentions[nom]);
+
+          final avec = composerMessagePartage(
+            titre: 'Mazda CX-9 (2018)',
+            mentionBoutique: mention,
+            type: TypeArticle.vehicule,
+            id: 86,
+            version: marqueur,
+          );
+
+          expect(avec, '''
+*Mazda CX-9 (2018)* — $mention
+$kSiteUrl/v/86?m=$marqueur''');
+
+          final sans = composerMessagePartage(
+            titre: 'Mazda CX-9 (2018)',
+            mentionBoutique: mention,
+            type: TypeArticle.vehicule,
+            id: 86,
+          );
+
+          expect(sans, '''
+*Mazda CX-9 (2018)* — $mention
+$kSiteUrl/v/86''');
+
+          // Deux lignes dans les deux cas : le marqueur vit dans l'adresse,
+          // et n'ajoute rien au texte que le destinataire lit.
+          expect(avec.split('\n'), hasLength(2));
+          expect(sans.split('\n'), hasLength(2));
+
+          // La seule différence entre les deux messages est le marqueur.
+          expect(avec.replaceFirst('?m=$marqueur', ''), sans);
+        });
+      });
+    });
+
+    /// Les trois types, message complet, marqueur présent : ce que le
+    /// destinataire reçoit réellement. Les identifiants sont ceux des fiches
+    /// de `partage_bouton_test.dart`, pour que les deux fichiers parlent des
+    /// mêmes articles.
+    group('le message des trois types porte le marqueur', () {
+      final articles = <String, ({TypeArticle type, int id, String segment})>{
+        'pièce': (type: TypeArticle.piece, id: 7, segment: 'p'),
+        'accessoire': (type: TypeArticle.accessoire, id: 12, segment: 'a'),
+        'véhicule': (type: TypeArticle.vehicule, id: 305, segment: 'v'),
+      };
+
+      articles.forEach((nom, article) {
+        test('celui d\'une $nom', () {
+          final message = composerMessagePartage(
+            titre: 'Article',
+            mentionBoutique: mentionFr,
+            type: article.type,
+            id: article.id,
+            version: marqueur,
+          );
+
+          expect(message, '''
+*Article* — $mentionFr
+$kSiteUrl/${article.segment}/${article.id}?m=$marqueur''');
+        });
+      });
+    });
+  });
+
   // ── La racine, déduite de l'API ──────────────────────────────────────────
 
   group('la racine du site se déduit de l\'adresse de l\'API', () {

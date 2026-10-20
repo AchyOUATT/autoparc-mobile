@@ -92,6 +92,18 @@ class Vehicle extends Equatable {
   /// décide pourtant de l'existence de `/v/{id}` : voir [aUnePagePublique].
   final DateTime? publishedAt;
 
+  /// Le marqueur de version que l'adresse de partage porte en `?m=`, `null`
+  /// quand la réponse ne le dit pas.
+  ///
+  /// Chaîne OPAQUE, recopiée telle quelle dans l'adresse et jamais lue ici :
+  /// c'est le serveur qui en choisit le format, et `adresseArticle` dit
+  /// pourquoi l'adresse de partage doit changer quand l'article change.
+  ///
+  /// `null` est une valeur de travail, pas un échec — l'adresse nue reste
+  /// valable. Voir `adresseArticle` : c'est exactement le piège que
+  /// `publishedAt`, deux champs plus haut, a fait payer à ce dépôt.
+  final String? shareVersion;
+
   final List<VehicleFeature> features;
 
   /// Kilométrage. L'API le résout côté serveur : compteur de la carte grise
@@ -158,6 +170,7 @@ class Vehicle extends Equatable {
     required this.mediaUrls,
     this.coverUrl,
     this.publishedAt,
+    this.shareVersion,
     this.features = const [],
     this.mileageKm,
     this.transmission,
@@ -247,6 +260,12 @@ class Vehicle extends Equatable {
       // est nul. Un bouton absent se remarque et se signale ; un lien mort
       // part dans une conversation et n'en revient pas.
       publishedAt:        DateTime.tryParse(json['published_at'] as String? ?? ''),
+      // Clef absente → `null`, et le partage repart sur l'adresse nue. Pas de
+      // `?? ''` ici, à la différence de la ligne au-dessus : la date, elle,
+      // traverse un `tryParse` qui rend `null` sur l'illisible, alors que le
+      // marqueur est recopié. « Absent » et « vide » doivent arriver
+      // distinctement à `adresseArticle`, qui les traite déjà tous les deux.
+      shareVersion:       json['share_version'] as String?,
       features:           (json['features'] as List?)
                               ?.map((f) => VehicleFeature.fromJson(f as Map<String, dynamic>))
                               .toList() ??

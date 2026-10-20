@@ -58,6 +58,16 @@ export 'contact_info.dart' show TypeArticle;
 /// celle du magasin d'applications — voir `adresseArticle`, où est écrit
 /// pourquoi ce lien-là est le seul qui mène quelque part.
 ///
+/// [version] est le `share_version` de l'article, qui ne fait que TRAVERSER
+/// cette fonction jusqu'à `adresseArticle`. Elle est facultative, et son
+/// absence rend le message EXACTEMENT celui d'avant ce lot — c'est ce que
+/// mesure le groupe « sans marqueur, le message ne bouge pas » de
+/// `partage_test.dart`. Rien ici ne la lit ni ne la met en forme : le texte du
+/// message n'en porte aucune trace, elle ne vit que dans l'adresse.
+///
+/// Le marqueur n'est PAS un texte traduit et rien n'a bougé dans `lib/l10n/` :
+/// les deux langues rendent la même adresse, et c'est mesuré sur chacune.
+///
 /// Les astérisques autour du titre sont la mise en gras de WhatsApp. Ailleurs —
 /// SMS, Facebook, presse-papier — ils s'affichent tels quels : deux caractères
 /// inoffensifs. C'est le seul balisage qui ne dégrade rien nulle part.
@@ -66,13 +76,18 @@ String composerMessagePartage({
   required String mentionBoutique,
   required TypeArticle type,
   required int id,
+  String? version,
 }) {
   return [
     '*${titre.trim()}* — ${mentionBoutique.trim()}',
     // L'adresse de l'article, et non celle du magasin : c'est elle que le robot
     // d'aperçu de WhatsApp va chercher. Sans elle, les balises Open Graph du
     // serveur ne sont lues par personne, et tout ce lot n'aurait servi à rien.
-    adresseArticle(type, id),
+    //
+    // Le marqueur s'y colle en `?m=` — c'est ce qui fait que WhatsApp
+    // reconstruit sa vignette après une modification, au lieu de ressortir
+    // celle du premier partage. Voir `adresseArticle`.
+    adresseArticle(type, id, version: version),
   ].join('\n');
 }
 
@@ -123,11 +138,23 @@ String composerMessagePartage({
 /// les laisser en paramètres ignorés aurait laissé croire aux trois fiches
 /// qu'elles servaient encore à quelque chose. La vignette de l'aperçu les
 /// porte — voir [composerMessagePartage].
+///
+/// [version] est le `share_version` du modèle de l'article — `vehicle`, `part`
+/// ou `accessory` — et elle ne fait que traverser jusqu'à `adresseArticle`.
+/// Facultative EXPRÈS, et pas `required` : une fiche qui ne la passerait pas
+/// partage l'adresse nue, qui mène à la bonne page. Le contraire — la rendre
+/// obligatoire — ferait d'un champ cosmétique une condition du partage, et
+/// c'est exactement la forme du défaut `publishedAt` qui a tué ce bouton pour
+/// tout le parc (voir `Vehicle.aUnePagePublique`).
+///
+/// Le repli de `_signalerEchec` copie le MÊME texte, marqueur compris : le
+/// lien collé à la main vaut celui de la feuille de partage.
 Future<bool> partagerArticle(
   BuildContext context, {
   required String titre,
   required TypeArticle type,
   required int id,
+  String? version,
 }) async {
   final texte = composerMessagePartage(
     titre: titre,
@@ -138,6 +165,7 @@ Future<bool> partagerArticle(
     mentionBoutique: AppLocalizations.of(context).partageMentionBoutique,
     type: type,
     id: id,
+    version: version,
   );
 
   try {

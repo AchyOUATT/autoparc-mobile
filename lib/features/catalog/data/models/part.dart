@@ -19,6 +19,14 @@ class Part extends Equatable {
   final int?    warrantyMonths;
   final bool    isActive;
 
+  /// Le marqueur de version que l'adresse de partage porte en `?m=`, `null`
+  /// quand la réponse ne le dit pas.
+  ///
+  /// Même champ et même rôle que `Vehicle.shareVersion` : une chaîne opaque
+  /// recopiée telle quelle, jamais lue ici. `adresseArticle` porte le pourquoi,
+  /// y compris celui du repli sur l'adresse nue quand ce champ est nul.
+  final String? shareVersion;
+
   /// La photo de couverture, `null` si la pièce n'a aucune photo **utilisable**.
   ///
   /// Le premier élément de [photoUrls], et rien d'autre. Ce n'était pas le cas :
@@ -94,6 +102,7 @@ class Part extends Equatable {
     required this.stock,
     this.warrantyMonths,
     required this.isActive,
+    this.shareVersion,
     this.coverUrl,
     this.photoUrls = const [],
     this.fitments,
@@ -143,6 +152,10 @@ class Part extends Equatable {
       stock:          PartStock.fromJson(json['stock']     as Map<String, dynamic>),
       warrantyMonths: json['warranty_months'] as int?,
       isActive:       json['is_active']       as bool? ?? true,
+      // Clef absente → `null`, et le partage repart sur l'adresse nue. Pas de
+      // `?? ''` : « absent » et « vide » doivent arriver distinctement à
+      // `adresseArticle`, qui les traite déjà tous les deux.
+      shareVersion:   json['share_version']   as String?,
       // Le même premier élément, nommé : les deux ne peuvent plus diverger.
       coverUrl:       photos.isEmpty ? null : photos.first,
       photoUrls:      photos,
