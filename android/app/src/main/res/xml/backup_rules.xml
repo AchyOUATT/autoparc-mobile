@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 11 et en deçà (API 24 à 30 — `minSdk` vaut 24). À partir d'Android
+    12, c'est data_extraction_rules.xml qui s'applique, et il exclut les deux
+    mêmes fichiers pour la même raison.
+
+    LES DEUX FICHIERS SONT NÉCESSAIRES, et ce n'est pas une redondance :
+    Android 12 IGNORE `fullBackupContent` et Android 11 ignore
+    `dataExtractionRules`. N'en poser qu'un laisserait la moitié du parc sans
+    protection — et le parc burkinabé porte beaucoup d'appareils anciens.
+
+    Le raisonnement complet, les mesures qui l'ont établi et la liste de ce qui
+    reste sauvegardé sont dans data_extraction_rules.xml. En une phrase : la
+    clé maîtresse du coffre chiffré vit dans le Keystore matériel et n'est
+    jamais sauvegardée ; restaurer les données sans elle rend chaque lecture
+    impossible, et `resetOnError` efface alors le jeton à chaque lancement.
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+    <exclude domain="sharedpref" path="FlutterSecureKeyStorage.xml" />
+</full-backup-content>

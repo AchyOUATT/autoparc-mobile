@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 12 et au-delà (API 31+). Les versions antérieures lisent
+    backup_rules.xml, qui exclut les deux mêmes fichiers.
+
+    ── POURQUOI CES EXCLUSIONS ────────────────────────────────────────────────
+
+    Le coffre chiffré de `flutter_secure_storage` écrit dans les préférences
+    partagées, mais sa CLÉ MAÎTRESSE vit dans le Keystore matériel et n'est
+    JAMAIS sauvegardée — c'est tout l'intérêt du Keystore. Sans ces exclusions,
+    Android sauvegarde le fichier chiffré et le restaure sur un appareil où la
+    clé n'existe pas : les données reviennent, la clé non, et chaque lecture
+    échoue sur la vérification d'intégrité.
+
+    MESURÉ, et c'est ce qui a motivé ce fichier. Journal du téléphone du
+    propriétaire (Xiaomi 23117RA68G, Android, app 1.5.0 installée depuis Play),
+    au démarrage à froid qui suit une connexion réussie :
+
+        E keystore2: Error::Km(r#VERIFICATION_FAILED)
+        E keystore2: Finish failed for uid 10574
+        E SecureStorageAndroid: EncryptedSharedPreferences initialization failed
+        E SecureStorageAndroid: javax.crypto.AEADBadTagException
+                 Caused by: Signature/MAC verification failed
+
+    Le manifeste ne déclarait AUCUNE règle de sauvegarde, donc le défaut
+    d'Android s'appliquait : tout est sauvegardé, coffre compris.
+
+    ── CE QUE ÇA CASSAIT, ET POURQUOI ÇA NE SE RÉPARAIT PAS TOUT SEUL ─────────
+
+    `ApiClient` pose `resetOnError: true` sur le coffre. À chaque lancement :
+    l'initialisation chiffrée lève, l'exception remonte au gestionnaire du
+    greffon, `resetOnError` déclenche un `deleteAll()`, et le jeton Sanctum
+    disparaît. Le lancement suivant retrouve la même clé désaccordée et
+    recommence. Le garde-fou censé réparer une corruption occasionnelle en
+    fabriquait une permanente : le personnel se reconnectait à CHAQUE
+    ouverture.
+
+    ── CE QUI RESTE SAUVEGARDÉ ───────────────────────────────────────────────
+
+    Tout le reste, et c'est volontaire : la langue choisie, l'état de la
+    démonstration de première utilisation, les brouillons de contrôle et le
+    cache local du catalogue vivent dans des préférences ORDINAIRES, non
+    chiffrées, qui se restaurent sans clé. Les exclure ferait perdre ces
+    réglages à chaque changement de téléphone sans rien résoudre.
+
+    Les deux noms de fichier sont lus dans le code de la version résolue
+    (flutter_secure_storage 9.2.4) et non devinés : `FlutterSecureStorage` est
+    le coffre courant, `FlutterSecureKeyStorage` l'ancien emplacement de clé
+    que le greffon lit encore pour migrer. Une exclusion qui viserait un
+    mauvais chemin ne ferait rien, en silence.
+-->
+<data-extraction-rules>
+    <!-- Sauvegarde vers le nuage (Google One). -->
+    <cloud-backup>
+        <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+        <exclude domain="sharedpref" path="FlutterSecureKeyStorage.xml" />
+    </cloud-backup>
+
+    <!-- Transfert d'appareil à appareil. Même raison : la clé ne suit pas. -->
+    <device-transfer>
+        <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+        <exclude domain="sharedpref" path="FlutterSecureKeyStorage.xml" />
+    </device-transfer>
+</data-extraction-rules>

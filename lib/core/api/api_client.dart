@@ -10,7 +10,40 @@ import 'endpoints.dart';
 const _kTokenKey = 'sanctum_token';
 // encryptedSharedPreferences évite le blocage sur Android (Keystore sans
 // écran de verrouillage configuré — courant sur émulateur).
-// resetOnError nettoie le store en cas de corruption du Keystore.
+//
+// ── resetOnError : IL RESTE, MAIS IL A FAILLI ÊTRE LA CAUSE ───────────────
+//
+// Son commentaire disait « nettoie le store en cas de corruption du
+// Keystore ». C'est vrai, et pendant un temps ça a produit l'inverse de ce
+// qu'on attendait : le personnel se reconnectait à CHAQUE ouverture de
+// l'application.
+//
+// Le mécanisme, mesuré sur le téléphone du propriétaire le 20/10/2026 (app
+// 1.5.0 installée depuis Play), au démarrage à froid suivant une connexion
+// réussie :
+//
+//     E keystore2: Error::Km(r#VERIFICATION_FAILED)
+//     E SecureStorageAndroid: EncryptedSharedPreferences initialization failed
+//     E SecureStorageAndroid: javax.crypto.AEADBadTagException
+//
+// L'initialisation chiffrée lève, l'exception remonte au gestionnaire du
+// greffon, `resetOnError` déclenche un `deleteAll()`, le jeton disparaît. Au
+// lancement suivant la clé est toujours désaccordée : la boucle se referme, et
+// un garde-fou prévu pour une corruption occasionnelle en fabrique une
+// permanente.
+//
+// LA CAUSE N'ÉTAIT PAS ICI. Le manifeste ne déclarait aucune règle de
+// sauvegarde, donc Android sauvegardait le fichier chiffré du coffre — alors
+// que sa clé maîtresse vit dans le Keystore matériel et n'est jamais
+// sauvegardée. Restauré sans sa clé, le fichier est illisible pour toujours.
+// Corrigé par android/app/src/main/res/xml/{backup_rules,data_extraction_rules}.xml.
+//
+// POURQUOI LE GARDER MALGRÉ TOUT, et ce n'est pas de la prudence molle : c'est
+// lui qui RÉPARE les appareils déjà touchés. Leur coffre reste corrompu après
+// la mise à jour ; au premier lancement il est vidé, l'utilisateur se
+// reconnecte une dernière fois, et le coffre se reconstruit avec la clé
+// courante. Sans lui, ces appareils resteraient bloqués jusqu'à une
+// désinstallation.
 const _kStorage = FlutterSecureStorage(
   aOptions: AndroidOptions(
     encryptedSharedPreferences: true,
