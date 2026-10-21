@@ -166,6 +166,11 @@ void main() {
     int? kilometrage = 95000,
     String? boite = 'automatic',
     String? motorisation = 'Essence',
+    // La finition est NULLE PAR DEFAUT dans ce banc, et c'est deliberé : les
+    // cas ci-dessous ont ete ecrits pour mesurer la ligne SANS elle, et leurs
+    // chiffres sont cites dans les commentaires de la carte. Les cas qui la
+    // veulent la demandent.
+    String? finition,
     String? affaire = 'Bonne affaire',
     int photos = 3,
     String nomModele = 'Tucson',
@@ -178,6 +183,7 @@ void main() {
     technique['mileage_km']   = kilometrage;
     technique['transmission'] = boite;
     identite['engine_type']   = motorisation;
+    identite['trim']          = finition;
     identite['model']         = nomModele;
     commerce['deal_label']    = affaire;
     commerce['deal_type']     = affaire == null ? null : 'good_deal';
@@ -244,6 +250,53 @@ void main() {
       await tester.pump();
 
       expect(find.text(km), findsOneWidget);
+      expect(find.textContaining('•'), findsNothing);
+    });
+
+    testWidgets('la finition ouvre la ligne, sous sa forme courte',
+        (tester) async {
+      // Elle avait été RETIRÉE de la carte après mesure, puis redemandée par
+      // le propriétaire. Ce qui a changé entre les deux, c'est la forme : le
+      // référentiel dédouble certains noms pour distinguer deux mécaniques
+      // sous une même désignation — « 528i (4 cyl. 2011-2016) » — et la carte
+      // n'en garde que ce qui précède la parenthèse.
+      //
+      // EN TÊTE et non en queue : c'est la fin de la ligne que l'ellipse
+      // mange, et le carburant est la moins décisive des trois valeurs.
+      await tester.pumpWidget(
+        carte(vehicule(finition: '528i (4 cyl. 2011-2016)')),
+      );
+      await tester.pump();
+
+      expect(find.text('528i • $km • Essence'), findsOneWidget);
+
+      // La parenthèse ne doit apparaître nulle part sur la carte : c'est tout
+      // l'objet du raccourcissement.
+      expect(find.textContaining('4 cyl.'), findsNothing);
+    });
+
+    testWidgets('une finition absente ne laisse pas de séparateur orphelin',
+        (tester) async {
+      // Le cas majoritaire, et de loin : quatre des six véhicules du
+      // catalogue de production n'ont pas de finition.
+      await tester.pumpWidget(carte(vehicule(finition: null)));
+      await tester.pump();
+
+      expect(find.text('$km • Essence'), findsOneWidget);
+      expect(find.textContaining('• •'), findsNothing);
+    });
+
+    testWidgets('la finition seule ne traîne aucun séparateur',
+        (tester) async {
+      // Un véhicule neuf, sans motorisation renseignée : la finition se
+      // retrouve seule, et la règle du séparateur doit tenir pour elle comme
+      // pour les deux autres valeurs.
+      await tester.pumpWidget(
+        carte(vehicule(finition: 'S', kilometrage: null, motorisation: null)),
+      );
+      await tester.pump();
+
+      expect(find.text('S'), findsOneWidget);
       expect(find.textContaining('•'), findsNothing);
     });
 

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:auto/core/theme/app_theme.dart';
 import 'package:auto/core/widgets/bande_filtres.dart';
 import 'package:auto/core/widgets/bouton_flottant_effacable.dart';
+import 'package:auto/core/widgets/grille_maconnerie.dart';
 import 'package:auto/core/widgets/navigation_bar_theme.dart';
 import 'package:auto/features/auth/data/auth_repository.dart';
 import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
@@ -2862,6 +2863,348 @@ void main() {
                 );
               }
             }
+          }
+        }
+      }
+    }
+  });
+
+  // ── 9. LA GRILLE SUIT LA LARGEUR, SUR LES TROIS LISTES ────────────────────
+
+  /// LE DÉFAUT RAPPORTÉ PAR LE PROPRIÉTAIRE SUR SA TABLETTE : « même la
+  /// tablette affiche les recherches en 2 lignes en portrait comme en paysage,
+  /// et les objets sont très gros ».
+  ///
+  /// Il était exact, et il existait EN TROIS EXEMPLAIRES : les véhicules
+  /// figeaient deux colonnes par un `Row` de deux `Expanded` et un pas de 2 en
+  /// dur, les pièces par une répartition sur `i.isEven`, les accessoires par la
+  /// même écriture recopiée. Trois mécanismes, une seule décision — c'est
+  /// pourquoi l'oubli était triple.
+  ///
+  /// CE QUE CE GROUPE VERROUILLE, et c'est pour cela qu'il monte les TROIS
+  /// listes au lieu de se fier au banc des véhicules : que les trois lisent la
+  /// MÊME règle. Un seul des trois qui garderait son pas de 2 serait invisible
+  /// pour n'importe quel banc qui n'en monte qu'une.
+  ///
+  /// LES CHIFFRES D'AVANT, mesurés sur les trois listes avant ce lot, à
+  /// l'échelle 1,0 : 2 colonnes PARTOUT, avec une carte de 149,0 points à 320
+  /// points d'écran et de 629,0 à 1280. Quatre articles sur une page de
+  /// tablette en paysage.
+  group('La grille suit la largeur', () {
+    /// Les écrans de ce groupe : les trois téléphones de référence, la
+    /// frontière des 420 points, et la MÊME tablette dans ses deux
+    /// orientations.
+    ///
+    /// 419 x 900 n'est pas un appareil : c'est le dernier point avant la
+    /// frontière que le propriétaire a posée, et le seul endroit où une erreur
+    /// d'un point dans la règle se verrait.
+    ///
+    /// 480 x 800 N'EN EST PAS UN NON PLUS, et c'est le seul écran de cette
+    /// liste où la vignette proportionnelle se VOIT. Entre 420 et 491 points
+    /// la règle garde deux colonnes — le seuil de la troisième est à 475 points
+    /// disponibles — donc la carte y atteint sa plus grande largeur, et c'est
+    /// exactement la bande que le plancher de 140 ne couvre plus. Sans cette
+    /// case, `hauteurVignetteCatalogue` serait vérifiée sur son plancher
+    /// seulement, c'est-à-dire sur sa moitié inerte.
+    const ecransDeLaGrille = <String, Size>{
+      '320x640': Size(320, 640),
+      '360x720': Size(360, 720),
+      '411x923': Size(411, 923),
+      '419x900': Size(419, 900),
+      '480x800': Size(480, 800),
+      '800x1280 (tablette, portrait)': Size(800, 1280),
+      '1280x800 (tablette, paysage)': Size(1280, 800),
+    };
+
+    /// Les trois listes, avec ce qu'il faut pour les peupler et la marge que
+    /// leur page retire avant la maçonnerie.
+    ///
+    /// LA MARGE EST ÉCRITE ICI PARCE QU'ELLE DIFFÈRE, et c'est un fait du
+    /// dépôt et non un choix de ce lot : les véhicules vivent dans un
+    /// `SliverPadding.all(12)`, donc 24 points ; les pièces et les accessoires
+    /// dans un `Padding.fromLTRB(8, 4, 8, 8)`, donc 16. La règle en est
+    /// indépendante — elle lit ce qu'elle reçoit —, mais un banc qui veut
+    /// prédire son résultat doit savoir ce qu'elle reçoit.
+    final listes = <String, (Widget, double, List<Override>, Finder)>{
+      'véhicules': (
+        const VehicleListPage(),
+        24.0,
+        [
+          catalogRepositoryProvider.overrideWithValue(
+            _Depot(List.generate(24, (_) => vehicule())),
+          ),
+        ],
+        find.byType(VehicleCard),
+      ),
+      'pièces': (
+        const PartListPage(),
+        16.0,
+        [
+          catalogRepositoryProvider.overrideWithValue(
+            _Depot(const [], pieces: List.generate(24, (_) => _piece())),
+          ),
+          partCategoriesProvider.overrideWith((_) async => deuxBranches),
+          categoriesAvecPiecesProvider.overrideWith((_) async => deuxBranches),
+        ],
+        find.byType(Card),
+      ),
+      'accessoires': (
+        const AccessoryListPage(),
+        16.0,
+        [
+          catalogRepositoryProvider.overrideWithValue(
+            _Depot(
+              const [],
+              accessoires: List.generate(24, (_) => _accessoire()),
+            ),
+          ),
+          categoriesAccessoiresOccupeesProvider.overrideWith(
+            (_) async => {'esthetique', 'confort'},
+          ),
+        ],
+        find.byType(Card),
+      ),
+    };
+
+    /// Les abscisses DISTINCTES des cartes posées, c'est-à-dire le nombre de
+    /// colonnes RENDU.
+    ///
+    /// Lu sur les objets de rendu et non sur le montage : les trois listes
+    /// construisaient leurs colonnes de trois façons différentes, et un banc
+    /// qui aurait compté des `Expanded` aurait mesuré l'une des trois.
+    /// Le REGROUPEMENT se fait au dixième de point, pour que deux cartes d'une
+    /// même colonne que la division place à un millième l'une de l'autre n'en
+    /// fassent pas deux ; les abscisses RENDUES, elles, ne sont pas arrondies.
+    /// La première version l'était, et l'écart entre colonnes qu'on en
+    /// déduisait valait 10,043 au lieu de 10,0 à sept colonnes — l'erreur
+    /// d'arrondi, pas celle de la grille.
+    List<double> abscisses(WidgetTester tester, Finder cartes) {
+      final parColonne = <String, double>{};
+      for (final c in tester.renderObjectList<RenderBox>(cartes)) {
+        final dx = c.localToGlobal(Offset.zero).dx;
+        parColonne.putIfAbsent(dx.toStringAsFixed(1), () => dx);
+      }
+      return parColonne.values.toList()..sort();
+    }
+
+    for (final liste in listes.entries) {
+      for (final ecran in ecransDeLaGrille.entries) {
+        testWidgets('${liste.key} en ${ecran.key}', (tester) async {
+          final (page, marge, surcharges, cartes) = liste.value;
+          await poserPage(
+            tester,
+            ecran: ecran.value,
+            echelle: 1.0,
+            page: page,
+            surcharges: surcharges,
+            barreDuBas: true,
+          );
+
+          final disponible = ecran.value.width - marge;
+          final attendu = nombreDeColonnes(disponible);
+          final colonnes = abscisses(tester, cartes);
+
+          expect(
+            colonnes,
+            isNotEmpty,
+            reason:
+                'Aucune carte posée : la liste est restée sur son '
+                'indicateur, et ce test ne mesure rien.',
+          );
+          expect(
+            colonnes.length,
+            attendu,
+            reason:
+                '${liste.key} en ${ecran.key} : ${colonnes.length} colonnes '
+                'posées pour $attendu attendues sur '
+                '${disponible.toStringAsFixed(0)} points disponibles. Cette '
+                'liste a gardé son propre mécanisme au lieu de lire '
+                '`nombreDeColonnes`.',
+          );
+
+          // LA CONTRAINTE DU PROPRIÉTAIRE, assertée sur chaque liste et non
+          // déduite de la règle : deux colonnes partout sous 420 points.
+          if (ecran.value.width < 420) {
+            expect(
+              colonnes.length,
+              2,
+              reason:
+                  '${liste.key} en ${ecran.key} : '
+                  '${colonnes.length} colonnes sous 420 points d\'écran. '
+                  '« Non, je veux 2 annonces par lignes. »',
+            );
+          }
+
+          // L'ÉCART ENTRE COLONNES, qui doit rester celui de chaque liste —
+          // 10 points pour les véhicules, 6 pour les deux autres — quel que
+          // soit leur nombre.
+          final largeurCarte = tester
+              .renderObject<RenderBox>(cartes.first)
+              .size
+              .width;
+          if (colonnes.length > 1) {
+            final ecart = colonnes[1] - colonnes[0] - largeurCarte;
+            expect(
+              ecart,
+              closeTo(liste.key == 'véhicules' ? 10.0 : 6.0, 0.01),
+              reason:
+                  '${liste.key} en ${ecran.key} : l\'écart entre deux '
+                  'colonnes vaut ${ecart.toStringAsFixed(2)} points.',
+            );
+          }
+
+          // ── LA HAUTEUR DE VIGNETTE, pour les deux listes qui en ont une ──
+          //
+          // La carte d'un véhicule n'est pas concernée : sa photo est un
+          // `AspectRatio(16/9)`, donc déjà proportionnelle à la colonne. Celle
+          // d'une pièce ou d'un accessoire recevait une CONSTANTE, et c'est
+          // l'autre moitié du « les objets sont très gros ».
+          if (liste.key != 'véhicules') {
+            final vignette = tester
+                .renderObject<RenderBox>(
+                  find
+                      .descendant(of: cartes.first, matching: find.byType(Stack))
+                      .first,
+                )
+                .size
+                .height;
+            expect(
+              vignette,
+              closeTo(hauteurVignetteCatalogue(largeurCarte), 0.01),
+              reason:
+                  '${liste.key} en ${ecran.key} : la vignette fait '
+                  '${vignette.toStringAsFixed(1)} points dans une colonne de '
+                  '${largeurCarte.toStringAsFixed(1)}.',
+            );
+            if (ecran.value.width < 420) {
+              expect(
+                vignette,
+                hauteurVignettePlancher,
+                reason:
+                    '${liste.key} en ${ecran.key} : la vignette fait '
+                    '${vignette.toStringAsFixed(1)} points au lieu des '
+                    '$hauteurVignettePlancher que le téléphone affichait '
+                    'avant ce lot.',
+              );
+            }
+          }
+
+          // ignore: avoid_print
+          print(
+            '── grille ${liste.key.padRight(11)} ${ecran.key.padRight(30)} '
+            'colonnes=${colonnes.length} '
+            'carte=${largeurCarte.toStringAsFixed(1)}',
+          );
+        });
+      }
+    }
+  });
+
+  // ── 10. RIEN NE SE COUPE AUX LARGEURS DE TABLETTE NON PLUS ────────────────
+
+  /// LA RÈGLE DU DÉPÔT, ÉTENDUE À CE QUE LA GRILLE VIENT DE PRODUIRE.
+  ///
+  /// « Rien ne se coupe jusqu'à l'échelle 1,5 » était vérifiée sur les trois
+  /// téléphones. Elle ne suffit plus : à 1280 points la grille rend SEPT
+  /// colonnes, donc une carte de 175,4 points sur la liste des pièces et de
+  /// 170,9 sur celle des véhicules — plus ÉTROITE que les 188,5 du Pixel, et
+  /// une largeur qu'aucun banc n'avait éprouvée. Une grille qui ajoute des
+  /// colonnes peut très bien casser le texte en ajoutant de la place.
+  ///
+  /// LES DEUX LANGUES, parce que c'est la largeur du texte qui décide : le prix
+  /// change de ponctuation d'une langue à l'autre, les libellés de puces et de
+  /// badges viennent des `.arb`, et `bandes_filtres_test.dart` porte déjà trois
+  /// cas où l'anglais mesurait autrement que le français.
+  ///
+  /// AUCUNE EXEMPTION : `valeursSansBorne` reste vide. Si une de ces cases
+  /// tombait, ce serait un défaut à corriger, pas une valeur à inscrire.
+  group('Rien ne se coupe sur tablette', () {
+    const ecransTablette = <String, Size>{
+      '800x1280 (portrait)': Size(800, 1280),
+      '1280x800 (paysage)': Size(1280, 800),
+    };
+
+    final listes = <String, (Widget, List<Override>, String)>{
+      'véhicules': (
+        const VehicleListPage(),
+        [
+          catalogRepositoryProvider.overrideWithValue(
+            _Depot(List.generate(12, (_) => vehicule())),
+          ),
+        ],
+        'Véhicules',
+      ),
+      'pièces': (
+        const PartListPage(),
+        [
+          catalogRepositoryProvider.overrideWithValue(
+            _Depot(const [], pieces: List.generate(12, (_) => _piece())),
+          ),
+          partCategoriesProvider.overrideWith((_) async => deuxBranches),
+          categoriesAvecPiecesProvider.overrideWith((_) async => deuxBranches),
+        ],
+        'Pièces',
+      ),
+      'accessoires': (
+        const AccessoryListPage(),
+        [
+          catalogRepositoryProvider.overrideWithValue(
+            _Depot(
+              const [],
+              accessoires: List.generate(12, (_) => _accessoire()),
+            ),
+          ),
+          categoriesAccessoiresOccupeesProvider.overrideWith(
+            (_) async => {'esthetique', 'confort'},
+          ),
+        ],
+        'Accessoires',
+      ),
+    };
+
+    for (final liste in listes.entries) {
+      for (final ecran in ecransTablette.entries) {
+        for (final echelle in echellesMesurees) {
+          for (final langue in langues.entries) {
+            testWidgets(
+              '${liste.key} en ${ecran.key}, texte x$echelle, ${langue.key}',
+              (tester) async {
+                final (page, surcharges, _) = liste.value;
+                await poserPage(
+                  tester,
+                  ecran: ecran.value,
+                  echelle: echelle,
+                  locale: langue.value,
+                  page: page,
+                  surcharges: surcharges,
+                  barreDuBas: true,
+                );
+
+                // À 2,0 on MESURE sans exiger l'absence de troncature : la
+                // décision et sa raison sont dans `support/echelles.dart`, et
+                // rien n'en est recopié ici.
+                if (!tenue(echelle)) {
+                  expect(
+                    tester.takeException(),
+                    isNull,
+                    reason:
+                        'Une exception de mise en page sur ${liste.key} en '
+                        '${ecran.key} à l\'échelle $echelle : même au-delà de '
+                        'la frontière, rien ne doit jeter.',
+                  );
+                  return;
+                }
+
+                aucuneTroncature(
+                  tester,
+                  racine: find.byType(Scaffold).first,
+                  ou:
+                      'La liste des ${liste.key} en ${ecran.key} à l\'échelle '
+                      '$echelle, en ${langue.key}',
+                  echelle: echelle,
+                );
+              },
+            );
           }
         }
       }

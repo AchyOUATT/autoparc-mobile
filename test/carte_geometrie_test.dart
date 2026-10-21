@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:auto/core/theme/app_theme.dart';
+import 'package:auto/core/widgets/grille_maconnerie.dart';
 import 'package:auto/core/widgets/navigation_bar_theme.dart';
 import 'package:auto/features/auth/data/auth_repository.dart';
 import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
@@ -202,6 +203,39 @@ void main() {
     '360x720': Size(360, 720),
     '411x923': Size(411, 923),
   };
+
+  /// LES LARGEURS DE TABLETTE, et pourquoi elles arrivent dans ce banc.
+  ///
+  /// Le propriétaire a signalé sur SA tablette que les listes restaient à deux
+  /// colonnes « en portrait comme en paysage » et que les cartes y étaient
+  /// énormes. La grille rend désormais N colonnes, N venant de la largeur ; ce
+  /// qu'il faut alors vérifier n'est plus seulement le compte de colonnes, mais
+  /// que la carte PLUS ÉTROITE que la grille produit à ces largeurs ne se
+  /// remette pas à tronquer. À 1280 points la carte fait 170,9 points, soit
+  /// moins que les 188,5 du Pixel : c'est une largeur que le tableau de
+  /// troncature n'avait jamais éprouvée.
+  ///
+  /// LES DEUX ORIENTATIONS SONT LÀ, et la règle ne les distingue pas : une
+  /// tablette en portrait fait 800 points de large, la même en paysage 1280, et
+  /// c'est la LARGEUR seule qui décide. Les deux cases sont donc deux largeurs,
+  /// pas deux orientations — mais elles sont bien les deux orientations de la
+  /// même tablette, qui est ce que le propriétaire regarde.
+  const ecransTablette = <String, Size>{
+    '800x1280': Size(800, 1280),
+    '1280x800': Size(1280, 800),
+  };
+
+  /// Les écrans du TABLEAU DE TRONCATURE : les trois téléphones et les deux
+  /// largeurs de tablette.
+  ///
+  /// Le groupe « Densité », lui, reste sur [ecrans] SEULS, et ce n'est pas un
+  /// oubli : son tableau `attendu` est un relevé d'annonces entières sur
+  /// téléphone, avec le récit des arbitrages qui l'ont produit — les 4,9 points
+  /// qui manquent à 320 × 1,3, le prix du plancher de cible tactile. Compter
+  /// des annonces sur une tablette est une autre question, et elle est traitée
+  /// là où elle se pose : par le compte de COLONNES, ci-dessous et dans
+  /// `bandes_filtres_test.dart`.
+  const ecransTronquables = <String, Size>{...ecrans, ...ecransTablette};
 
   /// 1,0 est le réglage par défaut — et c'est là que le défaut d'origine vivait.
   /// 1,3 est le deuxième cran des réglages Android, « Grande police ». 1,5 est
@@ -554,7 +588,7 @@ void main() {
   // ── LE TABLEAU DE TRONCATURE, remesuré à chaque exécution ─────────────────
 
   group('Tableau de troncature', () {
-    for (final ecran in ecrans.entries) {
+    for (final ecran in ecransTronquables.entries) {
       for (final echelle in echelles) {
         for (final mode in modes.entries) {
           for (final langue in langues.entries) {
@@ -726,16 +760,28 @@ void main() {
     }
   });
 
-  // ── DEUX PAR RANGÉE, ET C'EST LA DÉCISION DU PROPRIÉTAIRE ─────────────────
+  // ── DEUX PAR RANGÉE SUR TÉLÉPHONE, N AILLEURS ─────────────────────────────
 
-  group('Deux colonnes en maçonnerie', () {
-    testWidgets('à toutes les largeurs et à toutes les échelles', (
+  group('Maçonnerie à N colonnes', () {
+    /// La largeur que la maçonnerie des véhicules reçoit : l'écran moins les
+    /// 24 points du `SliverPadding.all(12)`.
+    ///
+    /// DÉDUITE DE LA PAGE ET NON RECOPIÉE D'UN CHIFFRE : c'est cette largeur
+    /// que `nombreDeColonnes` lit en production, et la mesurer autrement
+    /// vérifierait autre chose.
+    double disponible(double ecran) => ecran - 24;
+
+    testWidgets('deux colonnes sur téléphone, à toutes les échelles', (
       tester,
     ) async {
       // L'ANCIEN SEUIL EST MORT. Il valait 808 points, donc aucun téléphone
       // n'avait deux colonnes : le parc visé — 320 à 430 points — était en
       // colonne unique. Le propriétaire a tranché pour deux par rangée partout,
       // et ce test est la décision rendue vérifiable.
+      //
+      // IL NE BOUGE PAS AVEC CE LOT, et c'est le point : la grille rend
+      // désormais N colonnes, mais sur les trois téléphones de référence N vaut
+      // 2, aux quatre échelles, exactement comme avant.
       for (final ecran in ecrans.values) {
         for (final echelle in echelles) {
           await poserPage(
@@ -766,6 +812,110 @@ void main() {
             );
           }
         }
+      }
+    });
+
+    testWidgets('le nombre de colonnes POSÉ est celui que la règle dit', (
+      tester,
+    ) async {
+      // CE QUE CE TEST FERME. La page écrivait son 2 elle-même, dans un `Row`
+      // de deux `Expanded` et un pas de 2 en dur ; les deux autres listes
+      // écrivaient le leur autrement. Rien ne reliait la mise en page à une
+      // décision, donc la tablette a pu être oubliée trois fois.
+      //
+      // Il compare la grille RENDUE à `nombreDeColonnes`, c'est-à-dire à la
+      // règle de production. Ce que cela ne prouve pas — que la règle elle-même
+      // dit la bonne chose — est prouvé ailleurs, par des chiffres écrits à la
+      // main : voir `grille_colonnes_test.dart`.
+      //
+      // VINGT-QUATRE VÉHICULES, parce que la première rangée doit être PLEINE
+      // jusqu'à sept colonnes pour que son compte veuille dire quelque chose.
+      for (final ecran in ecransTronquables.entries) {
+        for (final echelle in echelles) {
+          await poserPage(
+            tester,
+            ecran: ecran.value,
+            echelle: echelle,
+            mode: Brightness.light,
+            vehicules: List.generate(24, (_) => vehicule()),
+          );
+
+          final attendu = nombreDeColonnes(disponible(ecran.value.width));
+
+          // Les abscisses DISTINCTES des cartes : c'est le nombre de colonnes
+          // réellement posées, et il se lit sans rien savoir du montage.
+          final abscisses = tester
+              .renderObjectList<RenderBox>(find.byType(VehicleCard))
+              .map(
+                (c) => double.parse(
+                  c.localToGlobal(Offset.zero).dx.toStringAsFixed(1),
+                ),
+              )
+              .toSet();
+
+          expect(
+            abscisses.length,
+            attendu,
+            reason:
+                '${ecran.key} à l\'échelle $echelle : ${abscisses.length} '
+                'colonnes posées pour $attendu attendues sur '
+                '${disponible(ecran.value.width).toStringAsFixed(0)} points '
+                'disponibles.',
+          );
+          expect(
+            rangs(tester).first.cartes,
+            attendu,
+            reason:
+                '${ecran.key} à l\'échelle $echelle : la première rangée '
+                'porte ${rangs(tester).first.cartes} cartes pour $attendu '
+                'colonnes.',
+          );
+        }
+      }
+    });
+
+    testWidgets('sur tablette la carte reste à portée de celle du Pixel', (
+      tester,
+    ) async {
+      // LA MOITIÉ « LES OBJETS SONT TRÈS GROS » DU DÉFAUT. Mesuré AVANT ce lot,
+      // à deux colonnes figées : la carte faisait 383,0 points à 800 et 623,0 à
+      // 1280, contre 188,5 sur le Pixel. Quatre articles par page.
+      //
+      // La borne est posée à 1,25 fois la carte du Pixel, et pas au centième
+      // près : la règle vise 190 points et l'arrondi la laisse osciller dans
+      // une bande — ce que le test interdit, c'est le RETOUR de la carte
+      // géante, pas une variation de quelques points.
+      const carteDuPixel = 188.5;
+      for (final ecran in ecransTablette.entries) {
+        await poserPage(
+          tester,
+          ecran: ecran.value,
+          echelle: 1.0,
+          mode: Brightness.light,
+          vehicules: List.generate(24, (_) => vehicule()),
+        );
+
+        final largeur = tester
+            .renderObject<RenderBox>(find.byType(VehicleCard).first)
+            .size
+            .width;
+
+        expect(
+          largeur,
+          lessThan(carteDuPixel * 1.25),
+          reason:
+              '${ecran.key} : une carte fait ${largeur.toStringAsFixed(1)} '
+              'points, contre $carteDuPixel sur le Pixel. La grille est '
+              'retombée sur des colonnes figées.',
+        );
+        expect(
+          largeur,
+          greaterThan(143.0),
+          reason:
+              '${ecran.key} : une carte fait ${largeur.toStringAsFixed(1)} '
+              'points, moins que les 143,0 du plus petit téléphone — une '
+              'largeur que le tableau de troncature n\'a jamais éprouvée.',
+        );
       }
     });
 
@@ -1751,6 +1901,24 @@ void main() {
     /// bande de puces, qui était comptée deux fois. Le garde-fou de la coque,
     /// lui, mesurait 392,0 et disait vrai : c'est ce commentaire qui avait
     /// dérivé. Les comptes d'annonces, eux, étaient justes.
+    ///
+    /// CE TABLEAU EST RELEVÉ SANS FINITION, et il faut le dire depuis qu'elle
+    /// est revenue sur la carte. Les cas ci-dessous appellent tous
+    /// `vehicule(finition: null)` : leur vert ne dit donc RIEN du coût de la
+    /// finition, et croire le contraire serait la garde inerte que ce dépôt a
+    /// déjà rencontrée trois fois.
+    ///
+    /// Ce coût a été mesuré séparément, en posant la plus longue finition du
+    /// référentiel — « Hybrid Limited », quatorze signes — dans ce banc ET
+    /// dans la fixture de `bandes_filtres_test.dart`. Les deux restent verts :
+    /// les comptes d'annonces entières ci-dessous ne bougent PAS, et rien ne
+    /// se coupe jusqu'à 1,5 dans les deux langues.
+    ///
+    /// La raison tient à la forme de la ligne : elle s'ellipse sur UNE ligne
+    /// au lieu de se replier sur deux, donc la carte ne grandit pas. Ce que la
+    /// finition coûte n'est pas de la hauteur mais la FIN de la ligne — le
+    /// carburant, posé en dernier à dessein parce qu'il est le moins décisif
+    /// des trois pour un acheteur.
     ///
     ///              rangée   première   liste    annonces entières
     ///   320  x1,0   231,9     44,0     312,0          2

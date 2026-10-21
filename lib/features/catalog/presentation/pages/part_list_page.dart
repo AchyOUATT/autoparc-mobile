@@ -12,6 +12,7 @@ import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/bande_filtres.dart';
 import '../../../../core/widgets/bouton_flottant_effacable.dart';
 import '../../../../core/widgets/catalog_image.dart';
+import '../../../../core/widgets/grille_maconnerie.dart';
 import '../../../../core/widgets/titre_barre.dart';
 import '../../../../core/api/api_exception.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
@@ -316,17 +317,12 @@ class _FilterBar extends ConsumerWidget {
 
 // ── Grille décalée ───────────────────────────────────────────────────
 
-// Hauteur unique : des vignettes de tailles differentes decalaient les deux
-// colonnes, si bien que les prix ne s'alignaient jamais d'une carte a l'autre.
-// Sur un catalogue ou l'on compare des prix, c'est une gene, pas un effet.
-//
-// 140 et non 118 depuis le 2026-10-16. Sur deux colonnes, une carte fait
-// environ 170 points de large : a 118 l'image tenait dans un cadre nettement
-// plus large que haut, ce qui rogne en hauteur des photos de pieces presque
-// toujours cadrees droit. A 140 le cadre approche le carre et la piece occupe
-// davantage de la vignette. La place vient de la ligne de categorie retiree
-// des cartes, et du nom passe a labelSmall.
-const _imgHeight = 140.0;
+// LA CONSTANTE `_imgHeight = 140.0` A QUITTÉ CE FICHIER. Elle y était écrite
+// deux fois — ici et dans `accessory_list_page.dart` — avec la consigne « les
+// deux valeurs doivent rester egales », qu'aucun banc ne tenait. Elle est
+// devenue le PLANCHER de `hauteurVignetteCatalogue`, dans
+// core/widgets/grille_maconnerie.dart, qui porte aussi la raison du 140 et
+// celle du rapport qui prend le relais au-dessus des largeurs de téléphone.
 
 class _PartList extends StatelessWidget {
   final List<Part> parts;
@@ -392,42 +388,46 @@ class _PartList extends StatelessWidget {
   }
 }
 
+/// L'écart entre deux colonnes de cette liste.
+///
+/// 6 et non 10 comme sur les véhicules : la carte d'une pièce porte déjà une
+/// marge de `Card`, et les deux listes n'ont jamais été réglées ensemble. La
+/// valeur est inchangée par ce lot — elle est seulement nommée, parce que la
+/// maçonnerie partagée la réclame et qu'un 6 anonyme passé en argument se
+/// serait lu comme un choix neuf.
+const double _ecartColonnes = 6.0;
+
+/// La grille des pièces : la maçonnerie partagée, à N colonnes.
+///
+/// ELLE RÉPARTISSAIT SUR `i.isEven`, c'est-à-dire DEUX colonnes en dur, et la
+/// liste des accessoires portait la même écriture recopiée. Les deux lisent
+/// maintenant `nombreDeColonnes` — voir core/widgets/grille_maconnerie.dart
+/// pour le seuil, son raisonnement et la garantie des deux colonnes sous 420
+/// points.
+///
+/// LA HAUTEUR DE VIGNETTE SUIT LA COLONNE, et c'est la seconde moitié du
+/// défaut : la constante seule laissait une image de 140 points dans une carte
+/// de 629 à 1280 points d'écran. `hauteurVignetteCatalogue` la calcule depuis
+/// la largeur reçue, avec un plancher à 140 qui rend les téléphones
+/// rigoureusement identiques à ce qu'ils étaient.
 class _StaggeredPartsGrid extends StatelessWidget {
   final List<Part> parts;
   const _StaggeredPartsGrid({required this.parts});
 
   @override
   Widget build(BuildContext context) {
-    final left = <(Part, double)>[];
-    final right = <(Part, double)>[];
-    for (int i = 0; i < parts.length; i++) {
-      const h = _imgHeight;
-      if (i.isEven)
-        left.add((parts[i], h));
-      else
-        right.add((parts[i], h));
-    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              children: left
-                  .map((e) => _PartCard(part: e.$1, imageHeight: e.$2))
-                  .toList(),
-            ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Column(
-              children: right
-                  .map((e) => _PartCard(part: e.$1, imageHeight: e.$2))
-                  .toList(),
-            ),
-          ),
-        ],
+      child: MaconnerieColonnes(
+        nombre: parts.length,
+        ecartHorizontal: _ecartColonnes,
+        // Pas d'écart vertical ajouté : `_PartCard` pose déjà un
+        // `Card(margin: EdgeInsets.only(bottom: 8))`. En ajouter un ici
+        // doublerait l'espace entre deux cartes d'une même colonne.
+        carte: (_, i, largeurColonne) => _PartCard(
+          part: parts[i],
+          imageHeight: hauteurVignetteCatalogue(largeurColonne),
+        ),
       ),
     );
   }

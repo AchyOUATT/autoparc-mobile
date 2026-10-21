@@ -10,6 +10,7 @@ import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/bande_filtres.dart';
 import '../../../../core/widgets/bouton_flottant_effacable.dart';
 import '../../../../core/widgets/catalog_image.dart';
+import '../../../../core/widgets/grille_maconnerie.dart';
 import '../../../../core/widgets/titre_barre.dart';
 import '../../../../core/api/api_exception.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
@@ -314,10 +315,15 @@ class _FilterBar extends ConsumerWidget {
 
 // ── Grille décalée ───────────────────────────────────────────────
 
-// Hauteur unique, et 140 depuis le 2026-10-16 : voir la note detaillee sur la
-// page des pieces. Les deux valeurs doivent rester egales, les deux listes
-// etant cote a cote dans la meme barre d'onglets.
-const _imgHeight = 140.0;
+// LA CONSTANTE `_imgHeight = 140.0` A QUITTÉ CE FICHIER, et avec elle la
+// consigne « les deux valeurs doivent rester egales » que rien ne vérifiait :
+// les deux listes lisent désormais `hauteurVignetteCatalogue`, dans
+// core/widgets/grille_maconnerie.dart, donc l'égalité n'est plus une consigne
+// mais un fait.
+//
+// L'écart entre deux colonnes, lui, reste écrit ici : 6 points, comme avant ce
+// lot, et comme sur la liste des pièces.
+const double _ecartColonnes = 6.0;
 
 // Icônes par catégorie d'accessoire
 const _categoryIcons = <String, IconData>{
@@ -388,46 +394,29 @@ class _AccessoryList extends StatelessWidget {
   }
 }
 
+/// La grille des accessoires : la maçonnerie partagée, à N colonnes.
+///
+/// ELLE RÉPARTISSAIT SUR `i.isEven`, recopié de la liste des pièces — le
+/// troisième des trois mécanismes qui figeaient deux colonnes. La décision est
+/// désormais lue dans core/widgets/grille_maconnerie.dart, et la vignette y
+/// prend sa hauteur de la largeur de colonne au lieu d'une constante.
 class _StaggeredAccessoryGrid extends StatelessWidget {
   final List<Accessory> accessories;
   const _StaggeredAccessoryGrid({required this.accessories});
 
   @override
   Widget build(BuildContext context) {
-    final left = <(Accessory, double)>[];
-    final right = <(Accessory, double)>[];
-    for (int i = 0; i < accessories.length; i++) {
-      const h = _imgHeight;
-      if (i.isEven)
-        left.add((accessories[i], h));
-      else
-        right.add((accessories[i], h));
-    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              children: left
-                  .map(
-                    (e) => _AccessoryCard(accessory: e.$1, imageHeight: e.$2),
-                  )
-                  .toList(),
-            ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Column(
-              children: right
-                  .map(
-                    (e) => _AccessoryCard(accessory: e.$1, imageHeight: e.$2),
-                  )
-                  .toList(),
-            ),
-          ),
-        ],
+      child: MaconnerieColonnes(
+        nombre: accessories.length,
+        ecartHorizontal: _ecartColonnes,
+        // Pas d'écart vertical ajouté : `_AccessoryCard` pose déjà sa marge
+        // basse de `Card`, exactement comme la carte d'une pièce.
+        carte: (_, i, largeurColonne) => _AccessoryCard(
+          accessory: accessories[i],
+          imageHeight: hauteurVignetteCatalogue(largeurColonne),
+        ),
       ),
     );
   }

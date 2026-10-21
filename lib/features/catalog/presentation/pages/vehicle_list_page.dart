@@ -7,11 +7,13 @@ import 'package:go_router/go_router.dart';
 import '../../data/models/vehicle.dart';
 import '../providers/catalog_providers.dart';
 import '../../../../shared/models/paged_state.dart';
+import '../libelles_vehicule.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/bande_filtres.dart';
 import '../../../../core/widgets/bouton_flottant_effacable.dart';
 import '../../../../core/widgets/brand_logo.dart';
 import '../../../../core/widgets/catalog_image.dart';
+import '../../../../core/widgets/grille_maconnerie.dart';
 import '../../../../core/widgets/titre_barre.dart';
 import '../../../../core/api/api_exception.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -539,9 +541,12 @@ String libelleCarrosserieFiltre(AppLocalizations l10n, String valeur) =>
 /// Ce que la grille retient avant d'arriver au texte d'une carte.
 ///
 /// La grille vit dans un `SliverPadding.all(12)`, donc la largeur utile vaut
-/// `écran − 24` ; deux colonnes séparées de [_ecartColonnes] y mesurent
-/// `(écran − 24 − 10) / 2` chacune — et la maçonnerie n'y change rien, l'écart
-/// restant un `SizedBox` entre les deux `Expanded`. De cette case, `Card` retire 4 points de
+/// `écran − 24` ; N colonnes séparées de [_ecartColonnes] y mesurent
+/// `(écran − 24 − 10 × (N − 1)) / N` chacune — et la maçonnerie n'y change
+/// rien, l'écart restant un `SizedBox` entre les `Expanded`. SUR TÉLÉPHONE N
+/// VAUT 2, à toutes les largeurs du parc visé, et les chiffres ci-dessous sont
+/// ceux de ce cas-là : `nombreDeColonnes` ne rend 3 qu'à partir de 499 points
+/// d'écran sur cette page. De cette case, `Card` retire 4 points de
 /// marge de chaque côté — une valeur qui n'est écrite nulle part dans ce
 /// fichier et qui a déjà faussé un calcul de lot — et le `Padding` du bloc de
 /// texte 8 de plus, soit 24 en tout.
@@ -588,8 +593,21 @@ const int _lignesDeLaCarte = 7;
 
 // ── Grille de véhicules ─────────────────────────────────────────
 
-/// La liste des cartes du catalogue : DEUX COLONNES en maçonnerie, à toutes les
-/// largeurs.
+/// La liste des cartes du catalogue, en maçonnerie, sur un nombre de colonnes
+/// QUI SUIT LA LARGEUR DISPONIBLE.
+///
+/// Cette phrase disait « DEUX COLONNES à toutes les largeurs », et c'était
+/// vrai — c'est précisément ce que le propriétaire a signalé depuis sa
+/// tablette : « même la tablette affiche les recherches en 2 lignes en
+/// portrait comme en paysage, et les objets sont très gros ». À 1280 points,
+/// deux colonnes donnaient des cartes de 629 points.
+///
+/// La décision du nombre de colonnes vit désormais dans
+/// `core/widgets/grille_maconnerie.dart`, en UN seul endroit que les trois
+/// listes lisent : elle était écrite trois fois, et c'est pour cela que le
+/// défaut existait en triple. Deux colonnes restent garanties sous 420 points
+/// — la demande d'origine du propriétaire, « non je veux 2 annonces par
+/// lignes » —, et mesurées inchangées au centième à 320, 360, 411 et 419.
 ///
 /// Publique pour être mesurée en test. Le relecteur du lot précédent a montré
 /// qu'une carte posée dans un `SizedBox` fait à la main, sous un `MaterialApp`
@@ -688,7 +706,19 @@ class VehicleGrid extends StatelessWidget {
     );
   }
 
-  /// Les cartes : DEUX COLONNES EN MAÇONNERIE, à toutes les largeurs.
+  /// Les cartes : UNE MAÇONNERIE À N COLONNES, N venant de la largeur.
+  ///
+  /// DEUX COLONNES SUR TÉLÉPHONE, et c'est la décision du propriétaire, qui
+  /// n'est pas remise en cause. Ce qui a changé, c'est que le 2 n'est plus
+  /// écrit ici : il est RENDU par `nombreDeColonnes`, dans
+  /// core/widgets/grille_maconnerie.dart, qui décide sur la largeur disponible
+  /// et garantit deux colonnes bien au-delà de toute largeur de téléphone. Les
+  /// trois listes du catalogue lisent la même règle — elles écrivaient chacune
+  /// la leur, et c'est pour cela que la tablette a été oubliée trois fois.
+  ///
+  /// Les mesures de vide intérieur ci-dessous ont été relevées à deux colonnes,
+  /// sur des écrans de téléphone, et elles y restent vraies : la grille y rend
+  /// exactement la même mise en page qu'avant ce lot.
   ///
   /// POURQUOI PLUS DE RANGÉES. Les rangées étaient le montage du lot précédent :
   /// un `SliverList` dont chaque élément était un `Row` de deux `Expanded`. Une
@@ -721,10 +751,12 @@ class VehicleGrid extends StatelessWidget {
   /// soit 10 cartes par colonne.
   ///
   /// LA RÉPARTITION EST L'ALTERNANCE, et c'est le choix le plus prévisible :
-  /// index pair à gauche, impair à droite. Elle garde l'ordre de lecture du
-  /// catalogue — la première annonce en haut à gauche, la deuxième à sa droite —
-  /// que la seule autre répartition simple, « la première moitié à gauche », fait
-  /// perdre : la deuxième annonce s'y retrouverait au milieu de l'écran.
+  /// la carte `i` va dans la colonne `i % N`. À deux colonnes c'est le pair à
+  /// gauche et l'impair à droite, mot pour mot ce que faisait le pas de 2 en
+  /// dur. Elle garde l'ordre de lecture du catalogue — la première annonce en
+  /// haut à gauche, la deuxième à sa droite — que la seule autre répartition
+  /// simple, « la première moitié à gauche », fait perdre : la deuxième annonce
+  /// s'y retrouverait au milieu de l'écran.
   ///
   /// CE QU'ELLE IMPLIQUE QUAND UNE COLONNE DEVIENT PLUS LONGUE QUE L'AUTRE, et
   /// c'est le défaut de l'alternance : elle ne corrige rien. Une colonne qui a
@@ -773,66 +805,37 @@ class VehicleGrid extends StatelessWidget {
   /// hors de question. La maçonnerie rend la question sans objet — plus rien ne
   /// demande à deux cartes d'avoir la même hauteur.
   ///
-  /// LA DERNIÈRE ANNONCE D'UNE COLONNE IMPAIRE GARDE SA DEMI-LARGEUR. C'est
-  /// acquis par construction et non par un `Expanded` vide : les deux colonnes
-  /// sont les deux `Expanded` du `Row`, donc elles font chacune la moitié de la
-  /// largeur utile quel que soit le nombre de cartes qu'elles portent. Toutes
+  /// LA DERNIÈRE ANNONCE D'UNE COLONNE INCOMPLÈTE GARDE SA LARGEUR DE COLONNE.
+  /// C'est acquis par construction et non par un `Expanded` vide : les colonnes
+  /// SONT les `Expanded` du `Row`, donc elles se partagent la largeur utile à
+  /// parts égales quel que soit le nombre de cartes qu'elles portent. Toutes
   /// les photos de la liste gardent la même hauteur pour la même raison — même
-  /// largeur, ratio fixe (voir [_ratioPhoto]) —, mais seules les deux premières
-  /// ont encore le même bord inférieur : au-delà, la maçonnerie les décale.
+  /// largeur, ratio fixe (voir [_ratioPhoto]) —, mais seules les cartes de la
+  /// première rangée ont encore le même bord inférieur : au-delà, la maçonnerie
+  /// les décale.
+  ///
+  /// LA PHOTO N'A PAS DE HAUTEUR À RÉGLER, contrairement aux vignettes des
+  /// pièces et des accessoires : [_ratioPhoto] la tient déjà proportionnelle à
+  /// la largeur de la colonne. C'est pourquoi ce fichier ne lit pas
+  /// `hauteurVignetteCatalogue` — il n'a rien à y corriger.
   Widget _sliverDesCartes(BuildContext context) {
     return SliverPadding(
       padding: const EdgeInsets.all(12),
       sliver: SliverToBoxAdapter(
-        child: Row(
-          // `start` ET NON `stretch` : `stretch` demanderait aux colonnes une
-          // hauteur tendue, qu'un sliver ne donne pas — il laisse la hauteur
-          // ILLIMITÉE —, et la borner réclamerait la mesure intrinsèque que
-          // `_PrixAjuste` ne sait pas rendre. En `start`, le `Row` prend la
-          // hauteur de sa plus longue colonne et les deux partent du même haut.
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: _Colonne(vehicles: vehicles, depart: 0)),
-            const SizedBox(width: _ecartColonnes),
-            Expanded(child: _Colonne(vehicles: vehicles, depart: 1)),
-          ],
+        // La maçonnerie, ses colonnes et le choix de leur nombre vivent
+        // désormais dans core/widgets/grille_maconnerie.dart, avec les raisons
+        // des deux `CrossAxisAlignment` et la liste des montages déjà essayés
+        // et retirés.
+        child: MaconnerieColonnes(
+          nombre: vehicles.length,
+          ecartHorizontal: _ecartColonnes,
+          // 10 points, la valeur que le pas de 2 en dur posait déjà entre deux
+          // cartes d'une même colonne. La carte d'un véhicule n'a pas de marge
+          // basse à elle, contrairement à celle d'une pièce.
+          ecartVertical: 10,
+          carte: (_, i, _) => VehicleCard(vehicle: vehicles[i]),
         ),
       ),
-    );
-  }
-}
-
-/// Une des deux colonnes de la maçonnerie : une annonce sur deux, à partir de
-/// [depart].
-///
-/// `depart` valant 0 ou 1, le pas de 2 donne l'alternance — voir
-/// [VehicleGrid._sliverDesCartes] pour ce que ce choix implique quand une
-/// colonne prend de l'avance sur l'autre.
-class _Colonne extends StatelessWidget {
-  final List<Vehicle> vehicles;
-  final int depart;
-  const _Colonne({required this.vehicles, required this.depart});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      // `stretch` ici, et il est SANS DANGER contrairement à celui d'un `Row` :
-      // l'axe transversal d'une `Column` est l'horizontale, donc il tend les
-      // cartes à la largeur de l'`Expanded` — une contrainte que la colonne
-      // reçoit, pas une mesure intrinsèque qu'elle réclame. Sans lui, chaque
-      // carte se réduirait à sa largeur naturelle et la colonne se dépeuplerait
-      // par la droite.
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = depart; i < vehicles.length; i += 2) ...[
-          // L'écart vit entre les cartes et jamais après la dernière : un
-          // séparateur posé en suffixe laisserait, en bas de la colonne courte,
-          // un vide de plus que celui que la maçonnerie vient de chasser.
-          if (i > depart) const SizedBox(height: 10),
-          VehicleCard(vehicle: vehicles[i]),
-        ],
-      ],
     );
   }
 }
@@ -884,8 +887,31 @@ class _Colonne extends StatelessWidget {
 /// `engineType` arrive déjà libellé du serveur — « Essence », « Diesel »,
 /// « Électrique », « Hybride » sont les intitulés de la table de référence, et
 /// la fiche détaillée les affiche tels quels sous « Motorisation ».
+/// ── LA FINITION REVIENT, SOUS SA FORME COURTE ────────────────────────────
+///
+/// Elle avait été RETIRÉE de la carte après mesure, et le commentaire de
+/// `garde` plus haut en garde la trace : « sans finition ni ville » et
+/// « titre + prix seuls » rendaient le même compte d'annonces entières, donc
+/// la finition coûtait sans rendre. Le propriétaire la redemande.
+///
+/// CE QUI A CHANGÉ, et c'est pourquoi la mesure d'alors ne tranche pas
+/// celle-ci : ce qu'on avait mesuré était le nom ENTIER. Depuis, le
+/// référentiel dédouble certains noms pour distinguer deux mécaniques sous une
+/// même désignation — « 528i (4 cyl. 2011-2016) », vingt-trois caractères — et
+/// `finitionCourte` ne garde que ce qui précède la parenthèse. Sur les deux
+/// véhicules du catalogue qui en portent une, la carte affiche « 528i » et
+/// « S » : quatre caractères et un.
+///
+/// ELLE EST EN TÊTE DE LA LIGNE et non après le kilométrage, parce qu'elle
+/// qualifie le véhicule — on lit « S • 95 000 km • Essence » comme une suite
+/// qui va du modèle vers l'usage. Et parce qu'en tête elle survit à
+/// l'ellipse : c'est la fin de la ligne qui se perd, et le carburant est la
+/// moins décisive des trois.
 String? _ligneSpecs(AppLocalizations l10n, Vehicle vehicle) {
+  final finition = finitionCourte(vehicle.identity.trim);
+
   final specs = <String>[
+    if (finition.isNotEmpty) finition,
     if (vehicle.mileageKm != null)
       l10n.commonMileageKm(formatEntier(vehicle.mileageKm!)),
     if (vehicle.identity.engineType != null) vehicle.identity.engineType!,

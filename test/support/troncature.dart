@@ -165,18 +165,33 @@ void aucuneTroncature(
     // SE DÉCOUVRIR : le prix des cartes de pièce et d'accessoire se replie à
     // 2,0, et le groupe « le prix tient sur une ligne tant qu'on l'exige » de
     // `bandes_filtres_test.dart` classe ce repli en dégradation acceptée. Les
-    // deux doctrines ne se heurtent aujourd'hui que parce que les listes AVEC
-    // DONNÉES ne passent par `aucuneTroncature` nulle part — seul l'écran VIDE
-    // y passe. Mesuré : six cas porteraient un prix cassé ET un chiffre
+    // deux doctrines ne se heurtaient pas tant que les listes AVEC DONNÉES ne
+    // passaient par `aucuneTroncature` nulle part — seul l'écran VIDE y
+    // passait. Mesuré alors : six cas porteraient un prix cassé ET un chiffre
     // (« 109 500 FCFA » 162,8 pour 129,0 reçus à 320 × 2,0, et cinq voisins),
     // et la règle ci-dessous les ferait tomber.
     //
-    // Le jour où quelqu'un branche une matrice à données sur cette fonction,
-    // c'est ici qu'il faut trancher : soit exempter nommément le prix des
-    // cartes, soit durcir le groupe du prix. Les deux phrases ne peuvent pas
-    // rester vraies ensemble. Hors sujet pour la règle du propriétaire — on
+    // CE PARAGRAPHE DEMANDAIT UN ARBITRAGE « le jour où quelqu'un branche une
+    // matrice à données sur cette fonction ». Le lot des grilles responsives
+    // l'a branchée, aux largeurs de tablette. L'arbitrage est donc dû, et le
+    // voici — avec la raison pour laquelle il ne coûte rien.
+    //
+    // LE CONFLIT NE SE DÉCLENCHE PAS, ET CE N'EST PAS UN HASARD. Le prix se
+    // casse quand sa colonne est ÉTROITE : les six cas mesurés le sont à
+    // 129,0 points reçus, sur un téléphone de 320. Or la règle responsive
+    // maintient la colonne autour de 190 points à toutes les largeurs —
+    // 175,4 à 1280 points d'écran, 192,0 à 1024. Les largeurs de tablette
+    // donnent donc des colonnes PLUS LARGES que celles où le prix se replie,
+    // jamais plus étroites. Une matrice à données sur tablette ne rencontre
+    // pas le cas que ces deux doctrines se disputent.
+    //
+    // La contradiction subsiste donc en droit et pas en fait, et elle
+    // redeviendra réelle si quelqu'un abaisse le plancher de deux colonnes ou
+    // branche cette fonction sur une matrice à données de TÉLÉPHONE à 2,0.
+    // Ce jour-là, trancher : soit exempter nommément le prix des cartes, soit
+    // durcir le groupe du prix. Hors sujet pour la règle du propriétaire — on
     // tient jusqu'à 1,5, et à 1,5 aucun prix ne se replie dans aucune des
-    // deux langues.
+    // deux langues, à aucune largeur.
     if (tenue(echelle) || porteUnNombre(texte)) {
       expect(
         coupe,
