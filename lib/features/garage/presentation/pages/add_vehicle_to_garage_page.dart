@@ -11,6 +11,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/vin_decode_provider.dart';
 import '../../data/models/vin_decode_result.dart';
 import '../../../vehicles/data/models/catalog_refs.dart';
+import '../../../vehicles/data/models/vehicle_classification_selection.dart';
 import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -31,15 +32,18 @@ class _AddVehicleToGaragePageState
   bool _submitting = false;
 
   // Champs de formulaire
-  BrandRef?      _brand;
-  ModelRef?      _model;
-  TrimRef?       _trim;
-  EngineTypeRef? _engineType;
+  final _classification = VehicleClassificationSelection();
+  BrandRef? get _brand => _classification.brand;
+  ModelRef? get _model => _classification.model;
+  TrimRef? get _trim => _classification.trim;
+  set _trim(TrimRef? value) => _classification.trim = value;
+  EngineTypeRef? get _engineType => _classification.engineType;
+  set _engineType(EngineTypeRef? value) => _classification.engineType = value;
   ColorRef?      _color;
 
-  /// Code moteur issu du décodage VIN NHTSA (ex: "1NZ", "K20").
-  /// Optionnel — transmis tel quel au backend, non affiché dans le formulaire.
-  String? _engineCode;
+  /// Manufacturer engine code only; a VIN descriptor is not this code.
+  String? get _engineCode => _classification.engineCode;
+  set _engineCode(String? value) => _classification.engineCode = value;
 
   /// Le modèle est tapé à la main, faute de le trouver dans la liste.
   ///
@@ -80,6 +84,10 @@ class _AddVehicleToGaragePageState
   /// Applique les résultats du décodage aux champs du formulaire.
   void _applyVinResult(VinDecodeResult result, CatalogRefs refs) {
     _prefilledFields.clear();
+    _classification.selectModel(null);
+    _classification.clearModelDetails();
+    _modelLibreCtrl.clear();
+    _modeleHorsListe = false;
 
     // Année
     if (result.bestYear != null) {
@@ -93,9 +101,7 @@ class _AddVehicleToGaragePageState
           .where((b) => b.id == result.brand!.id && b.isActive)
           .firstOrNull;
       if (brand != null) {
-        _brand = brand;
-        _model = null;
-        _trim  = null;
+        _classification.selectBrand(brand);
         _prefilledFields.add('brand');
       }
     }
@@ -106,7 +112,7 @@ class _AddVehicleToGaragePageState
           .where((m) => m.id == result.vehicleModel!.id)
           .firstOrNull;
       if (model != null) {
-        _model = model;
+        _classification.selectModel(model);
         _prefilledFields.add('model');
       }
     }
@@ -122,13 +128,10 @@ class _AddVehicleToGaragePageState
       }
     }
 
-    // Code moteur NHTSA (optionnel — non affiché, transmis silencieusement)
-    // Priorité : EngineCode NHTSA complet > char 8 VIN (moins précis)
+    // Only the manufacturer code belongs in engine_code. The VIN's eighth
+    // character describes a different identifier and must not be copied here.
     final nhtsaCode = result.nhtsa?.engineCodeNhtsa;
-    final vinChar8  = result.engineCode; // char 8 du VIN
-    _engineCode = (nhtsaCode != null && nhtsaCode.isNotEmpty)
-        ? nhtsaCode
-        : (vinChar8 != null && vinChar8.isNotEmpty ? vinChar8 : null);
+    _engineCode = nhtsaCode?.isNotEmpty == true ? nhtsaCode : null;
 
     setState(() {});
   }
@@ -189,19 +192,17 @@ class _AddVehicleToGaragePageState
     setState(() => _submitting = true);
 
     final payload = <String, dynamic>{
-      'brand_id':           _brand!.id,
-      if (_model != null)        'vehicle_model_id': _model!.id,
-      if (_model == null)        'model_libre':      modeleLibre,
+      ..._classification.toPayload(
+        editing: false,
+        allowFreeModel: true,
+        modelLibre: modeleLibre,
+      ),
       'manufacturing_year': int.parse(_yearCtrl.text),
-      if (_trim != null)        'trim_id':        _trim!.id,
-      if (_engineType != null)  'engine_type_id': _engineType!.id,
       if (_color != null)       'color_id':       _color!.id,
       if (_nicknameCtrl.text.trim().isNotEmpty) 'nickname':     _nicknameCtrl.text.trim(),
       if (_plateCtrl.text.trim().isNotEmpty)    'plate_number': _plateCtrl.text.trim().toUpperCase(),
       if (_mileageCtrl.text.isNotEmpty)         'mileage_km':   int.parse(_mileageCtrl.text),
       if (_vinCtrl.text.trim().isNotEmpty)      'vin':          _vinCtrl.text.trim().toUpperCase(),
-      // engine_code issu du décodage VIN — optionnel, améliore la recherche de pièces
-      if (_engineCode != null && _engineCode!.isNotEmpty) 'engine_code': _engineCode!.toUpperCase(),
     };
 
     final error = await ref.read(garageProvider.notifier).addVehicle(payload);
@@ -366,9 +367,10 @@ class _AddVehicleToGaragePageState
                       .map((b) => DropdownMenuItem(value: b, child: Text(b.name)))
                       .toList(),
                   onChanged: (b) => setState(() {
-                    _brand = b;
-                    _model = null;
-                    _trim  = null;
+                    if (_brand?.id == b?.id) return;
+                    _classification.selectBrand(b);
+                    _modelLibreCtrl.clear();
+                    _prefilledFields.remove('engine');
                     _prefilledFields.remove('brand');
                     _prefilledFields.remove('model');
                   }),
@@ -394,8 +396,8 @@ class _AddVehicleToGaragePageState
                     onChanged: _brand == null
                         ? null
                         : (m) => setState(() {
-                              _model = m;
-                              _trim  = null;
+                              _classification.selectModel(m);
+                              _prefilledFields.remove('engine');
                               _prefilledFields.remove('model');
                             }),
                     validator: (v) => v == null ? 'Modèle obligatoire' : null,
@@ -446,8 +448,9 @@ class _AddVehicleToGaragePageState
                     // enverrait au serveur un modèle que la personne vient
                     // justement d'abandonner.
                     if (_modeleHorsListe) {
-                      _model = null;
-                      _trim  = null;
+                      _classification.selectModel(null);
+                      _classification.clearModelDetails();
+                      _prefilledFields.remove('engine');
                       _prefilledFields.remove('model');
                     } else {
                       _modelLibreCtrl.clear();
@@ -521,8 +524,8 @@ class _AddVehicleToGaragePageState
                   annee: int.parse(_yearCtrl.text),
                   alternatives: refs.generationsPour(_model!, int.parse(_yearCtrl.text)),
                   onSelect: (m) => setState(() {
-                    _model = m;
-                    _trim = null;
+                    _classification.selectModel(m);
+                    _prefilledFields.remove('engine');
                     _prefilledFields.remove('model');
                   }),
                 ),

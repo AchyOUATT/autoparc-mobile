@@ -56,7 +56,10 @@ class AuthRepository {
   /// Récupère le profil staff courant (vérifie aussi que le token est toujours valide).
   Future<StaffUser> getMe() async {
     final json = await _client.get(Endpoints.me);
-    return StaffUser.fromJson(json['data'] as Map<String, dynamic>);
+    final profile = json['data'];
+    return StaffUser.fromJson(profile is Map
+        ? Map<String, dynamic>.from(profile)
+        : json);
   }
 
   /// Déconnecte le staff : révoque le token côté serveur, le supprime localement.

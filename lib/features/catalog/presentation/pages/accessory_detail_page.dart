@@ -17,6 +17,7 @@ import '../../../../features/partners/presentation/widgets/product_partners_sect
 import '../../../../core/api/api_exception.dart';
 import '../../../../shared/data/media_repository.dart';
 import '../../../../shared/presentation/pages/media_upload_page.dart';
+import '../../../../shared/presentation/widgets/seller_contact_bar.dart';
 import '../../../../l10n/app_localizations.dart';
 
 class AccessoryDetailPage extends ConsumerWidget {
@@ -257,7 +258,11 @@ class _AccessoryDetailView extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // ── Stock ─────────────────────────────────────────────
-          _StockCard(stock: s),
+          _StockCard(
+            stock: s,
+            inStock: accessory.isAvailableForSale,
+            showQuantity: accessory.seller == null || s.hasQuantity,
+          ),
           const SizedBox(height: 20),
 
           // ── Informations ──────────────────────────────────────
@@ -325,6 +330,8 @@ class _AccessoryDetailView extends ConsumerWidget {
       // ── Bouton commander (clients uniquement) ─────────────────
       bottomNavigationBar: isStaff
           ? null
+          : accessory.seller != null
+          ? SellerContactBar(seller: accessory.seller!)
           : SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -436,12 +443,13 @@ class _PriceCard extends StatelessWidget {
 
 class _StockCard extends StatelessWidget {
   final AccessoryStock stock;
-  const _StockCard({required this.stock});
+  final bool inStock;
+  final bool showQuantity;
+  const _StockCard({required this.stock, required this.inStock, this.showQuantity = true});
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final inStock = stock.quantity > 0;
     final color = inStock ? Colors.green.shade700 : Colors.red.shade700;
 
     return Container(
@@ -465,7 +473,7 @@ class _StockCard extends StatelessWidget {
               children: [
                 Text(
                   inStock
-                      ? l10n.catalogStockQuantity(stock.quantity)
+                      ? (showQuantity ? l10n.catalogStockQuantity(stock.quantity) : l10n.catalogStockIn)
                       : l10n.catalogOutOfStock,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: color,

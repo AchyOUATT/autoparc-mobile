@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import 'compatibility_summary.dart';
+import '../../../../shared/models/product_seller.dart';
 
 /// Pièce détachée (OEM / aftermarket / occasion).
 class Part extends Equatable {
@@ -18,6 +19,7 @@ class Part extends Equatable {
   final PartStock   stock;
   final int?    warrantyMonths;
   final bool    isActive;
+  final ProductSeller? seller;
 
   /// Le marqueur de version que l'adresse de partage porte en `?m=`, `null`
   /// quand la réponse ne le dit pas.
@@ -102,6 +104,7 @@ class Part extends Equatable {
     required this.stock,
     this.warrantyMonths,
     required this.isActive,
+    this.seller,
     this.shareVersion,
     this.coverUrl,
     this.photoUrls = const [],
@@ -152,6 +155,9 @@ class Part extends Equatable {
       stock:          PartStock.fromJson(json['stock']     as Map<String, dynamic>),
       warrantyMonths: json['warranty_months'] as int?,
       isActive:       json['is_active']       as bool? ?? true,
+      seller: json['seller'] is Map<String, dynamic>
+          ? ProductSeller.fromJson(json['seller'] as Map<String, dynamic>)
+          : null,
       // Clef absente → `null`, et le partage repart sur l'adresse nue. Pas de
       // `?? ''` : « absent » et « vide » doivent arriver distinctement à
       // `adresseArticle`, qui les traite déjà tous les deux.
@@ -189,8 +195,12 @@ class Part extends Equatable {
   bool get isAftermarket => type == 'aftermarket';
   bool get isNew         => condition == 'new';
 
+  bool get isAvailableForSale => seller != null
+      ? stock.isAvailable && (!stock.hasQuantity || stock.quantity > 0)
+      : stock.quantity > 0;
+
   @override
-  List<Object?> get props => [id, sku];
+  List<Object?> get props => [id, sku, seller];
 }
 
 // Laravel sérialise decimal:2 en String ("5000.00") — ce helper accepte les deux.
@@ -225,6 +235,7 @@ class PartStock extends Equatable {
   final int quantity;
   final int alertThreshold;
   final bool isLow;
+  final bool hasQuantity;
   final String? location;
 
   const PartStock({
@@ -232,11 +243,13 @@ class PartStock extends Equatable {
     required this.quantity,
     required this.alertThreshold,
     required this.isLow,
+    this.hasQuantity = true,
     this.location,
   });
 
   factory PartStock.fromJson(Map<String, dynamic> json) => PartStock(
     isAvailable:    json['is_available']    as bool? ?? true,
+    hasQuantity:    json['quantity'] != null,
     // Tolerant, comme alert_threshold juste dessous. Laravel ne rafraichit pas
     // le modele apres create() : un champ absent de la requete reste null en
     // memoire, meme quand la colonne porte un default(0) que la base applique.
@@ -258,5 +271,5 @@ class PartStock extends Equatable {
   );
 
   @override
-  List<Object?> get props => [isAvailable, quantity, isLow];
+  List<Object?> get props => [isAvailable, quantity, isLow, hasQuantity];
 }

@@ -8,6 +8,10 @@ class OwnedVehicle extends Equatable {
   final String designation;
   final String? nickname;
   final int brandId;
+  final int? trimId;
+  final int? engineTypeId;
+  final int? drivetrainId;
+  final int? colorId;
 
   /// Le modèle du catalogue, quand il y était.
   ///
@@ -73,6 +77,10 @@ class OwnedVehicle extends Equatable {
     required this.designation,
     this.nickname,
     required this.brandId,
+    this.trimId,
+    this.engineTypeId,
+    this.drivetrainId,
+    this.colorId,
     this.vehicleModelId,
     this.modelLibre,
     this.vin,
@@ -101,6 +109,10 @@ class OwnedVehicle extends Equatable {
     designation:       json['designation']       as String,
     nickname:          json['nickname']          as String?,
     brandId:           json['brand_id']          as int,
+    trimId:            json['trim_id']           as int?,
+    engineTypeId:      json['engine_type_id']    as int?,
+    drivetrainId:      json['drivetrain_id']     as int?,
+    colorId:           json['color_id']          as int?,
     vehicleModelId:    json['vehicle_model_id']  as int?,
     modelLibre:        json['model_libre']       as String?,
     vin:               json['vin']               as String?,
