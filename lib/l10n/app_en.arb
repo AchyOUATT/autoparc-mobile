@@ -13,6 +13,7 @@
   "commonRetry": "Retry",
   "commonMenuTooltip": "Menu",
   "commonPerDaySuffix": "/day",
+  "commonPerMonthSuffix": "/month",
   "commonMileageKm": "{value} km",
   "commonShareUnavailable": "Cannot open sharing on this device. The message has been copied.",
   "commonLinkUnavailable": "Cannot open {what} on this device. {value} has been copied.",

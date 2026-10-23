@@ -37,6 +37,10 @@
   "@commonPerDaySuffix": {
     "description": "Suffixe collé à un tarif de location journalier : « 25 000 FCFA/j ». Aucune espace avant, et c'est voulu : le suffixe doit rester dans le même segment insécable que le montant, sinon il part seul à la ligne."
   },
+  "commonPerMonthSuffix": "/mois",
+  "@commonPerMonthSuffix": {
+    "description": "Suffixe d'un forfait mensuel de location, sans conversion en tarif journalier."
+  },
   "commonMileageKm": "{value} km",
   "@commonMileageKm": {
     "description": "Un kilométrage et son unité. L'UNITÉ RESTE MÉTRIQUE dans les deux langues : les clients visés comptent en kilomètres et en litres, et convertir en milles ferait mentir une valeur relevée au compteur.",

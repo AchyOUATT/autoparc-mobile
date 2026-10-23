@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/catalog_refs.dart';
+import '../../data/models/vehicle_classification_selection.dart';
 import '../providers/vehicle_refs_provider.dart';
 import '../../data/vehicle_admin_repository.dart';
 import '../../../../core/api/api_exception.dart';
@@ -49,15 +50,20 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   final _plateCtrl = TextEditingController(); // plaque (optionnel)
 
   // ── Step 2 — Identité ──────────────────────────────────────────────
-  BrandRef? _brand;
-  ModelRef? _model;
-  TrimRef?  _trim;
+  VehicleClassificationSelection _classification = VehicleClassificationSelection();
+  BrandRef? get _brand => _classification.brand;
+  ModelRef? get _model => _classification.model;
+  TrimRef? get _trim => _classification.trim;
+  set _trim(TrimRef? value) => _classification.trim = value;
+  bool _classificationChanged = false;
   ColorRef? _color;
   final _yearCtrl = TextEditingController();
 
   // ── Step 3 — Technique ─────────────────────────────────────────────
-  EngineTypeRef? _engineType;
-  DrivetrainRef? _drivetrain;
+  EngineTypeRef? get _engineType => _classification.engineType;
+  set _engineType(EngineTypeRef? value) => _classification.engineType = value;
+  DrivetrainRef? get _drivetrain => _classification.drivetrain;
+  set _drivetrain(DrivetrainRef? value) => _classification.drivetrain = value;
   String _transmission = 'automatic'; // 'manual' | 'automatic' | 'cvt'
   final _powerCtrl = TextEditingController();
   final _seatsCtrl = TextEditingController(text: '5');
@@ -76,6 +82,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   int?   _selectedPartnerId;
   final _salePriceCtrl       = TextEditingController();
   final _rentalDailyCtrl     = TextEditingController();
+  final _rentalMonthlyCtrl   = TextEditingController();
   final _rentalDepositCtrl   = TextEditingController();
   final _mileageCtrl         = TextEditingController();
   final _siteCtrl            = TextEditingController();
@@ -98,6 +105,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     if (e != null) {
       _vehicleType  = e.vehicleType;
       _bodyStyle    = e.bodyStyle;
+      _transmission = e.transmission ?? '';
+      _powerCtrl.text = e.powerHp?.toString() ?? '';
+      _seatsCtrl.text = e.seats?.toString() ?? '';
+      _doorsCtrl.text = e.doors?.toString() ?? '';
       _vinCtrl.text = e.vin ?? '';
       if (e.identity.year != null) _yearCtrl.text = e.identity.year.toString();
       _condition    = e.commercial.condition;
@@ -108,6 +119,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         _salePriceCtrl.text = _fmtPrice(e.commercial.salePrice!);
       if (e.commercial.rentalDailyRate != null)
         _rentalDailyCtrl.text = _fmtPrice(e.commercial.rentalDailyRate!);
+      if (e.commercial.rentalMonthlyRate != null)
+        _rentalMonthlyCtrl.text = _fmtPrice(e.commercial.rentalMonthlyRate!);
       if (e.commercial.rentalDeposit != null)
         _rentalDepositCtrl.text = _fmtPrice(e.commercial.rentalDeposit!);
       if (e.commercial.site != null) _siteCtrl.text = e.commercial.site!;
@@ -119,7 +132,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   void dispose() {
     for (final c in [
       _vinCtrl, _plateCtrl, _yearCtrl, _powerCtrl, _seatsCtrl, _doorsCtrl,
-      _salePriceCtrl, _rentalDailyCtrl, _rentalDepositCtrl, _mileageCtrl,
+      _salePriceCtrl, _rentalDailyCtrl, _rentalMonthlyCtrl, _rentalDepositCtrl, _mileageCtrl,
       _siteCtrl, _descriptionCtrl,
     ]) c.dispose();
     super.dispose();
@@ -148,8 +161,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         if (forSale && _salePriceCtrl.text.trim().isEmpty) {
           return 'Le prix de vente est obligatoire.';
         }
-        if (forRent && _rentalDailyCtrl.text.trim().isEmpty) {
-          return 'Le tarif journalier est obligatoire.';
+        if (forRent && _rentalRatesMissing) {
+          return 'Saisissez un tarif journalier ou mensuel.';
         }
     }
     return null;
@@ -269,20 +282,32 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
     return <String, dynamic>{
       'vehicle_type':       _vehicleType,
-      if (_bodyStyle != null) 'body_style': _bodyStyle,
+      if (_bodyStyle != null || _classificationChanged) 'body_style': _bodyStyle,
       if (_vinCtrl.text.trim().isNotEmpty)   'vin':          _vinCtrl.text.trim(),
       if (hasPlate) 'plate_number': _plateCtrl.text.trim(),
-      'brand_id':           _brand!.id,
-      'vehicle_model_id':   _model!.id,
-      if (_trim != null)       'trim_id':      _trim!.id,
+      ..._classification.toPayload(editing: _existing != null),
       if (_color != null)      'color_id':     _color!.id,
       'manufacturing_year': int.parse(_yearCtrl.text),
-      'engine_type_id':     _engineType!.id,
-      if (_drivetrain != null) 'drivetrain_id': _drivetrain!.id,
-      'transmission':       _transmission,
-      if (_powerCtrl.text.isNotEmpty) 'power_hp': int.parse(_powerCtrl.text),
-      if (_seatsCtrl.text.isNotEmpty) 'seats':    int.parse(_seatsCtrl.text),
-      if (_doorsCtrl.text.isNotEmpty) 'doors':    int.parse(_doorsCtrl.text),
+      'transmission':       _transmission.isEmpty ? null : _transmission,
+      if (_powerCtrl.text.isNotEmpty || _classificationChanged)
+        'power_hp': int.tryParse(_powerCtrl.text),
+      if (_existing != null && _classificationChanged) ...{
+        'power_kw': null,
+        'cylinders': null,
+        'engine_displacement_cc': null,
+        'torque_nm': null,
+        'gear_count': null,
+        'consumption_urban': null,
+        'consumption_extra_urban': null,
+        'consumption_combined': null,
+        'electric_consumption_kwh': null,
+        'battery_capacity_kwh': null,
+        'electric_range_km': null,
+      },
+      if (_seatsCtrl.text.isNotEmpty || _classificationChanged)
+        'seats': int.tryParse(_seatsCtrl.text),
+      if (_doorsCtrl.text.isNotEmpty || _classificationChanged)
+        'doors': int.tryParse(_doorsCtrl.text),
       'condition':          _condition,
       'availability':       _availability,
       'price_negotiable':   _negotiable,
@@ -291,10 +316,12 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       'deal_type':          _dealType.isEmpty ? null : _dealType,
       if (forSale && _salePriceCtrl.text.trim().isNotEmpty)
         'sale_price': int.parse(_salePriceCtrl.text.replaceAll(RegExp(r'\s'), '')),
-      if (forRent && _rentalDailyCtrl.text.trim().isNotEmpty)
-        'rental_daily_rate': int.parse(_rentalDailyCtrl.text.replaceAll(RegExp(r'\s'), '')),
-      if (forRent && _rentalDepositCtrl.text.trim().isNotEmpty)
-        'rental_deposit': int.parse(_rentalDepositCtrl.text.replaceAll(RegExp(r'\s'), '')),
+      if (_existing != null || forRent && _rentalDailyCtrl.text.trim().isNotEmpty)
+        'rental_daily_rate': forRent ? _parsePrice(_rentalDailyCtrl.text) : null,
+      if (_existing != null || forRent && _rentalMonthlyCtrl.text.trim().isNotEmpty)
+        'rental_monthly_rate': forRent ? _parsePrice(_rentalMonthlyCtrl.text) : null,
+      if (_existing != null || forRent && _rentalDepositCtrl.text.trim().isNotEmpty)
+        'rental_deposit': forRent ? _parsePrice(_rentalDepositCtrl.text) : null,
       if (_siteCtrl.text.isNotEmpty) 'site': _siteCtrl.text.trim(),
       if (_descriptionCtrl.text.isNotEmpty) 'description': _descriptionCtrl.text.trim(),
       'currency':           'XOF',
@@ -315,6 +342,18 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           'origin_country_id': ?_paysOrigine?.id,
         },
     };
+  }
+
+  bool get _rentalRatesMissing =>
+      _rentalDailyCtrl.text.trim().isEmpty && _rentalMonthlyCtrl.text.trim().isEmpty;
+
+  int? _parsePrice(String value) =>
+      int.tryParse(value.replaceAll(RegExp(r'\s'), ''));
+
+  void _resetModelTechnicalFields() {
+    _classificationChanged = true;
+    _powerCtrl.clear();
+    _transmission = '';
   }
 
   void _showErrors({required String titre, required String message}) {
@@ -360,47 +399,24 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     if (e != null && !_refsInitialized) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        final id = e.identity;
-        final brand = refs.brands
-            .where((b) => b.name == id.brand)
-            .cast<BrandRef?>().firstOrNull;
-        final model = brand != null
-            ? refs.modelsForBrand(brand.id)
-                .where((m) => m.name == id.model)
-                .cast<ModelRef?>().firstOrNull
-            : null;
-        final trim = (model != null && id.trim != null)
-            ? refs.trimsForModel(model.id)
-                .where((t) => t.name == id.trim)
-                .cast<TrimRef?>().firstOrNull
-            : null;
-        final color = id.color != null
-            ? refs.colors
-                .where((c) => c.name == id.color)
-                .cast<ColorRef?>().firstOrNull
-            : null;
-        final engine = id.engineType != null
-            ? refs.engineTypes
-                .where((et) => et.label == id.engineType)
-                .cast<EngineTypeRef?>().firstOrNull
-            : null;
-        final drive = id.drivetrain != null
-            ? refs.drivetrains
-                .where((d) => d.label == id.drivetrain)
-                .cast<DrivetrainRef?>().firstOrNull
-            : null;
+        final selection = VehicleClassificationSelection.fromIds(
+          refs,
+          brandId: e.brandId,
+          modelId: e.vehicleModelId,
+          trimId: e.trimId,
+          engineTypeId: e.engineTypeId,
+          drivetrainId: e.drivetrainId,
+          engineCode: e.engineCode,
+        );
+        final color = refs.colors.where((c) => c.id == e.colorId).firstOrNull;
         final loc = e.commercial.locationId != null
             ? refs.locations
                 .where((l) => l.id == e.commercial.locationId)
                 .cast<LocationRef?>().firstOrNull
             : null;
         setState(() {
-          _brand            = brand;
-          _model            = model;
-          _trim             = trim;
+          _classification   = selection;
           _color            = color;
-          _engineType       = engine;
-          _drivetrain       = drive;
           _selectedLocation = loc;
           _refsInitialized  = true;
         });
@@ -544,10 +560,14 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           // Marque
           _RefDropdown<BrandRef>(
             label: 'Marque *',
-            items: refs.brands.where((b) => b.isActive).toList(),
+            items: refs.brands.where((b) => b.isActive || b.id == _brand?.id).toList(),
             value: _brand,
             itemLabel: (b) => b.name,
-            onChanged: (b) => setState(() { _brand = b; _model = null; _trim = null; }),
+            onChanged: (b) => setState(() {
+              if (_brand?.id == b?.id) return;
+              _classification.selectBrand(b);
+              _resetModelTechnicalFields();
+            }),
             validator: (v) => v == null ? 'Marque obligatoire' : null,
           ),
           const SizedBox(height: 12),
@@ -559,8 +579,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             value: _model,
             itemLabel: (m) => m.displayName,
             onChanged: (m) => setState(() {
-              _model = m;
-              _trim  = null;
+              if (_model?.id == m?.id) return;
+              _classification.selectModel(m);
+              _resetModelTechnicalFields();
               if (m == null) return;
 
               // Carrosserie : valeur DB ou inférence depuis body_type
@@ -657,11 +678,12 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   Widget? _resumeTechnique() {
     final parts = <String>[
       if (_engineType != null) _engineType!.label,
-      switch (_transmission) {
-        'manual'  => 'manuelle',
-        'cvt'     => 'CVT',
-        _         => 'automatique',
-      },
+      if (_transmission.isNotEmpty)
+        switch (_transmission) {
+          'manual'  => 'manuelle',
+          'cvt'     => 'CVT',
+          _         => 'automatique',
+        },
       if (_drivetrain != null) _drivetrain!.label,
       if (_powerCtrl.text.trim().isNotEmpty) '${_powerCtrl.text.trim()} ch',
     ];
@@ -974,18 +996,34 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             TextFormField(
               controller: _rentalDailyCtrl,
               decoration: const InputDecoration(
-                labelText: 'Tarif journalier *',
+                labelText: 'Tarif journalier',
                 suffixText: 'FCFA/j',
                 hintText: '25 000',
               ),
               keyboardType: TextInputType.number,
               inputFormatters: [_ThousandsSeparatorFormatter()],
               validator: (v) {
-                if (forRent && (v == null || v.trim().isEmpty)) {
-                  return 'Tarif journalier obligatoire';
+                if (forRent && _rentalRatesMissing) {
+                  return 'Saisissez un tarif journalier ou mensuel';
                 }
                 return null;
               },
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _rentalMonthlyCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Tarif mensuel',
+                suffixText: 'FCFA/mois',
+                hintText: '450 000',
+                helperText: 'Renseignez au moins un tarif : par jour ou par mois.',
+                helperMaxLines: 2,
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [_ThousandsSeparatorFormatter()],
+              validator: (_) => forRent && _rentalRatesMissing
+                  ? 'Saisissez un tarif journalier ou mensuel'
+                  : null,
             ),
             const SizedBox(height: 12),
             TextFormField(

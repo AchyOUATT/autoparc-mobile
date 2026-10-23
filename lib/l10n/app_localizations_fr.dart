@@ -36,6 +36,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonPerDaySuffix => '/j';
 
   @override
+  String get commonPerMonthSuffix => '/mois';
+
+  @override
   String commonMileageKm(String value) {
     return '$value km';
   }

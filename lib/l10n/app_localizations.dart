@@ -152,6 +152,12 @@ abstract class AppLocalizations {
   /// **'/j'**
   String get commonPerDaySuffix;
 
+  /// Suffixe d'un forfait mensuel de location, sans conversion en tarif journalier.
+  ///
+  /// In fr, this message translates to:
+  /// **'/mois'**
+  String get commonPerMonthSuffix;
+
   /// Un kilométrage et son unité. L'UNITÉ RESTE MÉTRIQUE dans les deux langues : les clients visés comptent en kilomètres et en litres, et convertir en milles ferait mentir une valeur relevée au compteur.
   ///
   /// In fr, this message translates to:

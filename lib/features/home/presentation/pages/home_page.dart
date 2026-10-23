@@ -11,6 +11,7 @@ import '../../../../core/widgets/navigation_bar_theme.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../catalog/data/models/part.dart';
 import '../../../catalog/data/models/vehicle.dart';
+import '../../../catalog/presentation/vehicle_price.dart';
 import '../../../garage/data/models/owned_vehicle.dart';
 import '../../../garage/presentation/providers/garage_provider.dart';
 import '../../../garage/presentation/widgets/engine_prompt.dart';
@@ -856,10 +857,8 @@ class _DealTile extends StatelessWidget {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        c.salePrice != null
-                            ? formatXof(c.salePrice)
-                            : '${formatXof(c.rentalDailyRate)}'
-                                  '${AppLocalizations.of(context).commonPerDaySuffix}',
+                        vehicleHeadlinePrice(c, AppLocalizations.of(context))
+                            ?? AppLocalizations.of(context).catalogPriceOnRequest,
                         maxLines: 1,
                         style: TextStyle(
                           fontSize: 12.5,

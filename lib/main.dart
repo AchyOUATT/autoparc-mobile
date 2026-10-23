@@ -54,6 +54,8 @@ import 'features/onboarding/presentation/pages/onboarding_page.dart';
 import 'features/partners/data/models/partner.dart';
 import 'features/partners/presentation/pages/partner_list_page.dart';
 import 'features/partners/presentation/pages/partner_form_page.dart';
+import 'features/partner_accounts/partner_accounts.dart';
+import 'features/partner_accounts/presentation/partner_applications_page.dart';
 import 'core/providers/shell_scaffold_provider.dart';
 import 'core/local/catalog_local_cache.dart';
 import 'features/vehicles/presentation/providers/vehicle_refs_provider.dart';
@@ -130,6 +132,14 @@ GoRouter _buildRouter({required bool onboardingDone}) => GoRouter(
     GoRoute(
       path: '/login',
       builder: (_, __) => const LoginPage(),
+    ),
+    GoRoute(
+      path: '/partner',
+      builder: (_, __) => const PartnerAccountPage(),
+    ),
+    GoRoute(
+      path: '/partner-applications',
+      builder: (_, __) => const PartnerApplicationsPage(),
     ),
 
     // Shell avec NavigationBar (3 onglets catalogue)
@@ -665,6 +675,11 @@ class _AppDrawer extends ConsumerWidget {
           // STAFF
           // ════════════════════════════════════════════════════════
           if (auth.isStaff) ...[
+            if (auth.canManagePartners) _DrawerTile(
+              icon: Icons.how_to_reg_outlined,
+              label: 'Validation des partenaires',
+              onTap: () { _close(context); context.push('/partner-applications'); },
+            ),
             _DrawerTile(
               icon: Icons.list_alt_outlined,
               label: l10n.shellClientNeeds,
@@ -794,6 +809,11 @@ class _AppDrawer extends ConsumerWidget {
           // suivre, et le mettre dans un bloc conditionnel l'aurait fait
           // disparaître pour les deux autres états.
           const Divider(),
+          _DrawerTile(
+            icon: Icons.storefront_outlined,
+            label: 'Espace partenaire',
+            onTap: () { _close(context); context.push('/partner'); },
+          ),
           const TuileLangue(),
         ],
       ),
