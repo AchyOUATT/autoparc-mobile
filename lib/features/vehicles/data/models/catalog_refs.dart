@@ -41,6 +41,27 @@ class ModelRef {
   final String? defaultTransmission; // manual | automatic | cvt
   final int?    defaultPowerHp;
 
+  /// Le référentiel propose-t-il encore cette génération au choix ?
+  ///
+  /// `/catalog/sync` envoie ce drapeau depuis toujours, et ce modèle le
+  /// jetait — alors que `BrandRef`, dans ce même fichier, le gardait et que
+  /// les menus de marques le filtraient déjà. L'asymétrie n'a eu aucune
+  /// conséquence tant qu'aucun modèle n'était désactivé.
+  ///
+  /// Le 23/10/2026, le référentiel a remplacé les lignes nues `tacoma` et
+  /// `venza` par leurs générations en désactivant les deux lignes nues. Le
+  /// menu s'est mis à proposer « Tacoma » À CÔTÉ de Tacoma I, II, III et IV :
+  /// six entrées pour deux véhicules, dont deux qui ne mènent à aucune
+  /// finition ni aucune cote de consommation.
+  ///
+  /// Le serveur filtre bien sa route `/catalog/brands/{id}/models`, mais
+  /// l'application ne s'en sert pas : ses listes viennent du cache de
+  /// synchronisation. Corriger le serveur seul ne corrigeait donc rien ici.
+  ///
+  /// Absent de la charge utile, on suppose actif : une ancienne version du
+  /// serveur ne doit pas faire disparaître tout le catalogue.
+  final bool isActive;
+
   const ModelRef({
     required this.id,
     required this.brandId,
@@ -54,6 +75,7 @@ class ModelRef {
     this.defaultDoors,
     this.defaultTransmission,
     this.defaultPowerHp,
+    this.isActive = true,
   });
 
   factory ModelRef.fromJson(Map<String, dynamic> j) => ModelRef(
@@ -69,6 +91,7 @@ class ModelRef {
     defaultDoors:        j['default_doors']          as int?,
     defaultTransmission: j['default_transmission']  as String?,
     defaultPowerHp:      j['default_power_hp']       as int?,
+    isActive:            j['is_active']              as bool? ?? true,
   );
 
   /// Nom affiché dans les listes.
@@ -311,8 +334,19 @@ class CatalogRefs {
     required this.locations,
   });
 
+  /// Les générations d'une marque que l'on peut PROPOSER au choix.
+  ///
+  /// Les cinq menus de modèles de l'application passent par ici, ainsi que les
+  /// deux pré-remplissages issus d'un décodage VIN — et c'est précisément
+  /// pourquoi le filtre vit ici et pas dans chaque menu : un pré-remplissage
+  /// qui poserait une valeur absente de la liste ferait lever à Flutter
+  /// « There should be exactly one item with [DropdownButton]'s value ».
+  ///
+  /// `vehicleModels` reste entier, et c'est voulu : un véhicule déjà
+  /// enregistré sur une génération depuis désactivée doit continuer de
+  /// s'afficher avec son nom. On filtre ce qu'on PROPOSE, pas ce qu'on LIT.
   List<ModelRef> modelsForBrand(int brandId) =>
-      vehicleModels.where((m) => m.brandId == brandId).toList();
+      vehicleModels.where((m) => m.brandId == brandId && m.isActive).toList();
 
   List<TrimRef> trimsForModel(int modelId) =>
       trims.where((t) => t.vehicleModelId == modelId).toList();
@@ -332,6 +366,9 @@ class CatalogRefs {
             m.id != modele.id &&
             m.brandId == modele.brandId &&
             m.name == modele.name &&
+            // Proposer une génération désactivée serait pire que de ne rien
+            // proposer : on corrigerait une erreur par une entrée retirée.
+            m.isActive &&
             m.couvreAnnee(annee))
         .toList();
 
