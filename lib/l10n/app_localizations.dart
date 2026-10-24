@@ -464,6 +464,24 @@ abstract class AppLocalizations {
   /// **'Dédouané'**
   String get catalogCustomsCleared;
 
+  /// Puce de filtre des véhicules déjà immatriculés — ceux qui se conduisent le jour même, sans démarche. Va par paire avec catalogNotRegistered, et se lit à côté de catalogCustomsCleared, qui ne dit que la première étape d'un import.
+  ///
+  /// In fr, this message translates to:
+  /// **'Immatriculé'**
+  String get catalogRegistered;
+
+  /// Puce de filtre des véhicules importés pas encore immatriculés. Le français est ici le plus long des deux (15 signes contre 14 pour « Not registered ») : c'est la puce à surveiller dans bandes_filtres_test.dart pour ce groupe.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non immatriculé'**
+  String get catalogNotRegistered;
+
+  /// Titre du groupe de filtres qui réunit l'immatriculation et le dédouanement. Mot volontairement courant plutôt que « Statut administratif » : c'est ainsi qu'on en parle sur un parc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Papiers'**
+  String get catalogFilterGroupPapers;
+
   /// Puce de filtre des véhicules utilitaires légers. À ne pas confondre avec catalogAccessoryCategoryUtility, qui porte le même mot français pour une catégorie d'ACCESSOIRES : deux clés distinctes parce que l'anglais les sépare mal et qu'une clé partagée aurait figé la confusion.
   ///
   /// In fr, this message translates to:

@@ -223,6 +223,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogCustomsCleared => 'Customs cleared';
 
   @override
+  String get catalogRegistered => 'Registered';
+
+  @override
+  String get catalogNotRegistered => 'Not registered';
+
+  @override
+  String get catalogFilterGroupPapers => 'Paperwork';
+
+  @override
   String get catalogVehicleTypeUtility => 'Utility';
 
   @override

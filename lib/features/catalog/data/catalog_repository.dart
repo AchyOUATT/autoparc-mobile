@@ -43,6 +43,7 @@ class CatalogRepository {
     int? locationId,    // filtre par agence précise
     bool? customsCleared, // true = uniquement les importés dédouanés
     bool? deal,           // true = uniquement les véhicules mis en avant
+    String? registrationStatus, // null | 'registered' | 'unregistered'
   }) async {
     final params = <String, dynamic>{
       'page':     page,
@@ -62,6 +63,10 @@ class CatalogRepository {
       // d'où l'absence de cas « non dédouané ».
       if (customsCleared == true) 'customs_cleared': '1',
       if (deal == true) 'deal': '1',
+      // Celui-ci a deux valeurs utiles, contrairement au dédouanement :
+      // l'API filtre sur `filled()`, donc 'unregistered' est un filtre à part
+      // entière et pas seulement l'absence de 'registered'.
+      if (registrationStatus != null) 'registration_status': registrationStatus,
       // 'availability' n'est pas un filtre direct dans l'API — on utilise available_for_rent
       if (availability == 'rent') 'available_for_rent': '1',
       if (availability == 'sale') 'availability': 'sale',

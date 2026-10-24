@@ -28,6 +28,15 @@ class VehicleFilter {
   final bool? customsCleared; // true = uniquement les importés dédouanés
   final bool? deal;           // true = uniquement les véhicules mis en avant
 
+  /// null | 'registered' | 'unregistered'
+  ///
+  /// Les deux critères que l'acheteur d'ici oppose d'abord : un véhicule déjà
+  /// immatriculé se conduit le jour même ; un importé demande des démarches,
+  /// et « dédouané » dit seulement que la première est faite. L'API savait
+  /// filtrer là-dessus depuis le début — `registration_status` sur
+  /// `/catalog/vehicles` — et l'application ne le demandait jamais.
+  final String? registrationStatus;
+
   const VehicleFilter({
     this.search,
     this.availability,
@@ -41,6 +50,7 @@ class VehicleFilter {
     this.locationId,
     this.customsCleared,
     this.deal,
+    this.registrationStatus,
   });
 
   VehicleFilter copyWith({
@@ -56,6 +66,7 @@ class VehicleFilter {
     int? locationId,
     bool? customsCleared,
     bool? deal,
+    String? registrationStatus,
     bool clearSearch = false,
     bool clearAvailability = false,
     bool clearCondition = false,
@@ -68,6 +79,7 @@ class VehicleFilter {
     bool clearLocation = false,
     bool clearCustomsCleared = false,
     bool clearDeal = false,
+    bool clearRegistrationStatus = false,
   }) =>
       VehicleFilter(
         search:         clearSearch         ? null : (search       ?? this.search),
@@ -82,6 +94,9 @@ class VehicleFilter {
         locationId:     clearLocation       ? null : (locationId   ?? this.locationId),
         customsCleared: clearCustomsCleared ? null : (customsCleared ?? this.customsCleared),
         deal:           clearDeal           ? null : (deal           ?? this.deal),
+        registrationStatus: clearRegistrationStatus
+            ? null
+            : (registrationStatus ?? this.registrationStatus),
       );
 }
 
@@ -240,6 +255,7 @@ class VehicleListNotifier extends AutoDisposeNotifier<PagedState<Vehicle>> {
         city:         filter.city,
         locationId:   filter.locationId,
         customsCleared: filter.customsCleared,
+        registrationStatus: filter.registrationStatus,
         deal:           filter.deal,
       );
       _page = nextPage;

@@ -223,6 +223,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get catalogCustomsCleared => 'Dédouané';
 
   @override
+  String get catalogRegistered => 'Immatriculé';
+
+  @override
+  String get catalogNotRegistered => 'Non immatriculé';
+
+  @override
+  String get catalogFilterGroupPapers => 'Papiers';
+
+  @override
   String get catalogVehicleTypeUtility => 'Utilitaire';
 
   @override

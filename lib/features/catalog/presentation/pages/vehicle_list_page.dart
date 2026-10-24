@@ -268,15 +268,53 @@ class _FilterChips extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             _DealChip(filter: filter),
+            const SizedBox(width: 20),
+            // ── Papiers ────────────────────────────────────────────────
+            //
+            // « Immatriculé » se conduit le jour même ; « non immatriculé »
+            // demande des démarches. Les deux valeurs sont cherchables :
+            // l'API lit `registration_status` sur `filled()`, donc
+            // « non immatriculé » est une recherche à part entière et pas
+            // l'absence de l'autre.
+            //
+            // ── LA PUCE « DÉDOUANÉ » A ÉTÉ RETIRÉE D'ICI, ET POURQUOI ──
+            //
+            // Elle a existé entre-temps, et la mesure l'a condamnée : le
+            // dédouanement est une propriété du DOSSIER D'IMPORT, pas du
+            // véhicule. Cocher « Immatriculé » ET « Dédouané » rendait donc
+            // MOINS de résultats que « Immatriculé » seul — un véhicule
+            // immatriculé localement n'a aucun dossier d'import, donc rien à
+            // dédouaner, et disparaissait. Un acheteur qui lisait cette
+            // combinaison comme « papiers complets » perdait exactement les
+            // véhicules les plus en règle.
+            //
+            // Tout le reste de la chaîne est INTACT et testé — le champ
+            // `customsCleared` du filtre, le paramètre `customs_cleared` du
+            // dépôt, le filtre de l'API, le terme de résumé plus bas, et la
+            // ligne « Dédouané » de la fiche détaillée, qui reste une
+            // information sur le véhicule et non une recherche. Remettre la
+            // puce est un bloc `FilterChip` à recoller ici, rien d'autre ;
+            // `filtre_papiers_test.dart` garde la tuyauterie en vie.
+            LibelleGroupeFiltres(l10n.catalogFilterGroupPapers),
+            FilterChip(
+              avatar: const Icon(Icons.badge_outlined, size: 14),
+              label: Text(l10n.catalogRegistered),
+              selected: filter.registrationStatus == 'registered',
+              onSelected: (_) => update(
+                (f) => f.registrationStatus == 'registered'
+                    ? f.copyWith(clearRegistrationStatus: true)
+                    : f.copyWith(registrationStatus: 'registered'),
+              ),
+            ),
             const SizedBox(width: 8),
             FilterChip(
-              avatar: const Icon(Icons.verified_outlined, size: 14),
-              label: Text(l10n.catalogCustomsCleared),
-              selected: filter.customsCleared == true,
+              avatar: const Icon(Icons.local_shipping_outlined, size: 14),
+              label: Text(l10n.catalogNotRegistered),
+              selected: filter.registrationStatus == 'unregistered',
               onSelected: (_) => update(
-                (f) => f.customsCleared == true
-                    ? f.copyWith(clearCustomsCleared: true)
-                    : f.copyWith(customsCleared: true),
+                (f) => f.registrationStatus == 'unregistered'
+                    ? f.copyWith(clearRegistrationStatus: true)
+                    : f.copyWith(registrationStatus: 'unregistered'),
               ),
             ),
             const SizedBox(width: 20),

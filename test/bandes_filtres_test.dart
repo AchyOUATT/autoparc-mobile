@@ -3342,6 +3342,7 @@ class _Depot implements CatalogRepository {
     int? locationId,
     bool? customsCleared,
     bool? deal,
+    String? registrationStatus,
   }) async => PaginatedResponse<Vehicle>(
     data: liste,
     currentPage: 1,
