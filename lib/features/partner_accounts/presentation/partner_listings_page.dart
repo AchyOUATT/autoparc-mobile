@@ -124,7 +124,7 @@ class _PartnerListingsPageState extends ConsumerState<PartnerListingsPage> {
     body: Column(children: [
       Padding(padding: const EdgeInsets.all(16), child: TextField(controller: _query, onSubmitted: (_) => _load(),
         decoration: InputDecoration(hintText: 'Rechercher dans mes annonces', prefixIcon: const Icon(Icons.search), border: const OutlineInputBorder(),
-          suffixIcon: IconButton(tooltip: 'Rechercher', onPressed: () => _load(), icon: const Icon(Icons.arrow_forward)))),
+          suffixIcon: IconButton(tooltip: 'Rechercher', onPressed: () => _load(), icon: const Icon(Icons.arrow_forward))))),
       if (_loading || _working) const LinearProgressIndicator(),
       Expanded(child: RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 100), children: [
         if (_error != null) Card(child: Padding(padding: const EdgeInsets.all(20), child: Column(children: [
