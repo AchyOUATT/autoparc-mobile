@@ -7,6 +7,7 @@ import '../../data/models/owned_vehicle.dart';
 import '../../../../features/catalog/data/models/part.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/api/api_exception.dart';
+import '../../../../l10n/app_localizations.dart';
 
 // ── Provider family ──────────────────────────────────────────────────
 
@@ -184,12 +185,16 @@ class _PartTile extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                part.stock.quantity > 0 ? Icons.check_circle : Icons.cancel,
+                part.isAvailableForSale ? Icons.check_circle : Icons.cancel,
                 size: 12,
-                color: part.stock.quantity > 0 ? Colors.green : Colors.red,
+                color: part.isAvailableForSale ? Colors.green : Colors.red,
               ),
               const SizedBox(width: 3),
-              Text('${part.stock.quantity}',
+              Text(part.seller != null && !part.stock.hasQuantity
+                  ? (part.stock.isAvailable
+                      ? AppLocalizations.of(context).catalogStockIn
+                      : AppLocalizations.of(context).catalogStockOut)
+                  : '${part.stock.quantity}',
                   style: Theme.of(context).textTheme.bodySmall),
             ],
           ),

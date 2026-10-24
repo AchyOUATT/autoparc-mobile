@@ -18,6 +18,7 @@ import '../../../../core/api/api_exception.dart';
 import '../../../../core/widgets/product_gallery.dart';
 import '../../../../shared/data/media_repository.dart';
 import '../../../../shared/presentation/pages/media_upload_page.dart';
+import '../../../../shared/presentation/widgets/seller_contact_bar.dart';
 import '../../../../l10n/app_localizations.dart';
 
 /// La nature d'une pièce, DÉVELOPPÉE, dans la langue active.
@@ -86,7 +87,7 @@ class PartDetailPage extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final auth = ref.watch(authProvider);
     final isStaff = auth.isStaff;
-    final inStock = part.stock.quantity > 0;
+    final inStock = part.isAvailableForSale;
 
     Future<void> deletePart() async {
       final ok = await showDialog<bool>(
@@ -345,7 +346,11 @@ class PartDetailPage extends ConsumerWidget {
                 const SizedBox(height: 12),
 
                 // ── Stock ─────────────────────────────────────────────
-                _StockCard(stock: part.stock, inStock: inStock),
+                _StockCard(
+                  stock: part.stock,
+                  inStock: inStock,
+                  showQuantity: part.seller == null || part.stock.hasQuantity,
+                ),
                 const SizedBox(height: 12),
 
                 // ── Infos produit ─────────────────────────────────────
@@ -408,6 +413,8 @@ class PartDetailPage extends ConsumerWidget {
       // ── Bouton Commander (clients uniquement) ─────────────────────
       bottomNavigationBar: isStaff
           ? null
+          : part.seller != null
+          ? SellerContactBar(seller: part.seller!)
           : SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -527,7 +534,8 @@ class _PriceCard extends StatelessWidget {
 class _StockCard extends StatelessWidget {
   final PartStock stock;
   final bool inStock;
-  const _StockCard({required this.stock, required this.inStock});
+  final bool showQuantity;
+  const _StockCard({required this.stock, required this.inStock, this.showQuantity = true});
 
   @override
   Widget build(BuildContext context) {
@@ -536,7 +544,9 @@ class _StockCard extends StatelessWidget {
         ? (stock.isLow ? Colors.orange : Colors.green)
         : Colors.red;
     final label = inStock
-        ? (stock.isLow
+        ? (!showQuantity
+              ? l10n.catalogStockIn
+              : stock.isLow
               ? l10n.catalogStockQuantityLow(stock.quantity)
               : l10n.catalogStockQuantity(stock.quantity))
         : l10n.catalogOutOfStock;

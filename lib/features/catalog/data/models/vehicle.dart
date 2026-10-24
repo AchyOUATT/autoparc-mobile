@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../shared/models/product_seller.dart';
+
 // Laravel sérialise decimal:2 en String ("3500000.00") — ces helpers acceptent les deux.
 double _d(dynamic v) => v is num ? v.toDouble() : double.parse(v.toString());
 double? _dq(dynamic v) => v == null ? null : _d(v);
@@ -46,6 +48,15 @@ class VehicleFeature extends Equatable {
 /// Modèle principal d'un véhicule tel que retourné par VehicleResource.
 class Vehicle extends Equatable {
   final int id;
+  final ProductSeller? seller;
+  // Raw relationships are required for editing. Display names are ambiguous
+  // across generations and must never be used to recover identifiers.
+  final int? brandId;
+  final int? vehicleModelId;
+  final int? trimId;
+  final int? engineTypeId;
+  final int? drivetrainId;
+  final int? colorId;
   final String reference;
   final String? vin;
   final String designation;
@@ -157,6 +168,13 @@ class Vehicle extends Equatable {
 
   const Vehicle({
     required this.id,
+    this.seller,
+    this.brandId,
+    this.vehicleModelId,
+    this.trimId,
+    this.engineTypeId,
+    this.drivetrainId,
+    this.colorId,
     required this.reference,
     this.vin,
     required this.designation,
@@ -239,7 +257,16 @@ class Vehicle extends Equatable {
     final status = json['registration_status'];
     return Vehicle(
       id:                 json['id'] as int,
-      reference:          json['reference'] as String,
+      seller:             json['seller'] is Map<String, dynamic>
+          ? ProductSeller.fromJson(json['seller'] as Map<String, dynamic>)
+          : null,
+      brandId:            _asInt(json['brand_id']),
+      vehicleModelId:     _asInt(json['vehicle_model_id']),
+      trimId:             _asInt(json['trim_id']),
+      engineTypeId:       _asInt(json['engine_type_id']),
+      drivetrainId:       _asInt(json['drivetrain_id']),
+      colorId:            _asInt(json['color_id']),
+      reference:          json['reference'] as String? ?? '',
       vin:                json['vin'] as String?,
       designation:        json['designation'] as String,
       registrationStatus: status is Map ? status['value'] as String : status as String,

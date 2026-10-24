@@ -8,6 +8,7 @@ import '../../data/models/vehicle.dart';
 import '../providers/catalog_providers.dart';
 import '../../../../shared/models/paged_state.dart';
 import '../libelles_vehicule.dart';
+import '../vehicle_price.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/bande_filtres.dart';
 import '../../../../core/widgets/bouton_flottant_effacable.dart';
@@ -1604,27 +1605,10 @@ class _PriceRow extends StatelessWidget {
     );
 
     final Widget prix;
-    if (commercial.isForSale && commercial.salePrice != null) {
+    final displayedPrice = vehicleHeadlinePrice(commercial, AppLocalizations.of(context));
+    if (displayedPrice != null) {
       prix = _PrixAjuste(
-        texte: formatXofShort(commercial.salePrice),
-        style: style,
-      );
-    } else if (commercial.isForRent && commercial.rentalDailyRate != null) {
-      prix = _PrixAjuste(
-        // LE SUFFIXE SUIT LA LANGUE, ET IL NE LA SUIVAIT PAS. `formatXofShort`
-        // est passé à la locale active au lot de traduction ; le « /j » est
-        // resté en dur juste derrière. Un anglophone lisait donc
-        // « 25,000 FCFA/j » — le nombre traduit, l'unité non. La clé existait
-        // déjà et la tuile de la vitrine l'employait depuis le même lot : ce
-        // site-ci avait seulement été oublié.
-        //
-        // Aucune espace avant, et c'est la raison d'être de la clé : le
-        // suffixe doit rester dans le MÊME segment insécable que le montant,
-        // sinon il part seul à la ligne. `_PrixAjuste` réduit le corps de
-        // toute la chaîne, suffixe compris.
-        texte:
-            '${formatXofShort(commercial.rentalDailyRate)}'
-            '${AppLocalizations.of(context).commonPerDaySuffix}',
+        texte: displayedPrice,
         style: style,
       );
     } else {
