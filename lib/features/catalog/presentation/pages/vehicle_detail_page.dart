@@ -16,6 +16,8 @@ import '../../../../core/widgets/brand_logo.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../../vehicles/data/vehicle_admin_repository.dart';
+import '../../../../shared/data/media_repository.dart';
+import '../../../../shared/presentation/pages/media_upload_page.dart';
 import '../../../vehicles/data/models/catalog_refs.dart';
 import '../../../vehicles/presentation/widgets/vehicle_faults_section.dart';
 import '../libelles_vehicule.dart';
@@ -217,6 +219,38 @@ class _VehicleDetailView extends ConsumerWidget {
                     // nue et le bouton marche. Voir `adresseArticle`.
                     version: vehicle.shareVersion,
                   ),
+                ),
+              // Le second accès aux photos, celui que la pièce et
+              // l'accessoire avaient déjà et que le véhicule n'avait pas.
+              //
+              // Le premier — le bouton de l'écran de modification — suffit à
+              // les atteindre, mais en deux appuis et par un détour : on
+              // ouvre un formulaire de trente champs pour changer une image.
+              // Ici c'est un appui, depuis l'écran où l'on regarde justement
+              // les photos.
+              //
+              // L'invalidation des deux providers au retour n'est pas un
+              // ornement : sans elle, on remonte d'un écran de médias où l'on
+              // vient d'ajouter une photo pour retrouver la fiche telle
+              // qu'elle était, et l'on croit que l'envoi a échoué. C'est la
+              // raison pour laquelle la fiche d'une pièce le fait déjà.
+              if (auth.canManageCatalog)
+                IconButton(
+                  icon: const Icon(Icons.add_a_photo_outlined),
+                  tooltip: l10n.catalogPhotosTooltip,
+                  onPressed: () => context
+                      .push(
+                        '/media-upload',
+                        extra: MediaUploadConfig(
+                          type: MediaOwnerType.vehicle,
+                          id: vehicle.id,
+                          title: vehicle.identity.fullName,
+                        ),
+                      )
+                      .then((_) {
+                        ref.invalidate(vehicleDetailProvider(vehicle.id));
+                        ref.invalidate(vehicleListProvider);
+                      }),
                 ),
               if (auth.canManageCatalog)
                 IconButton(
