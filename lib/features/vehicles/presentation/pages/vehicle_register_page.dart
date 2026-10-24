@@ -48,6 +48,26 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   final _vinCtrl   = TextEditingController();
   final _plateCtrl = TextEditingController(); // plaque (optionnel)
 
+  /// Le véhicule est-il immatriculé ? Déclaré, pas déduit.
+  ///
+  /// Tout le formulaire se branchait sur la seule présence d'une plaque :
+  /// avec plaque le compteur partait dans `registration`, sans plaque dans
+  /// `import`, et le pays d'origine n'était même pas demandé. Un vendeur qui
+  /// enregistrait un véhicule immatriculé sans avoir sa carte grise sous la
+  /// main voyait donc sa fiche basculer du côté import, et le kilométrage
+  /// qu'il venait de saisir partir dans « odomètre à l'import ».
+  ///
+  /// La plaque n'est pas la preuve de l'immatriculation, c'est une de ses
+  /// données. On la relève quand on l'a ; on sait bien avant que le véhicule
+  /// est immatriculé.
+  ///
+  /// Saisir une plaque coche ce commutateur — c'est le sens courant — mais
+  /// on peut le cocher sans plaque, et le décocher avec : un importé qui
+  /// porte encore sa plaque étrangère n'est pas immatriculé ici. L'API
+  /// respecte les deux depuis `VehicleController::store()`, qui ne déduit
+  /// plus que lorsque le champ est absent.
+  bool _immatricule = false;
+
   // ── Step 2 — Identité ──────────────────────────────────────────────
   BrandRef? _brand;
   ModelRef? _model;
@@ -112,6 +132,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         _rentalDepositCtrl.text = _fmtPrice(e.commercial.rentalDeposit!);
       if (e.commercial.site != null) _siteCtrl.text = e.commercial.site!;
       _selectedFeatureIds.addAll(e.features.map((f) => f.id));
+      // Sans cette ligne, modifier un véhicule immatriculé le renverrait
+      // « non immatriculé » au premier enregistrement — le commutateur
+      // partant à faux, et la charge utile le déclarant désormais
+      // explicitement.
+      _immatricule = e.isRegistered;
     }
   }
 
@@ -271,6 +296,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       'vehicle_type':       _vehicleType,
       if (_bodyStyle != null) 'body_style': _bodyStyle,
       if (_vinCtrl.text.trim().isNotEmpty)   'vin':          _vinCtrl.text.trim(),
+      // DÉCLARÉ, PAS DÉDUIT. L'API ne retombe sur la présence d'une plaque
+      // que lorsque ce champ est absent.
+      'registration_status': _immatricule ? 'registered' : 'unregistered',
       if (hasPlate) 'plate_number': _plateCtrl.text.trim(),
       'brand_id':           _brand!.id,
       'vehicle_model_id':   _model!.id,
@@ -301,15 +329,21 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       if (_selectedFeatureIds.isNotEmpty) 'features': _selectedFeatureIds.toList(),
       if (_selectedLocation  != null) 'location_id': _selectedLocation!.id,
       if (_selectedPartnerId != null) 'partner_id':  _selectedPartnerId,
-      // Kilométrage → sous-objet selon le statut du véhicule
-      // - avec plaque  : registered → registration.mileage_km
-      // - sans plaque  : import     → import.odometer_at_import_km
-      if (mileage != null && hasPlate)
+      // Kilométrage → sous-objet selon le STATUT, et non plus selon la
+      // présence d'une plaque :
+      // - immatriculé     : registration.mileage_km
+      // - non immatriculé : import.odometer_at_import_km
+      //
+      // C'est le même critère que celui dont l'API se sert pour choisir le
+      // bloc qu'elle écrit (`syncTypeSpecificDetails`). Quand les deux
+      // divergeaient, le bloc envoyé était ignoré sans un mot, et le
+      // kilométrage avec lui.
+      if (mileage != null && _immatricule)
         'registration': {'mileage_km': mileage},
       // Le bloc import part des qu'il a quelque chose a dire : le compteur,
       // le pays, ou les deux. Il etait conditionne au seul kilometrage, donc
       // un pays choisi sans compteur saisi ne partait pas.
-      if (!hasPlate && (mileage != null || _paysOrigine != null))
+      if (!_immatricule && (mileage != null || _paysOrigine != null))
         'import': {
           'odometer_at_import_km': ?mileage,
           'origin_country_id': ?_paysOrigine?.id,
@@ -344,6 +378,39 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       appBar: AppBar(
         title: Text(_existing != null ? 'Modifier le véhicule' : 'Enregistrer un véhicule'),
         centerTitle: false,
+        actions: [
+          // ── LES PHOTOS D'UN VÉHICULE DÉJÀ ENREGISTRÉ ─────────────────
+          //
+          // Elles étaient INJOIGNABLES. L'écran des médias ne s'ouvrait que
+          // par le `pushReplacement` qui suit une création — « Véhicule
+          // enregistré, ajoutez des photos ! » — et une MODIFICATION se
+          // contentait de refermer l'écran. Passé ce premier instant, plus
+          // aucun chemin de l'application n'y menait : ni ici, ni depuis la
+          // fiche détaillée.
+          //
+          // L'asymétrie saute aux yeux une fois cherchée : la pièce et
+          // l'accessoire ont DEUX accès chacun — ce bouton sur leur écran de
+          // modification, et un autre sur leur fiche. Le véhicule n'en avait
+          // aucun, alors que c'est l'article dont les photos comptent le
+          // plus et qui en porte le plus.
+          //
+          // À la création, le bouton n'a pas lieu d'être : le véhicule n'a
+          // pas encore d'identifiant auquel rattacher une photo. C'est
+          // exactement la condition posée sur `add_part_page.dart`.
+          if (_existing != null)
+            IconButton(
+              icon: const Icon(Icons.add_a_photo_outlined),
+              tooltip: 'Photos',
+              onPressed: () => context.push(
+                '/media-upload',
+                extra: MediaUploadConfig(
+                  type:  MediaOwnerType.vehicle,
+                  id:    _existing!.id,
+                  title: _existing!.identity.fullName,
+                ),
+              ),
+            ),
+        ],
       ),
       body: refsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -515,7 +582,24 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         ),
         const SizedBox(height: 4),
 
-        // ── Plaque d'immatriculation ──────────────────────────────
+        // ── Immatriculation ───────────────────────────────────────
+        //
+        // Le commutateur d'abord, la plaque ensuite : c'est l'ordre dans
+        // lequel on sait les choses. Le statut décide de la suite du
+        // formulaire — le pays d'origine n'est demandé que pour un importé,
+        // et le kilométrage ne part pas au même endroit.
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          secondary: const Icon(Icons.assignment_turned_in_outlined),
+          title: const Text('Véhicule immatriculé'),
+          subtitle: Text(
+            _immatricule
+                ? 'Déjà immatriculé — la plaque peut être ajoutée plus tard.'
+                : 'Importé, pas encore immatriculé ici.',
+          ),
+          value: _immatricule,
+          onChanged: (v) => setState(() => _immatricule = v),
+        ),
         TextFormField(
           controller: _plateCtrl,
           decoration: const InputDecoration(
@@ -524,6 +608,14 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             prefixIcon: Icon(Icons.badge_outlined),
           ),
           textCapitalization: TextCapitalization.characters,
+          // Saisir une plaque déclare le véhicule immatriculé — c'est le sens
+          // courant, et ça évite de demander deux fois la même chose. Le
+          // décochage reste possible : un importé peut porter sa plaque
+          // d'origine.
+          onChanged: (v) {
+            final saisie = v.trim().isNotEmpty;
+            if (saisie && !_immatricule) setState(() => _immatricule = true);
+          },
         ),
       ],
     ),
@@ -877,14 +969,19 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             ),
             const SizedBox(height: 16),
 
-            // Pays d'origine — uniquement sans plaque d'immatriculation.
+            // Pays d'origine — uniquement pour un véhicule NON IMMATRICULÉ.
             //
             // C'est la seule branche ou la charge utile porte un bloc
-            // `import` : avec une plaque, le compteur part dans
+            // `import` : pour un immatricule, le compteur part dans
             // `registration`, et un pays envoye la serait ignore sans que
             // rien ne le dise. Mieux vaut ne pas demander ce qu'on ne saurait
             // pas enregistrer.
-            if (_plateCtrl.text.trim().isEmpty)
+            //
+            // La condition portait sur la PLAQUE, pas sur le statut. Un
+            // vendeur qui declarait un importe tout en notant sa plaque
+            // etrangere n'avait donc plus de champ « pays d'origine » —
+            // alors que c'est exactement le vehicule pour lequel il compte.
+            if (!_immatricule)
               Consumer(
                 builder: (context, ref, _) {
                   final pays = ref.watch(countriesProvider).valueOrNull
