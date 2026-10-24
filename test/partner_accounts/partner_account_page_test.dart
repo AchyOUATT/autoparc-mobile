@@ -46,10 +46,15 @@ void main() {
       await tester.ensureVisible(field);
       await tester.enterText(field, entry.value);
     }
+    // Laisser le clavier et le défilement se stabiliser avant le clic.
+    tester.testTextInput.hide();
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const Key('partner-submit')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('partner-submit')));
     await tester.pumpAndSettle();
 
+    expect(repository.registration, isNotNull);
     expect(repository.registration!['company_name'], 'Garage Exemple');
     expect(repository.registration!['password_confirmation'], 'Partenaire12345');
     expect(find.text('Inscription reçue'), findsOneWidget);
