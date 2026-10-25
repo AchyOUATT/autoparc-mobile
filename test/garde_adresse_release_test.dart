@@ -1,6 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+// `yaml` arrive par `flutter_test` : il n'est pas declare dans le pubspec, et
+// c'est assume — voir le test qui parse le workflow, en bas de ce fichier.
+// ignore: depend_on_referenced_packages
+import 'package:yaml/yaml.dart';
 
 import 'package:auto/core/api/endpoints.dart';
 
@@ -183,6 +187,95 @@ void main() {
         expect(valeur, isNot(contains('192.168.')));
         expect(valeur, isNot(contains('ngrok')));
       }
+    });
+
+    /// L'hôte est écrit TROIS fois dans ce workflow : deux `--dart-define` et
+    /// le `HOTE_PRODUCTION` de l'étape qui relit les binaires produits. Ce test
+    /// interdit la dérive entre les trois.
+    ///
+    /// Pourquoi trois écritures et non une variable : les deux `--dart-define`
+    /// doivent rester LITTÉRALES, parce que le test ci-dessus lit ce fichier et
+    /// apparie `--dart-define=API_BASE_URL=(\S+)`. Un `${{ env.… }}` y
+    /// capturerait `${{`, ferait tomber la suite, et avec elle le workflow
+    /// entier — `flutter test` précède les builds. Le choix est donc : trois
+    /// écritures et un test qui les lie, plutôt qu'une indirection YAML qui
+    /// casse l'autre garde.
+    test('l\'hôte du garde des binaires est celui des deux defines', () {
+      final yml = File('.github/workflows/build-apk.yml').readAsStringSync();
+
+      final hoteDuGarde = RegExp(r'HOTE_PRODUCTION:\s*(\S+)').firstMatch(yml)?.group(1);
+      expect(hoteDuGarde, isNotNull,
+          reason: 'L\'étape qui relit les binaires produits a disparu du workflow.');
+
+      final hotesDesDefines = RegExp(r'--dart-define=API_BASE_URL=https://([^/\s]+)/api')
+          .allMatches(yml)
+          .map((m) => m.group(1)!)
+          .toSet();
+
+      expect(hotesDesDefines, {hoteDuGarde},
+          reason: 'Le garde vérifierait un hôte que les builds ne compilent pas.');
+    });
+
+    /// Le garde ne sert à rien s'il s'exécute APRÈS la publication.
+    test('le garde des binaires précède la publication des artefacts', () {
+      final yml = File('.github/workflows/build-apk.yml').readAsStringSync();
+
+      final garde = yml.indexOf('Vérifier l\'adresse compilée dans les binaires');
+      final publication = yml.indexOf('Publier les artefacts');
+
+      expect(garde, greaterThan(0));
+      expect(publication, greaterThan(0));
+      expect(garde, lessThan(publication));
+    });
+
+    /// Les deux motifs d'extraction diffèrent, et ce n'est pas un oubli : un
+    /// App Bundle range ses bibliothèques sous `base/lib/`, un APK sous `lib/`.
+    /// Confondre les deux ferait passer le garde à vide — aucune bibliothèque
+    /// extraite, donc aucune vérifiée — et c'est exactement le genre de panne
+    /// silencieuse qu'un garde ne doit pas avoir.
+    test('le garde lit les deux artefacts, avec le motif propre à chacun', () {
+      final yml = File('.github/workflows/build-apk.yml').readAsStringSync();
+
+      expect(yml, contains("'base/lib/*/libapp.so' 'App Bundle'"));
+      expect(yml, contains("'lib/*/libapp.so' 'APK'"));
+      // Et il refuse une extraction vide au lieu de la prendre pour un succès.
+      expect(yml, contains('aucun libapp.so extrait'));
+    });
+
+    /// LE WORKFLOW DOIT PARSER, et rien ne le vérifiait.
+    ///
+    /// Tous les tests de ce groupe lisent le fichier comme du TEXTE : ils
+    /// resteraient verts sur un YAML dont l'indentation est fautive, et c'est
+    /// GitHub qui refuserait le workflow — donc plus aucun build, et la panne
+    /// se découvre au moment où l'on veut publier.
+    ///
+    /// Le besoin n'est pas théorique : ce fichier a été édité quatre fois en
+    /// une séance pour y poser le garde des binaires, et deux de ces éditions
+    /// ont fait tomber le test du comptage des defines — un garde qui se
+    /// casse en silence au mauvais moment est précisément ce qu'on cherche à
+    /// éviter.
+    ///
+    /// `yaml` arrive par `flutter_test` et n'est pas déclaré : l'import est
+    /// donc signalé par l'analyseur, et tu, plutôt que d'alourdir le
+    /// `pubspec` d'une dépendance de développement pour quinze lignes.
+    test('le workflow parse, et ses étapes sont dans l\'ordre utile', () {
+      final doc = loadYaml(File('.github/workflows/build-apk.yml').readAsStringSync()) as YamlMap;
+
+      final etapes = (doc['jobs'] as YamlMap).values.first['steps'] as YamlList;
+      final noms = etapes.map((e) => (e as YamlMap)['name']?.toString()).toList();
+
+      // Les tests précèdent les builds : une suite rouge ne doit pas produire
+      // d'artefact. C'est aussi ce qui donne leur valeur aux gardes de ce
+      // fichier, qui vivent dans la suite.
+      expect(noms.indexOf('Tests'), lessThan(noms.indexOf("Construire l'App Bundle (Play Store)")));
+
+      final garde = etapes.firstWhere(
+        (e) => (e as YamlMap)['name'] == "Vérifier l'adresse compilée dans les binaires",
+        orElse: () => throw StateError('L\'étape du garde des binaires a disparu du workflow.'),
+      ) as YamlMap;
+
+      expect((garde['env'] as YamlMap)['HOTE_PRODUCTION'], isA<String>());
+      expect(garde['run'].toString(), contains('libapp.so'));
     });
   });
 }

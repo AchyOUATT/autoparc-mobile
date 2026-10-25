@@ -209,6 +209,110 @@ jobs:
 
           echo "Signature de publication confirmée."
 
+      # ── Le garde qui lit l'OBJET EXPÉDIÉ, et non le code qui le produit ───
+      #
+      # Un bundle a déjà été publié sur Play en portant `http://10.0.2.2:8000/api`
+      # — l'adresse de l'émulateur Android, non routable depuis un téléphone.
+      # L'application installée ne pouvait joindre aucun serveur. Cause : le
+      # build avait été lancé sans `--dart-define=API_BASE_URL`, et
+      # `endpoints.dart` retombe alors sur l'émulateur.
+      #
+      # Deux couches existent déjà en amont, et NI L'UNE NI L'AUTRE ne suffit :
+      #
+      #   — `endpoints.dart` refuse de COMPILER un build `--release` sans
+      #     `API_BASE_URL` publiable (un `assert` dans un constructeur `const`,
+      #     éprouvé par `test/garde_adresse_release_test.dart`). Mais il accepte
+      #     N'IMPORTE QUELLE valeur qui ne soit pas une des trois adresses de
+      #     développement : aucun contrôle de schéma ni d'hôte. Une faute de
+      #     frappe — `onrender.cm` — compile et part.
+      #   — les deux étapes de build ci-dessus passent le define en dur. Mais la
+      #     publication du 18/10 a été faite À LA MAIN hors de ce workflow, où
+      #     l'adresse est tapée dans la commande. C'est la pratique vivante, et
+      #     rien en aval ne relisait ce qu'elle contenait.
+      #
+      # D'où cette étape : elle n'inspecte ni le code ni la commande, mais les
+      # chaînes réellement compilées dans les `libapp.so` des trois ABI. C'est
+      # la même famille que le garde de signature juste au-dessus, qui lit le
+      # certificat de l'artefact plutôt que les secrets du dépôt.
+      #
+      # ÉPROUVÉE AVANT D'ÊTRE POSÉE, hors CI, sur cinq cas : les artefacts réels
+      # (3 ABI chacun, passent), un `libapp.so` portant l'émulateur, un portant
+      # `onrender.cm`, une archive sans `libapp.so`, et un bundle dont UNE SEULE
+      # ABI sur trois porte la faute. Les quatre derniers échouent, chacun avec
+      # son message.
+      #
+      # `HOTE_PRODUCTION` est volontairement une troisième écriture de l'hôte,
+      # et non une variable injectée dans les `--dart-define` ci-dessus : ces
+      # deux lignes doivent rester LITTÉRALES, parce que
+      # `garde_adresse_release_test.dart` lit ce fichier et apparie, par
+      # expression régulière, le drapeau de define de l'adresse suivi de sa
+      # valeur. Un `${{ env.… }}` y capturerait `${{` et ferait tomber la
+      # suite, donc le workflow entier — `flutter test` précède les builds. La
+      # dérive entre les trois écritures est interdite par ce même banc, qui
+      # compare l'hôte ci-dessous à celui des deux defines.
+      #
+      # CONSÉQUENCE À CONNAÎTRE : ce banc COMPTE les occurrences du drapeau de
+      # define de l'adresse, et il en exige exactement deux — celles des deux
+      # étapes de build. Il compte aussi celles des COMMENTAIRES et des
+      # MESSAGES, qu'il ne sait pas distinguer d'une vraie. En recopier une
+      # troisième, même en prose, fait tomber la suite et donc le workflow.
+      # C'est arrivé deux fois en écrivant cette étape : d'abord dans le
+      # message d'erreur ci-dessous, puis dans ce commentaire même. D'où leurs
+      # formulations, qui nomment la variable sans recopier le drapeau.
+      - name: Vérifier l'adresse compilée dans les binaires
+        env:
+          HOTE_PRODUCTION: autoparc-backend.onrender.com
+        run: |
+          set -euo pipefail
+
+          verifier() {
+            artefact="$1"
+            motif="$2"
+            etiquette="$3"
+
+            if [ ! -f "$artefact" ]; then
+              echo "::error::$etiquette : artefact introuvable ($artefact)."
+              exit 1
+            fi
+
+            atelier="$(mktemp -d)"
+            # `unzip` sort en 11 quand le motif ne correspond à rien : on laisse
+            # passer pour rendre un message qui nomme la cause, au lieu d'un
+            # code nu.
+            unzip -o -q "$artefact" "$motif" -d "$atelier" || true
+
+            libs="$(find "$atelier" -name 'libapp.so')"
+            if [ -z "$libs" ]; then
+              echo "::error::$etiquette : aucun libapp.so extrait avec le motif « $motif »."
+              echo "Le format de l'artefact a changé : corriger le motif, ne pas retirer ce garde."
+              exit 1
+            fi
+
+            nombre=0
+            for so in $libs; do
+              nombre=$((nombre + 1))
+              court="${so#"$atelier"/}"
+
+              if grep -aq '10\.0\.2\.2' "$so"; then
+                echo "::error::$etiquette : $court porte l'adresse de l'émulateur (10.0.2.2)."
+                echo "Ce binaire ne peut joindre aucun serveur depuis un téléphone."
+                echo "Relancer le build en passant API_BASE_URL=https://$HOTE_PRODUCTION/api en dart-define."
+                exit 1
+              fi
+
+              if ! grep -aq "$HOTE_PRODUCTION" "$so"; then
+                echo "::error::$etiquette : $court ne porte pas $HOTE_PRODUCTION."
+                echo "L'adresse compilée n'est pas celle de la production : vérifier --dart-define=API_BASE_URL."
+                exit 1
+              fi
+            done
+
+            echo "$etiquette : $nombre bibliothèque(s), toutes sur $HOTE_PRODUCTION, aucune sur l'émulateur."
+          }
+
+          verifier build/app/outputs/bundle/release/app-release.aab 'base/lib/*/libapp.so' 'App Bundle'
+          verifier build/app/outputs/flutter-apk/app-release.apk 'lib/*/libapp.so' 'APK'
+
       - name: Publier les artefacts
         uses: actions/upload-artifact@v4
         with:
