@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_exception.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
+import '../data/lecture_json.dart' as json;
 
 class PartnerApplicationsPageData {
   const PartnerApplicationsPageData({required this.accounts, required this.page, required this.lastPage, required this.total});
@@ -21,12 +22,18 @@ final partnerApplicationsProvider = FutureProvider.autoDispose
         '/partner-applications',
         params: {'status': query.status, 'page': query.page, 'per_page': 25},
       );
-      final accounts = (response['data'] as List).map((item) => Map<String, dynamic>.from(item as Map)).toList();
-      final meta = response['meta'] as Map? ?? const {};
+      // `data` absent, d'un autre type, ou portant un element qui n'est pas une
+      // map ne doit pas lever ICI : une exception levee dans un FutureProvider
+      // arrive bien dans `AsyncValue.error` et se rend proprement, mais un
+      // `data` manquant n'est pas une panne — c'est une page vide. Et les
+      // elements mal formes se perdent un par un plutot que de faire perdre
+      // toute la page. Voir `data/lecture_json.dart`.
+      final accounts = json.listeDeMaps(response['data']);
+      final meta = json.map(response['meta']);
       return PartnerApplicationsPageData(accounts: accounts,
-        page: (meta['current_page'] as num?)?.toInt() ?? query.page,
-        lastPage: (meta['last_page'] as num?)?.toInt() ?? query.page,
-        total: (meta['total'] as num?)?.toInt() ?? accounts.length);
+        page: json.entier(meta['current_page']) ?? query.page,
+        lastPage: json.entier(meta['last_page']) ?? query.page,
+        total: json.entier(meta['total']) ?? accounts.length);
     });
 
 class PartnerApplicationsPage extends ConsumerStatefulWidget {
@@ -101,10 +108,22 @@ class _PartnerApplicationsPageState
 
     if (!ref.read(authProvider).canManagePartners) return;
 
-    setState(() => _reviewing = account['id'] as int);
+    // `as int` levait ici, hors de tout try/catch, sur un identifiant
+    // serialise en texte — et c'est une ACTION du personnel, approbation ou
+    // refus, qui tombait alors en ecran rouge. Sans identifiant il n'y a pas
+    // de cible : on le dit et on s'arrete.
+    final id = json.entier(account['id']);
+    if (id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Cette candidature est incomplète. Rafraîchissez la liste.'),
+      ));
+      return;
+    }
+
+    setState(() => _reviewing = id);
     try {
       await ref.read(apiClientProvider).post(
-        '/partner-applications/${account['id']}/$action',
+        '/partner-applications/$id/$action',
         data: {if (reason != null) 'review_reason': reason},
       );
       if (!mounted) return;
@@ -197,25 +216,39 @@ class _PartnerApplicationsPageState
     );
   }
 
+  /// La carte d'une candidature.
+  ///
+  /// Les quatre champs de texte etaient lus en `as String` NU, dans le
+  /// `build()` : un `phone` nul ou un `company_name` absent ne donnait pas un
+  /// message mais un `TypeError` pendant la construction du widget, donc un
+  /// ecran rouge — et `messageFor()` ne couvre pas ca, il ne traite que les
+  /// erreurs reseau.
+  ///
+  /// Le repli n'est pas un vide muet : il NOMME le champ manquant, parce que
+  /// c'est l'ecran sur lequel quelqu'un decide d'approuver une entreprise. Une
+  /// ligne blanche laisserait croire que le champ est vide alors qu'il est
+  /// illisible.
   Widget _card(Map<String, dynamic> account) {
-    final user = account['user'] as Map<String, dynamic>?;
+    final user = json.map(account['user']);
     final busy = _reviewing != null;
+    final courriel = json.texte(user['email']);
+    final identifiant = json.entier(account['id']);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(account['company_name'] as String, style: Theme.of(context).textTheme.titleMedium),
+          Text(json.texte(account['company_name']) ?? 'Entreprise sans nom', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
-          Text(account['contact_name'] as String),
-          Text(account['phone'] as String),
-          if (user?['email'] != null) Text(user!['email'] as String),
-          if (account['review_reason'] != null) ...[
+          Text(json.texte(account['contact_name']) ?? 'Contact non renseigné'),
+          Text(json.texte(account['phone']) ?? 'Téléphone non renseigné'),
+          if (courriel != null) Text(courriel),
+          if (json.texte(account['review_reason']) != null) ...[
             const SizedBox(height: 8),
-            Text('Motif : ${account['review_reason']}'),
+            Text('Motif : ${json.texte(account['review_reason'])}'),
           ],
           const SizedBox(height: 12),
-          if (_reviewing == account['id']) const LinearProgressIndicator(),
+          if (identifiant != null && _reviewing == identifiant) const LinearProgressIndicator(),
           Wrap(spacing: 8, runSpacing: 8, children: [
             if (_status != 'approved') FilledButton.icon(
               onPressed: busy ? null : () => _review(account, 'approve'),

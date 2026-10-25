@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/api/api_exception.dart';
+import '../data/lecture_json.dart' as json;
 import '../data/partner_repository.dart';
 import 'partner_listing_form.dart';
 import 'partner_media_page.dart';
@@ -32,7 +34,7 @@ class _PartnerListingsPageState extends ConsumerState<PartnerListingsPage> {
       if (mounted) setState(() { _page = result; _loading = false; });
     } catch (error) {
       if (!mounted) return;
-      setState(() { _error = error.toString(); _loading = false; });
+      setState(() { _error = messageFor(error); _loading = false; });
       if (error is PartnerApiException && error.sessionRejected) {
         await ref.read(partnerSessionProvider.notifier).refresh();
         if (mounted) Navigator.of(context).pop();
@@ -41,8 +43,11 @@ class _PartnerListingsPageState extends ConsumerState<PartnerListingsPage> {
   }
 
   Future<void> _edit([Map<String, dynamic>? listing]) async {
+    final id = listing == null ? null : json.entier(listing['id']);
+    if (listing != null && id == null) return _identifiantIllisible();
+
     try {
-      final detail = listing == null ? null : await ref.read(partnerRepositoryProvider).listing(widget.kind, (listing['id'] as num).toInt());
+      final detail = id == null ? null : await ref.read(partnerRepositoryProvider).listing(widget.kind, id);
       if (!mounted) return;
       final saved = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => PartnerListingFormPage(kind: widget.kind, initialListing: detail)));
       if (saved == true && mounted) await _load();
@@ -50,12 +55,28 @@ class _PartnerListingsPageState extends ConsumerState<PartnerListingsPage> {
   }
 
   void _showError(Object error) {
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(messageFor(error))));
+  }
+
+  /// Quand l'identifiant d'une annonce est illisible, aucune action n'a de
+  /// cible : on le DIT, au lieu de lever un `TypeError` dans le `build()`.
+  ///
+  /// Ce n'est pas defensif pour rien. Le serveur peut serialiser un entier en
+  /// texte — c'est la faute qui avait fait tomber le catalogue entier, voir
+  /// `data/lecture_json.dart`. Avant, `(item['id'] as num)` levait ICI, hors de
+  /// tout try/catch, et l'ecran passait au rouge.
+  void _identifiantIllisible() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Cette annonce est incomplète. Rafraîchissez la liste.'),
+      ));
+    }
   }
 
   Future<void> _action(Map<String, dynamic> item, String action) async {
     if (_working) return;
-    final id = (item['id'] as num).toInt();
+    final id = json.entier(item['id']);
+    if (id == null) return _identifiantIllisible();
     final repository = ref.read(partnerRepositoryProvider);
     if (action == 'edit') return _edit(item);
     if (action == 'photos') {
