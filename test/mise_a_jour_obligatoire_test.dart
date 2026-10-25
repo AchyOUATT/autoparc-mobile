@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:auto/core/update/ecran_mise_a_jour.dart';
@@ -289,6 +290,130 @@ void main() {
   // La tenue en 320x640 à l'échelle 1,3 est vérifiée dans
   // `responsive_test.dart`, avec les autres écrans et le même banc : creux
   // système compris, défilement compris.
+
+  // ── L'interrupteur de l'espace partenaire ─────────────────────────────
+  //
+  // Il voyage sur cette même réponse, et pour une raison qui n'est pas de
+  // commodité : c'est le SEUL interrupteur distant de l'application. Il n'y a
+  // ni configuration distante, ni constante de compilation. Une fois un binaire
+  // publié, ce champ est le seul moyen de masquer l'entrée de l'espace
+  // partenaire — dont la tuile de tiroir n'avait, jusqu'ici, aucune condition.
+  //
+  // LE SENS DU DÉFAUT EST L'OBJET DE CES TESTS, et il est l'inverse de celui du
+  // plancher. Le plancher ne bloque jamais sur une défaillance, parce que
+  // bloquer tout le parc serait pire que le défaut. Ici c'est le contraire :
+  // dans le doute on FERME, parce qu'une entrée affichée à tort mène à un refus
+  // du serveur, tandis qu'une entrée masquée à tort se rattrape en relançant
+  // l'application.
+  //
+  // Ce que ces tests NE couvrent pas : la condition posée sur la tuile
+  // elle-même, dans `main.dart`. `_AppDrawer` est privé, et le rendre public
+  // pour l'atteindre coûterait plus que la ligne qu'on vérifierait. La logique,
+  // elle, est ici.
+
+  group('Interrupteur de l\'espace partenaire — lecture', () {
+    Future<PlancherDeVersion?> plancherDe(String corps) => ServiceVersionMinimale(
+          client: serveurQuiRend(corps),
+          lireVersionInstallee: () async => 69,
+        ).lire();
+
+    // PHP sérialise un booléen de bien des façons selon qu'il a croisé un cast
+    // ou une variable d'environnement.
+    for (final forme in ['true', '1', '"1"', '"true"', '"TRUE"', '"yes"', '"on"']) {
+      test('$forme ouvre l\'espace', () async {
+        final plancher = await plancherDe('{"min_version_code": 70, "partner_space_open": $forme}');
+
+        expect(plancher!.espacePartenaireOuvert, isTrue, reason: '$forme devrait ouvrir');
+      });
+    }
+
+    // `"false"` est le piège : une chaîne non vide, donc vraie pour tout test
+    // de vérité laxiste. C'est exactement la forme qu'un serveur produit quand
+    // la variable d'environnement a été renseignée à « false » en texte.
+    for (final forme in ['false', '0', '"0"', '"false"', '"FALSE"', '""', 'null', '"nimportequoi"', '[]']) {
+      test('$forme laisse l\'espace fermé', () async {
+        final plancher = await plancherDe('{"min_version_code": 70, "partner_space_open": $forme}');
+
+        expect(plancher!.espacePartenaireOuvert, isFalse, reason: '$forme ne devrait pas ouvrir');
+      });
+    }
+
+    test('champ absent — un serveur antérieur au drapeau — laisse fermé', () async {
+      final plancher = await plancherDe('{"min_version_code": 70}');
+
+      expect(plancher!.espacePartenaireOuvert, isFalse);
+    });
+
+    test('la lecture du plancher reste correcte à côté du drapeau', () async {
+      // Contre-épreuve : si l'ajout du drapeau avait cassé le reste de la
+      // réponse, les tests ci-dessus passeraient quand même.
+      final plancher = await plancherDe('{"min_version_code": 70, "partner_space_open": true}');
+
+      expect(plancher!.minVersionCode, 70);
+      expect(plancher.espacePartenaireOuvert, isTrue);
+    });
+  });
+
+  group('Interrupteur de l\'espace partenaire — le provider ferme dans le doute', () {
+    ProviderContainer conteneur(Dio client) => ProviderContainer(overrides: [
+          serviceVersionMinimaleProvider.overrideWithValue(ServiceVersionMinimale(
+            client: client,
+            lireVersionInstallee: () async => 69,
+          )),
+        ]);
+
+    test('pendant la lecture : fermé', () {
+      final c = conteneur(serveurQuiRend('{"partner_space_open": true}'));
+      addTearDown(c.dispose);
+
+      // Lu AVANT d'attendre la Future : c'est l'état des premières images de
+      // l'application, celles où le tiroir peut déjà s'ouvrir.
+      expect(c.read(espacePartenaireOuvertProvider), isFalse);
+    });
+
+    test('réseau coupé : fermé', () async {
+      final c = conteneur(serveurInjoignable());
+      addTearDown(c.dispose);
+
+      await c.read(plancherDeVersionProvider.future);
+
+      expect(c.read(espacePartenaireOuvertProvider), isFalse);
+    });
+
+    test('HTTP 500 : fermé', () async {
+      final c = conteneur(serveurQuiRend('{"partner_space_open": true}', code: 500));
+      addTearDown(c.dispose);
+
+      await c.read(plancherDeVersionProvider.future);
+
+      expect(c.read(espacePartenaireOuvertProvider), isFalse);
+    });
+
+    test('oui franc : ouvert', () async {
+      final c = conteneur(serveurQuiRend('{"min_version_code": 70, "partner_space_open": true}'));
+      addTearDown(c.dispose);
+
+      await c.read(plancherDeVersionProvider.future);
+
+      // Sans ce test, « fermé » en dur passerait tous les précédents.
+      expect(c.read(espacePartenaireOuvertProvider), isTrue);
+    });
+
+    test('un seul appel réseau nourrit le verdict ET le drapeau', () async {
+      // Cet appel est celui qui réveille l'instance endormie du plan gratuit,
+      // mesuré à 34,8 s. Le dédoubler le ferait payer deux fois à chaque
+      // démarrage.
+      final adaptateur = _AdaptateurFixe(corps: '{"min_version_code": 70, "partner_space_open": true}');
+      final c = conteneur(Dio()..httpClientAdapter = adaptateur);
+      addTearDown(c.dispose);
+
+      await c.read(plancherDeVersionProvider.future);
+      await c.read(verdictMiseAJourProvider.future);
+      c.read(espacePartenaireOuvertProvider);
+
+      expect(adaptateur.appels, 1, reason: 'La réponse de version doit être lue une seule fois.');
+    });
+  });
 }
 
 /// Rend `litteral` tel qu'il doit apparaître dans le corps JSON : un nombre
@@ -326,12 +451,20 @@ class _AdaptateurFixe implements HttpClientAdapter {
   final int code;
   final bool reseauCoupe;
 
+  /// Combien de fois l'adaptateur a été sollicité.
+  ///
+  /// Sert à une seule chose, et elle compte : vérifier que la réponse de
+  /// version n'est lue QU'UNE FOIS au démarrage, alors que deux lecteurs en
+  /// dépendent désormais. C'est l'appel qui réveille l'instance endormie.
+  int appels = 0;
+
   @override
   Future<ResponseBody> fetch(
     RequestOptions options,
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
+    appels++;
     if (reseauCoupe) {
       throw DioException.connectionError(
         requestOptions: options,

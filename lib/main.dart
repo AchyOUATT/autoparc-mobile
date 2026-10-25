@@ -809,7 +809,31 @@ class _AppDrawer extends ConsumerWidget {
           // suivre, et le mettre dans un bloc conditionnel l'aurait fait
           // disparaître pour les deux autres états.
           const Divider(),
-          _DrawerTile(
+
+          // ── ESPACE PARTENAIRE : SOUS INTERRUPTEUR DISTANT ────────────
+          //
+          // Cette tuile n'avait AUCUNE condition, et c'était un problème
+          // d'ordre de livraison plutôt que de rôle. Elle est posée après les
+          // blocs par rôle, au même rang que la langue, parce qu'un partenaire
+          // n'est ni `isStaff` ni `isClient` : il a sa propre session, et c'est
+          // par ici qu'il s'inscrit et se connecte. La gater sur un rôle
+          // l'enfermerait donc dehors et supprimerait l'inscription en
+          // libre-service.
+          //
+          // L'interrupteur vient du SERVEUR, et il le faut : cette application
+          // n'a ni configuration distante ni constante de compilation, de sorte
+          // qu'une fois publiée, rien dans le téléphone ne permettait plus de
+          // masquer cette entrée. Le drapeau voyage sur `GET /api/app/version`,
+          // la seule réponse lue avant tout affichage.
+          //
+          // Fermé tant qu'on n'en sait rien — lecture en cours, réseau coupé,
+          // ou serveur antérieur au champ. Mieux vaut une entrée absente
+          // qu'une entrée qui mène à un refus.
+          //
+          // Ce n'est pas la sécurité : le serveur rend 503 sur tout le groupe
+          // de routes partenaire, y compris aux binaires qui ignorent ce champ.
+          // Ceci n'évite que l'entrée morte.
+          if (ref.watch(espacePartenaireOuvertProvider)) _DrawerTile(
             icon: Icons.storefront_outlined,
             label: 'Espace partenaire',
             onTap: () { _close(context); context.push('/partner'); },

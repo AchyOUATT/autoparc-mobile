@@ -51,11 +51,31 @@ class PlancherDeVersion {
   final String? storeUrl;
   final String? message;
 
+  /// L'espace partenaire est-il ouvert ? FERMÉ par défaut.
+  ///
+  /// C'est le seul interrupteur distant de cette application : il n'existe ni
+  /// configuration distante, ni constante de compilation. Il voyage sur la
+  /// réponse de version parce que c'est la seule que l'application lise avant
+  /// d'afficher quoi que ce soit, et qu'elle est déjà gratuite — pas de base,
+  /// pas de jeton.
+  ///
+  /// LE DÉFAUT EST FERMÉ, ET C'EST VOULU. Un serveur plus ancien, qui ne
+  /// connaît pas ce champ, laisse l'espace masqué ; et une réponse perdue —
+  /// réseau coupé, réveil d'instance au-delà des cinq secondes — fait de même.
+  /// Dans le doute on n'affiche pas une entrée qui mènerait à une erreur.
+  ///
+  /// Ce drapeau ne fait que RENSEIGNER l'affichage. Ce qui ferme réellement
+  /// l'espace est le serveur, qui rend 503 sur tout le groupe de routes
+  /// partenaire : un binaire qui ignorerait ce champ se heurterait quand même
+  /// au refus.
+  final bool espacePartenaireOuvert;
+
   const PlancherDeVersion({
     this.minVersionCode,
     this.latestVersionCode,
     this.storeUrl,
     this.message,
+    this.espacePartenaireOuvert = false,
   });
 
   factory PlancherDeVersion.fromJson(Map<String, dynamic> json) =>
@@ -64,6 +84,7 @@ class PlancherDeVersion {
         latestVersionCode: _entier(json['latest_version_code']),
         storeUrl: _texte(json['store_url']),
         message: _texte(json['message']),
+        espacePartenaireOuvert: _booleen(json['partner_space_open']),
       );
 }
 
@@ -81,6 +102,27 @@ int? _entier(Object? valeur) {
   if (texte == null || texte.isEmpty) return null;
 
   return int.tryParse(texte) ?? double.tryParse(texte)?.toInt();
+}
+
+/// Lit un booléen quelle que soit la forme reçue, et retombe sur FAUX.
+///
+/// Même motif que `_entier()` : PHP sérialise volontiers un booléen en `1`, en
+/// `"1"` ou en `"true"`. Mais le repli n'est pas le même, et c'est le point
+/// important — `_entier()` rend null pour ne pas bloquer à tort, tandis
+/// qu'ici tout ce qui n'est pas franchement vrai vaut FERMÉ.
+///
+/// Ce sens-là n'est pas symétrique par hasard : un `true` manqué masque une
+/// entrée de menu, ce qui se corrige en rouvrant l'application ; un `false`
+/// manqué afficherait une entrée qui mène à un refus du serveur. Et la chaîne
+/// `"false"` est précisément le piège qu'un `valeur == true` laxiste laisserait
+/// passer du côté vrai.
+bool _booleen(Object? valeur) {
+  if (valeur is bool) return valeur;
+  if (valeur is num) return valeur != 0;
+
+  final texte = valeur?.toString().trim().toLowerCase();
+
+  return texte == 'true' || texte == '1' || texte == 'yes' || texte == 'on';
 }
 
 /// Une chaîne vide vaut une chaîne absente : le serveur sert `""` quand la
@@ -169,13 +211,18 @@ class ServiceVersionMinimale {
     return _entier(infos.buildNumber);
   }
 
-  Future<VerdictMiseAJour> verifier() async {
-    const rienAFaire = VerdictMiseAJour.rienAFaire();
-
+  /// Lit la réponse de version. Rend null sur n'importe quelle défaillance.
+  ///
+  /// ── POURQUOI CETTE LECTURE EST SÉPARÉE DU VERDICT ──────────────────────
+  ///
+  /// La réponse porte désormais deux choses sans rapport l'une avec l'autre :
+  /// le plancher de version, et l'interrupteur de l'espace partenaire. Deux
+  /// lecteurs, donc, et un seul appel réseau au démarrage — c'est celui qui
+  /// réveille l'instance endormie du plan gratuit, et le dédoubler le ferait
+  /// payer deux fois. D'où `lire()` d'un côté, `juger()` de l'autre, et un
+  /// provider qui partage le `Future`.
+  Future<PlancherDeVersion?> lire() async {
     try {
-      final installee = await _lireVersionInstallee();
-      if (installee == null) return rienAFaire;
-
       final reponse = await _client.get<dynamic>(
         Endpoints.appVersion,
         options: Options(
@@ -189,13 +236,30 @@ class ServiceVersionMinimale {
         ),
       );
 
-      if (reponse.statusCode != 200) return rienAFaire;
+      if (reponse.statusCode != 200) return null;
 
       final corps = reponse.data;
-      if (corps is! Map) return rienAFaire;
+      if (corps is! Map) return null;
 
-      final plancher =
-          PlancherDeVersion.fromJson(Map<String, dynamic>.from(corps));
+      return PlancherDeVersion.fromJson(Map<String, dynamic>.from(corps));
+    } catch (e) {
+      // Exception réseau, délai dépassé, JSON illisible. La trace dit pourquoi
+      // la lecture n'a rien donné — sans elle, un plancher qui ne se déclenche
+      // pas est indiscernable d'un plancher jamais configuré.
+      debugPrint('[MiseAJour] lecture du plancher abandonnée : $e');
+      return null;
+    }
+  }
+
+  /// Compare la version installée au plancher reçu.
+  Future<VerdictMiseAJour> juger(PlancherDeVersion? plancher) async {
+    const rienAFaire = VerdictMiseAJour.rienAFaire();
+
+    try {
+      if (plancher == null) return rienAFaire;
+
+      final installee = await _lireVersionInstallee();
+      if (installee == null) return rienAFaire;
 
       final minimum = plancher.minVersionCode;
       if (minimum == null) return rienAFaire;
@@ -209,14 +273,14 @@ class ServiceVersionMinimale {
         urlStore: plancher.storeUrl,
       );
     } catch (e) {
-      // Tout finit ici : exception réseau, délai dépassé, JSON illisible,
-      // canal de plateforme absent. La trace dit pourquoi le contrôle n'a
-      // rien donné — sans elle, un plancher qui ne se déclenche pas est
-      // indiscernable d'un plancher jamais configuré.
+      // Le canal de plateforme peut manquer sous un banc ou sur une plateforme
+      // sans notion de versionCode.
       debugPrint('[MiseAJour] contrôle de version abandonné : $e');
       return rienAFaire;
     }
   }
+
+  Future<VerdictMiseAJour> verifier() async => juger(await lire());
 }
 
 final serviceVersionMinimaleProvider =
@@ -229,6 +293,32 @@ final serviceVersionMinimaleProvider =
 /// pas tant que l'application tourne. Pas d'`autoDispose` non plus : on ne
 /// veut surtout pas qu'il soit relancé parce que son seul lecteur a cessé un
 /// instant de l'écouter.
+/// La réponse de version, lue UNE FOIS et partagée.
+///
+/// Deux lecteurs en dépendent — le verdict de mise à jour et l'entrée de
+/// l'espace partenaire — et c'est tout l'intérêt de la faire passer par un
+/// provider : l'appel réseau du démarrage, celui qui réveille l'instance,
+/// n'a lieu qu'une fois.
+final plancherDeVersionProvider = FutureProvider<PlancherDeVersion?>(
+  (ref) => ref.watch(serviceVersionMinimaleProvider).lire(),
+);
+
+/// Le verdict, calculé une fois au démarrage, à partir du plancher partagé.
 final verdictMiseAJourProvider = FutureProvider<VerdictMiseAJour>(
-  (ref) => ref.watch(serviceVersionMinimaleProvider).verifier(),
+  (ref) async => ref
+      .watch(serviceVersionMinimaleProvider)
+      .juger(await ref.watch(plancherDeVersionProvider.future)),
+);
+
+/// L'espace partenaire est-il ouvert ? FERMÉ tant qu'on n'en sait rien.
+///
+/// Ni `AsyncValue` ni `null` en sortie : l'appelant est une condition
+/// d'affichage dans un tiroir, qui doit répondre à chaque reconstruction sans
+/// attendre. Pendant la lecture, en cas d'échec, et face à un serveur qui
+/// ignore le champ, la réponse est la même — faux, donc pas d'entrée.
+final espacePartenaireOuvertProvider = Provider<bool>(
+  (ref) => ref.watch(plancherDeVersionProvider).maybeWhen(
+        data: (plancher) => plancher?.espacePartenaireOuvert ?? false,
+        orElse: () => false,
+      ),
 );
