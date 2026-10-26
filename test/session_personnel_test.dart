@@ -498,13 +498,45 @@ void main() {
       expect(auth.state.verified, isTrue);
       expect(auth.state.staffUser?.name, 'Awa Traoré');
 
-      // Le coffre est désormais au format courant, et l'ancienne clé a disparu
-      // — la laisser reviendrait à garder un jeton que plus rien ne lirait ni
-      // n'effacerait, valable indéfiniment côté serveur.
-      expect(coffre.valeurs.containsKey('sanctum_token'), isFalse);
+      // CE BANC AFFIRMAIT LE CONTRAIRE, et c'est un changement voulu.
+      //
+      // L'ancienne clé était effacée dès la première écriture. Le
+      // raisonnement avait un angle mort : l'application PUBLIEE ne connaît
+      // que cette clé. Dès que cette version avait tourné une fois, revenir
+      // au binaire publié — le geste qu'on fait quand un lot pose problème —
+      // montrait l'écran visiteur à tout le monde et laissait au coffre un
+      // jeton que ce binaire ne lit pas et n'efface pas.
+      //
+      // Elle est donc tenue à jour comme un MIROIR du jeton courant. Ce n'est
+      // plus un résidu : la déconnexion efface les deux, comme le banc
+      // « elle efface les DEUX clés » le vérifie.
+      expect(coffre.valeurs['sanctum_token'], 'jeton-d-avant',
+          reason: 'Un retour au binaire publié doit retrouver une session.');
+
       final enregistre = jsonDecode(coffre.valeurs['sanctum_session']!) as Map;
       expect(enregistre['token'], 'jeton-d-avant');
       expect((enregistre['user'] as Map)['email'], 'awa@autoparc.bf');
+      expect(enregistre['v'], 1,
+          reason: 'La forme est inscrite dans l’enregistrement, pour qu’une '
+              'version future la reconnaisse au lieu de la deviner.');
+    });
+
+    /// La tolerance qui accompagne le marqueur de version.
+    ///
+    /// Refuser un `v` qu'on ne connait pas deconnecterait a chaque retour
+    /// arriere — exactement le tort que le miroir de l'ancienne cle vient de
+    /// fermer. Un enregistrement reste donc utilisable tant qu'il porte un
+    /// jeton, quelle que soit sa version annoncee.
+    test('un enregistrement d’une version inconnue reste utilisable', () async {
+      coffre.valeurs['sanctum_session'] =
+          jsonEncode({'v': 99, 'token': 'jeton-du-futur', 'user': profilJson()});
+      depot.reponse = () async => StaffUser.fromJson(profilJson());
+
+      final auth = demarrer();
+      await souffler();
+
+      expect(auth.state.isStaff, isTrue);
+      expect(auth.state.staffUser?.name, 'Awa Traoré');
     });
 
     test('un enregistrement illisible retombe sur l’ancienne clé', () async {

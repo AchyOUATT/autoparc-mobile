@@ -73,7 +73,9 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
     if (etat != AppLifecycleState.resumed) return;
     if (!mounted || state.profile == null) return;
 
-    refresh();
+    // Silencieuse : personne ne l'a demandee, elle ne doit donc pas griser
+    // les commandes de la page.
+    refresh(silencieux: true);
   }
 
   @override
@@ -173,21 +175,56 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
 
   Future<void> login(String email, String password) => _authenticate(() => _repository.login(email, password));
   Future<void> register(Map<String, dynamic> fields) => _authenticate(() => _repository.register(fields));
-  Future<void> refresh() async {
+  /// Reinterroge le serveur sur la session courante.
+  ///
+  /// ── `silencieux` : CE QU'IL EVITE ──────────────────────────────────────
+  ///
+  /// `loading` desactive quatre commandes de la page — la deconnexion et les
+  /// deux boutons d'actualisation (`partner_account_page.dart` lignes 59, 158,
+  /// 180 et 182). C'est juste pour une actualisation que le partenaire a
+  /// DEMANDEE : il attend, et les boutons gris le disent.
+  ///
+  /// Mais la reprise au premier plan appelle aussi cette methode, et personne
+  /// ne l'a demandee. Un partenaire qui revenait a l'application se retrouvait
+  /// donc incapable de se deconnecter ou de rafraichir son statut pendant
+  /// jusqu'a 60 s, sur un ecran qui ne lui disait pas pourquoi. Et comme
+  /// `loading` est global au notifier, cela valait sur n'importe quelle page du
+  /// parcours partenaire.
+  ///
+  /// Une verification de fond ne touche donc pas a `loading`. La puce
+  /// « Statut a confirmer… » reste le seul signe visible, et elle suffit.
+  Future<void> refresh({bool silencieux = false}) async {
     if (state.profile == null) return restore();
+
     final generation = ++_generation;
     final previous = state.profile;
-    state = PartnerSession(profile: previous, loading: true, verified: state.verified);
+
+    // ── POURQUOI ON RETIENT `verified` ────────────────────────────────────
+    //
+    // Une lenteur, une coupure ou un 500 ne disent RIEN de la session : le
+    // serveur n'a pas repondu, pas desavoue. Les deux branches d'erreur
+    // posaient pourtant `verified: false`, ce qui DEFAISAIT une confirmation
+    // deja obtenue — la puce passait a « Statut a confirmer… » sur un simple
+    // hoquet reseau, et y restait. Le cote personnel ne fait pas cela : son
+    // `_verifier()` laisse l'etat intact quand le serveur se tait.
+    final confirme = state.verified;
+
+    state = PartnerSession(profile: previous, loading: ! silencieux, verified: confirme);
+
     try {
       final profile = await _repository.getMe();
       if (mounted && generation == _generation) state = PartnerSession(profile: profile);
     } on PartnerApiException catch (error) {
       if (mounted && generation == _generation) {
         state = PartnerSession(profile: error.sessionRejected ? null : previous,
-          verified: error.sessionRejected, error: error.message, deniedStatus: error.accountStatus, reviewReason: error.reviewReason);
+          verified: error.sessionRejected ? true : confirme,
+          error: error.message, deniedStatus: error.accountStatus, reviewReason: error.reviewReason);
       }
     } catch (_) {
-      if (mounted && generation == _generation) state = PartnerSession(profile: previous, verified: false, error: 'Actualisation impossible. Réessayez.');
+      if (mounted && generation == _generation) {
+        state = PartnerSession(profile: previous, verified: confirme,
+          error: 'Actualisation impossible. Réessayez.');
+      }
     }
   }
 

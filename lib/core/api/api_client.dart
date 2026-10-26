@@ -29,6 +29,14 @@ const _kTokenKey = 'sanctum_token';
 /// bloquer le premier écran sur un appel qui peut prendre 35 secondes sur une
 /// instance endormie.
 const _kSessionKey = 'sanctum_session';
+
+/// Forme de l'enregistrement. Inscrite dedans pour qu'une version future
+/// puisse la reconnaitre au lieu de la deviner.
+///
+/// La lecture n'exige PAS de connaitre cette version : un enregistrement dont
+/// le `v` lui est inconnu reste utilisable tant qu'il porte un jeton. C'est
+/// voulu — refuser l'inconnu deconnecterait a chaque retour arriere.
+const _versionSession = 1;
 // encryptedSharedPreferences évite le blocage sur Android (Keystore sans
 // écran de verrouillage configuré — courant sur émulateur).
 //
@@ -283,21 +291,42 @@ class ApiClient {
 
   // ── Session Sanctum (staff) ───────────────────────────────────────
 
-  /// Enregistre la session complète, et retire l'ancienne clé.
+  /// Enregistre la session complete, ET tient l'ancienne cle a jour.
   ///
-  /// L'effacement de `sanctum_token` n'est pas cosmétique : la lecture préfère
-  /// l'enregistrement courant, donc un ancien jeton laissé là ne serait plus
-  /// jamais lu ni jamais effacé. Il resterait au coffre indéfiniment, valable
-  /// côté serveur puisque `config/sanctum.php` porte `'expiration' => null`.
+  /// ── POURQUOI ON ECRIT LES DEUX, ET NON PLUS UNE SEULE ──────────────────
+  ///
+  /// La premiere version de ce code EFFAÇAIT `sanctum_token` des la premiere
+  /// ecriture, au motif qu'un jeton laisse la ne serait plus jamais lu. Le
+  /// raisonnement avait un angle mort : l'application PUBLIEE ne connait que
+  /// cette cle-la. Des que cette version avait tourne une fois, revenir au
+  /// binaire publie — exactement le geste qu'on fait quand un lot pose
+  /// probleme — montrait l'ecran visiteur a tout le monde, et laissait au
+  /// coffre un jeton que ce binaire ne lit pas et n'efface pas. Avec
+  /// `'expiration' => null` cote Sanctum, ce jeton reste valable
+  /// indefiniment.
+  ///
+  /// L'ancienne cle est donc tenue a jour comme un MIROIR du jeton courant.
+  /// Elle n'est plus un residu : `deleteSession()` efface les deux, donc une
+  /// deconnexion la nettoie, et un retour arriere retrouve une session
+  /// utilisable.
+  ///
+  /// C'est transitoire. Ce miroir pourra partir quand la version publiee sera
+  /// assez vieille pour qu'un retour vers elle n'ait plus de sens.
+  ///
+  /// L'ordre compte : l'enregistrement AUTORITAIRE d'abord. Si la seconde
+  /// ecriture echoue, cette version reste juste, et un retour arriere lirait
+  /// un jeton perime — donc un 401, donc une deconnexion propre. L'ordre
+  /// inverse laisserait cette version lire un jeton perime, ce qui est pire.
   static Future<void> saveSession(
     String token, [
     Map<String, dynamic>? user,
   ]) async {
     await _kStorage.write(
       key: _kSessionKey,
-      value: jsonEncode({'token': token, 'user': ?user}),
+      value: jsonEncode({'v': _versionSession, 'token': token, 'user': ?user}),
     );
-    await _kStorage.delete(key: _kTokenKey);
+
+    await _kStorage.write(key: _kTokenKey, value: token);
   }
 
   /// Lit la session : l'enregistrement courant, sinon l'ancienne clé.

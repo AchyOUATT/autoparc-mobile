@@ -319,6 +319,121 @@ void main() {
     });
   });
 
+  /// ── CE QU'UNE ACTUALISATION NE DOIT PAS DEFAIRE ────────────────────────
+  ///
+  /// Une lenteur, une coupure ou un 500 ne disent rien de la session : le
+  /// serveur n'a pas repondu, pas desavoue. Les deux branches d'erreur de
+  /// `refresh()` posaient pourtant `verified: false`, ce qui defaisait une
+  /// confirmation deja obtenue — la puce passait a « Statut a confirmer… » sur
+  /// un simple hoquet reseau, et y restait.
+  group('Une actualisation qui echoue ne defait pas la confirmation', () {
+    Future<PartnerSessionNotifier> confirmee() async {
+      semerCoffre(profil: _profil().toJson());
+      depot.reponse = () async => _profil();
+      final session = demarrer();
+      await souffler();
+      expect(session.state.verified, isTrue, reason: 'Point de depart : confirmee.');
+
+      return session;
+    }
+
+    test('une lenteur du serveur laisse la session confirmee', () async {
+      final session = await confirmee();
+
+      depot.reponse = () => throw const PartnerApiException(
+            'Service indisponible.',
+            statusCode: 503,
+          );
+      await session.refresh();
+
+      expect(session.state.profile, isNotNull);
+      expect(session.state.verified, isTrue,
+          reason: 'Un 503 ne desavoue pas la session.');
+      expect(session.state.sessionAConfirmer, isFalse,
+          reason: 'La puce ne doit pas annoncer un statut a confirmer.');
+      expect(session.state.error, 'Service indisponible.',
+          reason: "L'echec se dit, mais sans degrader l'etat.");
+    });
+
+    test('une erreur inattendue non plus', () async {
+      final session = await confirmee();
+
+      depot.reponse = () => throw StateError('rupture');
+      await session.refresh();
+
+      expect(session.state.verified, isTrue);
+      expect(session.state.sessionAConfirmer, isFalse);
+    });
+
+    test('mais un compte desactive ferme bien la session', () async {
+      final session = await confirmee();
+
+      depot.reponse = () => throw const PartnerApiException(
+            'Compte desactive.',
+            statusCode: 403,
+            code: 'account_disabled',
+          );
+      await session.refresh();
+
+      expect(session.state.profile, isNull,
+          reason: 'Retenir `verified` ne doit pas retenir une session morte.');
+    });
+  });
+
+  /// ── CE QUE LA REPRISE NE DOIT PAS GRISER ───────────────────────────────
+  ///
+  /// `loading` desactive la deconnexion et les deux boutons d'actualisation de
+  /// la page. C'est juste pour une actualisation DEMANDEE. Mais la reprise au
+  /// premier plan appelait la meme methode : un partenaire qui revenait a
+  /// l'application ne pouvait plus se deconnecter pendant jusqu'a 60 s, sur un
+  /// ecran qui ne lui disait pas pourquoi.
+  group('Ce que la reprise au premier plan ne grise pas', () {
+    test('une verification de fond ne pose pas loading', () async {
+      semerCoffre(profil: _profil().toJson());
+      depot.reponse = () async => _profil();
+
+      final session = demarrer();
+      await souffler();
+      expect(session.state.loading, isFalse);
+
+      final porte = Completer<PartnerProfile>();
+      depot.reponse = () => porte.future;
+
+      session.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await souffler();
+
+      expect(depot.appels.where((a) => a == 'getMe').length, 2,
+          reason: 'La verification doit bien partir.');
+      expect(session.state.loading, isFalse,
+          reason: 'Elle ne doit pas desactiver la deconnexion.');
+      expect(session.state.profile, isNotNull);
+
+      porte.complete(_profil());
+      await souffler();
+    });
+
+    test('une actualisation DEMANDEE, elle, pose bien loading', () async {
+      semerCoffre(profil: _profil().toJson());
+      depot.reponse = () async => _profil();
+
+      final session = demarrer();
+      await souffler();
+
+      final porte = Completer<PartnerProfile>();
+      depot.reponse = () => porte.future;
+
+      final attente = session.refresh();
+      await souffler();
+
+      expect(session.state.loading, isTrue,
+          reason: 'Le partenaire a demande : les boutons gris le disent.');
+
+      porte.complete(_profil());
+      await attente;
+      expect(session.state.loading, isFalse);
+    });
+  });
+
   group('Reprise au premier plan', () {
     test('un retour au premier plan réactualise la session', () async {
       semerCoffre(profil: _profil().toJson());

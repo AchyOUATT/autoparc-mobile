@@ -94,17 +94,40 @@ void main() {
         'Garage Kossodo');
   });
 
-  /// L'ancienne clé ne doit pas survivre : la lecture préfère l'enregistrement
-  /// courant, donc un jeton laissé là ne serait plus jamais ni lu ni effacé —
-  /// et le serveur le garde valable, `config/sanctum.php` portant
-  /// `'expiration' => null`.
-  test('écrire une session retire l’ancienne clé', () async {
+  /// CE BANC AFFIRMAIT LE CONTRAIRE, et c'est un changement voulu.
+  ///
+  /// L'ancienne clé était effacée dès la première écriture. Mais l'application
+  /// PUBLIEE ne connaît que celle-là : revenir au binaire publié déconnectait
+  /// alors tous les partenaires, et laissait au coffre un jeton que ce binaire
+  /// ne lit pas et n'efface pas — valable indéfiniment, `config/sanctum.php`
+  /// portant `'expiration' => null`.
+  ///
+  /// Elle est donc tenue à jour comme un miroir, et `clear()` les efface
+  /// toutes les deux.
+  test('écrire une session met l’ancienne clé à jour', () async {
     valeurs[SecurePartnerTokenStore.tokenKey] = 'jeton-d-avant';
 
     await coffre.writeSession('jeton-neuf', profil());
 
-    expect(valeurs.containsKey(SecurePartnerTokenStore.tokenKey), isFalse);
+    expect(valeurs[SecurePartnerTokenStore.tokenKey], 'jeton-neuf',
+        reason: 'Un retour au binaire publié doit retrouver une session, et '
+            'le jeton doit rester effaçable par son `clear()`.');
     expect((await coffre.readSession())?.token, 'jeton-neuf');
+
+    final enregistre = jsonDecode(valeurs[SecurePartnerTokenStore.sessionKey]!) as Map;
+    expect(enregistre['v'], SecurePartnerTokenStore.version);
+  });
+
+  /// La tolerance qui va avec le marqueur : le refuser deconnecterait a chaque
+  /// retour arriere, ce qui est exactement le tort qu'on vient de fermer.
+  test('un enregistrement d’une version inconnue reste utilisable', () async {
+    valeurs[SecurePartnerTokenStore.sessionKey] =
+        jsonEncode({'v': 99, 'token': 'jeton-du-futur', 'profile': profil()});
+
+    final session = await coffre.readSession();
+
+    expect(session?.token, 'jeton-du-futur');
+    expect(session?.profile, isNotNull);
   });
 
   test('effacer retire LES DEUX clés', () async {

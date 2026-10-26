@@ -105,6 +105,11 @@ class SecurePartnerTokenStore extends PartnerTokenStore {
   /// est pour permettre un démarrage optimiste — sans lui, l'espace partenaire
   /// n'a rien à montrer et doit de nouveau attendre le réseau.
   static const sessionKey = 'partner_sanctum_session';
+
+  /// Forme de l'enregistrement. Meme role et meme tolerance que du cote
+  /// personnel : un `v` inconnu ne fait pas rejeter un enregistrement qui
+  /// porte un jeton.
+  static const version = 1;
   static const _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true, resetOnError: true),
   );
@@ -139,18 +144,21 @@ class SecurePartnerTokenStore extends PartnerTokenStore {
     return null;
   }
 
+  /// Ecrit l'enregistrement courant, ET tient l'ancienne cle a jour.
+  ///
+  /// Meme raison que [ApiClient.saveSession] : l'application PUBLIEE ne
+  /// connait que `partner_sanctum_token`. L'effacer des la premiere ecriture
+  /// deconnectait tous les partenaires au moindre retour arriere, et laissait
+  /// au coffre un jeton que le binaire publie ne lit pas et n'efface pas.
+  /// L'ancienne cle est donc un MIROIR, que `clear()` nettoie comme l'autre.
   @override
   Future<void> writeSession(String token, [Map<String, dynamic>? profile]) async {
     await _storage.write(
       key: sessionKey,
-      value: jsonEncode({'token': token, 'profile': ?profile}),
+      value: jsonEncode({'v': version, 'token': token, 'profile': ?profile}),
     );
 
-    // L'ancienne clé ne doit pas survivre : la lecture préfère
-    // l'enregistrement courant, donc un jeton laissé là ne serait plus jamais
-    // ni lu ni effacé — et le serveur le garde valable, `config/sanctum.php`
-    // portant `'expiration' => null`.
-    await _storage.delete(key: tokenKey);
+    await _storage.write(key: tokenKey, value: token);
   }
 
   @override
