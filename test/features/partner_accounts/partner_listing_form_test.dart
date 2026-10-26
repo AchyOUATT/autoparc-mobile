@@ -339,6 +339,92 @@ void main() {
     expect(repository.saved!['registration'], containsPair('mileage_km', 250000));
   });
 
+  /// ── LE BANC QUI TIENT UNE PERTE DE DONNEES FERMEE ──────────────────────
+  ///
+  /// `VehicleController::syncTypeSpecificDetails` SUPPRIME le carnet
+  /// d'immatriculation quand il ecrit un bloc import :
+  ///
+  ///   if (Unregistered && ! empty($data['import'])) {
+  ///       $vehicle->importDetail()->updateOrCreate(...);
+  ///       $vehicle->registrationDetail()?->delete();
+  ///   }
+  ///
+  /// Le kilometrage etant PREREMPLI a l'edition, basculer la situation
+  /// administrative suffisait a renvoyer cette valeur dans le bloc import et a
+  /// declencher la suppression — sans que le vendeur ait rien tape. Le
+  /// preremplissage faisait du chemin destructeur le chemin par defaut.
+
+  Future<void> ouvrirImmatricule(WidgetTester tester, _Repository repository) =>
+      _open(tester, repository, PartnerListingKind.vehicles, listing: {
+        'id': 7, 'brand_id': 1, 'vehicle_model_id': 10, 'engine_type_id': 20,
+        'identity': {'year': 2018},
+        'vehicle_type': 'passenger',
+        'registration_status': {'value': 'registered', 'label': 'Immatriculé'},
+        'technical': {'mileage_km': 250000},
+        'commercial': {'condition': 'used', 'availability': 'sale', 'sale_price': '4800000.00'},
+      });
+
+  testWidgets('basculer la situation n’envoie aucun bloc de kilométrage', (tester) async {
+    final repository = _Repository();
+    await ouvrirImmatricule(tester, repository);
+
+    // L'état de départ : le kilométrage est bien prérempli.
+    expect(find.widgetWithText(TextFormField, 'Kilométrage (km)'), findsOneWidget);
+
+    await _chooseLabeled(tester, 'Situation administrative', 'Non immatriculé (import)');
+    await _submit(tester, editing: true);
+
+    expect(repository.saved, isNotNull);
+    expect(repository.saved, containsPair('registration_status', 'unregistered'));
+    expect(repository.saved!.containsKey('import'), isFalse,
+        reason: 'Un bloc import non vide aurait fait supprimer le carnet '
+            'd’immatriculation, sans que le vendeur ait rien tapé.');
+    expect(repository.saved!.containsKey('registration'), isFalse);
+  });
+
+  testWidgets('le changement de situation est annoncé', (tester) async {
+    final repository = _Repository();
+    await ouvrirImmatricule(tester, repository);
+
+    expect(find.textContaining('ressaisissez le kilométrage'), findsNothing,
+        reason: 'Rien à annoncer tant que la situation n’a pas changé.');
+
+    await _chooseLabeled(tester, 'Situation administrative', 'Non immatriculé (import)');
+
+    expect(find.textContaining('ressaisissez le kilométrage'), findsOneWidget);
+    expect(find.textContaining('seront supprimées'), findsOneWidget,
+        reason: 'Le champ vidé ne doit pas passer pour un bogue, et la '
+            'conséquence doit être dite avant d’enregistrer.');
+  });
+
+  testWidgets('revenir à la situation enregistrée rend le kilométrage', (tester) async {
+    final repository = _Repository();
+    await ouvrirImmatricule(tester, repository);
+
+    await _chooseLabeled(tester, 'Situation administrative', 'Non immatriculé (import)');
+    await _chooseLabeled(tester, 'Situation administrative', 'Déjà immatriculé');
+    await _submit(tester, editing: true);
+
+    expect(repository.saved!['registration'], containsPair('mileage_km', 250000),
+        reason: 'Le kilométrage d’origine doit revenir avec la situation '
+            'd’origine : vider ne veut pas dire oublier.');
+    expect(find.textContaining('ressaisissez le kilométrage'), findsNothing);
+  });
+
+  /// Le chemin VOLONTAIRE reste ouvert : un vendeur qui declare un import et
+  /// saisit son compteur obtient bien ce qu'il demande, suppression comprise.
+  testWidgets('un compteur d’import saisi volontairement part bien', (tester) async {
+    final repository = _Repository();
+    await ouvrirImmatricule(tester, repository);
+
+    await _chooseLabeled(tester, 'Situation administrative', 'Non immatriculé (import)');
+    await _enter(tester, 'Kilométrage (km)', '95000');
+    await _submit(tester, editing: true);
+
+    expect(repository.saved!['import'], containsPair('odometer_at_import_km', 95000));
+    expect(repository.saved!.containsKey('registration'), isFalse);
+  });
+
   testWidgets('la pièce d’occasion transmet son propre véhicule donneur', (tester) async {
     final repository = _Repository();
     await _open(tester, repository, PartnerListingKind.parts);

@@ -491,10 +491,31 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
     }
   }
 
+  /// ── L'ETAT PART D'ABORD, LE SERVEUR EST PREVENU ENSUITE ────────────────
+  ///
+  /// L'ordre inverse laissait une porte ouverte, et elle a ete mesuree :
+  /// `_repo.logoutStaff()` appelle le serveur, ce qui peut durer jusqu'a 60 s
+  /// sur une instance Render endormie. Pendant toute cette attente, l'etat
+  /// restait « personnel connecte » — et `didChangeAppLifecycleState` exige
+  /// precisement `state.isStaff` pour lancer une verification. Un retour au
+  /// premier plan dans cet intervalle reposait donc une session CONFIRMEE
+  /// alors que l'utilisateur venait de se deconnecter et lisait son ecran de
+  /// visiteur.
+  ///
+  /// `_perimerLesVerifications()` etait bien appele, mais APRES l'attente :
+  /// il perimait ce qui etait en vol avant la deconnexion, et rien de ce qui
+  /// partait pendant. C'etait exactement le tort que ce compteur a ete ecrit
+  /// pour empecher, par la seule porte qu'il ne gardait pas.
+  ///
+  /// Vider l'etat en premier les ferme toutes les deux : le compteur perime
+  /// l'ancienne verification, et l'etat vide empeche la nouvelle de naitre.
+  /// Le coffre, lui, ne risque rien — `_verifier()` ne reecrit la session que
+  /// si `readSession()` rend quelque chose, et `logoutStaff()` l'a vide.
   Future<void> logoutStaff() async {
-    await _repo.logoutStaff();
     _perimerLesVerifications();
     state = const AuthState();
+
+    await _repo.logoutStaff();
   }
 
   // ── Connexion client Firebase ──────────────────────────────────────
@@ -603,11 +624,18 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
     }
   }
 
+  /// Meme ordre, et pour la meme raison, que [logoutStaff].
   Future<void> signOut() async {
-    if (state.isStaff) await _repo.logoutStaff();
-    if (state.isClient) await _repo.signOutClient();
+    // Lu AVANT de vider : c'est l'etat qui dit quel systeme d'identite
+    // prevenir.
+    final etaitPersonnel = state.isStaff;
+    final etaitClient = state.isClient;
+
     _perimerLesVerifications();
     state = const AuthState();
+
+    if (etaitPersonnel) await _repo.logoutStaff();
+    if (etaitClient) await _repo.signOutClient();
   }
 
   /// Supprime définitivement le compte client.

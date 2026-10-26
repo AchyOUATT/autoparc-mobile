@@ -52,10 +52,15 @@ class _Depot extends PartnerRepository {
     }
   }
 
+  /// Quand elle est posée, `logout()` attend après avoir vidé le coffre : la
+  /// fenêtre de l'appel serveur devient observable.
+  Completer<void>? porteDeconnexion;
+
   @override
   Future<void> logout() async {
     appels.add('logout');
     coffre = null;
+    if (porteDeconnexion != null) await porteDeconnexion!.future;
   }
 }
 
@@ -272,6 +277,42 @@ void main() {
 
       session.clearNotice();
       porte.complete(_profil());
+      await souffler();
+
+      expect(session.state.profile, isNull);
+    });
+  });
+
+  /// La même porte que du côté personnel, et la revue l'avait écartée.
+  ///
+  /// `logout()` gardait le profil dans l'état pendant l'appel serveur — jusqu'à
+  /// 60 s sur une instance endormie. Or `didChangeAppLifecycleState` exige
+  /// précisément `state.profile != null` pour réactualiser : une reprise au
+  /// premier plan dans cet intervalle reposait la session.
+  group('Déconnexion pendant que le serveur ne répond pas', () {
+    test('une reprise au premier plan ne rouvre pas la session', () async {
+      semerCoffre(profil: _profil().toJson());
+      depot.reponse = () async => _profil();
+
+      final session = demarrer();
+      await souffler();
+      expect(session.state.profile, isNotNull);
+
+      depot.porteDeconnexion = Completer<void>();
+      final deconnexion = session.logout();
+      await souffler();
+
+      expect(session.state.profile, isNull,
+          reason: "La déconnexion doit être immédiate à l'écran.");
+
+      session.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await souffler();
+
+      expect(session.state.profile, isNull,
+          reason: 'Une reprise au premier plan a rouvert une session fermée.');
+
+      depot.porteDeconnexion!.complete();
+      await deconnexion;
       await souffler();
 
       expect(session.state.profile, isNull);

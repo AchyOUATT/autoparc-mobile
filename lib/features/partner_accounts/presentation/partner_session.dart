@@ -191,10 +191,19 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
     }
   }
 
+  /// Le profil part AVANT l'attente reseau.
+  ///
+  /// Le garder pendant l'appel laissait la meme porte ouverte que du cote du
+  /// personnel : `didChangeAppLifecycleState` exige `state.profile != null`,
+  /// donc une reprise au premier plan pendant la deconnexion lancait un
+  /// `refresh()` qui reposait la session. L'etat vide l'empeche de naitre, et
+  /// le compteur perime ce qui etait deja en vol.
   Future<void> logout() async {
     _perimerLesVerifications();
-    state = PartnerSession(profile: state.profile, loading: true);
+    state = const PartnerSession(loading: true);
+
     try { await _repository.logout(); } catch (_) { /* Local token is cleared even offline. */ }
+
     if (mounted) {
       _perimerLesVerifications();
       state = const PartnerSession();

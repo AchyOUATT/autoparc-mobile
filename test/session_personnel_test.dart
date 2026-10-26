@@ -89,10 +89,17 @@ class _Depot extends AuthRepository {
 
   /// La vraie version appelle le serveur avant d'effacer. On garde l'effacement
   /// — c'est lui qu'on mesure — et on se passe du réseau.
+  /// Quand elle est posée, `logoutStaff()` attend après avoir vidé le coffre.
+  ///
+  /// C'est ce qui rend observable la fenêtre de l'appel serveur : jusqu'à 60 s
+  /// sur une instance Render endormie.
+  Completer<void>? porteDeconnexion;
+
   @override
   Future<void> logoutStaff() async {
     appels.add('logoutStaff');
     await ApiClient.deleteSession();
+    if (porteDeconnexion != null) await porteDeconnexion!.future;
   }
 
   @override
@@ -122,7 +129,7 @@ void main() {
 
   void semerSession({String jeton = 'jeton-personnel', Map<String, dynamic>? profil}) {
     coffre.valeurs['sanctum_session'] =
-        jsonEncode({'token': jeton, if (profil != null) 'user': profil});
+        jsonEncode({'token': jeton, 'user': ?profil});
   }
 
   /// Le coffre d'une version ANTERIEURE : le jeton seul, sous l'ancienne clé.
@@ -272,6 +279,30 @@ void main() {
   /// vient de fermer. `mounted` ne suffit pas à l'empêcher : il ne dit que la
   /// mort du notifier, pas qu'un état plus récent a été posé entre-temps.
   group('Une réponse périmée n’écrase pas un état plus récent', () {
+    /// La meme chose par `logoutStaff()`, et non par `signOut()`.
+    ///
+    /// Les deux doivent perimer, et chacune a son propre appel : retirer le
+    /// compteur de l'une sans toucher a l'autre ne doit pas passer au vert.
+    test('logoutStaff périme aussi la vérification en vol', () async {
+      semerSession(profil: profilJson());
+      final porte = Completer<StaffUser>();
+      depot.reponse = () => porte.future;
+
+      final auth = demarrer();
+      await souffler();
+      expect(auth.state.isStaff, isTrue);
+      expect(auth.state.verified, isFalse, reason: 'La vérification est en vol.');
+
+      await auth.logoutStaff();
+      expect(auth.state.isAuthenticated, isFalse);
+
+      porte.complete(StaffUser.fromJson(profilJson()));
+      await souffler();
+
+      expect(auth.state.isAuthenticated, isFalse,
+          reason: 'La vérification en vol a rouvert la session.');
+    });
+
     test('une déconnexion pendant la vérification gagne', () async {
       semerSession(profil: profilJson());
       final porte = Completer<StaffUser>();
@@ -315,6 +346,79 @@ void main() {
           reason: 'La vérification a rouvert une session fermée pendant '
               "qu'elle écrivait au coffre.");
       expect(coffre.valeurs['sanctum_session'], isNull);
+    });
+  });
+
+  /// LA PORTE QUE LE COMPTEUR NE GARDAIT PAS.
+  ///
+  /// `_perimerLesVerifications()` était appelé par la déconnexion, mais APRES
+  /// `await _repo.logoutStaff()`. Il périmait donc ce qui était en vol AVANT
+  /// la déconnexion, et rien de ce qui partait PENDANT — or l'état restait
+  /// « personnel connecté » durant tout l'appel serveur, et
+  /// `didChangeAppLifecycleState` exige précisément `state.isStaff` pour
+  /// lancer une vérification.
+  ///
+  /// Une reprise au premier plan dans cet intervalle reposait donc une session
+  /// CONFIRMÉE, pendant que l'utilisateur lisait son écran de visiteur. C'est
+  /// exactement le tort que ce compteur a été écrit pour empêcher, par la
+  /// seule porte qu'il ne gardait pas.
+  group('Déconnexion pendant que le serveur ne répond pas', () {
+    test('une reprise au premier plan ne rouvre pas la session', () async {
+      semerSession(profil: profilJson());
+      depot.reponse = () async => StaffUser.fromJson(profilJson());
+
+      final auth = demarrer();
+      await souffler();
+      expect(auth.state.isStaff, isTrue);
+      expect(auth.state.verified, isTrue);
+
+      depot.porteDeconnexion = Completer<void>();
+      final deconnexion = auth.logoutStaff();
+      await souffler();
+
+      expect(auth.state.isAuthenticated, isFalse,
+          reason: "La déconnexion doit être immédiate à l'écran, sans attendre "
+              'le serveur.');
+
+      // L'application revient au premier plan, le serveur n'ayant toujours
+      // pas répondu.
+      auth.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await souffler();
+
+      expect(auth.state.isAuthenticated, isFalse,
+          reason: 'Une reprise au premier plan a rouvert une session que '
+              "l'utilisateur venait de fermer.");
+
+      depot.porteDeconnexion!.complete();
+      await deconnexion;
+      await souffler();
+
+      expect(auth.state.isAuthenticated, isFalse);
+      expect(coffre.valeurs, isEmpty, reason: 'Et le coffre reste vide.');
+    });
+
+    test('signOut tient le même ordre', () async {
+      semerSession(profil: profilJson());
+      depot.reponse = () async => StaffUser.fromJson(profilJson());
+
+      final auth = demarrer();
+      await souffler();
+
+      depot.porteDeconnexion = Completer<void>();
+      final sortie = auth.signOut();
+      await souffler();
+
+      expect(auth.state.isAuthenticated, isFalse);
+      expect(depot.appels, contains('logoutStaff'),
+          reason: "Vider l'état d'abord ne doit pas empêcher de prévenir le "
+              "serveur : c'est l'état lu AVANT qui dit quoi appeler.");
+
+      auth.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await souffler();
+      expect(auth.state.isAuthenticated, isFalse);
+
+      depot.porteDeconnexion!.complete();
+      await sortie;
     });
   });
 

@@ -65,6 +65,12 @@ class _PartnerListingFormPageState
   String? _registrationStatus;
   String? _bodyStyle;
   String? _condition;
+
+  /// Ce que le SERVEUR avait, pour savoir si la situation a change.
+  ///
+  /// Nuls a la creation : il n'y a rien d'enregistre a comparer.
+  String? _statutEnregistre;
+  String _kilometrageEnregistre = '';
   String _partType = 'aftermarket';
   String _partCondition = 'new';
   String _accessoryCategory = 'utilitaire';
@@ -126,6 +132,8 @@ class _PartnerListingFormPageState
     _bodyStyle = _texteOuNul(listing['body_style']);
     _condition = _texteOuNul(commercial['condition']);
     _mileage.text = _text(_map(listing['technical'])['mileage_km']);
+    _statutEnregistre = _registrationStatus;
+    _kilometrageEnregistre = _mileage.text;
     _partType = _text(listing['type'] ?? 'aftermarket');
     _partCondition = _text(listing['condition'] ?? 'new');
     _accessoryCategory = _text(
@@ -466,7 +474,27 @@ class _PartnerListingFormPageState
     _enum('Situation administrative', _registrationStatus, const {
       'unregistered': 'Non immatriculé (import)',
       'registered': 'Déjà immatriculé',
-    }, (value) => setState(() => _registrationStatus = value)),
+    }, (value) => setState(() {
+      _registrationStatus = value;
+
+      // ── LA LIGNE QUI EMPECHE UNE PERTE DE DONNEES ──────────────────
+      //
+      // Le serveur ecrit le bloc qui correspond au statut, et quand il ecrit
+      // un bloc IMPORT il SUPPRIME le carnet d'immatriculation
+      // (`VehicleController::syncTypeSpecificDetails` : `if (Unregistered &&
+      // ! empty($data['import'])) { … registrationDetail()?->delete(); }`).
+      //
+      // Le kilometrage etant prerempli a l'edition, basculer la situation
+      // suffisait a renvoyer cette valeur dans l'autre bloc et a declencher
+      // la suppression — sans que le vendeur ait rien tape. Le preremplissage
+      // faisait du chemin destructeur le chemin PAR DEFAUT.
+      //
+      // Et le report etait faux en soi : le kilometrage d'un vehicule
+      // immatricule et le compteur au moment de l'import ne mesurent pas la
+      // meme chose. On le vide donc des que la situation s'ecarte de celle
+      // qui est enregistree, et on le rend si elle y revient.
+      _mileage.text = value == _statutEnregistre ? _kilometrageEnregistre : '';
+    })),
     _enum('État', _condition, const {
       'new': 'Neuf',
       'used': 'Occasion',
@@ -495,6 +523,14 @@ class _PartnerListingFormPageState
 
         return km == null || km < 0 ? 'Indiquez un kilométrage valide.' : null;
       }),
+    if (_editing && _statutEnregistre != null && _registrationStatus != _statutEnregistre)
+      Text(
+        'La situation change : ressaisissez le kilométrage, qui ne mesure pas '
+        'la même chose pour un véhicule immatriculé et pour un import. En '
+        'indiquant un compteur d’import, les informations d’immatriculation '
+        'de ce véhicule seront supprimées.',
+        style: TextStyle(color: Theme.of(context).colorScheme.error),
+      ),
     _choice('Proposition', _availability,
       const {'sale': 'Vente', 'rent': 'Location', 'both': 'Vente et location'},
       (value) => setState(() => _availability = value)),
