@@ -7,6 +7,11 @@ import '../../data/models/catalog_refs.dart';
 import '../../data/models/vehicle_classification_selection.dart';
 import '../providers/vehicle_refs_provider.dart';
 import '../../data/vehicle_admin_repository.dart';
+import 'vehicle_form_mode.dart';
+// Le depot de l'ESPACE partenaire, a ne pas confondre avec l'annuaire des
+// partenaires du personnel importe plus bas : les deux exposent un
+// `partnerRepositoryProvider`, d'ou l'alias.
+import '../../../../features/partner_accounts/data/partner_repository.dart' as espace;
 import '../../../../core/api/api_exception.dart';
 import '../../../../shared/presentation/pages/media_upload_page.dart';
 import '../../../../shared/data/media_repository.dart';
@@ -28,7 +33,17 @@ final _vehiclePartnersProvider =
 
 class VehicleRegisterPage extends ConsumerStatefulWidget {
   final Vehicle? existing; // null → création, non-null → édition
-  const VehicleRegisterPage({super.key, this.existing});
+
+  /// Pour qui ce formulaire est ouvert. Voir [VehicleFormMode] : le defaut
+  /// garde le comportement du back-office, et c'est l'espace partenaire qui
+  /// demande explicitement l'autre.
+  final VehicleFormMode mode;
+
+  const VehicleRegisterPage({
+    super.key,
+    this.existing,
+    this.mode = VehicleFormMode.personnel,
+  });
 
   @override
   ConsumerState<VehicleRegisterPage> createState() =>
@@ -233,8 +248,31 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
     try {
       final payload  = _buildPayload();
-      final repo     = ref.read(vehicleAdminRepositoryProvider);
       final existing = _existing;
+
+      // ── L'ESPACE PARTENAIRE : AUTRE DEPOT, AUTRE SUITE ─────────────────
+      //
+      // Le formulaire est le meme, la cible non. Le partenaire ecrit sur ses
+      // propres routes, avec son propre jeton, et son parcours ne passe pas
+      // par l'ecran de media du personnel : sa page d'annonces attend un
+      // `pop(true)`, comme le faisait son ancien formulaire.
+      //
+      // On rend la main ici plutot que de brancher le reste : rien de ce qui
+      // suit — invalidation des listes du back-office, SnackBar du personnel,
+      // navigation vers /media-upload — n'a de sens dans son espace.
+      if (widget.mode.estPartenaire) {
+        await ref.read(espace.partnerRepositoryProvider).saveListing(
+              espace.PartnerListingKind.vehicles,
+              payload,
+              id: existing?.id,
+            );
+
+        if (mounted) Navigator.of(context).pop(true);
+
+        return;
+      }
+
+      final repo = ref.read(vehicleAdminRepositoryProvider);
       final Vehicle vehicle;
 
       if (existing != null) {
@@ -268,6 +306,19 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             ),
           );
         }
+      }
+    } on espace.PartnerApiException catch (e) {
+      // Le depot partenaire a sa propre exception, et ses erreurs de validation
+      // vivent dans `fields` et non dans `errors`. Sans cette branche elles
+      // tombaient dans le `catch` generique, qui perd le detail champ par
+      // champ — le seul utile avec une trentaine de champs a l'ecran.
+      if (mounted) {
+        _showErrors(
+          titre: 'Enregistrement impossible',
+          message: e.fields.isNotEmpty
+              ? e.fields.values.map((texte) => '• $texte').join('\n')
+              : e.message,
+        );
       }
     } on ApiException catch (e) {
       if (mounted) {
@@ -341,7 +392,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       'price_negotiable':   _negotiable,
       // Explicitement null quand aucune promotion : c'est ce qui permet d'en
       // retirer une à l'édition.
-      'deal_type':          _dealType.isEmpty ? null : _dealType,
+      // Les trois champs de la boutique. Le serveur les REFUSE a un
+      // partenaire (`missing`), donc les envoyer vaudrait 422.
+      if (widget.mode.peutChoisirLaBoutique)
+        'deal_type': _dealType.isEmpty ? null : _dealType,
       if (forSale && _salePriceCtrl.text.trim().isNotEmpty)
         'sale_price': int.parse(_salePriceCtrl.text.replaceAll(RegExp(r'\s'), '')),
       if (_existing != null || forRent && _rentalDailyCtrl.text.trim().isNotEmpty)
@@ -354,8 +408,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       if (_descriptionCtrl.text.isNotEmpty) 'description': _descriptionCtrl.text.trim(),
       'currency':           'XOF',
       if (_selectedFeatureIds.isNotEmpty) 'features': _selectedFeatureIds.toList(),
-      if (_selectedLocation  != null) 'location_id': _selectedLocation!.id,
-      if (_selectedPartnerId != null) 'partner_id':  _selectedPartnerId,
+      if (widget.mode.peutChoisirLaBoutique && _selectedLocation != null)
+        'location_id': _selectedLocation!.id,
+      if (widget.mode.peutChoisirLaBoutique && _selectedPartnerId != null)
+        'partner_id': _selectedPartnerId,
       // Kilométrage → sous-objet selon le STATUT, et non plus selon la
       // présence d'une plaque :
       // - immatriculé     : registration.mileage_km
@@ -1050,7 +1106,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           ),
           const SizedBox(height: 16),
 
-          // Mise en avant commerciale
+          // Mise en avant commerciale — la vitrine est a la boutique.
+          if (widget.mode.peutChoisirLaBoutique) ...[
           Text('Mise en avant',
               style: Theme.of(context).textTheme.bodySmall
                   ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
@@ -1066,6 +1123,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             onChanged: (v) => setState(() => _dealType = v),
           ),
           const SizedBox(height: 16),
+          ],
 
           // Prix de vente
           if (forSale) ...[
@@ -1145,7 +1203,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           ),
 
           // ── Localisation / agence ────────────────────────────────
-          if (refs.locations.isNotEmpty) ...[
+          //
+          // L'agence est une adresse de la boutique : `location_id` est refuse
+          // a un partenaire par le serveur.
+          if (widget.mode.peutChoisirLaBoutique && refs.locations.isNotEmpty) ...[
             _RefDropdown<LocationRef>(
               label: 'Agence / Showroom',
               items: refs.locations,
@@ -1157,7 +1218,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               onChanged: (l) => setState(() => _selectedLocation = l),
             ),
             const SizedBox(height: 12),
-          ] else ...[
+          ] else if (widget.mode.peutChoisirLaBoutique) ...[
             // Fallback texte libre si aucune location configurée
             TextFormField(
               controller: _siteCtrl,
@@ -1171,6 +1232,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           ],
 
           // ── Partenaire fournisseur ───────────────────────────────
+          //
+          // Le fournisseur source est une relation de la boutique. Un
+          // partenaire n'a pas a rattacher son vehicule a un tiers, et le
+          // serveur refuse `partner_id`.
+          if (widget.mode.peutChoisirLaBoutique) ...[
           const SizedBox(height: 4),
           const Divider(),
           const SizedBox(height: 4),
@@ -1204,6 +1270,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             ),
           ),
           const SizedBox(height: 16),
+          ],
 
           // Description
           TextFormField(

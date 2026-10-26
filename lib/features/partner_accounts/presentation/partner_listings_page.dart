@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api/api_exception.dart';
 import '../data/lecture_json.dart' as json;
 import '../data/partner_repository.dart';
+import '../../catalog/data/models/vehicle.dart';
+import '../../vehicles/presentation/pages/vehicle_form_mode.dart';
+import '../../vehicles/presentation/pages/vehicle_register_page.dart';
 import 'partner_listing_form.dart';
 import 'partner_media_page.dart';
 import 'partner_session.dart';
@@ -49,7 +52,29 @@ class _PartnerListingsPageState extends ConsumerState<PartnerListingsPage> {
     try {
       final detail = id == null ? null : await ref.read(partnerRepositoryProvider).listing(widget.kind, id);
       if (!mounted) return;
-      final saved = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => PartnerListingFormPage(kind: widget.kind, initialListing: detail)));
+      // ── UN VEHICULE PASSE PAR LE FORMULAIRE DU PERSONNEL ──────────────
+      //
+      // Le meme ecran, en mode partenaire. L'espace partenaire avait le sien,
+      // de 441 lignes contre 1521, et neuf champs que le personnel
+      // renseignait sans que le partenaire puisse meme les voir. L'ecart
+      // n'etait pas une decision, c'etait une derive : deux ecrans ecrits
+      // separement, que rien ne tenait synchronises.
+      //
+      // `VehicleFormMode.partenaire` retire les trois champs que le serveur
+      // refuse — `deal_type`, `location_id`, `partner_id` — de la charge ET de
+      // l'ecran. Voir ce mode pour le detail.
+      //
+      // Pieces et accessoires gardent `PartnerListingFormPage` : leur
+      // formulaire du back-office n'est pas le meme ecran, et l'unifier est un
+      // autre chantier.
+      final saved = await Navigator.of(context).push<bool>(MaterialPageRoute(
+        builder: (_) => widget.kind == PartnerListingKind.vehicles
+            ? VehicleRegisterPage(
+                mode: VehicleFormMode.partenaire,
+                existing: detail == null ? null : Vehicle.fromJson(detail),
+              )
+            : PartnerListingFormPage(kind: widget.kind, initialListing: detail),
+      ));
       if (saved == true && mounted) await _load();
     } catch (error) { _showError(error); }
   }
