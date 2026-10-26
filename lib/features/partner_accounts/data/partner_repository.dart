@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -28,6 +30,13 @@ class PartnerProfile {
   String get status => account['status']?.toString() ?? 'pending';
   String? get reviewReason => account['review_reason']?.toString();
   bool get approved => status == 'approved';
+
+  /// Pour retourner au coffre, d'où un démarrage optimiste le relira.
+  ///
+  /// Les clés sont celles du serveur, parce que c'est [PartnerProfile.fromJson]
+  /// — la MEME fabrique que pour `/api/partner/me` — qui relira cet
+  /// enregistrement. Un seul format, donc un seul endroit où se tromper.
+  Map<String, dynamic> toJson() => {'user': user, 'partner_account': account};
 }
 
 class PartnerApiException implements Exception {
@@ -60,23 +69,95 @@ class PartnerApiException implements Exception {
   String toString() => message;
 }
 
-abstract class PartnerTokenStore {
-  Future<String?> read();
-  Future<void> write(String token);
-  Future<void> clear();
+/// Ce que le coffre partenaire rend : un jeton, et le profil quand on l'a.
+///
+/// Le profil est nul pour une session d'avant cette version — qui n'enregistrait
+/// que le jeton — ou pour un enregistrement illisible.
+class PartnerSessionStockee {
+  const PartnerSessionStockee({required this.token, this.profile});
+
+  final String token;
+  final Map<String, dynamic>? profile;
 }
 
-class SecurePartnerTokenStore implements PartnerTokenStore {
+abstract class PartnerTokenStore {
+  /// L'enregistrement courant, ou l'ancienne clé en secours.
+  Future<PartnerSessionStockee?> readSession();
+
+  /// Enregistre jeton ET profil, et retire l'ancienne clé.
+  Future<void> writeSession(String token, [Map<String, dynamic>? profile]);
+
+  Future<void> clear();
+
+  /// Le jeton seul, pour l'en-tête `Authorization`.
+  Future<String?> read() async => (await readSession())?.token;
+}
+
+/// `extends` et non `implements` : `read()` est concret sur l'interface, et
+/// se dérive de `readSession()`. Hériter en garde UNE seule définition.
+class SecurePartnerTokenStore extends PartnerTokenStore {
+  /// L'ANCIENNE clé, qui ne portait que le jeton. Toujours LUE : l'ignorer
+  /// déconnecterait tous les partenaires déjà connectés, à la mise à jour,
+  /// sans message et sans raison. Retirée au premier enregistrement complet.
   static const tokenKey = 'partner_sanctum_token';
+
+  /// L'enregistrement courant : jeton et profil, en un seul JSON. Le profil y
+  /// est pour permettre un démarrage optimiste — sans lui, l'espace partenaire
+  /// n'a rien à montrer et doit de nouveau attendre le réseau.
+  static const sessionKey = 'partner_sanctum_session';
   static const _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true, resetOnError: true),
   );
   @override
-  Future<String?> read() => _storage.read(key: tokenKey);
+  Future<PartnerSessionStockee?> readSession() async {
+    final brut = await _storage.read(key: sessionKey);
+
+    if (brut != null && brut.isNotEmpty) {
+      try {
+        final json = jsonDecode(brut);
+        if (json is Map &&
+            json['token'] is String &&
+            (json['token'] as String).isNotEmpty) {
+          final profile = json['profile'];
+
+          return PartnerSessionStockee(
+            token: json['token'] as String,
+            profile: profile is Map<String, dynamic> ? profile : null,
+          );
+        }
+      } catch (_) {
+        // Format abîmé : on ne déconnecte pas pour ça, on retombe sur
+        // l'ancienne clé.
+      }
+    }
+
+    final ancien = await _storage.read(key: tokenKey);
+    if (ancien != null && ancien.isNotEmpty) {
+      return PartnerSessionStockee(token: ancien);
+    }
+
+    return null;
+  }
+
   @override
-  Future<void> write(String token) => _storage.write(key: tokenKey, value: token);
+  Future<void> writeSession(String token, [Map<String, dynamic>? profile]) async {
+    await _storage.write(
+      key: sessionKey,
+      value: jsonEncode({'token': token, 'profile': ?profile}),
+    );
+
+    // L'ancienne clé ne doit pas survivre : la lecture préfère
+    // l'enregistrement courant, donc un jeton laissé là ne serait plus jamais
+    // ni lu ni effacé — et le serveur le garde valable, `config/sanctum.php`
+    // portant `'expiration' => null`.
+    await _storage.delete(key: tokenKey);
+  }
+
   @override
-  Future<void> clear() => _storage.delete(key: tokenKey);
+  Future<void> clear() async {
+    await _storage.delete(key: sessionKey);
+    await _storage.delete(key: tokenKey);
+  }
 }
 
 class PartnerListingPage {
@@ -157,7 +238,10 @@ class PartnerRepository {
     if (profile.user['role'] != 'partner' || response['token'] is! String || (response['token'] as String).isEmpty) {
       throw const PartnerApiException('La réponse ne correspond pas à une session partenaire.');
     }
-    await _tokens.write(response['token'] as String);
+    // Le profil part au coffre avec le jeton : c'est lui qui permettra au
+    // prochain démarrage d'ouvrir l'espace partenaire sans attendre le réseau.
+    await _tokens.writeSession(response['token'] as String, profile.toJson());
+
     return profile;
   }
 
@@ -167,10 +251,19 @@ class PartnerRepository {
   Future<PartnerProfile> register(Map<String, dynamic> fields) => _authenticate('register', {
     ...fields, 'device_name': 'AutoParc partenaire',
   });
-  Future<PartnerProfile?> restore() async {
-    if ((await _tokens.read())?.isNotEmpty != true) return null;
-    return getMe();
-  }
+  // `restore()` a ete retire. Il faisait « pas de jeton -> null, sinon
+  // getMe() », donc il ATTENDAIT le reseau avant de rendre quoi que ce soit —
+  // exactement l'attente que le demarrage optimiste supprime. Le notifier lit
+  // desormais `sessionStockee()` lui-meme, publie ce qu'il trouve, et appelle
+  // `getMe()` ensuite. La garantie « ne pas appeler le serveur sans jeton »
+  // vit donc dans `PartnerSessionNotifier.restore`, ou un banc l'eprouve.
+  /// La session au coffre, SANS aucun appel réseau.
+  ///
+  /// C'est ce qui permet au notifier d'ouvrir l'espace partenaire sur ce qu'il
+  /// sait déjà, puis de vérifier. Sans elle, il lui faudrait passer par
+  /// `restore()`, qui appelle `/api/partner/me` — l'attente qu'on supprime.
+  Future<PartnerSessionStockee?> sessionStockee() => _tokens.readSession();
+
   Future<PartnerProfile> getMe() async {
     try {
       final result = PartnerProfile.fromJson(Map<String, dynamic>.from(await _request('GET', '/partner/me')));
@@ -178,6 +271,15 @@ class PartnerRepository {
         await _tokens.clear();
         throw const PartnerApiException('Cette session partenaire est invalide.', statusCode: 401);
       }
+
+      // Le profil frais retourne au coffre. C'est ce qui répare, en une
+      // exécution, une session d'avant cette version : elle n'a que le jeton,
+      // et le démarrage suivant aura de quoi s'ouvrir complet.
+      final session = await _tokens.readSession();
+      if (session != null) {
+        await _tokens.writeSession(session.token, result.toJson());
+      }
+
       return result;
     } on PartnerApiException catch (error) {
       if (error.sessionRejected) await _tokens.clear();

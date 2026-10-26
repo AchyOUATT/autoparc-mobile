@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:auto/features/partner_accounts/partner_accounts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,15 +9,25 @@ class _Repository extends PartnerRepository {
   PartnerProfile? savedProfile;
   Map<String, dynamic>? registration;
   bool loggedOut = false;
+  /// La couture a change : le notifier lit le COFFRE, puis verifie. Un faux
+  /// qui ne modelise que `getMe()` laisserait la lecture du coffre tomber sur
+  /// le vrai magasin securise, dont le canal de plateforme n'existe pas en
+  /// banc — et la page resterait sur son indicateur de chargement.
   @override
-  Future<PartnerProfile?> restore() async => savedProfile;
+  Future<PartnerSessionStockee?> sessionStockee() async => savedProfile == null
+      ? null
+      : PartnerSessionStockee(token: 'jeton-de-banc', profile: savedProfile!.toJson());
   @override
   Future<PartnerProfile> register(Map<String, dynamic> fields) async {
     registration = fields;
     return savedProfile = _profile('pending');
   }
+  /// Quand elle est posée, `getMe()` attend : c'est ce qui rend la fenêtre
+  /// du démarrage optimiste observable.
+  Completer<PartnerProfile>? porte;
+
   @override
-  Future<PartnerProfile> getMe() async => savedProfile!;
+  Future<PartnerProfile> getMe() async => porte == null ? savedProfile! : porte!.future;
   @override
   Future<void> logout() async { loggedOut = true; savedProfile = null; }
 }
@@ -32,6 +44,35 @@ Future<void> _open(WidgetTester tester, _Repository repository) async {
 }
 
 void main() {
+  /// LA FENETRE DU DEMARRAGE OPTIMISTE, VUE DE LA PAGE.
+  ///
+  /// La page s'ouvre désormais sur le profil enregistré au coffre, sans
+  /// attendre le réseau — ce qui supprime l'indicateur bloquant que le
+  /// partenaire regardait tourner jusqu'à 60 s sur une instance Render
+  /// endormie. Mais le statut affiché vient alors du coffre, et il peut être
+  /// périmé : la puce le dit, au lieu d'annoncer « Compte approuvé » sur la
+  /// foi d'un enregistrement que rien n'a confirmé.
+  testWidgets('pendant la vérification, la puce annonce un statut à confirmer', (tester) async {
+    final repository = _Repository()
+      ..savedProfile = _profile('approved')
+      ..porte = Completer<PartnerProfile>();
+
+    await _open(tester, repository);
+
+    expect(find.text('Statut à confirmer…'), findsOneWidget);
+    expect(find.text('Compte approuvé'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing,
+        reason: "C'est tout l'objet du démarrage optimiste : plus d'attente "
+            'bloquante.');
+
+    // Le serveur répond enfin.
+    repository.porte!.complete(_profile('approved'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Compte approuvé'), findsOneWidget);
+    expect(find.text('Statut à confirmer…'), findsNothing);
+  });
+
   testWidgets('une inscription réelle du formulaire aboutit à une attente sans gestion', (tester) async {
     final repository = _Repository();
     await _open(tester, repository);

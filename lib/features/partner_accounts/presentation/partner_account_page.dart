@@ -129,7 +129,18 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
     if (!profile.approved) return _status(context, profile.status, profile.reviewReason, session);
     return RefreshIndicator(onRefresh: ref.read(partnerSessionProvider.notifier).refresh, child: ListView(
       padding: const EdgeInsets.all(24), children: [
-        const Align(alignment: Alignment.centerLeft, child: Chip(avatar: Icon(Icons.verified_outlined, size: 18), label: Text('Compte approuvé'))),
+        // CETTE PUCE VIENT DU COFFRE pendant la fenêtre optimiste : la page
+        // s'ouvre sur le profil enregistré, sans attendre le réseau, et le
+        // statut affiché peut donc être périmé d'une exécution. On le dit,
+        // plutôt que d'annoncer « Compte approuvé » sur la foi d'un
+        // enregistrement que rien n'a encore confirmé.
+        //
+        // Elle REMPLACE le libellé au lieu de s'y ajouter : la page est
+        // éprouvée jusqu'à un fort grossissement de texte, et une ligne de
+        // plus y coûterait de la hauteur pour rien.
+        Align(alignment: Alignment.centerLeft, child: session.sessionAConfirmer
+          ? const Chip(avatar: Icon(Icons.sync, size: 18), label: Text('Statut à confirmer…'))
+          : const Chip(avatar: Icon(Icons.verified_outlined, size: 18), label: Text('Compte approuvé'))),
         const SizedBox(height: 12),
         Text(profile.companyName, style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 8),

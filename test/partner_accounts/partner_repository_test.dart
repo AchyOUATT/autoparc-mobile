@@ -5,14 +5,25 @@ import 'package:auto/features/partner_accounts/data/partner_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-class _Tokens implements PartnerTokenStore {
+class _Tokens extends PartnerTokenStore {
   String? token;
+  Map<String, dynamic>? profil;
+
   @override
-  Future<String?> read() async => token;
+  Future<PartnerSessionStockee?> readSession() async =>
+      token == null ? null : PartnerSessionStockee(token: token!, profile: profil);
+
   @override
-  Future<void> write(String value) async { token = value; }
+  Future<void> writeSession(String value, [Map<String, dynamic>? profile]) async {
+    token = value;
+    profil = profile;
+  }
+
   @override
-  Future<void> clear() async { token = null; }
+  Future<void> clear() async {
+    token = null;
+    profil = null;
+  }
 }
 
 class _Adapter implements HttpClientAdapter {
@@ -64,7 +75,7 @@ void main() {
     final adapter = _Adapter((_) => (200, _profile(status: 'approved')));
     dio.httpClientAdapter = adapter;
 
-    expect((await repository.restore())!.approved, isTrue);
+    expect((await repository.getMe()).approved, isTrue);
     expect(adapter.requests.single.path, '/partner/me');
     expect(adapter.requests.single.headers['Authorization'], 'Bearer partner-test-token');
   });
@@ -93,6 +104,23 @@ void main() {
     await expectLater(repository.getMe(), throwsA(isA<PartnerApiException>().having((error) => error.statusCode, 'status', 403)));
     expect(tokens.token, 'encore-valable',
         reason: "C'est la panne d'origine : n'importe quel 403 effaçait le jeton.");
+  });
+
+  /// `getMe()` REECRIT le profil au coffre, et c'est ce qui répare une session
+  /// d'avant cette version en une seule exécution : elle n'a que le jeton, et
+  /// le démarrage suivant doit pouvoir s'ouvrir complet.
+  test('le profil frais retourne au coffre', () async {
+    tokens.token = 'partner-test-token';
+    expect(tokens.profil, isNull, reason: 'Session d’avant : jeton seul.');
+    dio.httpClientAdapter = _Adapter((_) => (200, _profile(status: 'approved')));
+
+    await repository.getMe();
+
+    expect(tokens.profil, isNotNull,
+        reason: 'Sans cela, le coffre resterait éternellement sans profil et '
+            'le démarrage optimiste n’aurait jamais rien à montrer.');
+    expect((tokens.profil!['partner_account'] as Map)['status'], 'approved');
+    expect(tokens.token, 'partner-test-token');
   });
 
   test('une panne serveur conserve le jeton pour une prochaine tentative', () async {
