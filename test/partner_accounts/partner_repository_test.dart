@@ -69,15 +69,31 @@ void main() {
     expect(adapter.requests.single.headers['Authorization'], 'Bearer partner-test-token');
   });
 
-  for (final code in [401, 403]) {
-    test('un refus $code sur le profil efface la session partenaire', () async {
-      tokens.token = 'expired';
-      dio.httpClientAdapter = _Adapter((_) => (code, {'message': 'Session refusée'}));
+  /// CE BANC BOUCLAIT SUR [401, 403] ET NE GARDE QUE 401 : changement voulu,
+  /// pas régression.
+  ///
+  /// Un 403 nu ne dit pas que la session est morte, il dit que CETTE action
+  /// est refusée. Effacer le jeton dessus déconnectait un partenaire qui
+  /// touchait une annonce n'étant pas la sienne — « cette annonce n'est pas
+  /// la vôtre » fermait sa session. Le 403 qui ferme légitimement la session
+  /// est celui qui porte `code: account_disabled`, et il est éprouvé dans le
+  /// groupe « Ce qui vide le coffre partenaire » en bas de ce fichier.
+  test('un refus 401 sur le profil efface la session partenaire', () async {
+    tokens.token = 'expired';
+    dio.httpClientAdapter = _Adapter((_) => (401, {'message': 'Session refusée'}));
 
-      await expectLater(repository.getMe(), throwsA(isA<PartnerApiException>().having((error) => error.statusCode, 'status', code)));
-      expect(tokens.token, isNull);
-    });
-  }
+    await expectLater(repository.getMe(), throwsA(isA<PartnerApiException>().having((error) => error.statusCode, 'status', 401)));
+    expect(tokens.token, isNull);
+  });
+
+  test('un refus 403 NU conserve la session partenaire', () async {
+    tokens.token = 'encore-valable';
+    dio.httpClientAdapter = _Adapter((_) => (403, {'message': "Cette annonce n'est pas la vôtre."}));
+
+    await expectLater(repository.getMe(), throwsA(isA<PartnerApiException>().having((error) => error.statusCode, 'status', 403)));
+    expect(tokens.token, 'encore-valable',
+        reason: "C'est la panne d'origine : n'importe quel 403 effaçait le jeton.");
+  });
 
   test('une panne serveur conserve le jeton pour une prochaine tentative', () async {
     tokens.token = 'still-valid';
@@ -150,5 +166,70 @@ void main() {
     expect(references.partCategories.single['id'], 4);
     expect(references.manufacturers.single['id'], 5);
     expect(adapter.requests.every((request) => !request.headers.containsKey('Authorization')), isTrue);
+  });
+
+  /// Le jeton partenaire part-il au bon moment, et SEULEMENT au bon moment ?
+  ///
+  /// `getMe()` est le seul endroit du dépôt qui efface le coffre sur un refus
+  /// du serveur, et il s'en remet à `sessionRejected`. Les bancs de
+  /// `test/session_rejetee_test.dart` éprouvent la règle ; celui-ci éprouve
+  /// son EFFET, sur le vrai chemin, coffre compris.
+  ///
+  /// `restore()` passe par `getMe()` : c'est donc aussi le comportement au
+  /// démarrage de l'application qui se joue ici.
+  group('Ce qui vide le coffre partenaire, et ce qui n\'y touche pas', () {
+    Future<PartnerApiException> refus(int statut, {String? code}) async {
+      tokens.token = 'partner-test-token';
+      dio.httpClientAdapter = _Adapter((_) => (statut, {
+        'message': 'Refus du serveur.',
+        'code': ?code,
+      }));
+
+      try {
+        await repository.getMe();
+        fail('getMe() devait lever sur un $statut.');
+      } on PartnerApiException catch (erreur) {
+        return erreur;
+      }
+    }
+
+    test('un compte désactivé vide le coffre', () async {
+      final erreur = await refus(403, code: 'account_disabled');
+
+      expect(erreur.isAccountDisabled, isTrue);
+      expect(tokens.token, isNull, reason: 'Le jeton devait partir.');
+    });
+
+    /// LE BANC QUI PROTEGE LE PARTENAIRE DE LUI-MEME.
+    ///
+    /// C'est ce refus-là que l'ancienne règle traitait comme un rejet de
+    /// session : « cette annonce n'est pas la vôtre » déconnectait.
+    test('un refus de permission laisse le jeton intact', () async {
+      final erreur = await refus(403, code: 'permission_denied');
+
+      expect(erreur.isPermissionDenied, isTrue);
+      expect(tokens.token, 'partner-test-token',
+          reason: 'Un refus d\'autorisation a vidé le coffre.');
+    });
+
+    test('un 403 sans code laisse le jeton intact', () async {
+      await refus(403);
+
+      expect(tokens.token, 'partner-test-token');
+    });
+
+    test('un 401 vide le coffre', () async {
+      await refus(401);
+
+      expect(tokens.token, isNull);
+    });
+
+    /// Render s'endort sur le plan gratuit : un 500 ou un délai dépassé ne
+    /// dit rien de la session, et ne doit donc rien fermer.
+    test('une erreur serveur laisse le jeton intact', () async {
+      await refus(500);
+
+      expect(tokens.token, 'partner-test-token');
+    });
   });
 }

@@ -31,13 +31,31 @@ class PartnerProfile {
 }
 
 class PartnerApiException implements Exception {
-  const PartnerApiException(this.message, {this.statusCode, this.fields = const {}, this.accountStatus, this.reviewReason});
+  const PartnerApiException(this.message, {this.statusCode, this.fields = const {}, this.accountStatus, this.reviewReason, this.code});
   final String message;
   final int? statusCode;
   final Map<String, String> fields;
   final String? accountStatus;
   final String? reviewReason;
-  bool get sessionRejected => statusCode == 401 || statusCode == 403;
+
+  /// Code métier du serveur. Même rôle et même vocabulaire que
+  /// [ApiException.code] — cette classe est parallèle, pas dérivée.
+  final String? code;
+
+  bool get isAccountDisabled => code == 'account_disabled';
+
+  /// Refus d'autorisation : la session reste valable. Même nom et même
+  /// vocabulaire que [ApiException.isPermissionDenied], à dessein.
+  bool get isPermissionDenied => code == 'permission_denied';
+
+  /// La session est définitivement rejetée.
+  ///
+  /// Tenait `statusCode == 401 || statusCode == 403`, et c'est CE getter qui
+  /// déconnectait un partenaire sur n'importe quel 403 — « cette annonce
+  /// n'est pas la vôtre » comprise. Six sites le lisent, dont deux qui
+  /// renvoient l'utilisateur à l'écran de connexion. Voir le commentaire de
+  /// [ApiException.sessionRejected] pour les deux fautes symétriques.
+  bool get sessionRejected => statusCode == 401 || isAccountDisabled;
   @override
   String toString() => message;
 }
@@ -117,12 +135,18 @@ class PartnerRepository {
           fields[entry.key.toString()] = value is List ? value.join('\n') : value.toString();
         }
       }
+      // Transtypé défensivement, pas par `toString()` : un `code` numérique
+      // deviendrait une chaîne qui ne correspondrait à aucun code connu,
+      // alors que `null` dit honnêtement « le serveur n'en a pas donné ».
+      final code = body['code'];
+
       throw PartnerApiException(
         fields.isNotEmpty ? fields.values.first : body['message']?.toString() ?? 'Connexion impossible. Vérifiez votre réseau et réessayez.',
         statusCode: error.response?.statusCode,
         fields: fields,
         accountStatus: body['status']?.toString(),
         reviewReason: body['review_reason']?.toString(),
+        code: code is String ? code : null,
       );
     }
   }
