@@ -354,6 +354,129 @@ void main() {
     });
   });
 
+  // ── La seconde tentative, pour un serveur endormi ─────────────────────────
+  //
+  // Les cinq secondes de la première tentative ne sont pas en cause : garder
+  // une requête ouverte soixante secondes au démarrage ne se fait pas. Ce qui
+  // était faux, c'est « le prochain démarrage retentera » — rien ne garantit
+  // qu'un prochain démarrage trouve l'instance éveillée.
+  //
+  // Mesure du 25/10/2026 : 0,9 s chaude, 25 à 35 s endormie. Le téléphone qui
+  // ouvrait l'application la première fois de la journée n'apprenait donc pas
+  // qu'il était périmé — et c'est exactement la population que le plancher
+  // vise.
+
+  group('Le verdict arrive en deux temps quand le serveur dormait', () {
+    ProviderContainer conteneur(HttpClientAdapter adaptateur) => ProviderContainer(overrides: [
+          serviceVersionMinimaleProvider.overrideWithValue(ServiceVersionMinimale(
+            client: Dio()..httpClientAdapter = adaptateur,
+            lireVersionInstallee: () async => 69,
+          )),
+        ]);
+
+    /// Tous les verdicts emis, dans l'ordre.
+    ///
+    /// On ECOUTE, et on ne fait pas `provider.stream.toList()` : le flux d'un
+    /// `StreamProvider` Riverpod ne se CLOT jamais — c'est une diffusion de
+    /// l'etat, pas la fin d'un generateur. `toList()` y attend indefiniment, et
+    /// c'est ce qui a fait pendre ces tests a trente secondes la premiere fois.
+    Future<List<VerdictMiseAJour>> verdictsDe(ProviderContainer c) async {
+      final vus = <VerdictMiseAJour>[];
+
+      final abonnement = c.listen<AsyncValue<VerdictMiseAJour>>(
+        verdictMiseAJourProvider,
+        (_, suivant) {
+          final v = suivant.valueOrNull;
+          if (v != null) vus.add(v);
+        },
+        fireImmediately: true,
+      );
+      addTearDown(abonnement.close);
+
+      // Le premier verdict, celui qui ne retarde pas le demarrage.
+      await c.read(verdictMiseAJourProvider.future);
+
+      // Puis on laisse tourner la boucle d'evenements : l'adaptateur de ce banc
+      // repond sans reseau, donc la seconde tentative se resout en quelques
+      // tours. Pas d'attente en temps reel — le budget patient vaut 70 s et un
+      // test ne doit pas les passer.
+      for (var i = 0; i < 50; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      return vus;
+    }
+
+    test('aucune réponse puis une réponse : le blocage finit par arriver', () async {
+      final adaptateur = _AdaptateurEnDeuxTemps(corps: '{"min_version_code": 70}');
+      final c = conteneur(adaptateur);
+      addTearDown(c.dispose);
+
+      final verdicts = await verdictsDe(c);
+
+      expect(adaptateur.appels, 2, reason: 'La seconde tentative n\'a pas eu lieu.');
+      // Le premier verdict ne bloque pas : on ne retarde pas le démarrage et on
+      // ne bloque jamais sur une défaillance.
+      expect(verdicts.first.exigee, isFalse);
+      // Le dernier bloque, et c'est tout l'objet du correctif.
+      expect(verdicts.last.exigee, isTrue);
+    });
+
+    test('une réponse obtenue n\'est jamais redemandée, même si elle dit « à jour »', () async {
+      // Redemander ferait payer deux fois le réveil de l'instance pour une
+      // réponse qu'on a déjà.
+      final adaptateur = _AdaptateurFixe(corps: '{"min_version_code": 60}');
+      final c = conteneur(adaptateur);
+      addTearDown(c.dispose);
+
+      final verdicts = await verdictsDe(c);
+
+      expect(adaptateur.appels, 1);
+      expect(verdicts.every((v) => ! v.exigee), isTrue);
+    });
+
+    test('un blocage obtenu du premier coup ne déclenche pas de seconde tentative', () async {
+      final adaptateur = _AdaptateurFixe(corps: '{"min_version_code": 70}');
+      final c = conteneur(adaptateur);
+      addTearDown(c.dispose);
+
+      final verdicts = await verdictsDe(c);
+
+      expect(adaptateur.appels, 1, reason: 'Rien à réapprendre : le verdict bloque déjà.');
+      expect(verdicts.last.exigee, isTrue);
+    });
+
+    test('deux échecs de suite ne bloquent toujours pas', () async {
+      // La règle qui prime sur toutes les autres : l'application ne bloque
+      // jamais sur une défaillance. Deux tentatives ratées valent « rien à
+      // faire », pas un écran dont on ne sort pas.
+      final adaptateur = _AdaptateurFixe(reseauCoupe: true);
+      final c = conteneur(adaptateur);
+      addTearDown(c.dispose);
+
+      final verdicts = await verdictsDe(c);
+
+      expect(adaptateur.appels, 2);
+      expect(verdicts.every((v) => ! v.exigee), isTrue);
+    });
+
+    test('la seconde tentative garde l\'adaptateur injecté et le budget patient', () async {
+      // `_clientPour()` clone le Dio pour relever `connectTimeout`, que Dio ne
+      // laisse pas surcharger par requête. Deux choses à tenir : l'adaptateur
+      // doit être REPRIS — un `Dio()` neuf partirait sur le vrai réseau et le
+      // test mesurerait la machine — et le délai doit être RELEVÉ, sans quoi le
+      // correctif serait vert et inopérant en production.
+      final adaptateur = _AdaptateurEnDeuxTemps(corps: '{"min_version_code": 70}');
+      final c = conteneur(adaptateur);
+      addTearDown(c.dispose);
+
+      await verdictsDe(c);
+
+      expect(adaptateur.appels, 2);
+      expect(adaptateur.derniersDelais?.inSeconds, ServiceVersionMinimale.delaiPatient.inSeconds);
+    });
+  });
+
   group('Interrupteur de l\'espace partenaire — le provider ferme dans le doute', () {
     ProviderContainer conteneur(Dio client) => ProviderContainer(overrides: [
           serviceVersionMinimaleProvider.overrideWithValue(ServiceVersionMinimale(
@@ -433,6 +556,49 @@ Future<void> _retourSysteme(WidgetTester tester) async {
     (_) {},
   );
   await tester.pumpAndSettle();
+}
+
+/// Un adaptateur qui échoue au PREMIER appel et répond aux suivants.
+///
+/// Le cas réel : l'instance Render dort, la première tentative perd sa course
+/// de cinq secondes, la seconde — plus patiente — obtient la réponse.
+///
+/// Il note aussi le `connectTimeout` de chaque appel, pour que le banc puisse
+/// vérifier que la seconde tentative a bien pris le budget patient. Sans cette
+/// mesure, un clone de client qui oublierait de relever le délai passerait
+/// inaperçu : le test serait vert et le correctif inopérant en production.
+class _AdaptateurEnDeuxTemps implements HttpClientAdapter {
+  _AdaptateurEnDeuxTemps({required this.corps});
+
+  final String corps;
+  int appels = 0;
+  Duration? derniersDelais;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    appels++;
+    derniersDelais = options.connectTimeout;
+
+    if (appels == 1) {
+      throw DioException.connectionError(
+        requestOptions: options,
+        reason: 'instance endormie',
+      );
+    }
+
+    return ResponseBody.fromString(
+      corps,
+      200,
+      headers: {Headers.contentTypeHeader: [Headers.jsonContentType]},
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
 }
 
 /// Un adaptateur HTTP qui ne sort pas de la machine.

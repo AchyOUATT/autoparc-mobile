@@ -190,6 +190,34 @@ class ServiceVersionMinimale {
   /// le prochain démarrage retentera.
   static const Duration delai = Duration(seconds: 5);
 
+  /// Le délai de la SECONDE tentative, celle qui attend un serveur endormi.
+  ///
+  /// ── CE QUE LES CINQ SECONDES COÛTAIENT ──────────────────────────────────
+  ///
+  /// Le raisonnement ci-dessus est juste sur un point et faux sur l'autre.
+  /// Juste : garder une requête ouverte soixante secondes au démarrage ne se
+  /// fait pas. Faux : « le prochain démarrage retentera » suppose qu'un
+  /// prochain démarrage trouve l'instance éveillée, et rien ne le garantit.
+  ///
+  /// Mesure du 25/10/2026, après la publication de la version 87 : l'instance
+  /// répond en 0,9 s quand elle est chaude, et en 25 à 35 s quand elle dort —
+  /// `/up` a mis 25,7 s le même jour. Un téléphone qui ouvre l'application la
+  /// première fois de la journée perdait donc la course, et n'apprenait PAS
+  /// qu'il était périmé. Or c'est exactement la population qui n'a pas mis à
+  /// jour : celle qu'on cherche à prévenir.
+  ///
+  /// ── CE QUI EST FAIT À LA PLACE ──────────────────────────────────────────
+  ///
+  /// Deux tentatives, et non un délai allongé. La première garde ses cinq
+  /// secondes et ne retarde rien. Si elle n'a REÇU AUCUNE RÉPONSE — et
+  /// seulement dans ce cas — une seconde partie en arrière-plan avec ce
+  /// budget-ci, et l'écran s'affiche quand la réponse arrive.
+  ///
+  /// Une réponse obtenue n'est jamais réessayée, même si elle dit « à jour » :
+  /// c'est une vraie réponse, et la redemander ne servirait qu'à payer deux
+  /// fois le réveil.
+  static const Duration delaiPatient = Duration(seconds: 70);
+
   static Dio _clientParDefaut() => Dio(BaseOptions(
         baseUrl: Endpoints.baseUrl,
         connectTimeout: delai,
@@ -200,6 +228,35 @@ class ServiceVersionMinimale {
             'ngrok-skip-browser-warning': 'true',
         },
       ));
+
+  /// Le client à utiliser pour un budget donné.
+  ///
+  /// `connectTimeout` ne vit que sur les `BaseOptions` : Dio ne le laisse PAS
+  /// surcharger par requête, contrairement à `receiveTimeout` et
+  /// `sendTimeout`. Une tentative patiente qui ne surchargerait que ces deux-là
+  /// se ferait donc trancher à cinq secondes à la connexion, sans que rien ne
+  /// le dise — et le correctif aurait l'air de fonctionner tout en ne changeant
+  /// rien.
+  ///
+  /// On pourrait arguer que Render accepte la connexion tout de suite et ne
+  /// fait attendre que la réponse, auquel cas `receiveTimeout` suffirait. C'est
+  /// probable, et ce n'est pas mesuré : on ne parie pas là-dessus. Le client
+  /// est donc cloné avec les trois délais relevés.
+  ///
+  /// L'ADAPTATEUR EST REPRIS, et c'est ce qui garde les bancs valides : ils
+  /// injectent un Dio dont l'adaptateur rend une réponse fixée sans réseau. Un
+  /// `Dio()` neuf perdrait cette mise en scène et la seconde tentative partirait
+  /// pour de vrai.
+  Dio _clientPour(Duration attente) {
+    if (attente == delai) return _client;
+
+    return Dio(_client.options.copyWith(
+      connectTimeout: attente,
+      receiveTimeout: attente,
+      sendTimeout: attente,
+    ))
+      ..httpClientAdapter = _client.httpClientAdapter;
+  }
 
   /// Le versionCode réellement installé, lu dans le PackageManager.
   ///
@@ -221,12 +278,21 @@ class ServiceVersionMinimale {
   /// réveille l'instance endormie du plan gratuit, et le dédoubler le ferait
   /// payer deux fois. D'où `lire()` d'un côté, `juger()` de l'autre, et un
   /// provider qui partage le `Future`.
-  Future<PlancherDeVersion?> lire() async {
+  /// [budget] : le temps accordé à CETTE lecture. `delai` par défaut, pour la
+  /// tentative du démarrage ; `delaiPatient` pour celle qui attend un serveur
+  /// endormi. Il porte aussi sur la CONNEXION et pas seulement sur la
+  /// réception — une instance endormie met plus de cinq secondes à accepter la
+  /// connexion, et un `receiveTimeout` seul laisserait `connectTimeout`
+  /// trancher à cinq secondes sans qu'on le voie.
+  Future<PlancherDeVersion?> lire({Duration? budget}) async {
+    final attente = budget ?? delai;
+
     try {
-      final reponse = await _client.get<dynamic>(
+      final reponse = await _clientPour(attente).get<dynamic>(
         Endpoints.appVersion,
         options: Options(
-          receiveTimeout: delai,
+          receiveTimeout: attente,
+          sendTimeout: attente,
           // On lit le code nous-mêmes plutôt que de laisser Dio lever sur un
           // 4xx/5xx. La branche explicite ci-dessous se lit et se teste ; par
           // le chemin des exceptions, un 500 du serveur se confondrait avec
@@ -303,12 +369,46 @@ final plancherDeVersionProvider = FutureProvider<PlancherDeVersion?>(
   (ref) => ref.watch(serviceVersionMinimaleProvider).lire(),
 );
 
-/// Le verdict, calculé une fois au démarrage, à partir du plancher partagé.
-final verdictMiseAJourProvider = FutureProvider<VerdictMiseAJour>(
-  (ref) async => ref
-      .watch(serviceVersionMinimaleProvider)
-      .juger(await ref.watch(plancherDeVersionProvider.future)),
-);
+/// Le verdict, qui peut arriver EN DEUX TEMPS.
+///
+/// ── POURQUOI CE N'EST PLUS UN `FutureProvider` ──────────────────────────────
+///
+/// Il l'était, et le commentaire d'alors disait vrai : « son résultat ne change
+/// pas tant que l'application tourne ». C'est précisément cette prémisse qui
+/// était fausse, et elle a coûté une version entière.
+///
+/// Mesure du 25/10/2026, après la publication de la 87 : la première tentative
+/// s'accorde cinq secondes, l'instance endormie en met 25 à 35. Un téléphone
+/// qui ouvrait l'application la première fois de la journée n'apprenait donc
+/// PAS qu'il était périmé — et ne réessayait qu'au lancement suivant, qui
+/// pouvait très bien retomber sur une instance froide. La population visée par
+/// le plancher est exactement celle qui ne le voyait jamais.
+///
+/// Un flux, donc, qui rend d'abord le verdict rapide — rien ne retarde le
+/// démarrage — puis, SI ET SEULEMENT SI aucune réponse n'est arrivée, celui de
+/// la seconde tentative. L'écran bloquant s'affiche alors de lui-même :
+/// `main.dart` lit ce provider par `.asData?.value`, qui suit un flux comme
+/// il suivait un futur.
+///
+/// Ce qu'on ne réessaie PAS : une réponse obtenue, même quand elle dit « à
+/// jour ». C'est une vraie réponse, et la redemander ne ferait que payer deux
+/// fois le réveil de l'instance. Ni un verdict déjà bloquant, puisqu'il n'y a
+/// plus rien à apprendre.
+final verdictMiseAJourProvider = StreamProvider<VerdictMiseAJour>((ref) async* {
+  final service = ref.watch(serviceVersionMinimaleProvider);
+
+  final plancher = await ref.watch(plancherDeVersionProvider.future);
+  yield await service.juger(plancher);
+
+  // Une réponse est arrivée : le verdict ci-dessus est définitif.
+  if (plancher != null) return;
+
+  // Aucune réponse en cinq secondes — l'instance dormait. On redemande avec le
+  // budget qu'il faut, en arrière-plan, sans que l'utilisateur attende.
+  yield await service.juger(
+    await service.lire(budget: ServiceVersionMinimale.delaiPatient),
+  );
+});
 
 /// L'espace partenaire est-il ouvert ? FERMÉ tant qu'on n'en sait rien.
 ///
