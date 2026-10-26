@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/api/api_client.dart';
@@ -20,17 +20,37 @@ class AuthState {
   final bool isLoading;
   final String? error;
 
+  /// Le serveur a confirmé cette session pendant cette exécution.
+  ///
+  /// Faux dans un seul cas : le DEMARRAGE OPTIMISTE. L'application s'ouvre sur
+  /// ce que le coffre contient, sans attendre le réseau, puis une vérification
+  /// en arrière-plan confirme ou ferme la session.
+  ///
+  /// Le défaut est `vrai` à dessein, et ce n'est pas une facilité : une
+  /// cinquantaine de constructions `const AuthState(...)` existent dans les
+  /// bancs, et une session fraîchement ouverte VIENT du serveur — elle est
+  /// confirmée par construction. Seul le chemin optimiste a de bonnes raisons
+  /// de dire le contraire, et il le dit explicitement.
+  final bool verified;
+
   const AuthState({
     this.type      = AuthType.none,
     this.staffUser = null,
     this.firebaseUser = null,
     this.isLoading = false,
     this.error     = null,
+    this.verified  = true,
   });
 
   bool get isAuthenticated => type != AuthType.none;
   bool get isStaff         => type == AuthType.staff;
   bool get isClient        => type == AuthType.client;
+
+  /// Session du personnel restaurée du coffre, pas encore confirmée.
+  ///
+  /// C'est ce que l'indicateur discret montre. On ne le dit que du personnel :
+  /// une session client est tenue par Firebase, qui est son propre juge.
+  bool get sessionAConfirmer => isStaff && !verified;
 
   String get displayName {
     if (isStaff)  return staffUser?.name  ?? 'Staff';
@@ -73,6 +93,7 @@ class AuthState {
     bool? isLoading,
     String? error,
     bool clearError = false,
+    bool? verified,
   }) =>
       AuthState(
         type:         type         ?? this.type,
@@ -80,21 +101,85 @@ class AuthState {
         firebaseUser: firebaseUser ?? this.firebaseUser,
         isLoading:    isLoading    ?? this.isLoading,
         error:        clearError ? null : (error ?? this.error),
+        verified:     verified     ?? this.verified,
       );
 }
 
 // ── Notifier ───────────────────────────────────────────────────────
 
-class AuthNotifier extends StateNotifier<AuthState> {
+class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver {
   final AuthRepository _repo;
+
+  /// Attente avant la SECONDE tentative de vérification.
+  ///
+  /// Ce qu'elle achète, précisément : le Dio d'`ApiClient` porte déjà 60 s de
+  /// `connectTimeout` et de `receiveTimeout`, ce qui couvre largement les
+  /// 34,8 s mesurées sur `/up` à froid le 2026-10-15. Une première tentative
+  /// qui échoue a donc le plus souvent RÉVEILLÉ l'instance au passage : la
+  /// seconde aboutit. Le 11 octobre, l'instance n'a rien rendu en 180 s —
+  /// deux tentatives n'y suffisent pas, et c'est assumé : la session reste
+  /// alors simplement non confirmée, jeton intact, indicateur affiché.
+  ///
+  /// Injectable parce qu'un banc ne doit pas attendre cinq secondes.
+  final Duration delaiAvantSecondeTentative;
 
   StreamSubscription<User?>? _abonnementFirebase;
 
-  AuthNotifier(this._repo) : super(const AuthState()) {
+  /// Numéro de la vérification en cours.
+  ///
+  /// ── CE QU'IL EMPECHE ──────────────────────────────────────────────────
+  ///
+  /// Une vérification peut durer une minute. Pendant ce temps l'utilisateur
+  /// peut se déconnecter, se reconnecter sous un autre compte, ou l'app
+  /// revenir au premier plan et en lancer une autre. La réponse de la
+  /// vérification PERIMEE arrive alors après, et écrasait un état plus récent
+  /// — reconnectant un compte qu'on vient de quitter, ou rouvrant une session
+  /// qu'on vient de fermer.
+  ///
+  /// Chaque vérification prend un numéro en commençant ; elle n'écrit que si
+  /// ce numéro est encore le courant. `mounted` ne suffit pas : il ne dit que
+  /// la mort du notifier, pas qu'un état plus récent a été posé entre-temps.
+  int _generation = 0;
+
+  AuthNotifier(
+    this._repo, {
+    this.delaiAvantSecondeTentative = const Duration(seconds: 5),
+  }) : super(const AuthState()) {
     // L'écoute d'abord : elle doit être en place avant que `_init` ne rende la
     // main, sinon une session restaurée entre-temps passe inaperçue.
     _ecouterFirebase();
+    _observerLeCycleDeVie();
     _init();
+  }
+
+  /// Revérifie la session au retour au premier plan.
+  ///
+  /// Un téléphone reste des jours sans être redémarré : sans cela, une session
+  /// désactivée pendant la nuit resterait ouverte jusqu'au prochain lancement
+  /// à froid, qui peut ne jamais venir.
+  void _observerLeCycleDeVie() {
+    // `WidgetsBinding.instance` lève si la liaison n'est pas initialisée, ce
+    // qui arrive dans un banc purement unitaire. L'absence de reprise au
+    // premier plan n'empêche rien d'autre de fonctionner.
+    try {
+      WidgetsBinding.instance.addObserver(this);
+    } catch (e) {
+      debugPrint('[Auth] cycle de vie non observable : $e');
+    }
+  }
+
+  /// Le paramètre s'appelle `etat` et non `state`, contrairement à ce que
+  /// demande `avoid_renaming_method_parameters` : `state` est déjà le getter
+  /// du notifier, et le masquer ici ferait lire l'état du CYCLE DE VIE là où
+  /// on veut celui de la SESSION, deux lignes plus bas. La remarque se tait,
+  /// le bug n'est pas écrit.
+  // ignore: avoid_renaming_method_parameters
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState etat) {
+    if (etat != AppLifecycleState.resumed) return;
+    if (!mounted || !state.isStaff) return;
+
+    _verifier();
   }
 
   /// Suit l'état d'authentification Firebase pour toute la durée de vie de
@@ -129,8 +214,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (state.isStaff) return;
 
       if (utilisateur != null) {
+        _perimerLesVerifications();
         state = AuthState(type: AuthType.client, firebaseUser: utilisateur);
       } else if (state.isClient) {
+        _perimerLesVerifications();
         state = const AuthState();
       }
     });
@@ -139,50 +226,138 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Au démarrage : vérifie si un token Sanctum existe encore (staff),
   /// ou si Firebase a déjà restauré un utilisateur (client).
   Future<void> _init() async {
-    state = state.copyWith(isLoading: true, clearError: true);
+    SessionStockee? session;
     try {
-      // 1. Token Sanctum présent → valide côté serveur ?
-      final token = await ApiClient.readToken();
-      if (token != null) {
-        final staff = await _repo.getMe();
-        state = AuthState(type: AuthType.staff, staffUser: staff);
-        return;
-      }
-    } on ApiException catch (e) {
-      // Seul un 401 prouve que le jeton ne vaut plus rien.
-      //
-      // Ce bloc effaçait le jeton sur *n'importe quelle* exception, erreur
-      // réseau comprise — son commentaire le disait. Or le service Render est
-      // sur le plan gratuit : il s'endort, et le premier appel doit le
-      // réveiller. Mesures du 2026-10-15 : 34,8 s sur /up à froid, et aucune
-      // réponse en 180 s le 11 octobre. `getMe()` dépassait donc le délai à
-      // chaque réouverture de l'application, tombait ici, et déconnectait
-      // l'utilisateur — pour une lenteur de serveur, pas pour un refus.
-      //
-      // Désormais une panne réseau, un délai dépassé ou un 500 laissent le
-      // jeton intact : le démarrage échoue, l'utilisateur reste simplement
-      // déconnecté pour cette session, et le lancement suivant — serveur
-      // réveillé — restaure son compte.
-      if (e.isUnauthorized) {
-        await ApiClient.deleteToken();
-      } else {
-        debugPrint('[Auth] session non vérifiée (${e.statusCode}), jeton conservé');
-      }
+      session = await ApiClient.readSession();
     } catch (e) {
-      // Erreur inattendue : on ne touche surtout pas au jeton.
-      debugPrint('[Auth] erreur imprévue au démarrage, jeton conservé : $e');
+      debugPrint('[Auth] coffre illisible au démarrage : $e');
     }
 
     if (!mounted) return;
 
-    // 2. Session Firebase déjà restaurée ? Sinon, `_ecouterFirebase` prendra
-    //    le relais dès qu'elle le sera.
+    if (session != null) {
+      // ── DEMARRAGE OPTIMISTE ───────────────────────────────────────────
+      //
+      // On ouvre l'application sur ce que le coffre contient, SANS attendre
+      // le réseau. Ce qu'on évite : `getMe()` bloquait le premier écran, et
+      // sur une instance Render endormie cela durait 34,8 s (mesure du
+      // 2026-10-15) pendant lesquelles l'employé voyait l'écran visiteur.
+      //
+      // `verified: false` dit que c'est une hypothèse, pas un fait. La
+      // vérification qui suit la confirme, ou ferme la session.
+      state = AuthState(
+        type: AuthType.staff,
+        staffUser: _profilDepuis(session.user),
+        verified: false,
+      );
+
+      // Sans `await`, à dessein : `_init` doit rendre la main tout de suite.
+      _verifier();
+
+      return;
+    }
+
+    await _restaurerFirebase();
+  }
+
+  /// Le profil enregistré au coffre, quand il y en a un de lisible.
+  ///
+  /// Nul dans deux cas : une session d'avant cette version, qui n'enregistrait
+  /// que le jeton, ou un enregistrement abîmé. L'application démarre alors en
+  /// personnel SANS nom ni rôle — donc sans tuiles — et la vérification
+  /// ramène le profil en quelques secondes puis l'écrit au coffre. C'est
+  /// dégradé pendant une exécution, et cela se répare tout seul ; l'autre
+  /// choix était de bloquer le premier écran, ce qu'on vient d'arrêter.
+  StaffUser? _profilDepuis(Map<String, dynamic>? json) {
+    if (json == null) return null;
+
+    try {
+      return StaffUser.fromJson(json);
+    } catch (e) {
+      debugPrint('[Auth] profil du coffre illisible : $e');
+
+      return null;
+    }
+  }
+
+  /// Périme toute vérification en vol.
+  ///
+  /// ── POURQUOI CHAQUE MUTATION DOIT L'APPELER ───────────────────────────
+  ///
+  /// `_generation` ne protège rien si seule la vérification l'incrémente.
+  /// Mesure du scénario, avant ce helper : une vérification part (génération
+  /// 1), l'utilisateur se déconnecte, la réponse arrive — sa génération est
+  /// toujours la courante, elle écrit, et le compte qu'on vient de quitter
+  /// est REOUVERT. Même chose en se reconnectant sous un autre compte : la
+  /// réponse de l'ancienne session écrasait la nouvelle.
+  ///
+  /// Toute affectation autoritaire de l'état périme donc ce qui est en vol.
+  void _perimerLesVerifications() => _generation++;
+
+  /// Confirme ou ferme, en arrière-plan, la session restaurée du coffre.
+  Future<void> _verifier({bool reessayer = true}) async {
+    final generation = ++_generation;
+    var perimee = false;
+
+    try {
+      final profil = await _repo.getMe();
+      perimee = !mounted || generation != _generation;
+      if (perimee) return;
+
+      // Le profil frais retourne au coffre. C'est ce qui répare, en une
+      // exécution, une session d'avant cette version : le démarrage suivant
+      // aura de quoi s'ouvrir complet.
+      final session = await ApiClient.readSession();
+      if (session != null) {
+        await ApiClient.saveSession(session.token, profil.toJson());
+      }
+
+      if (!mounted || generation != _generation) return;
+      state = AuthState(type: AuthType.staff, staffUser: profil);
+    } on ApiException catch (e) {
+      if (!mounted || generation != _generation) return;
+
+      // ── LE SEUL CAS QUI FERME LA SESSION ────────────────────────────────
+      //
+      // 401, ou 403 `account_disabled`. Rien d'autre : voir
+      // `ApiException.sessionRejected`. Le message du serveur est conservé
+      // dans l'état, parce que « votre compte a été désactivé » est la seule
+      // chose qui explique à l'employé pourquoi il vient d'être déconnecté.
+      if (e.sessionRejected) {
+        await ApiClient.deleteSession();
+        if (!mounted || generation != _generation) return;
+        state = AuthState(error: e.userMessage);
+
+        return;
+      }
+
+      // Lenteur, coupure, erreur serveur : le serveur n'a rien dit de la
+      // session. On garde le jeton et on retente une fois.
+      if (reessayer) {
+        await Future<void>.delayed(delaiAvantSecondeTentative);
+        if (!mounted || generation != _generation) return;
+
+        return _verifier(reessayer: false);
+      }
+
+      debugPrint('[Auth] session non confirmée (${e.statusCode}), jeton conservé');
+    } catch (e) {
+      if (!mounted || generation != _generation) return;
+      debugPrint('[Auth] vérification impossible, jeton conservé : $e');
+    }
+  }
+
+  /// Session Firebase déjà restaurée ? Sinon `_ecouterFirebase` prendra le
+  /// relais dès qu'elle le sera.
+  Future<void> _restaurerFirebase() async {
     User? fbUser;
     try {
       fbUser = _repo.utilisateurCourant;
     } catch (e) {
       debugPrint('[Auth] Firebase indisponible : $e');
     }
+
+    if (!mounted) return;
 
     state = fbUser != null
         ? AuthState(type: AuthType.client, firebaseUser: fbUser)
@@ -192,6 +367,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   @override
   void dispose() {
     _abonnementFirebase?.cancel();
+
+    // Symetrique de `_observerLeCycleDeVie`, et leve pour la meme raison
+    // quand la liaison n'existe pas.
+    try {
+      WidgetsBinding.instance.removeObserver(this);
+    } catch (_) {}
+
     super.dispose();
   }
 
@@ -298,6 +480,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   // ── Connexion staff ────────────────────────────────────────────────
 
   Future<void> loginStaff(String email, String password) async {
+    _perimerLesVerifications();
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final staff = await _repo.loginStaff(email, password);
@@ -310,12 +493,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logoutStaff() async {
     await _repo.logoutStaff();
+    _perimerLesVerifications();
     state = const AuthState();
   }
 
   // ── Connexion client Firebase ──────────────────────────────────────
 
   Future<void> signInWithGoogle() async {
+    _perimerLesVerifications();
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final user = await _repo.signInWithGoogle();
@@ -326,6 +511,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> signInClientEmail(String email, String password) async {
+    _perimerLesVerifications();
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final user = await _repo.signInWithEmailAndPassword(email, password);
@@ -364,6 +550,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }.contains(code);
 
   Future<void> signIn(String email, String password) async {
+    _perimerLesVerifications();
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
@@ -406,6 +593,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> registerClient(String email, String password) async {
+    _perimerLesVerifications();
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final user = await _repo.registerWithEmailAndPassword(email, password);
@@ -418,6 +606,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> signOut() async {
     if (state.isStaff) await _repo.logoutStaff();
     if (state.isClient) await _repo.signOutClient();
+    _perimerLesVerifications();
     state = const AuthState();
   }
 
@@ -429,10 +618,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<String?> deleteAccount() async {
     if (!state.isClient) return 'Seuls les comptes clients se suppriment ici.';
 
+    _perimerLesVerifications();
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       await _repo.deleteClientAccount();
+      _perimerLesVerifications();
       state = const AuthState();
       return null;
     } catch (e) {

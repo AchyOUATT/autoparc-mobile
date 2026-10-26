@@ -30,6 +30,18 @@ class StaffUser {
     email: json['email'] as String,
     role:  json['role']  as String,
   );
+
+  /// Pour retourner au coffre, d'ou un demarrage optimiste le relira.
+  ///
+  /// Les clés sont celles du serveur, pas des noms a nous : l'enregistrement
+  /// est relu par `StaffUser.fromJson`, la MEME fabrique que celle qui lit la
+  /// reponse de `/api/me`. Un seul format, donc un seul endroit ou se tromper.
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'email': email,
+    'role': role,
+  };
 }
 
 class AuthRepository {
@@ -48,9 +60,13 @@ class AuthRepository {
     final token = json['token'] as String?;
     if (token == null) throw const ApiException(message: 'Token manquant dans la réponse.');
 
-    await ApiClient.saveToken(token);
+    final profil = StaffUser.fromJson(json['user'] as Map<String, dynamic>);
 
-    return StaffUser.fromJson(json['user'] as Map<String, dynamic>);
+    // Le profil part au coffre avec le jeton : c'est lui qui permettra au
+    // prochain demarrage d'afficher l'application sans attendre le reseau.
+    await ApiClient.saveSession(token, profil.toJson());
+
+    return profil;
   }
 
   /// Récupère le profil staff courant (vérifie aussi que le token est toujours valide).
@@ -69,7 +85,7 @@ class AuthRepository {
     } catch (_) {
       // On supprime le token local même si le serveur est injoignable.
     }
-    await ApiClient.deleteToken();
+    await ApiClient.deleteSession();
   }
 
   // ── Client Firebase ───────────────────────────────────────────────

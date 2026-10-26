@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -7,7 +9,26 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'api_exception.dart';
 import 'endpoints.dart';
 
+/// L'ANCIENNE clé. Elle ne portait que le jeton, et on la lit encore.
+///
+/// Tout utilisateur connecté avant cette version n'a que celle-ci. L'ignorer
+/// déconnecterait tout le monde à la mise à jour, sans message et sans raison.
+/// Elle est effacée au premier enregistrement d'une session complète.
 const _kTokenKey = 'sanctum_token';
+
+/// L'enregistrement COURANT : jeton et profil, en un seul JSON.
+///
+/// Un seul enregistrement, et non deux, parce que deux peuvent se désaccorder :
+/// un jeton sans profil, ou un profil sans jeton, sont des états qu'il faudrait
+/// alors savoir réparer. Ici l'écriture est atomique du point de vue de
+/// l'application — on a les deux, ou rien.
+///
+/// Le profil y est pour une raison précise : permettre un démarrage OPTIMISTE.
+/// Sans lui, afficher l'application sans attendre le réseau n'a rien à montrer
+/// — pas de nom, pas de rôle, donc pas de tuiles — et il faudrait de nouveau
+/// bloquer le premier écran sur un appel qui peut prendre 35 secondes sur une
+/// instance endormie.
+const _kSessionKey = 'sanctum_session';
 // encryptedSharedPreferences évite le blocage sur Android (Keystore sans
 // écran de verrouillage configuré — courant sur émulateur).
 //
@@ -112,7 +133,10 @@ class ApiClient {
     final isClientRoute = options.path.startsWith('/my/');
 
     if (!isClientRoute) {
-      final sanctumToken = await _kStorage.read(key: _kTokenKey);
+      // Passe par `readToken()`, qui lit l'enregistrement courant puis
+      // retombe sur l'ancienne clé : une session d'avant la mise à jour
+      // continue d'authentifier ses requêtes.
+      final sanctumToken = await readToken();
       if (sanctumToken != null) {
         options.headers['Authorization'] = 'Bearer $sanctumToken';
         return handler.next(options);
@@ -257,14 +281,78 @@ class ApiClient {
     }
   }
 
-  // ── Token Sanctum (staff) ─────────────────────────────────────────
+  // ── Session Sanctum (staff) ───────────────────────────────────────
 
-  static Future<void> saveToken(String token) =>
-      _kStorage.write(key: _kTokenKey, value: token);
+  /// Enregistre la session complète, et retire l'ancienne clé.
+  ///
+  /// L'effacement de `sanctum_token` n'est pas cosmétique : la lecture préfère
+  /// l'enregistrement courant, donc un ancien jeton laissé là ne serait plus
+  /// jamais lu ni jamais effacé. Il resterait au coffre indéfiniment, valable
+  /// côté serveur puisque `config/sanctum.php` porte `'expiration' => null`.
+  static Future<void> saveSession(
+    String token, [
+    Map<String, dynamic>? user,
+  ]) async {
+    await _kStorage.write(
+      key: _kSessionKey,
+      value: jsonEncode({'token': token, 'user': ?user}),
+    );
+    await _kStorage.delete(key: _kTokenKey);
+  }
 
-  static Future<void> deleteToken() =>
-      _kStorage.delete(key: _kTokenKey);
+  /// Lit la session : l'enregistrement courant, sinon l'ancienne clé.
+  static Future<SessionStockee?> readSession() async {
+    final brut = await _kStorage.read(key: _kSessionKey);
 
-  static Future<String?> readToken() =>
-      _kStorage.read(key: _kTokenKey);
+    if (brut != null && brut.isNotEmpty) {
+      try {
+        final json = jsonDecode(brut);
+        if (json is Map &&
+            json['token'] is String &&
+            (json['token'] as String).isNotEmpty) {
+          final user = json['user'];
+
+          return SessionStockee(
+            token: json['token'] as String,
+            user: user is Map<String, dynamic> ? user : null,
+          );
+        }
+      } catch (_) {
+        // Enregistrement illisible. On ne déconnecte PAS sur une erreur de
+        // format : on retombe sur l'ancienne clé, et si elle est absente la
+        // session est perdue de toute façon.
+      }
+    }
+
+    final ancien = await _kStorage.read(key: _kTokenKey);
+    if (ancien != null && ancien.isNotEmpty) {
+      // Profil inconnu : la vérification en arrière-plan le ramènera. En
+      // attendant, l'application démarre avec un jeton et sans nom, ce qui
+      // est exactement ce qu'elle faisait avant cette version.
+      return SessionStockee(token: ancien);
+    }
+
+    return null;
+  }
+
+  /// Efface LES DEUX clés. Laisser l'ancienne reviendrait à ne pas déconnecter.
+  static Future<void> deleteSession() async {
+    await _kStorage.delete(key: _kSessionKey);
+    await _kStorage.delete(key: _kTokenKey);
+  }
+
+  /// Le jeton seul, pour l'en-tête `Authorization`.
+  static Future<String?> readToken() async => (await readSession())?.token;
+}
+
+/// Ce que le coffre rend : un jeton, et le profil quand on l'a.
+///
+/// Le profil est nul dans deux cas, et un seul compte : une session d'avant
+/// cette version, qui n'avait que le jeton. L'autre est un enregistrement dont
+/// le profil était illisible.
+class SessionStockee {
+  const SessionStockee({required this.token, this.user});
+
+  final String token;
+  final Map<String, dynamic>? user;
 }
