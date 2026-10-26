@@ -597,7 +597,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        drawer: const _AppDrawer(),
+        drawer: const AppDrawer(),
         body: widget.child,
         // L'habillage ET la borne d'échelle de texte sont dans
         // `BarreNavigationPrincipale` : « Accessoires » se cassait sur deux
@@ -623,8 +623,12 @@ class _AppShellState extends ConsumerState<_AppShell> {
 
 // ── Drawer latéral ────────────────────────────────────────────────
 
-class _AppDrawer extends ConsumerWidget {
-  const _AppDrawer();
+/// Public, et non privé, pour être montable dans un banc.
+///
+/// C'est le seul moyen d'éprouver l'en-tête du tiroir — la ligne « session à
+/// confirmer » comprise — sans bâtir toute la coque de l'application.
+class AppDrawer extends ConsumerWidget {
+  const AppDrawer({super.key});
 
   void _close(BuildContext context) => Navigator.pop(context);
 
@@ -647,15 +651,44 @@ class _AppDrawer extends ConsumerWidget {
               auth.isAuthenticated ? auth.displayName : l10n.shellAccountGuest,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            accountEmail: Text(
-              // Le rôle vient du serveur : « admin », « vendeur »… Il n'est pas
-              // traduit par ce lot, et la phrase qui l'encadre l'est — c'est le
-              // même partage que partout ailleurs dans ce lot, et il est écrit
-              // dans lib/l10n/CONVENTION.md.
-              auth.isStaff  ? l10n.shellAccountStaff(auth.staffUser?.role ?? '') :
-              auth.isClient ? (auth.firebaseUser?.email ?? '') :
-              l10n.shellAccountNotSignedIn,
-            ),
+            // ── LA LIGNE « SESSION A CONFIRMER » ────────────────────────
+            //
+            // Le démarrage est désormais OPTIMISTE : l'application s'ouvre sur
+            // ce que le coffre contient, sans attendre le réseau, et une
+            // vérification confirme ensuite. Pendant ce court intervalle,
+            // l'état affiché est une hypothèse — et si le coffre vient d'une
+            // version antérieure il n'a pas de profil, donc pas de rôle, donc
+            // aucune tuile du personnel.
+            //
+            // Cette ligne est ce qui empêche l'employé de conclure qu'il a
+            // perdu ses droits. Elle disparaît dès la confirmation.
+            //
+            // Elle REMPLACE la ligne du rôle au lieu de s'y ajouter, et c'est
+            // une mesure qui l'a décidé : en seconde ligne, l'en-tête — dont
+            // la hauteur est fixe — débordait de 2 pixels dès un grossissement
+            // de texte x1.5 (`indicateur_session_test.dart`). Rogner la police
+            // aurait déplacé le problème d'une échelle.
+            //
+            // Le remplacement dit d'ailleurs plus juste : tant que la
+            // vérification n'a pas répondu, le rôle affiché est une hypothèse
+            // lue au coffre, et il est VIDE quand cette session vient d'une
+            // version antérieure. Annoncer l'attente vaut mieux qu'annoncer un
+            // rôle dont on n'est pas sûr.
+            accountEmail: auth.sessionAConfirmer
+                ? Text(
+                    l10n.shellSessionToConfirm,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  )
+                : Text(
+                    // Le rôle vient du serveur : « admin », « vendeur »… Il
+                    // n'est pas traduit par ce lot, et la phrase qui l'encadre
+                    // l'est — c'est le même partage que partout ailleurs dans
+                    // ce lot, et il est écrit dans lib/l10n/CONVENTION.md.
+                    auth.isStaff  ? l10n.shellAccountStaff(auth.staffUser?.role ?? '') :
+                    auth.isClient ? (auth.firebaseUser?.email ?? '') :
+                    l10n.shellAccountNotSignedIn,
+                  ),
             currentAccountPicture: CircleAvatar(
               backgroundColor: cs.onPrimary.withAlpha(40),
               child: Text(

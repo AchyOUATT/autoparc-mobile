@@ -24,6 +24,7 @@
   "shellAccountGuest": "Guest",
   "shellAccountStaff": "Staff — {role}",
   "shellAccountNotSignedIn": "Not signed in",
+  "shellSessionToConfirm": "Checking your session…",
   "shellClientNeeds": "Customer requests",
   "shellPartners": "Partners",
   "shellNotifications": "Notifications",

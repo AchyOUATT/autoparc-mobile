@@ -212,6 +212,12 @@ abstract class AppLocalizations {
   /// **'Non connecté'**
   String get shellAccountNotSignedIn;
 
+  /// Sous-titre de l'en-tête du tiroir pendant qu'une session restaurée du coffre n'est pas encore confirmée par le serveur. Il REMPLACE la ligne du rôle, parce que l'en-tête a une hauteur fixe et débordait avec deux lignes — et parce que le rôle lu au coffre est une hypothèse tant que rien ne l'a confirmé. Explique pourquoi certaines commandes peuvent manquer l'espace d'un instant ; disparaît dès la confirmation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Session à confirmer…'**
+  String get shellSessionToConfirm;
+
   /// Entrée du tiroir (personnel) vers la liste des demandes déposées par les clients.
   ///
   /// In fr, this message translates to:

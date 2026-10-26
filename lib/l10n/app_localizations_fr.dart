@@ -73,6 +73,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get shellAccountNotSignedIn => 'Non connecté';
 
   @override
+  String get shellSessionToConfirm => 'Session à confirmer…';
+
+  @override
   String get shellClientNeeds => 'Besoins clients';
 
   @override
