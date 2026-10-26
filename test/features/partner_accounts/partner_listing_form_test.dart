@@ -73,6 +73,29 @@ Future<void> _enter(WidgetTester tester, String label, String value) async {
   await tester.pump();
 }
 
+/// Choisit dans la liste portant ce LIBELLE.
+///
+/// Les bancs visaient `DropdownButtonFormField<String>` par son index. Ajouter
+/// un champ en amont les faisait viser autre chose, en silence — c'est
+/// exactement ce qui est arrivé en posant les questions de classification.
+Future<void> _chooseLabeled(WidgetTester tester, String label, String text) =>
+    _choose(tester, find.widgetWithText(DropdownButtonFormField<String>, label), text);
+
+/// Les trois réponses que le formulaire exige désormais d'un véhicule.
+///
+/// Sans elles, aucune annonce ne part — et c'est le but : `vehicle_type` et
+/// `registration_status` ont une valeur par défaut en base, de sorte qu'une
+/// annonce muette était classée en silence, et possiblement à tort.
+Future<void> _classer(WidgetTester tester, {
+  String type = 'Voiture particulière',
+  String situation = 'Non immatriculé (import)',
+  String etat = 'Occasion',
+}) async {
+  await _chooseLabeled(tester, 'Type de véhicule', type);
+  await _chooseLabeled(tester, 'Situation administrative', situation);
+  await _chooseLabeled(tester, 'État', etat);
+}
+
 Future<void> _submit(WidgetTester tester, {bool editing = false}) async {
   final button = find.widgetWithText(FilledButton,
       editing ? 'Enregistrer les modifications' : 'Enregistrer le brouillon');
@@ -89,7 +112,8 @@ void main() {
     await _choose(tester, find.byType(DropdownButtonFormField<int>).at(1), 'Corolla E180');
     await _choose(tester, find.byType(DropdownButtonFormField<int>).at(2), 'Essence');
     await _enter(tester, 'Année de fabrication', '2018');
-    await _choose(tester, find.byType(DropdownButtonFormField<String>).first, 'Location');
+    await _classer(tester);
+    await _chooseLabeled(tester, 'Proposition', 'Location');
     await _enter(tester, 'Location par mois (FCFA)', '350000');
     await _submit(tester);
 
@@ -108,7 +132,9 @@ void main() {
     await _open(tester, repository, PartnerListingKind.vehicles, listing: {
       'id': 7, 'brand_id': 1, 'vehicle_model_id': 10, 'engine_type_id': 20,
       'identity': {'year': 2018},
-      'commercial': {'availability': 'both', 'sale_price': '4800000.00',
+      'vehicle_type': 'passenger',
+      'registration_status': {'value': 'unregistered', 'label': 'Non immatriculé'},
+      'commercial': {'condition': 'used', 'availability': 'both', 'sale_price': '4800000.00',
         'rental_daily_rate': null, 'rental_monthly_rate': '300000.00'},
     });
     await _enter(tester, 'Location par mois (FCFA)', '320000');
@@ -125,7 +151,10 @@ void main() {
     final repository = _Repository();
     await _open(tester, repository, PartnerListingKind.vehicles, listing: {
       'id': 7, 'brand_id': 1, 'vehicle_model_id': 10, 'engine_type_id': 20,
-      'identity': {'year': 2018}, 'commercial': {'availability': 'rent'},
+      'identity': {'year': 2018},
+      'vehicle_type': 'passenger',
+      'registration_status': {'value': 'unregistered', 'label': 'Non immatriculé'},
+      'commercial': {'condition': 'used', 'availability': 'rent'},
     });
     await _submit(tester, editing: true);
 
@@ -139,7 +168,9 @@ void main() {
       'id': 7, 'brand_id': 1, 'vehicle_model_id': 10, 'engine_type_id': 20,
       'trim_id': 55, 'drivetrain_id': 66,
       'identity': {'year': 2020},
-      'commercial': {'availability': 'rent', 'rental_monthly_rate': '300000.00'},
+      'vehicle_type': 'passenger',
+      'registration_status': {'value': 'unregistered', 'label': 'Non immatriculé'},
+      'commercial': {'condition': 'used', 'availability': 'rent', 'rental_monthly_rate': '300000.00'},
       'technical': {'engine_code': 'OLD-ENGINE'},
       'consumption': {'combined_l_100km': '8.5'},
     });
@@ -154,6 +185,158 @@ void main() {
     expect(repository.saved, containsPair('engine_code', null));
     expect(repository.saved, containsPair('consumption_combined', null));
     expect(repository.saved, containsPair('rental_monthly_rate', 300000));
+  });
+
+  // ── CE QUI REND L'ANNONCE TROUVABLE ────────────────────────────────────
+  //
+  // Le catalogue public filtre sur `vehicle_type`, `registration_status`,
+  // `body_style`, `condition` et `mileage_max`. Le formulaire ne posait aucune
+  // de ces questions : l'annonce partenaire était absente de ces filtres, et
+  // pire pour les deux premiers — dont la colonne porte un défaut en base —
+  // elle y figurait sous une classification FAUSSE.
+  //
+  // Le pendant côté serveur est `PartnerAnnonceTrouvableTest` dans
+  // autoparc-backend : il prouve que ces réponses arrivent jusqu'aux filtres.
+  // Ici on prouve que le formulaire les ENVOIE.
+
+  Future<void> creerVehicule(WidgetTester tester, _Repository repository) async {
+    await _open(tester, repository, PartnerListingKind.vehicles);
+    await _choose(tester, find.byType(DropdownButtonFormField<int>).at(0), 'Toyota');
+    await _choose(tester, find.byType(DropdownButtonFormField<int>).at(1), 'Corolla E180');
+    await _choose(tester, find.byType(DropdownButtonFormField<int>).at(2), 'Essence');
+    await _enter(tester, 'Année de fabrication', '2018');
+  }
+
+  testWidgets('la classification part avec l’annonce', (tester) async {
+    final repository = _Repository();
+    await creerVehicule(tester, repository);
+    await _classer(tester, type: 'Utilitaire', situation: 'Déjà immatriculé', etat: 'Occasion');
+    await _chooseLabeled(tester, 'Carrosserie', 'Fourgon');
+    await _enter(tester, 'Kilométrage (km)', '120000');
+    await _enter(tester, 'Prix de vente (FCFA)', '9500000');
+    await _submit(tester);
+
+    expect(repository.saved, containsPair('vehicle_type', 'utility'));
+    expect(repository.saved, containsPair('registration_status', 'registered'));
+    expect(repository.saved, containsPair('condition', 'used'));
+    expect(repository.saved, containsPair('body_style', 'van'));
+
+    // Le kilométrage va dans le bloc qui correspond au statut : le serveur
+    // écrit l'un ou l'autre selon `registration_status`, et l'autre serait
+    // ignoré en silence.
+    expect(repository.saved!['registration'], containsPair('mileage_km', 120000));
+    expect(repository.saved!.containsKey('import'), isFalse);
+  });
+
+  testWidgets('le kilométrage d’un import va dans le bloc import', (tester) async {
+    final repository = _Repository();
+    await creerVehicule(tester, repository);
+    await _classer(tester, situation: 'Non immatriculé (import)');
+    await _enter(tester, 'Kilométrage (km)', '80000');
+    await _enter(tester, 'Prix de vente (FCFA)', '4500000');
+    await _submit(tester);
+
+    expect(repository.saved!['import'], containsPair('odometer_at_import_km', 80000));
+    expect(repository.saved!.containsKey('registration'), isFalse);
+  });
+
+  /// Un kilométrage laissé vide veut dire « je ne touche pas », et non
+  /// « efface ce qui est enregistré ». Aucun bloc ne part.
+  testWidgets('un kilométrage vide n’envoie aucun bloc', (tester) async {
+    final repository = _Repository();
+    await creerVehicule(tester, repository);
+    await _classer(tester);
+    await _enter(tester, 'Prix de vente (FCFA)', '4500000');
+    await _submit(tester);
+
+    expect(repository.saved, isNotNull);
+    expect(repository.saved!.containsKey('registration'), isFalse);
+    expect(repository.saved!.containsKey('import'), isFalse);
+  });
+
+  /// LE BANC QUI EMPECHE LE RETOUR DU DEFAUT.
+  ///
+  /// Si ces trois questions redevenaient facultatives — ou pire,
+  /// préselectionnées — l'annonce repartirait classée en silence. Rien ne doit
+  /// pouvoir sortir du formulaire sans réponse.
+  testWidgets('sans classification, rien ne part', (tester) async {
+    final repository = _Repository();
+    await creerVehicule(tester, repository);
+    await _enter(tester, 'Prix de vente (FCFA)', '4500000');
+    await _submit(tester);
+
+    expect(repository.saved, isNull,
+        reason: 'Une annonce est partie sans type, sans situation ni état.');
+    expect(find.text('Choisissez une valeur.'), findsWidgets);
+  });
+
+  /// CHACUNE des trois, et pas seulement les trois ensemble.
+  ///
+  /// Le banc du dessus laisse les trois sans réponse, si bien que n'importe
+  /// laquelle suffit à retenir l'annonce : rendre `vehicle_type` facultatif,
+  /// ou le préselectionner, le passait au vert. Deux mutations ont survécu
+  /// exactement comme ça. Ici chaque champ est omis À SON TOUR, les deux
+  /// autres étant renseignés.
+  for (final omis in const ['Type de véhicule', 'Situation administrative', 'État']) {
+    testWidgets('sans « $omis », rien ne part', (tester) async {
+      final repository = _Repository();
+      await creerVehicule(tester, repository);
+
+      for (final champ in const {
+        'Type de véhicule': 'Voiture particulière',
+        'Situation administrative': 'Non immatriculé (import)',
+        'État': 'Occasion',
+      }.entries) {
+        if (champ.key != omis) {
+          await _chooseLabeled(tester, champ.key, champ.value);
+        }
+      }
+
+      await _enter(tester, 'Prix de vente (FCFA)', '4500000');
+      await _submit(tester);
+
+      expect(repository.saved, isNull,
+          reason: 'Une annonce est partie sans « $omis » : elle sera donc '
+              'classée par défaut, et possiblement à tort.');
+    });
+  }
+
+  /// La carrosserie, elle, reste FACULTATIVE : la colonne est nullable, et un
+  /// vendeur peut légitimement ne pas savoir qualifier un châssis.
+  testWidgets('la carrosserie peut rester non renseignée', (tester) async {
+    final repository = _Repository();
+    await creerVehicule(tester, repository);
+    await _classer(tester);
+    await _enter(tester, 'Prix de vente (FCFA)', '4500000');
+    await _submit(tester);
+
+    expect(repository.saved, isNotNull);
+    expect(repository.saved, containsPair('body_style', null));
+  });
+
+  testWidgets('l’édition reprend la classification enregistrée', (tester) async {
+    final repository = _Repository();
+    await _open(tester, repository, PartnerListingKind.vehicles, listing: {
+      'id': 7, 'brand_id': 1, 'vehicle_model_id': 10, 'engine_type_id': 20,
+      'identity': {'year': 2018},
+      // Les formes que `VehicleResource` rend réellement : chaîne nue pour
+      // `vehicle_type` et `body_style`, objet {value,label} pour
+      // `registration_status`, `condition` sous `commercial`, kilométrage sous
+      // `technical`.
+      'vehicle_type': 'heavy',
+      'registration_status': {'value': 'registered', 'label': 'Immatriculé'},
+      'body_style': 'truck',
+      'technical': {'mileage_km': 250000},
+      'commercial': {'condition': 'damaged', 'availability': 'sale', 'sale_price': '12000000.00'},
+    });
+    await _submit(tester, editing: true);
+
+    expect(repository.saved, containsPair('vehicle_type', 'heavy'),
+        reason: 'Une modification de prix ne doit pas reclasser le véhicule.');
+    expect(repository.saved, containsPair('registration_status', 'registered'));
+    expect(repository.saved, containsPair('body_style', 'truck'));
+    expect(repository.saved, containsPair('condition', 'damaged'));
+    expect(repository.saved!['registration'], containsPair('mileage_km', 250000));
   });
 
   testWidgets('la pièce d’occasion transmet son propre véhicule donneur', (tester) async {

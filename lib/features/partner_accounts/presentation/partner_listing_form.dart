@@ -31,6 +31,7 @@ class _PartnerListingFormPageState
   final _stock = TextEditingController(text: '0');
   final _sku = TextEditingController();
   final _manufacturerReference = TextEditingController();
+  final _mileage = TextEditingController();
   PartnerReferences? _references;
   Object? _loadError;
   String? _saveError;
@@ -47,6 +48,23 @@ class _PartnerListingFormPageState
   int? _manufacturerId;
   int? _donorId;
   String _availability = 'sale';
+
+  // ── LES QUATRE CHAMPS QUI RENDENT UNE ANNONCE TROUVABLE ─────────────────
+  //
+  // Ils partent NULS, et ce n'est pas un oubli. `vehicle_type` et
+  // `registration_status` ont une valeur par defaut EN BASE — `passenger` et
+  // `unregistered` — de sorte qu'une annonce qui ne les envoie pas n'est pas
+  // « non classee » : elle est classee en silence, et possiblement a tort. Une
+  // camionnette immatriculee se rangeait en voiture particuliere non
+  // immatriculee, et les filtres publics `?vehicle_type=utility` et
+  // `?registration_status=registered` ne la trouvaient jamais.
+  //
+  // Preselectionner ces valeurs dans le formulaire reproduirait exactement ce
+  // defaut, en le faisant passer pour un choix du vendeur. On demande.
+  String? _vehicleType;
+  String? _registrationStatus;
+  String? _bodyStyle;
+  String? _condition;
   String _partType = 'aftermarket';
   String _partCondition = 'new';
   String _accessoryCategory = 'utilitaire';
@@ -100,6 +118,14 @@ class _PartnerListingFormPageState
     _manufacturerId = _id(listing['manufacturer_id']);
     _donorId = _id(listing['donor_vehicle_id']);
     _availability = _text(commercial['availability'] ?? 'sale');
+    // `VehicleResource` rend `vehicle_type` et `body_style` en chaine nue,
+    // `registration_status` en objet {value, label}, `condition` sous
+    // `commercial` et le kilometrage sous `technical`.
+    _vehicleType = _texteOuNul(listing['vehicle_type']);
+    _registrationStatus = _texteOuNul(_map(listing['registration_status'])['value']);
+    _bodyStyle = _texteOuNul(listing['body_style']);
+    _condition = _texteOuNul(commercial['condition']);
+    _mileage.text = _text(_map(listing['technical'])['mileage_km']);
     _partType = _text(listing['type'] ?? 'aftermarket');
     _partCondition = _text(listing['condition'] ?? 'new');
     _accessoryCategory = _text(
@@ -189,6 +215,10 @@ class _PartnerListingFormPageState
         'vehicle_model_id': _modelId,
         'engine_type_id': _engineTypeId,
         'manufacturing_year': int.parse(_year.text.trim()),
+        'vehicle_type': _vehicleType,
+        'registration_status': _registrationStatus,
+        'condition': _condition,
+        'body_style': _bodyStyle,
         'availability': _availability,
         'sale_price': _forSale ? _number(_salePrice) : null,
         'rental_daily_rate': _forRent ? _number(_dailyRate) : null,
@@ -203,6 +233,23 @@ class _PartnerListingFormPageState
           ]) field: null,
         },
       });
+
+      // ── LE KILOMETRAGE VA DANS LE BLOC QUI CORRESPOND AU STATUT ────────
+      //
+      // Le serveur ecrit l'un ou l'autre selon `registration_status`
+      // (`syncTypeSpecificDetails`) : envoyer `registration` sur un vehicule
+      // declare non immatricule serait ignore en silence, et le filtre
+      // `?mileage_max=` ne trouverait toujours rien.
+      //
+      // Rien n'est envoye quand le champ est vide : cela veut dire « je ne
+      // touche pas », et non « efface ce qui est enregistre ».
+      final km = int.tryParse(_mileage.text.trim());
+      if (km != null) {
+        final immatricule = _registrationStatus == 'registered';
+        data[immatricule ? 'registration' : 'import'] = <String, dynamic>{
+          (immatricule ? 'mileage_km' : 'odometer_at_import_km'): km,
+        };
+      }
     } else {
       data.addAll({
         'name': _name.text.trim(),
@@ -275,14 +322,42 @@ class _PartnerListingFormPageState
     );
   }
 
-  Widget _choice(String label, String value, Map<String, String> choices, ValueChanged<String> onChanged) =>
+  /// La valeur textuelle, ou `null` quand elle est absente ou vide.
+  ///
+  /// `_text` rend une chaîne vide pour un champ absent, ce qui conviendrait
+  /// mal ici : vide passerait pour une réponse, alors que `null` dit « pas
+  /// encore choisi » et fait mordre le validateur.
+  String? _texteOuNul(Object? value) {
+    final texte = _text(value);
+
+    return texte.isEmpty ? null : texte;
+  }
+
+  /// Un choix parmi un énuméré du serveur, qui peut partir SANS sélection.
+  ///
+  /// C'est ce que [_choice] ne sait pas faire : il préselectionne toujours sa
+  /// valeur courante. Pour les champs de classification, préselectionner
+  /// reproduirait le défaut de la colonne en le faisant passer pour une
+  /// réponse du vendeur.
+  Widget _enum(String label, String? value, Map<String, String> choices,
+      ValueChanged<String?> onChanged, {bool isRequired = true}) =>
       DropdownButtonFormField<String>(
         initialValue: choices.containsKey(value) ? value : null,
+        isExpanded: true,
         decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-        items: choices.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
-        onChanged: _saving ? null : (selected) { if (selected != null) onChanged(selected); },
-        validator: (selected) => selected == null ? 'Choisissez une valeur.' : null,
+        items: [
+          if (!isRequired) const DropdownMenuItem<String>(value: null, child: Text('Non renseigné')),
+          ...choices.entries.map((entry) => DropdownMenuItem(
+            value: entry.key,
+            child: Text(entry.value, overflow: TextOverflow.ellipsis),
+          )),
+        ],
+        onChanged: _saving ? null : onChanged,
+        validator: (selected) => isRequired && selected == null ? 'Choisissez une valeur.' : null,
       );
+
+  Widget _choice(String label, String value, Map<String, String> choices, ValueChanged<String> onChanged) =>
+      _enum(label, value, choices, (selected) { if (selected != null) onChanged(selected); });
 
   Widget _field(String label, TextEditingController controller, {
     TextInputType? keyboardType, String? Function(String?)? validator, int maxLines = 1,
@@ -374,6 +449,51 @@ class _PartnerListingFormPageState
         final year = int.tryParse(value?.trim() ?? '');
         return year == null || year < 1950 || year > DateTime.now().year
             ? 'Indiquez une année entre 1950 et ${DateTime.now().year}.' : null;
+      }),
+    // ── CE QUI REND L'ANNONCE TROUVABLE ──────────────────────────────────
+    //
+    // Le catalogue public filtre sur `vehicle_type`, `registration_status`,
+    // `body_style`, `condition` et `mileage_max`. Sans ces réponses, une
+    // annonce partenaire n'apparaissait dans AUCUN de ces filtres — et pire
+    // pour les deux premiers, dont la colonne porte un défaut en base : elle y
+    // apparaissait sous une classification FAUSSE. Une camionnette
+    // immatriculée se rangeait en voiture particulière non immatriculée.
+    _enum('Type de véhicule', _vehicleType, const {
+      'passenger': 'Voiture particulière',
+      'utility': 'Utilitaire',
+      'heavy': 'Poids lourd ou engin',
+    }, (value) => setState(() => _vehicleType = value)),
+    _enum('Situation administrative', _registrationStatus, const {
+      'unregistered': 'Non immatriculé (import)',
+      'registered': 'Déjà immatriculé',
+    }, (value) => setState(() => _registrationStatus = value)),
+    _enum('État', _condition, const {
+      'new': 'Neuf',
+      'used': 'Occasion',
+      'damaged': 'Accidenté',
+      'for_parts': 'Pour pièces',
+    }, (value) => setState(() => _condition = value)),
+    _enum('Carrosserie', _bodyStyle, const {
+      'sedan': 'Berline',
+      'hatchback': 'Citadine (hayon)',
+      'suv': 'SUV ou 4x4',
+      'estate': 'Break',
+      'coupe': 'Coupé',
+      'convertible': 'Cabriolet',
+      'pickup': 'Pick-up',
+      'van': 'Fourgon',
+      'minibus': 'Minibus',
+      'bus': 'Bus',
+      'truck': 'Camion',
+      'other': 'Autre',
+    }, (value) => setState(() => _bodyStyle = value), isRequired: false),
+    _field('Kilométrage (km)', _mileage, keyboardType: TextInputType.number,
+      validator: (value) {
+        final texte = value?.trim() ?? '';
+        if (texte.isEmpty) return null;
+        final km = int.tryParse(texte);
+
+        return km == null || km < 0 ? 'Indiquez un kilométrage valide.' : null;
       }),
     _choice('Proposition', _availability,
       const {'sale': 'Vente', 'rent': 'Location', 'both': 'Vente et location'},
