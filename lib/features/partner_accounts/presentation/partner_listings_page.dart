@@ -193,18 +193,56 @@ class _PartnerListingsPageState extends ConsumerState<PartnerListingsPage> {
     ]),
   );
 
+  /// « dont 450 000 de marge boutique (10 %) », ou rien.
+  ///
+  /// Rien quand l'annonce n'a pas de detail : celles d'avant la marge n'en
+  /// ont pas, et leur prix EST celui que le vendeur a propose. Leur inventer
+  /// une ligne a 0 % laisserait croire qu'un calcul a eu lieu.
+  String? _margeDe(Map<String, dynamic> item) {
+    final detail = item['partner_pricing'];
+    if (detail is! Map) return null;
+
+    final taux = double.tryParse('${detail['taux'] ?? 0}') ?? 0;
+    final propose = double.tryParse(
+        '${(detail['prix_proposes'] as Map?)?['sale_price'] ?? (detail['prix_proposes'] as Map?)?['selling_price'] ?? 0}');
+    final total = double.tryParse(
+        '${(detail['total'] as Map?)?['sale_price'] ?? (detail['total'] as Map?)?['selling_price'] ?? 0}');
+
+    if (taux <= 0 || propose == null || total == null || total <= propose) {
+      return null;
+    }
+
+    final ecart = (total - propose).round();
+    final pourcentage = taux == taux.roundToDouble() ? '${taux.round()}' : '$taux';
+
+    return 'dont $ecart de marge boutique ($pourcentage %)';
+  }
+
   Widget _card(Map<String, dynamic> item) {
     final published = item['partner_published_at'] != null;
     final commercial = item['commercial'] as Map? ?? item['pricing'] as Map? ?? const {};
     final stock = item['stock'] as Map?;
     final price = commercial['sale_price'] ?? commercial['selling_price'];
+    final marge = _margeDe(item);
     final media = partnerMaps(item['media']);
     final cover = media.isEmpty ? null : media.firstWhere((photo) => photo['is_cover'] == true, orElse: () => media.first)['url']?.toString();
     return Card(clipBehavior: Clip.antiAlias, margin: const EdgeInsets.only(bottom: 14), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       ListTile(contentPadding: const EdgeInsets.fromLTRB(16, 12, 4, 8),
         leading: cover == null ? const Icon(Icons.photo_outlined, size: 36) : ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(cover, width: 64, height: 64, fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.broken_image_outlined))),
         title: Text(_title(item), maxLines: 2, overflow: TextOverflow.ellipsis),
+        // ── CE PRIX EST LE PRIX PUBLIC, MARGE COMPRISE ────────────────
+        //
+        // La colonne porte le prix que l'acheteur voit, et non celui que le
+        // vendeur a propose : c'est lui que le catalogue trie et filtre.
+        // Sans la ligne ci-dessous, le vendeur relit un nombre qu'il n'a pas
+        // tape et croit s'etre trompe — puis baisse son prix pour
+        // « corriger », a chaque fois.
+        //
+        // Le taux vient de l'ANNONCE (`partner_pricing`), fige le jour de son
+        // enregistrement, et non du reglage du jour : afficher « marge 30 % »
+        // sur un prix calcule a 10 % serait faux.
         subtitle: Text([if (price != null) '$price ${commercial['currency'] ?? 'FCFA'}',
+          ?marge,
           if (stock != null) 'Stock : ${stock['quantity'] ?? '—'}',
           if (commercial['availability'] == 'rent' || commercial['availability'] == 'both') 'Location : ${commercial['rental_daily_rate'] != null ? '${commercial['rental_daily_rate']} / jour' : '${commercial['rental_monthly_rate']} / mois'}'].join('\n')),
         trailing: PopupMenuButton<String>(enabled: !_working, tooltip: 'Gérer cette annonce', onSelected: (action) => _action(item, action), itemBuilder: (_) => [

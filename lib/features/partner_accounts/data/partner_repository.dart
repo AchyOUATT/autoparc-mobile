@@ -19,13 +19,42 @@ enum PartnerListingKind {
 }
 
 class PartnerProfile {
-  const PartnerProfile({required this.user, required this.account});
+  const PartnerProfile({
+    required this.user,
+    required this.account,
+    this.boutique = const {},
+  });
+
   factory PartnerProfile.fromJson(Map<String, dynamic> json) => PartnerProfile(
     user: Map<String, dynamic>.from(json['user'] as Map),
     account: Map<String, dynamic>.from(json['partner_account'] as Map),
+    // Tolérant à l'absence : une session enregistrée AVANT cette version n'a
+    // pas cette clé, et un serveur pas encore déployé ne l'envoie pas. Dans
+    // les deux cas `margePourcentage` rend 0, donc aucune ligne de marge ne
+    // s'affiche — ce qu'il faut faire quand on ne sait pas, plutôt
+    // qu'annoncer un taux inventé.
+    boutique: json['boutique'] is Map
+        ? Map<String, dynamic>.from(json['boutique'] as Map)
+        : const {},
   );
   final Map<String, dynamic> user;
   final Map<String, dynamic> account;
+
+  /// Les réglages de la boutique qui concernent ce vendeur.
+  final Map<String, dynamic> boutique;
+
+  /// Le taux de marge DU JOUR, celui qui s'appliquera à la prochaine annonce.
+  ///
+  /// Sans lui, le formulaire ne pourrait pas montrer le total avant
+  /// l'enregistrement, et le vendeur découvrirait le prix affiché après coup,
+  /// sur sa propre annonce.
+  ///
+  /// Ce n'est PAS le taux d'une annonce déjà enregistrée : celle-ci porte le
+  /// sien dans `partner_pricing`, figé le jour où elle a été calculée. Les
+  /// confondre afficherait « marge 30 % » sur un prix fait à 10 %.
+  double get margePourcentage =>
+      double.tryParse('${boutique['marge_pourcentage'] ?? 0}') ?? 0;
+
   String get companyName => account['company_name']?.toString() ?? '';
   String get contactName => account['contact_name']?.toString() ?? '';
 
@@ -50,7 +79,14 @@ class PartnerProfile {
   /// Les clés sont celles du serveur, parce que c'est [PartnerProfile.fromJson]
   /// — la MEME fabrique que pour `/api/partner/me` — qui relira cet
   /// enregistrement. Un seul format, donc un seul endroit où se tromper.
-  Map<String, dynamic> toJson() => {'user': user, 'partner_account': account};
+  Map<String, dynamic> toJson() => {
+    'user': user,
+    'partner_account': account,
+    // Le taux part au coffre avec le reste : c'est ce qui permet au
+    // démarrage optimiste d'ouvrir un formulaire complet avant que
+    // `/partner/me` n'ait répondu. Il sera rafraîchi dans la foulée.
+    'boutique': boutique,
+  };
 }
 
 class PartnerApiException implements Exception {

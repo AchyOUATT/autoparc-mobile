@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/partner_repository.dart';
+import 'marge_recapitulatif.dart';
+import 'partner_session.dart';
 
 /// Les annonces utilisent uniquement le client partenaire, y compris en edition.
 class PartnerListingFormPage extends ConsumerStatefulWidget {
@@ -267,11 +269,13 @@ class _PartnerListingFormPageState
 
   Widget _field(String label, TextEditingController controller, {
     TextInputType? keyboardType, String? Function(String?)? validator, int maxLines = 1,
+    ValueChanged<String>? onChanged,
   }) => TextFormField(
     controller: controller,
     enabled: !_saving,
     keyboardType: keyboardType,
     maxLines: maxLines,
+    onChanged: onChanged,
     decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
     validator: validator,
   );
@@ -367,7 +371,12 @@ class _PartnerListingFormPageState
       onChanged: (value) => setState(() => _manufacturerId = value)),
     _field('Référence interne / SKU (facultatif)', _sku),
     _field('Prix de vente (FCFA)', _salePrice,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true), validator: _money),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      validator: _money, onChanged: (_) => setState(() {})),
+    MargeRecapitulatif(
+      prixPropose: _number(_salePrice),
+      pourcentage: ref.watch(partnerSessionProvider).profile?.margePourcentage ?? 0,
+    ),
     _field('Quantité en stock', _stock, keyboardType: TextInputType.number,
       validator: (value) {
         final quantity = int.tryParse(value?.trim() ?? '');

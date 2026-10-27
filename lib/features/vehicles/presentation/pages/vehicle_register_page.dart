@@ -12,6 +12,8 @@ import 'vehicle_form_mode.dart';
 // partenaires du personnel importe plus bas : les deux exposent un
 // `partnerRepositoryProvider`, d'ou l'alias.
 import '../../../../features/partner_accounts/data/partner_repository.dart' as espace;
+import '../../../../features/partner_accounts/presentation/marge_recapitulatif.dart';
+import '../../../../features/partner_accounts/presentation/partner_session.dart' as espace;
 import '../../../../core/api/api_exception.dart';
 import '../../../../shared/presentation/pages/media_upload_page.dart';
 import '../../../../shared/data/media_repository.dart';
@@ -432,6 +434,26 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           'origin_country_id': ?_paysOrigine?.id,
         },
     };
+  }
+
+  /// Le récapitulatif de marge sous un champ de prix, en mode PARTENAIRE seul.
+  ///
+  /// Le personnel ne voit rien : la marge s'applique à ce qu'un TIERS propose,
+  /// pas au prix que la boutique fixe elle-même pour son propre stock.
+  ///
+  /// Le taux vient du profil partenaire — `/partner/me` le porte — et non d'une
+  /// annonce : c'est le taux DU JOUR, celui qui s'appliquera à cet
+  /// enregistrement. Une annonce déjà enregistrée porte le sien, figé.
+  Widget _marge(TextEditingController controller, {String? libelle}) {
+    if (!widget.mode.estPartenaire) return const SizedBox.shrink();
+
+    final taux = ref.watch(espace.partnerSessionProvider).profile?.margePourcentage ?? 0;
+
+    return MargeRecapitulatif(
+      prixPropose: _parsePrice(controller.text),
+      pourcentage: taux,
+      libelle: libelle ?? 'Prix affiché à l’acheteur',
+    );
   }
 
   bool get _rentalRatesMissing =>
@@ -1171,8 +1193,12 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                 }
                 return null;
               },
+              // Redessine a chaque frappe : sans cela le recapitulatif de
+              // marge resterait sur le chiffre precedent pendant la saisie.
+              onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 12),
+            _marge(_salePriceCtrl),
           ],
 
           // Tarifs location
@@ -1192,8 +1218,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                 }
                 return null;
               },
+              onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 12),
+            _marge(_rentalDailyCtrl, libelle: 'Tarif affiche a l\u2019acheteur'),
             TextFormField(
               controller: _rentalMonthlyCtrl,
               decoration: const InputDecoration(
@@ -1208,8 +1236,14 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               validator: (_) => forRent && _rentalRatesMissing
                   ? 'Saisissez un tarif journalier ou mensuel'
                   : null,
+              onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 12),
+            _marge(_rentalMonthlyCtrl, libelle: 'Tarif affiche a l\u2019acheteur'),
+            // AUCUN recapitulatif sous la caution : elle est rendue au
+            // locataire, donc le serveur ne la majore pas
+            // (`MargePartenaire::CHAMPS_VEHICULE` l'exclut). Afficher une
+            // marge ici annoncerait un total que personne n'encaissera.
             TextFormField(
               controller: _rentalDepositCtrl,
               decoration: const InputDecoration(
