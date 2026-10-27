@@ -432,14 +432,36 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.verified_user_outlined,
-                          size: 18,
-                          color: Theme.of(context).colorScheme.secondary),
+                      // ── LE BANDEAU DISAIT FAUX AU PERSONNEL ─────────────
+                      //
+                      // Il annoncait « votre demande sera liee a votre
+                      // compte » a QUICONQUE etait connecte. Or le
+                      // `firebase_uid` ne part que `if (auth.isClient)` : la
+                      // demande saisie par un membre du personnel n'est liee a
+                      // aucun compte, et surtout pas a celui du client qu'il a
+                      // devant lui.
+                      //
+                      // C'est le cas le plus courant — quelqu'un se presente
+                      // au comptoir — et c'est exactement celui ou le numero
+                      // est le seul moyen de rappeler. Le bandeau le dit
+                      // desormais, au lieu de rassurer a tort.
+                      Icon(
+                        auth.isClient
+                            ? Icons.verified_user_outlined
+                            : Icons.support_agent_outlined,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Connecté en tant que ${auth.displayName} — '
-                          'votre demande sera liée à votre compte.',
+                          auth.isClient
+                              ? 'Connecté en tant que ${auth.displayName} — '
+                                  'votre demande sera liée à votre compte.'
+                              : 'Saisie par ${auth.displayName}, pour le '
+                                  'compte d’un client. La demande ne sera '
+                                  'rattachée à aucun compte : le numéro '
+                                  'ci-dessus est le seul moyen de le rappeler.',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),

@@ -32,7 +32,6 @@ import 'package:auto/features/partners/presentation/pages/partner_form_page.dart
 import 'package:auto/features/partners/presentation/pages/partner_list_page.dart';
 import 'package:auto/features/vehicles/presentation/pages/vehicle_register_page.dart';
 import 'package:auto/features/catalog/presentation/pages/part_detail_page.dart';
-import 'package:auto/features/catalog/presentation/providers/catalog_providers.dart';
 import 'package:auto/features/garage/presentation/pages/add_vehicle_to_garage_page.dart';
 import 'package:auto/features/vehicles/data/models/catalog_refs.dart';
 import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provider.dart';

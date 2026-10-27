@@ -5,6 +5,7 @@ import 'package:auto/features/needs/data/needs_repository.dart';
 import 'package:auto/features/needs/presentation/pages/submit_need_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Sans numéro, personne ne peut rappeler.
@@ -42,6 +43,20 @@ class _Auth extends StateNotifier<AuthState> implements AuthNotifier {
             role: 'manager',
           ),
         ));
+
+  @override
+  Object? noSuchMethod(Invocation invocation) => null;
+}
+
+class _FauxClient extends Fake implements User {
+  @override
+  String? get displayName => 'Issa Ouédraogo';
+  @override
+  String get uid => 'uid-client';
+}
+
+class _AuthClient extends StateNotifier<AuthState> implements AuthNotifier {
+  _AuthClient() : super(AuthState(type: AuthType.client, firebaseUser: _FauxClient()));
 
   @override
   Object? noSuchMethod(Invocation invocation) => null;
@@ -132,6 +147,45 @@ void main() {
     await tester.tap(bouton);
     await tester.pump(const Duration(milliseconds: 200));
   }
+
+  /// ── LE BANDEAU DISAIT FAUX AU PERSONNEL ─────────────────────────────────
+  ///
+  /// Il annonçait « votre demande sera liée à votre compte » à QUICONQUE était
+  /// connecté. Or le `firebase_uid` ne part que `if (auth.isClient)` : la
+  /// demande saisie par un membre du personnel n'est liée à aucun compte, et
+  /// surtout pas à celui du client qu'il a devant lui.
+  ///
+  /// C'est le cas le plus courant — quelqu'un se présente au comptoir — et
+  /// c'est exactement celui où le numéro est le seul moyen de rappeler.
+  group('Ce que le bandeau annonce', () {
+    testWidgets('au personnel : aucune liaison de compte', (tester) async {
+      await ouvrir(tester);
+      await atteindre(tester, find.textContaining('Saisie par'));
+
+      expect(find.textContaining('ne sera rattachée à aucun compte'),
+          findsOneWidget);
+      expect(find.textContaining('liée à votre compte'), findsNothing,
+          reason: 'Le bandeau rassurait a tort : rien ne lie cette demande au '
+              'client qui est au comptoir.');
+    });
+
+    testWidgets('au client : la demande est bien liée à son compte',
+        (tester) async {
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          needsRepositoryProvider.overrideWithValue(depot),
+          authProvider.overrideWith((_) => _AuthClient()),
+        ],
+        child: const MaterialApp(home: SubmitNeedPage()),
+      ));
+      await tester.pump(const Duration(milliseconds: 200));
+
+      await atteindre(tester, find.textContaining('Connecté en tant que'));
+
+      expect(find.textContaining('liée à votre compte'), findsOneWidget);
+      expect(find.textContaining('Saisie par'), findsNothing);
+    });
+  });
 
   /// LE BANC QUI COMPTE LE PLUS : rien ne part sans numéro.
   testWidgets('sans numéro, le besoin ne part pas', (tester) async {
