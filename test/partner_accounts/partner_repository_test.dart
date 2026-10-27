@@ -74,6 +74,66 @@ void main() {
     expect(adapter.requests.single.data.containsKey('email'), isFalse);
   });
 
+  // ── LA BOÎTE AUX LETTRES DU PARTENAIRE ────────────────────────────────
+  //
+  // Ses propres routes, sous `/api/partner/`, et donc son propre jeton. Ce
+  // banc éprouve la LECTURE réelle de la réponse : l'écran, lui, passe par un
+  // faux dépôt et ne la traverse jamais.
+
+  test('les notifications partent sur la route partenaire, avec son jeton', () async {
+    tokens.token = 'partner-test-token';
+    final adapter = _Adapter((_) => (200, {
+      'data': [
+        {'id': 1, 'type': 'need_broadcast', 'title': 'Demande', 'body': 'Corps', 'read_at': null},
+      ],
+    }));
+    dio.httpClientAdapter = adapter;
+
+    final liste = await repository.notifications();
+
+    expect(liste, hasLength(1));
+    expect(liste.single['type'], 'need_broadcast');
+    expect(adapter.requests.single.path, '/partner/notifications');
+    expect(adapter.requests.single.headers['Authorization'], 'Bearer partner-test-token');
+  });
+
+  /// Le serveur peut sérialiser un nombre en CHAÎNE : c'est la faute qui avait
+  /// fait tomber le catalogue entier. Un compteur illisible doit valoir zéro,
+  /// pas faire tomber l'espace partenaire.
+  test('le compteur de non-lues se lit dans les deux formes', () async {
+    tokens.token = 'partner-test-token';
+
+    for (final (brut, attendu) in [(3, 3), ('5', 5), (null, 0), ('abc', 0)]) {
+      dio.httpClientAdapter = _Adapter((_) => (200, {'count': brut}));
+
+      expect(await repository.notificationsNonLues(), attendu,
+          reason: 'Le compteur « $brut » devrait valoir $attendu.');
+    }
+  });
+
+  /// Une réponse d'une forme inattendue rend une liste vide plutôt que de
+  /// faire tomber l'écran : c'est une boîte aux lettres, pas un paiement.
+  test('une réponse inattendue ne fait pas tomber l’écran', () async {
+    tokens.token = 'partner-test-token';
+    dio.httpClientAdapter = _Adapter((_) => (200, {'data': 'pas une liste'}));
+
+    expect(await repository.notifications(), isEmpty);
+  });
+
+  test('marquer lu vise la bonne notification', () async {
+    tokens.token = 'partner-test-token';
+    final adapter = _Adapter((_) => (200, {'message': 'Lu.'}));
+    dio.httpClientAdapter = adapter;
+
+    await repository.marquerLu(42);
+    await repository.marquerToutLu();
+
+    expect(adapter.requests.map((r) => r.path).toList(), [
+      '/partner/notifications/42/read',
+      '/partner/notifications/read-all',
+    ]);
+  });
+
   test('un numéro de téléphone part comme identifiant', () async {
     final adapter = _Adapter((_) => (200, {..._profile(), 'token': 'partner-test-token'}));
     dio.httpClientAdapter = adapter;

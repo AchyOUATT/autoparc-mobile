@@ -107,6 +107,9 @@ class CustomerNeed {
 
   static const statusColors = {
     'pending':   0xFFFFA000,   // orange
+    // Sarcelle, la meme que la notification `need_broadcast` que les
+    // partenaires recoivent : c'est le meme evenement vu des deux cotes.
+    'approved':  0xFF00695C,   // sarcelle
     'contacted': 0xFF1565C0,   // bleu
     'fulfilled': 0xFF2E7D32,   // vert
     'cancelled': 0xFF757575,   // gris

@@ -102,6 +102,7 @@ class _FilterBar extends ConsumerWidget {
 
     const statuses = [
       (value: 'pending',   label: 'En attente'),
+      (value: 'approved',  label: 'Transmise'),
       (value: 'contacted', label: 'Contacté'),
       (value: 'fulfilled', label: 'Satisfait'),
       (value: 'cancelled', label: 'Annulé'),
@@ -400,8 +401,17 @@ class _UpdateStatusSheetState extends ConsumerState<_UpdateStatusSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // ── « TRANSMISE » ENVOIE LA DEMANDE A TOUS LES PARTENAIRES ────────
+    //
+    // Ce n'est pas un etat de plus dans une liste : le choisir DIFFUSE,
+    // une fois, a tous les comptes approuves. Le serveur s'en souvient —
+    // `broadcast_at` — donc repasser par cet etat ne rediffuse pas.
+    //
+    // Le contact du client ne part PAS avec : il s'est adresse a la
+    // boutique, pas a quinze vendeurs.
     const statuses = [
       (value: 'pending',   label: 'En attente',  color: 0xFFFFA000),
+      (value: 'approved',  label: 'Transmise',   color: 0xFF00695C),
       (value: 'contacted', label: 'Contacté',    color: 0xFF1565C0),
       (value: 'fulfilled', label: 'Satisfait',   color: 0xFF2E7D32),
       (value: 'cancelled', label: 'Annulé',      color: 0xFF757575),

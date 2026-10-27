@@ -342,6 +342,44 @@ class PartnerRepository {
   /// C'est ce qui permet au notifier d'ouvrir l'espace partenaire sur ce qu'il
   /// sait déjà, puis de vérifier. Sans elle, il lui faudrait passer par
   /// `restore()`, qui appelle `/api/partner/me` — l'attente qu'on supprime.
+  // ── LA BOÎTE AUX LETTRES DU PARTENAIRE ──────────────────────────────
+  //
+  // Ses propres routes, sous `/api/partner/`, et donc son propre jeton : ce
+  // dépôt le pose seul, depuis son coffre. Passer par le dépôt du personnel
+  // enverrait le jeton du back-office sur une route partenaire — et c'est
+  // exactement le genre de branchement qui finit par envoyer le mauvais.
+  //
+  // La route n'est PAS derrière `partner.approved` : c'est par elle qu'un
+  // compte en attente apprendra son approbation.
+
+  /// Les notifications du partenaire, la plus récente en tête.
+  ///
+  /// Le serveur pagine par trente ; on rend la première page, qui est ce que
+  /// l'écran affiche. Tolérant à la forme : une réponse inattendue rend une
+  /// liste vide plutôt que de faire tomber l'écran.
+  Future<List<Map<String, dynamic>>> notifications() async {
+    final reponse = await _request('GET', '/partner/notifications');
+    final data = reponse is Map ? reponse['data'] : null;
+
+    return data is List
+        ? data.whereType<Map>().map(Map<String, dynamic>.from).toList()
+        : const [];
+  }
+
+  /// Le nombre de non-lues, pour la pastille de l'espace partenaire.
+  Future<int> notificationsNonLues() async {
+    final reponse = await _request('GET', '/partner/notifications/unread-count');
+    final compte = reponse is Map ? reponse['count'] : null;
+
+    return compte is int ? compte : int.tryParse('$compte') ?? 0;
+  }
+
+  Future<void> marquerLu(int id) =>
+      _request('POST', '/partner/notifications/$id/read');
+
+  Future<void> marquerToutLu() =>
+      _request('POST', '/partner/notifications/read-all');
+
   Future<PartnerSessionStockee?> sessionStockee() => _tokens.readSession();
 
   Future<PartnerProfile> getMe() async {

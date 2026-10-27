@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/partner_repository.dart';
 import 'partner_listings_page.dart';
+import 'partner_notifications_page.dart';
 import 'partner_session.dart';
 
 class PartnerAccountPage extends ConsumerStatefulWidget {
@@ -210,6 +211,46 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
             leading: Icon(switch(kind) { PartnerListingKind.vehicles => Icons.directions_car_outlined, PartnerListingKind.parts => Icons.build_outlined, PartnerListingKind.accessories => Icons.shopping_bag_outlined }, size: 32),
             title: Text(kind.label), subtitle: Text(kind == PartnerListingKind.vehicles ? 'Vente et location' : 'Prix, disponibilité et stock'),
             trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => PartnerListingsPage(kind: kind))),
+          ),
+        )),
+        // ── LES DEMANDES CLIENTS TRANSMISES PAR LA BOUTIQUE ───────────────
+        //
+        // C'est le travail que le partenaire vient chercher : une demande
+        // approuvée par le personnel lui parvient ici. La pastille porte le
+        // nombre de non-lues, parce qu'une tuile muette ne se visite pas.
+        //
+        // Elle n'a PAS sa place dans la boucle au-dessus : les trois autres
+        // mènent à un inventaire, celle-ci à une boîte aux lettres.
+        Padding(padding: const EdgeInsets.only(bottom: 14), child: Card(
+          clipBehavior: Clip.antiAlias,
+          child: ListTile(
+            key: const Key('partner-tuile-demandes'),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            leading: const Icon(Icons.campaign_outlined, size: 32),
+            title: const Text('Demandes clients'),
+            subtitle: const Text('Ce que la boutique vous transmet'),
+            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+              Consumer(builder: (context, ref, _) {
+                final compte = ref.watch(partnerUnreadCountProvider).valueOrNull ?? 0;
+
+                // Rien plutôt qu'un « 0 » : une pastille à zéro attire l'œil
+                // sur une absence, et apprend à ne plus la regarder.
+                return compte == 0
+                    ? const SizedBox.shrink()
+                    : Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: Chip(
+                          key: const Key('partner-demandes-pastille'),
+                          visualDensity: VisualDensity.compact,
+                          label: Text('$compte'),
+                        ),
+                      );
+              }),
+              const Icon(Icons.chevron_right),
+            ]),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const PartnerNotificationsPage(),
+            )),
           ),
         )),
         if (session.error != null) _notice(context, session.error!),

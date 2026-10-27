@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class AppNotification {
   final int    id;
-  final String type;          // new_need | need_status_update | vehicle_match | new_order | tip
+  final String type;          // new_need | need_status_update | vehicle_match | new_order | tip | need_broadcast
   final String title;
   final String body;
   final Map<String, dynamic>? data;
@@ -39,6 +39,9 @@ class AppNotification {
     'vehicle_match':      0xFF6A1B9A, // violet
     'new_order':          0xFFE65100, // orange
     'tip':                0xFFF9A825, // jaune/ambre
+    // Une demande client transmise au partenaire : du travail a prendre,
+    // d'ou un vert distinct de celui d'un simple changement de statut.
+    'need_broadcast':     0xFF00695C, // sarcelle
   };
 
   // Getter constant : pas de IconData dynamique → compatible tree-shake release
@@ -48,6 +51,7 @@ class AppNotification {
     'vehicle_match'      => Icons.directions_car,
     'new_order'          => Icons.shopping_bag,
     'tip'                => Icons.lightbulb_outline,
+    'need_broadcast'     => Icons.campaign_outlined,
     _                    => Icons.notifications,
   };
 
