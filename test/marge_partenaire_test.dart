@@ -305,7 +305,7 @@ void main() {
     ]);
 
     expect(
-      find.textContaining('dont 450000 de marge boutique (10 %)'),
+      find.textContaining('dont 450 000 de marge boutique (10 %)'),
       findsOneWidget,
     );
   });

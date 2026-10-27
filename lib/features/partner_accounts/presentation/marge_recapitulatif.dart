@@ -45,7 +45,13 @@ class MargeRecapitulatif extends StatelessWidget {
   static num total(num prixPropose, double pourcentage) =>
       (prixPropose * (1 + pourcentage / 100)).round();
 
-  static String _fmt(num valeur) {
+  /// « 4 950 000 » : chiffres groupes par trois, sans decimale.
+  ///
+  /// Le franc CFA n'a pas de subdivision en usage, et un nombre a sept
+  /// chiffres colles se relit mal — c'est precisement la ou se glisse le
+  /// zero de trop. La carte d'annonce emploie le meme formateur, sans quoi
+  /// le vendeur lirait deux ecritures du meme montant sur deux ecrans.
+  static String formaterMontant(num valeur) {
     final chiffres = valeur.round().toString();
     final tampon = StringBuffer();
 
@@ -84,18 +90,18 @@ class MargeRecapitulatif extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _ligne(context, 'Votre prix', '${_fmt(prix)} FCFA'),
+          _ligne(context, 'Votre prix', '${formaterMontant(prix)} FCFA'),
           const SizedBox(height: 4),
           _ligne(
             context,
             'Marge boutique (${_taux(pourcentage)} %)',
-            '+ ${_fmt(total(prix, pourcentage) - prix)} FCFA',
+            '+ ${formaterMontant(total(prix, pourcentage) - prix)} FCFA',
           ),
           const Divider(height: 14),
           _ligne(
             context,
             libelle,
-            '${_fmt(total(prix, pourcentage))} FCFA',
+            '${formaterMontant(total(prix, pourcentage))} FCFA',
             gras: true,
           ),
           const SizedBox(height: 6),

@@ -7,6 +7,7 @@ import '../data/partner_repository.dart';
 import '../../catalog/data/models/vehicle.dart';
 import '../../vehicles/presentation/pages/vehicle_form_mode.dart';
 import '../../vehicles/presentation/pages/vehicle_register_page.dart';
+import 'marge_recapitulatif.dart';
 import 'partner_listing_form.dart';
 import 'partner_media_page.dart';
 import 'partner_session.dart';
@@ -215,7 +216,21 @@ class _PartnerListingsPageState extends ConsumerState<PartnerListingsPage> {
     final ecart = (total - propose).round();
     final pourcentage = taux == taux.roundToDouble() ? '${taux.round()}' : '$taux';
 
-    return 'dont $ecart de marge boutique ($pourcentage %)';
+    return 'dont ${MargeRecapitulatif.formaterMontant(ecart)} de marge boutique ($pourcentage %)';
+  }
+
+  /// Un montant du serveur, lisible.
+  ///
+  /// Il arrive en « 4950000.00 » — un decimal serialise, parfois en CHAINE :
+  /// c'est la faute qui avait fait tomber le catalogue entier. On le lit donc
+  /// dans les deux formes, et on rend la valeur telle quelle si elle ne se
+  /// lit pas, plutot que d'afficher « 0 » sur un prix qu'on n'a pas compris.
+  String _montant(Object valeur) {
+    final nombre = double.tryParse('$valeur');
+
+    return nombre == null
+        ? '$valeur'
+        : MargeRecapitulatif.formaterMontant(nombre);
   }
 
   Widget _card(Map<String, dynamic> item) {
@@ -241,10 +256,10 @@ class _PartnerListingsPageState extends ConsumerState<PartnerListingsPage> {
         // Le taux vient de l'ANNONCE (`partner_pricing`), fige le jour de son
         // enregistrement, et non du reglage du jour : afficher « marge 30 % »
         // sur un prix calcule a 10 % serait faux.
-        subtitle: Text([if (price != null) '$price ${commercial['currency'] ?? 'FCFA'}',
+        subtitle: Text([if (price != null) '${_montant(price)} ${commercial['currency'] ?? 'FCFA'}',
           ?marge,
           if (stock != null) 'Stock : ${stock['quantity'] ?? '—'}',
-          if (commercial['availability'] == 'rent' || commercial['availability'] == 'both') 'Location : ${commercial['rental_daily_rate'] != null ? '${commercial['rental_daily_rate']} / jour' : '${commercial['rental_monthly_rate']} / mois'}'].join('\n')),
+          if (commercial['availability'] == 'rent' || commercial['availability'] == 'both') 'Location : ${commercial['rental_daily_rate'] != null ? '${_montant(commercial['rental_daily_rate'])} / jour' : '${_montant(commercial['rental_monthly_rate'] ?? 0)} / mois'}'].join('\n')),
         trailing: PopupMenuButton<String>(enabled: !_working, tooltip: 'Gérer cette annonce', onSelected: (action) => _action(item, action), itemBuilder: (_) => [
           const PopupMenuItem(value: 'edit', child: Text('Modifier')),
           const PopupMenuItem(value: 'photos', child: Text('Gérer les photos')),
