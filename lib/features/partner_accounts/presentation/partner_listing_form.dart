@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/partner_repository.dart';
+import 'champs_de_promotion.dart';
 import 'marge_recapitulatif.dart';
 import 'partner_session.dart';
 
@@ -44,6 +45,9 @@ class _PartnerListingFormPageState
   String _partType = 'aftermarket';
   String _partCondition = 'new';
   String _accessoryCategory = 'utilitaire';
+
+  /// La promotion en cours de saisie. Vide = pas de promotion.
+  PromotionSaisie _promotion = const PromotionSaisie();
 
   bool get _part => widget.kind == PartnerListingKind.parts;
   bool get _editing => widget.initialListing != null;
@@ -98,6 +102,17 @@ class _PartnerListingFormPageState
     _categoryId = _id(listing['category_id'] ?? _map(listing['category'])['id']);
     _manufacturerId = _id(listing['manufacturer_id']);
     _donorId = _id(listing['donor_vehicle_id']);
+    // La promotion enregistree, s'il y en a une. Le bloc `deal` n'est rendu
+    // que pendant la fenetre : une promotion finie ne revient donc pas, et
+    // c'est exact — il n'y a plus rien a modifier.
+    final promotion = _map(listing['deal']);
+    if (promotion['price'] != null) {
+      _promotion = PromotionSaisie(
+        prix: num.tryParse('${promotion['price']}'),
+        debut: DateTime.tryParse('${promotion['starts_at']}')?.toLocal(),
+        fin: DateTime.tryParse('${promotion['ends_at']}')?.toLocal(),
+      );
+    }
     _partType = _text(listing['type'] ?? 'aftermarket');
     _partCondition = _text(listing['condition'] ?? 'new');
     _accessoryCategory = _text(
@@ -193,6 +208,21 @@ class _PartnerListingFormPageState
       });
     } else {
       data['category'] = _accessoryCategory;
+    }
+
+    // ── LA PROMOTION NE PART QUE QUAND ELLE EXISTE ────────────────────
+    //
+    // `deal_price` a null RETIRE la promotion, ce qui doit rester possible
+    // sans attendre sa date de fin. Mais a la CREATION, envoyer null sur
+    // une annonce qui n'en a jamais eu ferait partir trois champs vides
+    // pour rien — et le serveur exige les deux bornes des qu'il y a un
+    // prix, donc la distinction compte.
+    if (_promotion.active) {
+      data['deal_price'] = _promotion.prix;
+      data['deal_starts_at'] = _promotion.debut?.toIso8601String();
+      data['deal_ends_at'] = _promotion.fin?.toIso8601String();
+    } else if (_editing) {
+      data['deal_price'] = null;
     }
     setState(() { _saving = true; _saveError = null; });
     try {
@@ -307,6 +337,13 @@ class _PartnerListingFormPageState
                   Text(_editing ? 'Mettez à jour votre annonce.' : 'L’annonce sera créée en brouillon. Vous pourrez ensuite ajouter ses photos et la publier.',
                     style: Theme.of(context).textTheme.bodyMedium),
                   ..._itemFields(references),
+                  ChampsDePromotion(
+                    prixNormal: _number(_salePrice),
+                    plafondPourcentage: ref.watch(partnerSessionProvider)
+                        .profile?.plafondRemisePourcentage ?? 0,
+                    valeur: _promotion,
+                    onChanged: (valeur) => setState(() => _promotion = valeur),
+                  ),
                   _field('Description', _description, maxLines: 4),
                   if (_saveError != null) Semantics(
                     liveRegion: true,

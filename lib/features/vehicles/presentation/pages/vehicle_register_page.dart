@@ -13,6 +13,7 @@ import 'vehicle_form_mode.dart';
 // `partnerRepositoryProvider`, d'ou l'alias.
 import '../../../../features/partner_accounts/data/partner_repository.dart' as espace;
 import '../../../../features/partner_accounts/presentation/marge_recapitulatif.dart';
+import '../../../../features/partner_accounts/presentation/champs_de_promotion.dart' as espace;
 import '../../../../features/partner_accounts/presentation/partner_session.dart' as espace;
 import '../../../../core/api/api_exception.dart';
 import '../../../../shared/presentation/pages/media_upload_page.dart';
@@ -132,6 +133,12 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   /// donc « Origine » vide sur tous les vehicules, et personne ne pouvait la
   /// renseigner autrement qu'en base.
   CountryRef? _paysOrigine;
+
+  /// La promotion en cours de saisie, en mode PARTENAIRE seulement.
+  ///
+  /// Le personnel a sa propre mise en avant, `deal_type`, qui ne touche pas
+  /// au prix. La promotion chiffree est l'outil du vendeur tiers.
+  espace.PromotionSaisie _promotion = const espace.PromotionSaisie();
   final _descriptionCtrl     = TextEditingController();
 
 
@@ -167,6 +174,18 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       // partant à faux, et la charge utile le déclarant désormais
       // explicitement.
       _immatricule = e.isRegistered;
+
+      // La promotion enregistree. Le serveur ne rend ce bloc que pendant
+      // la fenetre : une promotion finie ne revient pas, et c'est exact —
+      // il n'y a plus rien a modifier.
+      final promo = e.deal;
+      if (promo != null) {
+        _promotion = espace.PromotionSaisie(
+          prix: promo.price,
+          debut: promo.startsAt,
+          fin: promo.endsAt,
+        );
+      }
     }
   }
 
@@ -428,6 +447,19 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       // Le bloc import part des qu'il a quelque chose a dire : le compteur,
       // le pays, ou les deux. Il etait conditionne au seul kilometrage, donc
       // un pays choisi sans compteur saisi ne partait pas.
+      // ── LA PROMOTION, EN MODE PARTENAIRE SEULEMENT ──────────────────
+      //
+      // Le serveur refuse `deal_price` au personnel : sa mise en avant est
+      // `deal_type`, qui signale sans chiffrer. Envoyer le champ depuis
+      // l'ecran du personnel vaudrait un 422 sur une annonce par ailleurs
+      // valide.
+      if (widget.mode.estPartenaire && _promotion.active) ...{
+        'deal_price': _promotion.prix,
+        'deal_starts_at': _promotion.debut?.toIso8601String(),
+        'deal_ends_at': _promotion.fin?.toIso8601String(),
+      }
+      else if (widget.mode.estPartenaire && _existing != null)
+        'deal_price': null,
       if (!_immatricule && (mileage != null || _paysOrigine != null))
         'import': {
           'odometer_at_import_km': ?mileage,
@@ -1199,6 +1231,14 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             ),
             const SizedBox(height: 12),
             _marge(_salePriceCtrl),
+            if (widget.mode.estPartenaire)
+              espace.ChampsDePromotion(
+                prixNormal: _parsePrice(_salePriceCtrl.text),
+                plafondPourcentage: ref.watch(espace.partnerSessionProvider)
+                    .profile?.plafondRemisePourcentage ?? 0,
+                valeur: _promotion,
+                onChanged: (valeur) => setState(() => _promotion = valeur),
+              ),
           ],
 
           // Tarifs location

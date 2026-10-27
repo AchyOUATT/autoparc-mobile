@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'promotion.dart';
+
 import 'compatibility_summary.dart';
 import '../../../../shared/models/product_seller.dart';
 
@@ -26,6 +28,11 @@ class Accessory extends Equatable {
   /// recopiée telle quelle, jamais lue ici. `adresseArticle` porte le pourquoi,
   /// y compris celui du repli sur l'adresse nue quand ce champ est nul.
   final String? shareVersion;
+
+  /// La promotion en cours, ou `null`. Voir `Vehicle.deal` : même
+  /// contrat, et même piège sur le sens de `pricing.sellingPrice` —
+  /// prix du jour côté public, prix normal côté vendeur.
+  final Promotion? deal;
 
   /// La photo de couverture, `null` sans photo utilisable. Voir
   /// `Part.coverUrl` : même invariant, et le même défaut corrigé — une
@@ -71,6 +78,7 @@ class Accessory extends Equatable {
     required this.isActive,
     this.seller,
     this.shareVersion,
+    this.deal,
     this.coverUrl,
     this.photoUrls = const [],
     this.fitments,
@@ -119,6 +127,7 @@ class Accessory extends Equatable {
       // `?? ''` : « absent » et « vide » doivent arriver distinctement à
       // `adresseArticle`, qui les traite déjà tous les deux.
       shareVersion:   json['share_version']   as String?,
+      deal:           Promotion.fromJson(json['deal']),
       coverUrl:       photos.isEmpty ? null : photos.first,
       photoUrls:      photos,
       fitments: (json['fitments'] as List?)

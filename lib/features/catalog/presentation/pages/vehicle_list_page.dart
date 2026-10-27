@@ -9,6 +9,8 @@ import '../providers/catalog_providers.dart';
 import '../../../../shared/models/paged_state.dart';
 import '../libelles_vehicule.dart';
 import '../vehicle_price.dart';
+import '../promotion_affichage.dart';
+import '../../data/models/promotion.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/bande_filtres.dart';
 import '../../../../core/widgets/bouton_flottant_effacable.dart';
@@ -1176,7 +1178,7 @@ class _VehicleCardState extends State<VehicleCard> {
             overflow: TextOverflow.ellipsis,
           );
 
-    final prix = _PriceRow(commercial: c);
+    final prix = _PriceRow(commercial: c, promotion: vehicle.deal);
 
     // ── CE QUE LA CARTE PORTE, ET CE QUI EST PARTI À LA FICHE ─────────────
     //
@@ -1590,7 +1592,16 @@ class _PrixAjuste extends StatelessWidget {
 /// Le prix, et l'étiquette d'affaire qui le qualifie.
 class _PriceRow extends StatelessWidget {
   final VehicleCommercial commercial;
-  const _PriceRow({required this.commercial});
+
+  /// La promotion en cours, ou null.
+  ///
+  /// Le prix affiché porte DÉJÀ la remise : sur une fiche publique,
+  /// `commercial.salePrice` est le prix du jour. Ce qui manque est ce
+  /// qu'il remplace — sans le prix barré ni la pastille, l'acheteur ne
+  /// voit qu'un prix, et la promotion ne se remarque pas.
+  final Promotion? promotion;
+
+  const _PriceRow({required this.commercial, this.promotion});
 
   @override
   Widget build(BuildContext context) {
@@ -1625,8 +1636,20 @@ class _PriceRow extends StatelessWidget {
       );
     }
 
-    final affaire = commercial.dealLabel;
-    if (affaire == null) return prix;
+    final promo = promotion;
+    final enPromotion = promo != null && !promo.finie;
+
+    // ── LE LIBELLE S'EFFACE DEVANT LA PASTILLE ────────────────────────
+    //
+    // Le serveur pose `deal_label` a « Promo -20 % » sur une annonce
+    // promue, et c'est pour l'application DEJA PUBLIEE : elle ne connait
+    // pas le bloc `deal` et n'affiche la promotion que par ce libelle.
+    //
+    // Cette version-ci a mieux — le prix barre et la remise — et afficher
+    // les deux dirait deux fois « -20 % » sur une carte de 163 points.
+    final affaire = enPromotion ? null : commercial.dealLabel;
+
+    if (affaire == null && !enPromotion) return prix;
 
     // `Wrap` et non `Row` : chaque enfant y est mesuré sur toute la largeur
     // disponible. Le prix garde donc ses chiffres, et l'étiquette passe
@@ -1647,6 +1670,10 @@ class _PriceRow extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         prix,
+        // Le prix barré AVANT la pastille : on lit « 4 000 000, au lieu de
+        // 5 000 000, -20 % », dans l'ordre où la phrase se dit.
+        if (enPromotion) PrixNormalBarre(promotion: promo),
+        if (enPromotion) PastillePromotion(promotion: promo),
         // Couleur prise au `ColorScheme`, et c'est le fond de l'affaire : en
         // badge sur la photo, cette étiquette était en 0xFFB26A00, soit la
         // teinte exacte du « À louer » de `_AvailabilityBadge`. Un ocre écrit
@@ -1658,7 +1685,7 @@ class _PriceRow extends StatelessWidget {
         // rôles d'accent c'est le seul qui ne soit ni le `primary` du prix ni
         // le gris des lignes secondaires. Son contraste est mesuré dans les
         // deux modes — voir `vehicle_card_test.dart`.
-        Text(
+        if (affaire != null) Text(
           affaire,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
             color: cs.tertiary,

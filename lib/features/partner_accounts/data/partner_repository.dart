@@ -55,6 +55,18 @@ class PartnerProfile {
   double get margePourcentage =>
       double.tryParse('${boutique['marge_pourcentage'] ?? 0}') ?? 0;
 
+  /// La remise maximale qu'une promotion peut porter, en pourcentage.
+  ///
+  /// Le serveur reste l'autorité : c'est lui qui refuse. Mais le vendeur doit
+  /// lire « au-delà de 40 %, ce n'est pas accepté » PENDANT qu'il compose, et
+  /// non recevoir un refus après avoir tout rempli.
+  ///
+  /// Zéro quand la clé manque — session enregistrée avant cette version, ou
+  /// serveur pas encore déployé : le formulaire n'annonce alors aucun plafond
+  /// plutôt qu'un chiffre inventé, et c'est le serveur qui tranchera.
+  double get plafondRemisePourcentage =>
+      double.tryParse('${boutique['promotion_remise_max_pourcentage'] ?? 0}') ?? 0;
+
   String get companyName => account['company_name']?.toString() ?? '';
   String get contactName => account['contact_name']?.toString() ?? '';
 

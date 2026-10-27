@@ -12,6 +12,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../catalog/data/models/part.dart';
 import '../../../catalog/data/models/vehicle.dart';
 import '../../../catalog/presentation/vehicle_price.dart';
+import '../../../catalog/presentation/promotion_affichage.dart';
 import '../../../garage/data/models/owned_vehicle.dart';
 import '../../../garage/presentation/providers/garage_provider.dart';
 import '../../../garage/presentation/widgets/engine_prompt.dart';
@@ -867,6 +868,16 @@ class _DealTile extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // LA BANDE DES BONNES AFFAIRES EST L ENDROIT OU UNE
+                    // PROMOTION DOIT SE VOIR. Le prix affiche porte deja la
+                    // remise ; la pastille dit qu il s agit d une remise, et
+                    // de combien. Sans elle la tuile montre un prix comme un
+                    // autre dans une bande censee ne porter que des offres.
+                    if (vehicle.deal != null && !vehicle.deal!.finie)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: PastillePromotion(promotion: vehicle.deal),
+                      ),
                   ],
                 ),
               ),

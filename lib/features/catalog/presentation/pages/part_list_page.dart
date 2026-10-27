@@ -9,6 +9,7 @@ import '../providers/catalog_providers.dart';
 import '../widgets/niveau_categories.dart';
 import '../../../../shared/models/paged_state.dart';
 import '../../../../core/utils/currency_format.dart';
+import '../promotion_affichage.dart';
 import '../../../../core/widgets/bande_filtres.dart';
 import '../../../../core/widgets/bouton_flottant_effacable.dart';
 import '../../../../core/widgets/catalog_image.dart';
@@ -590,13 +591,28 @@ class _PartCardState extends ConsumerState<_PartCard> {
                   // dessus.
                   LigneCompatibilite(resume: part.compatibility),
                   const SizedBox(height: 6),
-                  Text(
-                    formatXofShort(part.pricing.sellingPrice),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: cs.primary,
-                      fontSize: 13,
-                    ),
+                  // ── LE PRIX AFFICHE PORTE DEJA LA REMISE ────────────────
+                  //
+                  // Sur une fiche publique, `pricing.sellingPrice` est le
+                  // prix du jour : le serveur y a substitue le prix
+                  // promotionnel. Ce qui manque est ce qu il remplace —
+                  // sans le prix barre ni la pastille, l acheteur ne voit
+                  // qu un prix et la promotion ne se remarque pas.
+                  Wrap(
+                    spacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        formatXofShort(part.pricing.sellingPrice),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: cs.primary,
+                          fontSize: 13,
+                        ),
+                      ),
+                      PrixNormalBarre(promotion: part.deal),
+                      PastillePromotion(promotion: part.deal),
+                    ],
                   ),
                   if (!isStaff) ...[
                     const SizedBox(height: 4),

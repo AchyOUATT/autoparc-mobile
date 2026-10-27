@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import 'promotion.dart';
+
 import '../../../../shared/models/product_seller.dart';
 
 // Laravel sérialise decimal:2 en String ("3500000.00") — ces helpers acceptent les deux.
@@ -115,6 +117,19 @@ class Vehicle extends Equatable {
   /// `publishedAt`, deux champs plus haut, a fait payer à ce dépôt.
   final String? shareVersion;
 
+  /// La promotion en cours, ou `null`.
+  ///
+  /// Le serveur ne rend ce bloc que pendant la fenêtre : passée la date de
+  /// fin, il vaut `null` et `commercial.salePrice` reprend le prix normal.
+  /// L'application n'a donc rien à faire expirer.
+  ///
+  /// Attention au sens de `commercial.salePrice` : sur une fiche PUBLIQUE
+  /// il porte déjà le prix du jour, promotion comprise. Dans l'espace du
+  /// vendeur il porte son prix NORMAL, et c'est `deal.price` qui porte la
+  /// promotion — sans quoi son formulaire enregistrerait la remise comme
+  /// prix habituel.
+  final Promotion? deal;
+
   final List<VehicleFeature> features;
 
   /// Kilométrage. L'API le résout côté serveur : compteur de la carte grise
@@ -189,6 +204,7 @@ class Vehicle extends Equatable {
     this.coverUrl,
     this.publishedAt,
     this.shareVersion,
+    this.deal,
     this.features = const [],
     this.mileageKm,
     this.transmission,
@@ -293,6 +309,7 @@ class Vehicle extends Equatable {
       // marqueur est recopié. « Absent » et « vide » doivent arriver
       // distinctement à `adresseArticle`, qui les traite déjà tous les deux.
       shareVersion:       json['share_version'] as String?,
+      deal:               Promotion.fromJson(json['deal']),
       features:           (json['features'] as List?)
                               ?.map((f) => VehicleFeature.fromJson(f as Map<String, dynamic>))
                               .toList() ??

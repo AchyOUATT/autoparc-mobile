@@ -8,6 +8,8 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/models/vehicle.dart';
+import '../../data/models/promotion.dart';
+import '../promotion_affichage.dart';
 import '../providers/catalog_providers.dart';
 import '../../../../core/utils/contact_info.dart';
 import '../../../../core/utils/currency_format.dart';
@@ -325,7 +327,7 @@ class _VehicleDetailView extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ── Prix ───────────────────────────────────────
-                  _PriceSection(commercial: c),
+                  _PriceSection(commercial: c, promotion: vehicle.deal),
 
                   // Le badge suit le prix : c'est là qu'il pèse dans la
                   // décision. Il annonce son propre décompte, pour ne pas
@@ -625,7 +627,12 @@ class _FullOptionBadge extends StatelessWidget {
 
 class _PriceSection extends StatelessWidget {
   final VehicleCommercial commercial;
-  const _PriceSection({required this.commercial});
+
+  /// La promotion en cours, ou null. `commercial.salePrice` porte déjà le
+  /// prix du jour : ce bloc ajoute ce qu'il remplace et jusqu'à quand.
+  final Promotion? promotion;
+
+  const _PriceSection({required this.commercial, this.promotion});
 
   @override
   Widget build(BuildContext context) {
@@ -693,6 +700,17 @@ class _PriceSection extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (promotion != null && !promotion!.finie) ...[
+                  const SizedBox(width: 8),
+                  // Le prix barre et la remise, cote a cote avec le prix du
+                  // jour : c est la seule facon de lire l offre d un coup.
+                  PrixNormalBarre(
+                    promotion: promotion,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(width: 6),
+                  PastillePromotion(promotion: promotion),
+                ],
                 if (commercial.priceNegotiable) ...[
                   const SizedBox(width: 8),
                   Chip(
