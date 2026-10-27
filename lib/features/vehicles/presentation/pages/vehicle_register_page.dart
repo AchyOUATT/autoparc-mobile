@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/models/catalog_refs.dart';
 import '../../data/models/vehicle_classification_selection.dart';
 import '../providers/vehicle_refs_provider.dart';
+import '../widgets/vehicle_reference_dropdown.dart';
 import '../../data/vehicle_admin_repository.dart';
 import '../../../../core/api/api_exception.dart';
 import '../../../../shared/presentation/pages/media_upload_page.dart';
@@ -650,7 +651,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       content: Column(
         children: [
           // Marque
-          _RefDropdown<BrandRef>(
+          VehicleReferenceDropdown<BrandRef>(
             label: 'Marque *',
             items: refs.brands.where((b) => b.isActive || b.id == _brand?.id).toList(),
             value: _brand,
@@ -665,7 +666,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           const SizedBox(height: 12),
 
           // Modèle
-          _RefDropdown<ModelRef>(
+          VehicleReferenceDropdown<ModelRef>(
             label: 'Modèle *',
             items: models,
             value: _model,
@@ -701,7 +702,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
           // Finition (optionnel)
           if (trims.isNotEmpty) ...[
-            _RefDropdown<TrimRef>(
+            VehicleReferenceDropdown<TrimRef>(
               label: 'Finition',
               items: trims,
               value: _trim,
@@ -733,7 +734,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           const SizedBox(height: 12),
 
           // Couleur
-          _RefDropdown<ColorRef>(
+          VehicleReferenceDropdown<ColorRef>(
             label: 'Couleur',
             items: refs.colors,
             value: _color,
@@ -809,7 +810,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     content: Column(
       children: [
         // Motorisation
-        _RefDropdown<EngineTypeRef>(
+        VehicleReferenceDropdown<EngineTypeRef>(
           label: 'Type de motorisation *',
           items: refs.engineTypes,
           value: _engineType,
@@ -839,7 +840,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         const SizedBox(height: 16),
 
         // Transmission séquentielle
-        _RefDropdown<DrivetrainRef>(
+        VehicleReferenceDropdown<DrivetrainRef>(
           label: 'Transmission des roues',
           items: refs.drivetrains,
           value: _drivetrain,
@@ -1146,7 +1147,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
           // ── Localisation / agence ────────────────────────────────
           if (refs.locations.isNotEmpty) ...[
-            _RefDropdown<LocationRef>(
+            VehicleReferenceDropdown<LocationRef>(
               label: 'Agence / Showroom',
               items: refs.locations,
               value: _selectedLocation,
@@ -1232,47 +1233,6 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 // ════════════════════════════════════════════════════════════════════
 // Widgets génériques réutilisables dans le formulaire
 // ════════════════════════════════════════════════════════════════════
-
-class _RefDropdown<T> extends StatelessWidget {
-  final String label;
-  final List<T> items;
-  final T? value;
-  final String Function(T) itemLabel;
-  final Widget? Function(T)? itemLeading;
-  final void Function(T?) onChanged;
-  final String? Function(T?)? validator;
-  final bool enabled;
-
-  const _RefDropdown({
-    required this.label,
-    required this.items,
-    required this.value,
-    required this.itemLabel,
-    required this.onChanged,
-    this.itemLeading,
-    this.validator,
-    this.enabled = true,
-  });
-
-  @override
-  Widget build(BuildContext context) => DropdownButtonFormField<T>(
-    value: value,
-    decoration: InputDecoration(labelText: label),
-    hint: Text(enabled ? 'Sélectionner…' : 'Choisir d\'abord la valeur précédente'),
-    isExpanded: true,
-    items: items.map((item) {
-      final leading = itemLeading?.call(item);
-      return DropdownMenuItem<T>(
-        value: item,
-        child: leading != null
-            ? Row(children: [leading, const SizedBox(width: 8), Expanded(child: Text(itemLabel(item), overflow: TextOverflow.ellipsis))])
-            : Text(itemLabel(item), overflow: TextOverflow.ellipsis),
-      );
-    }).toList(),
-    onChanged: enabled ? onChanged : null,
-    validator: validator,
-  );
-}
 
 // ── Contrôles du Stepper ────────────────────────────────────────────
 

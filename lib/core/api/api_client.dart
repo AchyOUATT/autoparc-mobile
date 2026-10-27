@@ -290,6 +290,22 @@ class ApiClient {
   }
 
   // ── Session Sanctum (staff) ───────────────────────────────────────
+  /// Byte uploads also work on the web preview, where XFile.path is a blob URL.
+  Future<Map<String, dynamic>> uploadBytes(
+    String path, {required List<MapEntry<String, List<int>>> photos}
+  ) async {
+    try {
+      final form = FormData();
+      for (final photo in photos) {
+        form.files.add(MapEntry('photos[]', MultipartFile.fromBytes(photo.value, filename: photo.key)));
+      }
+      final result = await _dio.post<Map<String, dynamic>>(path, data: form,
+          options: Options(contentType: 'multipart/form-data'));
+      return result.data!;
+    } on DioException catch (e) {
+      throw ApiException.fromDioError(e);
+    }
+  }
 
   /// Enregistre la session complete, ET tient l'ancienne cle a jour.
   ///

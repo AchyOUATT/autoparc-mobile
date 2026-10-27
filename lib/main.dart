@@ -55,6 +55,9 @@ import 'features/partners/data/models/partner.dart';
 import 'features/partners/presentation/pages/partner_list_page.dart';
 import 'features/partners/presentation/pages/partner_form_page.dart';
 import 'features/partner_accounts/partner_accounts.dart';
+import 'features/private_sales/data/private_listing_repository.dart';
+import 'features/private_sales/presentation/private_listings_page.dart';
+import 'features/private_sales/presentation/private_listing_form.dart';
 import 'features/partner_accounts/presentation/partner_applications_page.dart';
 import 'core/providers/shell_scaffold_provider.dart';
 import 'core/local/catalog_local_cache.dart';
@@ -125,6 +128,12 @@ Future<void> main() async {
 GoRouter _buildRouter({required bool onboardingDone}) => GoRouter(
   initialLocation: onboardingDone ? '/' : '/onboarding',
   routes: [
+    if (privateSalesEnabled) ...[
+      GoRoute(path: '/private-listings', builder: (_, __) => const PrivateListingsPage()),
+      GoRoute(path: '/my-listings', builder: (_, __) => const PrivateListingsPage(mode: PrivateListingMode.mine)),
+      GoRoute(path: '/private-listing-reviews', builder: (_, __) => const PrivateListingsPage(mode: PrivateListingMode.review)),
+      GoRoute(path: '/sell', builder: (_, state) => PrivateListingForm(vehicle: state.extra is OwnedVehicle ? state.extra as OwnedVehicle : null)),
+    ],
     GoRoute(
       path: '/onboarding',
       builder: (_, __) => const OnboardingPage(),
@@ -776,6 +785,10 @@ class AppDrawer extends ConsumerWidget {
           // CLIENT FIREBASE
           // ════════════════════════════════════════════════════════
           if (auth.isClient) ...[
+            if (privateSalesEnabled) _DrawerTile(
+              icon: Icons.sell_outlined, label: 'Mes annonces',
+              onTap: () { _close(context); context.push('/my-listings'); },
+            ),
             _DrawerTile(
               icon: Icons.garage_outlined,
               label: l10n.shellMyGarage,
@@ -817,6 +830,10 @@ class AppDrawer extends ConsumerWidget {
           // ANONYME
           // ════════════════════════════════════════════════════════
           if (!auth.isAuthenticated) ...[
+            if (privateSalesEnabled) _DrawerTile(
+              icon: Icons.directions_car_outlined, label: 'Voitures de particuliers',
+              onTap: () { _close(context); context.push('/private-listings'); },
+            ),
             _DrawerTile(
               icon: Icons.login,
               label: l10n.shellSignIn,
