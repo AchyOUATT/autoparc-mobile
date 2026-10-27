@@ -54,7 +54,23 @@ class VehicleRegisterPage extends ConsumerStatefulWidget {
 }
 
 class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
-  final _formKey = GlobalKey<FormState>();
+  /// Un formulaire PAR ETAPE, et non un seul pour les quatre.
+  ///
+  /// ── CE QUE LE `Stepper` GARDE DANS L'ARBRE ───────────────────────────
+  ///
+  /// Toutes les étapes, pas seulement la courante : leur contenu est monté
+  /// puis masqué. Mesuré — `vehicle_classification_test.dart` atteint les
+  /// champs de tarif de l'étape 3 alors que la page est sur l'étape 0.
+  ///
+  /// Un `Form` unique autour du `Stepper` validerait donc les QUATRE étapes à
+  /// la fois : avancer de la première exigerait un prix de vente qui n'a même
+  /// pas encore été demandé. C'est pourquoi la validation par champ n'était
+  /// branchée nulle part, et pourquoi dix `validator:` ne s'exécutaient
+  /// jamais — voir `_validerLEtape`.
+  ///
+  /// Une clef par étape rend chaque règle vérifiable au bon moment, et le
+  /// message apparaît SOUS le champ fautif au lieu d'une bannière qui passe.
+  final _clefsDEtape = List.generate(4, (_) => GlobalKey<FormState>());
   int _step = 0;
   bool _submitting = false;
   bool _refsInitialized = false; // pré-sélection refs (mode édition)
@@ -203,30 +219,43 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
   // ── Validation par étape ──────────────────────────────────────────
 
-  /// Retourne un message d'erreur si l'étape courante est incomplète, null sinon.
-  String? _validateCurrentStep() {
-    switch (_step) {
-      case 1: // Identité
-        if (_brand == null) return 'Veuillez sélectionner une marque.';
-        if (_model == null) return 'Veuillez sélectionner un modèle.';
-        if (_yearCtrl.text.trim().isEmpty) return 'Veuillez saisir l\'année de fabrication.';
-        final y = int.tryParse(_yearCtrl.text);
-        if (y == null || y < 1950 || y > DateTime.now().year) {
-          return 'Année invalide (1950–${DateTime.now().year}).';
-        }
-      case 2: // Technique
-        if (_engineType == null) return 'Veuillez sélectionner le type de motorisation.';
-      case 3: // Commercial
-        final forSale = _availability == 'sale' || _availability == 'both';
-        final forRent = _availability == 'rent' || _availability == 'both';
-        if (forSale && _salePriceCtrl.text.trim().isEmpty) {
-          return 'Le prix de vente est obligatoire.';
-        }
-        if (forRent && _rentalRatesMissing) {
-          return 'Saisissez un tarif journalier ou mensuel.';
-        }
+  /// Les règles d'une étape, telles que ses champs les déclarent.
+  ///
+  /// ── CE QUE CECI REMPLACE, ET POURQUOI ────────────────────────────────
+  ///
+  /// Une liste de conditions écrite à la main, qui redisait ce que les
+  /// `validator:` des champs disaient déjà — marque, modèle, année,
+  /// motorisation, prix de vente, tarifs de location. Deux formulations de la
+  /// même règle, dont une seule s'exécutait.
+  ///
+  /// Et elle en OUBLIAIT deux, qui ne protégeaient donc rien :
+  ///
+  ///   — « Carrosserie * » portait son astérisque sans être exigée. Un
+  ///     véhicule enregistré sans carrosserie prend le défaut de la colonne,
+  ///     et le filtre public `?body_style=` ne le trouve jamais — ou le range
+  ///     sous une carrosserie que personne n'a choisie.
+  ///   — « Le VIN doit faire exactement 17 caractères » n'était jamais
+  ///     appliqué : un VIN de cinq caractères partait au serveur.
+  ///
+  /// Les règles vivent désormais là où elles s'affichent : sous le champ.
+  bool _validerLEtape(int etape) =>
+      _clefsDEtape[etape].currentState?.validate() ?? true;
+
+  /// La première étape qui ne passe pas, ou -1 si toutes passent.
+  ///
+  /// `validate()` est appelé sur CHACUNE, et non interrompu à la première qui
+  /// échoue : chaque champ fautif doit porter son message, sinon le vendeur
+  /// corrige la première erreur pour en découvrir une seconde.
+  int _premiereEtapeFautive() {
+    var premiere = -1;
+
+    for (var etape = 0; etape < _clefsDEtape.length; etape++) {
+      if (!_validerLEtape(etape) && premiere == -1) {
+        premiere = etape;
+      }
     }
-    return null;
+
+    return premiere;
   }
 
   void _snackError(String msg) {
@@ -241,21 +270,29 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
   /// Appelé par le bouton Suivant / Enregistrer du Stepper.
   Future<void> _onContinue(CatalogRefs refs) async {
-    // Avancer d'une étape → valider uniquement l'étape courante
+    // Avancer d'une étape → n'éprouver que l'étape courante. Les suivantes
+    // sont montées mais vides, et les exiger ici interdirait d'avancer.
     if (_step < 3) {
-      final error = _validateCurrentStep();
-      if (error != null) {
-        _snackError(error);
-        return;
-      }
-      setState(() => _step++);
+      if (_validerLEtape(_step)) setState(() => _step++);
+
       return;
     }
 
-    // Dernière étape → valider le dernier bloc puis soumettre
-    final error = _validateCurrentStep();
-    if (error != null) {
-      _snackError(error);
+    // ── AU MOMENT D'ENREGISTRER, TOUT EST EPROUVE ─────────────────────
+    //
+    // Et non la seule dernière étape. Un vendeur peut revenir en arrière,
+    // vider un champ, puis repartir en avant : la page ne repasse alors par
+    // aucune validation de l'étape touchée.
+    //
+    // Quand une étape antérieure ne passe pas, on y RETOURNE : son message
+    // est sous un champ qui n'est pas à l'écran, et le laisser là reviendrait
+    // à refuser sans rien dire.
+    final fautive = _premiereEtapeFautive();
+
+    if (fautive != -1) {
+      setState(() => _step = fautive);
+      _snackError('Il manque quelque chose à l\'étape ${fautive + 1}.');
+
       return;
     }
 
@@ -603,24 +640,23 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 700),
-        child: Form(
-          key: _formKey,
-          child: Stepper(
-            currentStep: _step,
-            type: StepperType.vertical,
-            onStepContinue: () => _onContinue(refs),
-            onStepCancel: () {
-              if (_step > 0) setState(() => _step--);
-            },
-            controlsBuilder: (context, details) =>
-                _StepControls(details: details, isLast: _step == 3, submitting: _submitting),
-            steps: [
-              _buildStep1(),
-              _buildStep2(refs),
-              _buildStep3(refs),
-              _buildStep4(refs),
-            ],
-          ),
+        // PAS de `Form` ici : il envelopperait les quatre étapes, que le
+        // `Stepper` monte toutes. Chacune porte le sien — voir `_clefsDEtape`.
+        child: Stepper(
+          currentStep: _step,
+          type: StepperType.vertical,
+          onStepContinue: () => _onContinue(refs),
+          onStepCancel: () {
+            if (_step > 0) setState(() => _step--);
+          },
+          controlsBuilder: (context, details) =>
+              _StepControls(details: details, isLast: _step == 3, submitting: _submitting),
+          steps: [
+            _buildStep1(),
+            _buildStep2(refs),
+            _buildStep3(refs),
+            _buildStep4(refs),
+          ],
         ),
       ),
     );
@@ -636,143 +672,146 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       _         => 'Particulier',
     }),
     isActive: _step >= 0,
-    content: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── Type de véhicule ──────────────────────────────────────
-        Text(
-          'Catégorie',
-          style: Theme.of(context).textTheme.bodySmall
-              ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-        ),
-        const SizedBox(height: 8),
-        _ChoiceGroup<String>(
-          options: const [
-            (value: 'passenger', label: 'Particulier'),
-            (value: 'utility',   label: 'Utilitaire'),
-            (value: 'heavy',     label: 'Poids lourd'),
-          ],
-          selected: _vehicleType,
-          onChanged: (v) => setState(() => _vehicleType = v),
-        ),
-        const SizedBox(height: 16),
-
-        // ── Carrosserie ───────────────────────────────────────────
-        DropdownButtonFormField<String>(
-          value: _bodyStyle,
-          // isExpanded, comme tous les autres menus de l'application : sans
-          // lui, le menu prend la largeur de son item le plus long —
-          // « Citadine / Hayon » ici — et deborde sur un petit ecran.
-          isExpanded: true,
-          decoration: const InputDecoration(
-            labelText: 'Carrosserie *',
-            hintText: 'Berline, SUV, Pickup…',
-            prefixIcon: Icon(Icons.directions_car_outlined),
+    content: Form(
+      key: _clefsDEtape[0],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Type de véhicule ──────────────────────────────────────
+          Text(
+            'Catégorie',
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
-          items: const [
-            DropdownMenuItem(value: 'sedan',       child: Text('Berline')),
-            DropdownMenuItem(value: 'hatchback',   child: Text('Citadine / Hayon')),
-            DropdownMenuItem(value: 'suv',         child: Text('SUV / 4×4')),
-            DropdownMenuItem(value: 'estate',      child: Text('Break')),
-            DropdownMenuItem(value: 'coupe',       child: Text('Coupé')),
-            DropdownMenuItem(value: 'convertible', child: Text('Cabriolet')),
-            DropdownMenuItem(value: 'pickup',      child: Text('Pickup')),
-            DropdownMenuItem(value: 'van',         child: Text('Fourgonnette')),
-            DropdownMenuItem(value: 'minibus',     child: Text('Minibus')),
-            DropdownMenuItem(value: 'bus',         child: Text('Bus / Car')),
-            DropdownMenuItem(value: 'truck',       child: Text('Camion')),
-            DropdownMenuItem(value: 'other',       child: Text('Autre')),
-          ],
-          onChanged: (v) => setState(() => _bodyStyle = v),
-          validator: (v) => v == null ? 'Sélectionne un type de carrosserie' : null,
-        ),
-        const SizedBox(height: 16),
-
-        // ── VIN ───────────────────────────────────────────────────
-        TextFormField(
-          controller: _vinCtrl,
-          decoration: const InputDecoration(
-            labelText: 'VIN (optionnel)',
-            hintText: 'WVWZZZ1KZ8W000001',
-            helperText: '17 caractères — numéro de châssis international',
-            prefixIcon: Icon(Icons.qr_code_2),
+          const SizedBox(height: 8),
+          _ChoiceGroup<String>(
+            options: const [
+              (value: 'passenger', label: 'Particulier'),
+              (value: 'utility',   label: 'Utilitaire'),
+              (value: 'heavy',     label: 'Poids lourd'),
+            ],
+            selected: _vehicleType,
+            onChanged: (v) => setState(() => _vehicleType = v),
           ),
-          maxLength: 17,
-          textCapitalization: TextCapitalization.characters,
-          validator: (v) {
-            if (v != null && v.isNotEmpty && v.length != 17) {
-              return 'Le VIN doit faire exactement 17 caractères.';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 4),
-
-        // ── Immatriculation ───────────────────────────────────────
-        //
-        // Le commutateur d'abord, la plaque ensuite : c'est l'ordre dans
-        // lequel on sait les choses. Le statut décide de la suite du
-        // formulaire — le pays d'origine n'est demandé que pour un importé,
-        // et le kilométrage ne part pas au même endroit.
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          secondary: const Icon(Icons.assignment_turned_in_outlined),
-          title: const Text('Véhicule immatriculé'),
-          subtitle: Text(
-            _immatricule
-                ? 'Déjà immatriculé — la plaque peut être ajoutée plus tard.'
-                : 'Importé, pas encore immatriculé ici.',
-          ),
-          value: _immatricule,
-          onChanged: (v) => setState(() => _immatricule = v),
-        ),
-
-        // ── CE QUE DECOCHER SUPPRIME, DIT AVANT L'ENREGISTREMENT ──────
-        //
-        // Le serveur ecrit le bloc qui correspond au statut, et quand il
-        // ecrit un bloc IMPORT il SUPPRIME le carnet d'immatriculation
-        // (`VehicleController::syncTypeSpecificDetails` : `if (Unregistered
-        // && ! empty($data['import'])) { … registrationDetail()?->delete();
-        // }`).
-        //
-        // Or le bloc `import` part des que ce formulaire a quelque chose a y
-        // mettre : un kilometrage OU un pays d'origine. Decocher puis
-        // choisir un pays suffit donc a effacer les informations
-        // d'immatriculation d'un vehicule qui en avait — sans qu'aucun ecran
-        // ne l'ait annonce.
-        //
-        // Et la bascule change le SENS du compteur : le kilometrage d'un
-        // vehicule immatricule et le compteur au moment de l'import ne
-        // mesurent pas la meme chose. D'ou « ressaisissez ».
-        if (_existing?.isRegistered == true && !_immatricule)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              'Ce véhicule est enregistré comme immatriculé. En le déclarant '
-              'importé, ses informations d’immatriculation seront supprimées. '
-              'Ressaisissez le kilométrage : il ne mesure pas la même chose '
-              'pour un véhicule immatriculé et pour un import.',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+          const SizedBox(height: 16),
+  
+          // ── Carrosserie ───────────────────────────────────────────
+          DropdownButtonFormField<String>(
+            value: _bodyStyle,
+            // isExpanded, comme tous les autres menus de l'application : sans
+            // lui, le menu prend la largeur de son item le plus long —
+            // « Citadine / Hayon » ici — et deborde sur un petit ecran.
+            isExpanded: true,
+            decoration: const InputDecoration(
+              labelText: 'Carrosserie *',
+              hintText: 'Berline, SUV, Pickup…',
+              prefixIcon: Icon(Icons.directions_car_outlined),
             ),
+            items: const [
+              DropdownMenuItem(value: 'sedan',       child: Text('Berline')),
+              DropdownMenuItem(value: 'hatchback',   child: Text('Citadine / Hayon')),
+              DropdownMenuItem(value: 'suv',         child: Text('SUV / 4×4')),
+              DropdownMenuItem(value: 'estate',      child: Text('Break')),
+              DropdownMenuItem(value: 'coupe',       child: Text('Coupé')),
+              DropdownMenuItem(value: 'convertible', child: Text('Cabriolet')),
+              DropdownMenuItem(value: 'pickup',      child: Text('Pickup')),
+              DropdownMenuItem(value: 'van',         child: Text('Fourgonnette')),
+              DropdownMenuItem(value: 'minibus',     child: Text('Minibus')),
+              DropdownMenuItem(value: 'bus',         child: Text('Bus / Car')),
+              DropdownMenuItem(value: 'truck',       child: Text('Camion')),
+              DropdownMenuItem(value: 'other',       child: Text('Autre')),
+            ],
+            onChanged: (v) => setState(() => _bodyStyle = v),
+            validator: (v) => v == null ? 'Sélectionne un type de carrosserie' : null,
           ),
-        TextFormField(
-          controller: _plateCtrl,
-          decoration: const InputDecoration(
-            labelText: 'Plaque d\'immatriculation (optionnel)',
-            hintText: 'Ex. : AA 1234 BF',
-            prefixIcon: Icon(Icons.badge_outlined),
+          const SizedBox(height: 16),
+  
+          // ── VIN ───────────────────────────────────────────────────
+          TextFormField(
+            controller: _vinCtrl,
+            decoration: const InputDecoration(
+              labelText: 'VIN (optionnel)',
+              hintText: 'WVWZZZ1KZ8W000001',
+              helperText: '17 caractères — numéro de châssis international',
+              prefixIcon: Icon(Icons.qr_code_2),
+            ),
+            maxLength: 17,
+            textCapitalization: TextCapitalization.characters,
+            validator: (v) {
+              if (v != null && v.isNotEmpty && v.length != 17) {
+                return 'Le VIN doit faire exactement 17 caractères.';
+              }
+              return null;
+            },
           ),
-          textCapitalization: TextCapitalization.characters,
-          // Saisir une plaque déclare le véhicule immatriculé — c'est le sens
-          // courant, et ça évite de demander deux fois la même chose. Le
-          // décochage reste possible : un importé peut porter sa plaque
-          // d'origine.
-          onChanged: (v) {
-            final saisie = v.trim().isNotEmpty;
-            if (saisie && !_immatricule) setState(() => _immatricule = true);
-          },
-        ),
-      ],
+          const SizedBox(height: 4),
+  
+          // ── Immatriculation ───────────────────────────────────────
+          //
+          // Le commutateur d'abord, la plaque ensuite : c'est l'ordre dans
+          // lequel on sait les choses. Le statut décide de la suite du
+          // formulaire — le pays d'origine n'est demandé que pour un importé,
+          // et le kilométrage ne part pas au même endroit.
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.assignment_turned_in_outlined),
+            title: const Text('Véhicule immatriculé'),
+            subtitle: Text(
+              _immatricule
+                  ? 'Déjà immatriculé — la plaque peut être ajoutée plus tard.'
+                  : 'Importé, pas encore immatriculé ici.',
+            ),
+            value: _immatricule,
+            onChanged: (v) => setState(() => _immatricule = v),
+          ),
+  
+          // ── CE QUE DECOCHER SUPPRIME, DIT AVANT L'ENREGISTREMENT ──────
+          //
+          // Le serveur ecrit le bloc qui correspond au statut, et quand il
+          // ecrit un bloc IMPORT il SUPPRIME le carnet d'immatriculation
+          // (`VehicleController::syncTypeSpecificDetails` : `if (Unregistered
+          // && ! empty($data['import'])) { … registrationDetail()?->delete();
+          // }`).
+          //
+          // Or le bloc `import` part des que ce formulaire a quelque chose a y
+          // mettre : un kilometrage OU un pays d'origine. Decocher puis
+          // choisir un pays suffit donc a effacer les informations
+          // d'immatriculation d'un vehicule qui en avait — sans qu'aucun ecran
+          // ne l'ait annonce.
+          //
+          // Et la bascule change le SENS du compteur : le kilometrage d'un
+          // vehicule immatricule et le compteur au moment de l'import ne
+          // mesurent pas la meme chose. D'ou « ressaisissez ».
+          if (_existing?.isRegistered == true && !_immatricule)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Ce véhicule est enregistré comme immatriculé. En le déclarant '
+                'importé, ses informations d’immatriculation seront supprimées. '
+                'Ressaisissez le kilométrage : il ne mesure pas la même chose '
+                'pour un véhicule immatriculé et pour un import.',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+          TextFormField(
+            controller: _plateCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Plaque d\'immatriculation (optionnel)',
+              hintText: 'Ex. : AA 1234 BF',
+              prefixIcon: Icon(Icons.badge_outlined),
+            ),
+            textCapitalization: TextCapitalization.characters,
+            // Saisir une plaque déclare le véhicule immatriculé — c'est le sens
+            // courant, et ça évite de demander deux fois la même chose. Le
+            // décochage reste possible : un importé peut porter sa plaque
+            // d'origine.
+            onChanged: (v) {
+              final saisie = v.trim().isNotEmpty;
+              if (saisie && !_immatricule) setState(() => _immatricule = true);
+            },
+          ),
+        ],
+      ),
     ),
   );
 
@@ -786,110 +825,113 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       title: const Text('Identité'),
       subtitle: _brand != null ? Text(_model?.displayName ?? _brand!.name) : null,
       isActive: _step >= 1,
-      content: Column(
-        children: [
-          // Marque
-          _RefDropdown<BrandRef>(
-            label: 'Marque *',
-            items: refs.brands.where((b) => b.isActive || b.id == _brand?.id).toList(),
-            value: _brand,
-            itemLabel: (b) => b.name,
-            onChanged: (b) => setState(() {
-              if (_brand?.id == b?.id) return;
-              _classification.selectBrand(b);
-              _resetModelTechnicalFields();
-            }),
-            validator: (v) => v == null ? 'Marque obligatoire' : null,
-          ),
-          const SizedBox(height: 12),
-
-          // Modèle
-          _RefDropdown<ModelRef>(
-            label: 'Modèle *',
-            items: models,
-            value: _model,
-            itemLabel: (m) => m.displayName,
-            onChanged: (m) => setState(() {
-              if (_model?.id == m?.id) return;
-              _classification.selectModel(m);
-              _resetModelTechnicalFields();
-              if (m == null) return;
-
-              // Carrosserie : valeur DB ou inférence depuis body_type
-              final style = m.inferredBodyStyle;
-              if (style != null) _bodyStyle = style;
-
-              // Type de véhicule : valeur DB en priorité, sinon inférence
-              final vtype = m.resolvedVehicleType;
-              if (vtype != null) _vehicleType = vtype;
-
-              // Transmission : valeur DB uniquement
-              if (m.defaultTransmission != null) _transmission = m.defaultTransmission!;
-
-              // Places et portes : valeur DB uniquement
-              if (m.defaultSeats != null) _seatsCtrl.text = m.defaultSeats.toString();
-              if (m.defaultDoors != null) _doorsCtrl.text = m.defaultDoors.toString();
-
-              // Puissance : valeur DB uniquement (indicative)
-              if (m.defaultPowerHp != null) _powerCtrl.text = m.defaultPowerHp.toString();
-            }),
-            validator: (v) => v == null ? 'Modèle obligatoire' : null,
-            enabled: _brand != null,
-          ),
-          const SizedBox(height: 12),
-
-          // Finition (optionnel)
-          if (trims.isNotEmpty) ...[
-            _RefDropdown<TrimRef>(
-              label: 'Finition',
-              items: trims,
-              value: _trim,
-              itemLabel: (t) => t.name,
-              onChanged: (t) => setState(() => _trim = t),
-              enabled: _model != null,
+      content: Form(
+        key: _clefsDEtape[1],
+        child: Column(
+          children: [
+            // Marque
+            _RefDropdown<BrandRef>(
+              label: 'Marque *',
+              items: refs.brands.where((b) => b.isActive || b.id == _brand?.id).toList(),
+              value: _brand,
+              itemLabel: (b) => b.name,
+              onChanged: (b) => setState(() {
+                if (_brand?.id == b?.id) return;
+                _classification.selectBrand(b);
+                _resetModelTechnicalFields();
+              }),
+              validator: (v) => v == null ? 'Marque obligatoire' : null,
             ),
             const SizedBox(height: 12),
-          ],
-
-          // Année
-          TextFormField(
-            controller: _yearCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Année de fabrication *',
-              prefixIcon: Icon(Icons.calendar_today),
+  
+            // Modèle
+            _RefDropdown<ModelRef>(
+              label: 'Modèle *',
+              items: models,
+              value: _model,
+              itemLabel: (m) => m.displayName,
+              onChanged: (m) => setState(() {
+                if (_model?.id == m?.id) return;
+                _classification.selectModel(m);
+                _resetModelTechnicalFields();
+                if (m == null) return;
+  
+                // Carrosserie : valeur DB ou inférence depuis body_type
+                final style = m.inferredBodyStyle;
+                if (style != null) _bodyStyle = style;
+  
+                // Type de véhicule : valeur DB en priorité, sinon inférence
+                final vtype = m.resolvedVehicleType;
+                if (vtype != null) _vehicleType = vtype;
+  
+                // Transmission : valeur DB uniquement
+                if (m.defaultTransmission != null) _transmission = m.defaultTransmission!;
+  
+                // Places et portes : valeur DB uniquement
+                if (m.defaultSeats != null) _seatsCtrl.text = m.defaultSeats.toString();
+                if (m.defaultDoors != null) _doorsCtrl.text = m.defaultDoors.toString();
+  
+                // Puissance : valeur DB uniquement (indicative)
+                if (m.defaultPowerHp != null) _powerCtrl.text = m.defaultPowerHp.toString();
+              }),
+              validator: (v) => v == null ? 'Modèle obligatoire' : null,
+              enabled: _brand != null,
             ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)],
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Année obligatoire';
-              final y = int.tryParse(v);
-              if (y == null || y < 1950 || y > DateTime.now().year) {
-                return 'Année invalide (1950–${DateTime.now().year})';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 12),
-
-          // Couleur
-          _RefDropdown<ColorRef>(
-            label: 'Couleur',
-            items: refs.colors,
-            value: _color,
-            itemLabel: (c) => c.name,
-            itemLeading: (c) => c.hexCode != null
-                ? Container(
-                    width: 16, height: 16,
-                    decoration: BoxDecoration(
-                      color: _hexColor(c.hexCode!),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                  )
-                : null,
-            onChanged: (c) => setState(() => _color = c),
-          ),
-        ],
+            const SizedBox(height: 12),
+  
+            // Finition (optionnel)
+            if (trims.isNotEmpty) ...[
+              _RefDropdown<TrimRef>(
+                label: 'Finition',
+                items: trims,
+                value: _trim,
+                itemLabel: (t) => t.name,
+                onChanged: (t) => setState(() => _trim = t),
+                enabled: _model != null,
+              ),
+              const SizedBox(height: 12),
+            ],
+  
+            // Année
+            TextFormField(
+              controller: _yearCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Année de fabrication *',
+                prefixIcon: Icon(Icons.calendar_today),
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)],
+              validator: (v) {
+                if (v == null || v.isEmpty) return 'Année obligatoire';
+                final y = int.tryParse(v);
+                if (y == null || y < 1950 || y > DateTime.now().year) {
+                  return 'Année invalide (1950–${DateTime.now().year})';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+  
+            // Couleur
+            _RefDropdown<ColorRef>(
+              label: 'Couleur',
+              items: refs.colors,
+              value: _color,
+              itemLabel: (c) => c.name,
+              itemLeading: (c) => c.hexCode != null
+                  ? Container(
+                      width: 16, height: 16,
+                      decoration: BoxDecoration(
+                        color: _hexColor(c.hexCode!),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                    )
+                  : null,
+              onChanged: (c) => setState(() => _color = c),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -945,131 +987,134 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     title: const Text('Caractéristiques techniques'),
     subtitle: _resumeTechnique(),
     isActive: _step >= 2,
-    content: Column(
-      children: [
-        // Motorisation
-        _RefDropdown<EngineTypeRef>(
-          label: 'Type de motorisation *',
-          items: refs.engineTypes,
-          value: _engineType,
-          itemLabel: (e) => e.label,
-          onChanged: (e) => setState(() => _engineType = e),
-          validator: (v) => v == null ? 'Motorisation obligatoire' : null,
-        ),
-        const SizedBox(height: 12),
-
-        // Transmission
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text('Transmission',
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-        ),
-        const SizedBox(height: 6),
-        _ChoiceGroup<String>(
-          options: const [
-            (value: 'manual',    label: 'Manuelle'),
-            (value: 'automatic', label: 'Automatique'),
-            (value: 'cvt',       label: 'CVT'),
-          ],
-          selected: _transmission,
-          onChanged: (v) => setState(() => _transmission = v),
-        ),
-        const SizedBox(height: 16),
-
-        // Transmission séquentielle
-        _RefDropdown<DrivetrainRef>(
-          label: 'Transmission des roues',
-          items: refs.drivetrains,
-          value: _drivetrain,
-          itemLabel: (d) => d.label,
-          onChanged: (d) => setState(() => _drivetrain = d),
-        ),
-        const SizedBox(height: 12),
-
-        // Puissance / places / portes
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: _powerCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Puissance (ch)',
-                  suffixText: 'ch',
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                controller: _seatsCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Places',
-                  suffixText: 'p',
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(2)],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                controller: _doorsCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Portes',
-                  suffixText: 'p',
-                ),
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(1)],
-              ),
-            ),
-          ],
-        ),
-
-        // ── Équipements / options ────────────────────────────────────
-        if (refs.features.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          const Divider(),
-          const SizedBox(height: 8),
-          Text(
-            'Équipements & options',
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Sélectionnez les équipements présents sur ce véhicule.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
+    content: Form(
+      key: _clefsDEtape[2],
+      child: Column(
+        children: [
+          // Motorisation
+          _RefDropdown<EngineTypeRef>(
+            label: 'Type de motorisation *',
+            items: refs.engineTypes,
+            value: _engineType,
+            itemLabel: (e) => e.label,
+            onChanged: (e) => setState(() => _engineType = e),
+            validator: (v) => v == null ? 'Motorisation obligatoire' : null,
           ),
           const SizedBox(height: 12),
-          // Tri des catégories dans l'ordre défini par _categoryOrder.
-          ...(() {
-            final map     = refs.featuresByCategory;
-            final ordered = _categoryOrder
-                .where(map.containsKey)
-                .map((k) => MapEntry(k, map[k]!))
-                .toList();
-            // Catégories inconnues à la fin (ex. : ajouts futurs côté serveur).
-            final extra = map.entries
-                .where((e) => !_categoryOrder.contains(e.key))
-                .toList();
-            return [...ordered, ...extra];
-          })().map((entry) => _FeatureCategorySection(
-            category:           entry.key,
-            features:           entry.value,
-            selectedFeatureIds: _selectedFeatureIds,
-            onToggle: (id, selected) => setState(() {
-              if (selected) {
-                _selectedFeatureIds.add(id);
-              } else {
-                _selectedFeatureIds.remove(id);
-              }
-            }),
-          )),
+  
+          // Transmission
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Transmission',
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ),
+          const SizedBox(height: 6),
+          _ChoiceGroup<String>(
+            options: const [
+              (value: 'manual',    label: 'Manuelle'),
+              (value: 'automatic', label: 'Automatique'),
+              (value: 'cvt',       label: 'CVT'),
+            ],
+            selected: _transmission,
+            onChanged: (v) => setState(() => _transmission = v),
+          ),
+          const SizedBox(height: 16),
+  
+          // Transmission séquentielle
+          _RefDropdown<DrivetrainRef>(
+            label: 'Transmission des roues',
+            items: refs.drivetrains,
+            value: _drivetrain,
+            itemLabel: (d) => d.label,
+            onChanged: (d) => setState(() => _drivetrain = d),
+          ),
+          const SizedBox(height: 12),
+  
+          // Puissance / places / portes
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _powerCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Puissance (ch)',
+                    suffixText: 'ch',
+                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: _seatsCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Places',
+                    suffixText: 'p',
+                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(2)],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: _doorsCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Portes',
+                    suffixText: 'p',
+                  ),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(1)],
+                ),
+              ),
+            ],
+          ),
+  
+          // ── Équipements / options ────────────────────────────────────
+          if (refs.features.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            const Divider(),
+            const SizedBox(height: 8),
+            Text(
+              'Équipements & options',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Sélectionnez les équipements présents sur ce véhicule.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 12),
+            // Tri des catégories dans l'ordre défini par _categoryOrder.
+            ...(() {
+              final map     = refs.featuresByCategory;
+              final ordered = _categoryOrder
+                  .where(map.containsKey)
+                  .map((k) => MapEntry(k, map[k]!))
+                  .toList();
+              // Catégories inconnues à la fin (ex. : ajouts futurs côté serveur).
+              final extra = map.entries
+                  .where((e) => !_categoryOrder.contains(e.key))
+                  .toList();
+              return [...ordered, ...extra];
+            })().map((entry) => _FeatureCategorySection(
+              category:           entry.key,
+              features:           entry.value,
+              selectedFeatureIds: _selectedFeatureIds,
+              onToggle: (id, selected) => setState(() {
+                if (selected) {
+                  _selectedFeatureIds.add(id);
+                } else {
+                  _selectedFeatureIds.remove(id);
+                }
+              }),
+            )),
+          ],
         ],
-      ],
+      ),
     ),
   );
 
@@ -1083,310 +1128,313 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       title: const Text('Informations commerciales'),
       subtitle: _resumeCommercial(),
       isActive: _step >= 3,
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Condition
-          Text('État du véhicule',
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 6),
-          _ChoiceGroup<String>(
-            options: const [
-              (value: 'new',     label: 'Neuf'),
-              (value: 'used',    label: 'Occasion'),
-              (value: 'damaged', label: 'Endommagé'),
-            ],
-            selected: _condition,
-            onChanged: (v) => setState(() {
-              _condition = v;
-              if (v == 'new') _mileageCtrl.clear();
-            }),
-          ),
-          const SizedBox(height: 16),
-
-          // Kilométrage (uniquement pour occasion / endommagé)
-          if (_condition != 'new') ...[
-            TextFormField(
-              controller: _mileageCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Kilométrage',
-                suffixText: 'km',
-                hintText: '85 000',
-                prefixIcon: Icon(Icons.speed_outlined),
-              ),
-              keyboardType: TextInputType.number,
-              // Le meme formateur que les champs monetaires. Le texte d'aide
-              // de ce champ affiche « 85 000 » depuis toujours, mais la
-              // saisie etait en chiffres nus : l'exemple montrait une forme
-              // que le champ refusait, et un kilometrage a six chiffres se
-              // relit mal sans separateur — c'est precisement la ou se glisse
-              // le zero de trop.
-              inputFormatters: [
-                _ThousandsSeparatorFormatter(),
-                // 9 caracteres : 7 chiffres et leurs deux separateurs.
-                LengthLimitingTextInputFormatter(9),
+      content: Form(
+        key: _clefsDEtape[3],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Condition
+            Text('État du véhicule',
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 6),
+            _ChoiceGroup<String>(
+              options: const [
+                (value: 'new',     label: 'Neuf'),
+                (value: 'used',    label: 'Occasion'),
+                (value: 'damaged', label: 'Endommagé'),
               ],
+              selected: _condition,
+              onChanged: (v) => setState(() {
+                _condition = v;
+                if (v == 'new') _mileageCtrl.clear();
+              }),
             ),
             const SizedBox(height: 16),
-
-            // Pays d'origine — uniquement pour un véhicule NON IMMATRICULÉ.
-            //
-            // C'est la seule branche ou la charge utile porte un bloc
-            // `import` : pour un immatricule, le compteur part dans
-            // `registration`, et un pays envoye la serait ignore sans que
-            // rien ne le dise. Mieux vaut ne pas demander ce qu'on ne saurait
-            // pas enregistrer.
-            //
-            // La condition portait sur la PLAQUE, pas sur le statut. Un
-            // vendeur qui declarait un importe tout en notant sa plaque
-            // etrangere n'avait donc plus de champ « pays d'origine » —
-            // alors que c'est exactement le vehicule pour lequel il compte.
-            if (!_immatricule)
-              Consumer(
-                builder: (context, ref, _) {
-                  final pays = ref.watch(countriesProvider).valueOrNull
-                      ?? const <CountryRef>[];
-
-                  if (pays.isEmpty) return const SizedBox.shrink();
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: DropdownButtonFormField<CountryRef>(
-                      initialValue: _paysOrigine,
-                      isExpanded: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Pays d\'origine',
-                        helperText: 'Provenance du véhicule importé',
-                        prefixIcon: Icon(Icons.public_outlined),
+  
+            // Kilométrage (uniquement pour occasion / endommagé)
+            if (_condition != 'new') ...[
+              TextFormField(
+                controller: _mileageCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Kilométrage',
+                  suffixText: 'km',
+                  hintText: '85 000',
+                  prefixIcon: Icon(Icons.speed_outlined),
+                ),
+                keyboardType: TextInputType.number,
+                // Le meme formateur que les champs monetaires. Le texte d'aide
+                // de ce champ affiche « 85 000 » depuis toujours, mais la
+                // saisie etait en chiffres nus : l'exemple montrait une forme
+                // que le champ refusait, et un kilometrage a six chiffres se
+                // relit mal sans separateur — c'est precisement la ou se glisse
+                // le zero de trop.
+                inputFormatters: [
+                  _ThousandsSeparatorFormatter(),
+                  // 9 caracteres : 7 chiffres et leurs deux separateurs.
+                  LengthLimitingTextInputFormatter(9),
+                ],
+              ),
+              const SizedBox(height: 16),
+  
+              // Pays d'origine — uniquement pour un véhicule NON IMMATRICULÉ.
+              //
+              // C'est la seule branche ou la charge utile porte un bloc
+              // `import` : pour un immatricule, le compteur part dans
+              // `registration`, et un pays envoye la serait ignore sans que
+              // rien ne le dise. Mieux vaut ne pas demander ce qu'on ne saurait
+              // pas enregistrer.
+              //
+              // La condition portait sur la PLAQUE, pas sur le statut. Un
+              // vendeur qui declarait un importe tout en notant sa plaque
+              // etrangere n'avait donc plus de champ « pays d'origine » —
+              // alors que c'est exactement le vehicule pour lequel il compte.
+              if (!_immatricule)
+                Consumer(
+                  builder: (context, ref, _) {
+                    final pays = ref.watch(countriesProvider).valueOrNull
+                        ?? const <CountryRef>[];
+  
+                    if (pays.isEmpty) return const SizedBox.shrink();
+  
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: DropdownButtonFormField<CountryRef>(
+                        initialValue: _paysOrigine,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Pays d\'origine',
+                          helperText: 'Provenance du véhicule importé',
+                          prefixIcon: Icon(Icons.public_outlined),
+                        ),
+                        items: pays
+                            .map((c) => DropdownMenuItem(
+                                  value: c,
+                                  child: Text(c.name, overflow: TextOverflow.ellipsis),
+                                ))
+                            .toList(),
+                        onChanged: (c) => setState(() => _paysOrigine = c),
                       ),
-                      items: pays
-                          .map((c) => DropdownMenuItem(
-                                value: c,
-                                child: Text(c.name, overflow: TextOverflow.ellipsis),
-                              ))
-                          .toList(),
-                      onChanged: (c) => setState(() => _paysOrigine = c),
-                    ),
-                  );
-                },
-              ),
-          ],
-
-          // Disponibilité
-          Text('Disponible pour',
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 6),
-          _ChoiceGroup<String>(
-            options: const [
-              (value: 'sale', label: 'Vente'),
-              (value: 'rent', label: 'Location'),
-              (value: 'both', label: 'Vente & Location'),
+                    );
+                  },
+                ),
             ],
-            selected: _availability,
-            onChanged: (v) => setState(() => _availability = v),
-          ),
-          const SizedBox(height: 16),
-
-          // Mise en avant commerciale — la vitrine est a la boutique.
-          if (widget.mode.peutChoisirLaBoutique) ...[
-          Text('Mise en avant',
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 6),
-          _ChoiceGroup<String>(
-            options: const [
-              (value: '',           label: 'Aucune'),
-              (value: 'good_deal',  label: 'Bonne affaire'),
-              (value: 'flash_sale', label: 'Vente flash'),
-              (value: 'clearance',  label: 'Déstockage'),
-            ],
-            selected: _dealType,
-            onChanged: (v) => setState(() => _dealType = v),
-          ),
-          const SizedBox(height: 16),
-          ],
-
-          // Prix de vente
-          if (forSale) ...[
-            TextFormField(
-              controller: _salePriceCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Prix de vente *',
-                suffixText: 'FCFA',
-                hintText: '15 000 000',
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [_ThousandsSeparatorFormatter()],
-              validator: (v) {
-                if (forSale && (v == null || v.trim().isEmpty)) {
-                  return 'Prix de vente obligatoire';
-                }
-                return null;
-              },
-              // Redessine a chaque frappe : sans cela le recapitulatif de
-              // marge resterait sur le chiffre precedent pendant la saisie.
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 12),
-            _marge(_salePriceCtrl),
-            if (widget.mode.estPartenaire)
-              espace.ChampsDePromotion(
-                prixNormal: _parsePrice(_salePriceCtrl.text),
-                plafondPourcentage: ref.watch(espace.partnerSessionProvider)
-                    .profile?.plafondRemisePourcentage ?? 0,
-                valeur: _promotion,
-                onChanged: (valeur) => setState(() => _promotion = valeur),
-              ),
-          ],
-
-          // Tarifs location
-          if (forRent) ...[
-            TextFormField(
-              controller: _rentalDailyCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Tarif journalier',
-                suffixText: 'FCFA/j',
-                hintText: '25 000',
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [_ThousandsSeparatorFormatter()],
-              validator: (v) {
-                if (forRent && _rentalRatesMissing) {
-                  return 'Saisissez un tarif journalier ou mensuel';
-                }
-                return null;
-              },
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 12),
-            _marge(_rentalDailyCtrl, libelle: 'Tarif affiche a l\u2019acheteur'),
-            TextFormField(
-              controller: _rentalMonthlyCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Tarif mensuel',
-                suffixText: 'FCFA/mois',
-                hintText: '450 000',
-                helperText: 'Renseignez au moins un tarif : par jour ou par mois.',
-                helperMaxLines: 2,
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [_ThousandsSeparatorFormatter()],
-              validator: (_) => forRent && _rentalRatesMissing
-                  ? 'Saisissez un tarif journalier ou mensuel'
-                  : null,
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 12),
-            _marge(_rentalMonthlyCtrl, libelle: 'Tarif affiche a l\u2019acheteur'),
-            // AUCUN recapitulatif sous la caution : elle est rendue au
-            // locataire, donc le serveur ne la majore pas
-            // (`MargePartenaire::CHAMPS_VEHICULE` l'exclut). Afficher une
-            // marge ici annoncerait un total que personne n'encaissera.
-            TextFormField(
-              controller: _rentalDepositCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Caution',
-                suffixText: 'FCFA',
-                hintText: '100 000',
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [_ThousandsSeparatorFormatter()],
-            ),
-            const SizedBox(height: 12),
-          ],
-
-          // Prix négociable
-          SwitchListTile(
-            title: const Text('Prix négociable'),
-            value: _negotiable,
-            onChanged: (v) => setState(() => _negotiable = v),
-            contentPadding: EdgeInsets.zero,
-          ),
-
-          // ── Localisation / agence ────────────────────────────────
-          //
-          // L'agence est une adresse de la boutique : `location_id` est refuse
-          // a un partenaire par le serveur.
-          if (widget.mode.peutChoisirLaBoutique && refs.locations.isNotEmpty) ...[
-            _RefDropdown<LocationRef>(
-              label: 'Agence / Showroom',
-              items: refs.locations,
-              value: _selectedLocation,
-              itemLabel: (l) => l.displayLabel,
-              itemLeading: (l) => Icon(Icons.location_on_outlined,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.primary),
-              onChanged: (l) => setState(() => _selectedLocation = l),
-            ),
-            const SizedBox(height: 12),
-          ] else if (widget.mode.peutChoisirLaBoutique) ...[
-            // Fallback texte libre si aucune location configurée
-            TextFormField(
-              controller: _siteCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Site / Agence',
-                hintText: 'Ex. : Showroom Ouagadougou Nord',
-                prefixIcon: Icon(Icons.location_on_outlined),
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-
-          // ── Partenaire fournisseur ───────────────────────────────
-          //
-          // Le fournisseur source est une relation de la boutique. Un
-          // partenaire n'a pas a rattacher son vehicule a un tiers, et le
-          // serveur refuse `partner_id`.
-          if (widget.mode.peutChoisirLaBoutique) ...[
-          const SizedBox(height: 4),
-          const Divider(),
-          const SizedBox(height: 4),
-          Text('Fournisseur / Partenaire source',
-              style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 4),
-          Text('Source du véhicule (importateur, enchère, concessionnaire partenaire…)',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 10),
-          ref.watch(_vehiclePartnersProvider).when(
-            loading: () => const LinearProgressIndicator(),
-            error:   (_, __) => const Text('Impossible de charger les partenaires.'),
-            data: (partners) => DropdownButtonFormField<int?>(
-              value: _selectedPartnerId,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                hintText: 'Aucun (optionnel)',
-                prefixIcon: Icon(Icons.handshake_outlined),
-                isDense: true,
-              ),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('Aucun')),
-                ...partners.map((p) => DropdownMenuItem(
-                  value: p.id,
-                  child: Text(p.displayName,
-                      overflow: TextOverflow.ellipsis),
-                )),
+  
+            // Disponibilité
+            Text('Disponible pour',
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 6),
+            _ChoiceGroup<String>(
+              options: const [
+                (value: 'sale', label: 'Vente'),
+                (value: 'rent', label: 'Location'),
+                (value: 'both', label: 'Vente & Location'),
               ],
-              onChanged: (v) => setState(() => _selectedPartnerId = v),
+              selected: _availability,
+              onChanged: (v) => setState(() => _availability = v),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+  
+            // Mise en avant commerciale — la vitrine est a la boutique.
+            if (widget.mode.peutChoisirLaBoutique) ...[
+            Text('Mise en avant',
+                style: Theme.of(context).textTheme.bodySmall
+                    ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 6),
+            _ChoiceGroup<String>(
+              options: const [
+                (value: '',           label: 'Aucune'),
+                (value: 'good_deal',  label: 'Bonne affaire'),
+                (value: 'flash_sale', label: 'Vente flash'),
+                (value: 'clearance',  label: 'Déstockage'),
+              ],
+              selected: _dealType,
+              onChanged: (v) => setState(() => _dealType = v),
+            ),
+            const SizedBox(height: 16),
+            ],
+  
+            // Prix de vente
+            if (forSale) ...[
+              TextFormField(
+                controller: _salePriceCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Prix de vente *',
+                  suffixText: 'FCFA',
+                  hintText: '15 000 000',
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [_ThousandsSeparatorFormatter()],
+                validator: (v) {
+                  if (forSale && (v == null || v.trim().isEmpty)) {
+                    return 'Prix de vente obligatoire';
+                  }
+                  return null;
+                },
+                // Redessine a chaque frappe : sans cela le recapitulatif de
+                // marge resterait sur le chiffre precedent pendant la saisie.
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 12),
+              _marge(_salePriceCtrl),
+              if (widget.mode.estPartenaire)
+                espace.ChampsDePromotion(
+                  prixNormal: _parsePrice(_salePriceCtrl.text),
+                  plafondPourcentage: ref.watch(espace.partnerSessionProvider)
+                      .profile?.plafondRemisePourcentage ?? 0,
+                  valeur: _promotion,
+                  onChanged: (valeur) => setState(() => _promotion = valeur),
+                ),
+            ],
+  
+            // Tarifs location
+            if (forRent) ...[
+              TextFormField(
+                controller: _rentalDailyCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Tarif journalier',
+                  suffixText: 'FCFA/j',
+                  hintText: '25 000',
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [_ThousandsSeparatorFormatter()],
+                validator: (v) {
+                  if (forRent && _rentalRatesMissing) {
+                    return 'Saisissez un tarif journalier ou mensuel';
+                  }
+                  return null;
+                },
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 12),
+              _marge(_rentalDailyCtrl, libelle: 'Tarif affiche a l\u2019acheteur'),
+              TextFormField(
+                controller: _rentalMonthlyCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Tarif mensuel',
+                  suffixText: 'FCFA/mois',
+                  hintText: '450 000',
+                  helperText: 'Renseignez au moins un tarif : par jour ou par mois.',
+                  helperMaxLines: 2,
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [_ThousandsSeparatorFormatter()],
+                validator: (_) => forRent && _rentalRatesMissing
+                    ? 'Saisissez un tarif journalier ou mensuel'
+                    : null,
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 12),
+              _marge(_rentalMonthlyCtrl, libelle: 'Tarif affiche a l\u2019acheteur'),
+              // AUCUN recapitulatif sous la caution : elle est rendue au
+              // locataire, donc le serveur ne la majore pas
+              // (`MargePartenaire::CHAMPS_VEHICULE` l'exclut). Afficher une
+              // marge ici annoncerait un total que personne n'encaissera.
+              TextFormField(
+                controller: _rentalDepositCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Caution',
+                  suffixText: 'FCFA',
+                  hintText: '100 000',
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [_ThousandsSeparatorFormatter()],
+              ),
+              const SizedBox(height: 12),
+            ],
+  
+            // Prix négociable
+            SwitchListTile(
+              title: const Text('Prix négociable'),
+              value: _negotiable,
+              onChanged: (v) => setState(() => _negotiable = v),
+              contentPadding: EdgeInsets.zero,
+            ),
+  
+            // ── Localisation / agence ────────────────────────────────
+            //
+            // L'agence est une adresse de la boutique : `location_id` est refuse
+            // a un partenaire par le serveur.
+            if (widget.mode.peutChoisirLaBoutique && refs.locations.isNotEmpty) ...[
+              _RefDropdown<LocationRef>(
+                label: 'Agence / Showroom',
+                items: refs.locations,
+                value: _selectedLocation,
+                itemLabel: (l) => l.displayLabel,
+                itemLeading: (l) => Icon(Icons.location_on_outlined,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.primary),
+                onChanged: (l) => setState(() => _selectedLocation = l),
+              ),
+              const SizedBox(height: 12),
+            ] else if (widget.mode.peutChoisirLaBoutique) ...[
+              // Fallback texte libre si aucune location configurée
+              TextFormField(
+                controller: _siteCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Site / Agence',
+                  hintText: 'Ex. : Showroom Ouagadougou Nord',
+                  prefixIcon: Icon(Icons.location_on_outlined),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+  
+            // ── Partenaire fournisseur ───────────────────────────────
+            //
+            // Le fournisseur source est une relation de la boutique. Un
+            // partenaire n'a pas a rattacher son vehicule a un tiers, et le
+            // serveur refuse `partner_id`.
+            if (widget.mode.peutChoisirLaBoutique) ...[
+            const SizedBox(height: 4),
+            const Divider(),
+            const SizedBox(height: 4),
+            Text('Fournisseur / Partenaire source',
+                style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Text('Source du véhicule (importateur, enchère, concessionnaire partenaire…)',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            const SizedBox(height: 10),
+            ref.watch(_vehiclePartnersProvider).when(
+              loading: () => const LinearProgressIndicator(),
+              error:   (_, __) => const Text('Impossible de charger les partenaires.'),
+              data: (partners) => DropdownButtonFormField<int?>(
+                value: _selectedPartnerId,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  hintText: 'Aucun (optionnel)',
+                  prefixIcon: Icon(Icons.handshake_outlined),
+                  isDense: true,
+                ),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('Aucun')),
+                  ...partners.map((p) => DropdownMenuItem(
+                    value: p.id,
+                    child: Text(p.displayName,
+                        overflow: TextOverflow.ellipsis),
+                  )),
+                ],
+                onChanged: (v) => setState(() => _selectedPartnerId = v),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ],
+  
+            // Description
+            TextFormField(
+              controller: _descriptionCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                hintText: 'Détails supplémentaires sur le véhicule…',
+                alignLabelWithHint: true,
+              ),
+              maxLines: 3,
+              maxLength: 2000,
+            ),
           ],
-
-          // Description
-          TextFormField(
-            controller: _descriptionCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Description',
-              hintText: 'Détails supplémentaires sur le véhicule…',
-              alignLabelWithHint: true,
-            ),
-            maxLines: 3,
-            maxLength: 2000,
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -241,7 +241,15 @@ void main() {
       await tester.pumpAndSettle();
     }
     expect(repo.payload, isNull);
-    expect(find.text('Saisissez un tarif journalier ou mensuel.'), findsOneWidget);
+
+    // Le refus est désormais SOUS le champ, et non dans une bannière qui
+    // passe. La règle est la même ; c'est son `validator:` qui la porte,
+    // maintenant que chaque étape a son propre `Form` et qu'il s'exécute.
+    //
+    // Deux occurrences : la règle vaut pour le tarif journalier comme pour
+    // le mensuel, et chacun porte son message. C'est voulu — corriger l'un
+    // suffit, et laisser l'autre muet désignerait un seul coupable.
+    expect(find.text('Saisissez un tarif journalier ou mensuel'), findsWidgets);
   });
 
   testWidgets('changing brand in garage clears its previous model and fuel', (tester) async {
