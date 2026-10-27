@@ -672,6 +672,35 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           value: _immatricule,
           onChanged: (v) => setState(() => _immatricule = v),
         ),
+
+        // ── CE QUE DECOCHER SUPPRIME, DIT AVANT L'ENREGISTREMENT ──────
+        //
+        // Le serveur ecrit le bloc qui correspond au statut, et quand il
+        // ecrit un bloc IMPORT il SUPPRIME le carnet d'immatriculation
+        // (`VehicleController::syncTypeSpecificDetails` : `if (Unregistered
+        // && ! empty($data['import'])) { … registrationDetail()?->delete();
+        // }`).
+        //
+        // Or le bloc `import` part des que ce formulaire a quelque chose a y
+        // mettre : un kilometrage OU un pays d'origine. Decocher puis
+        // choisir un pays suffit donc a effacer les informations
+        // d'immatriculation d'un vehicule qui en avait — sans qu'aucun ecran
+        // ne l'ait annonce.
+        //
+        // Et la bascule change le SENS du compteur : le kilometrage d'un
+        // vehicule immatricule et le compteur au moment de l'import ne
+        // mesurent pas la meme chose. D'ou « ressaisissez ».
+        if (_existing?.isRegistered == true && !_immatricule)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'Ce véhicule est enregistré comme immatriculé. En le déclarant '
+              'importé, ses informations d’immatriculation seront supprimées. '
+              'Ressaisissez le kilométrage : il ne mesure pas la même chose '
+              'pour un véhicule immatriculé et pour un import.',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
         TextFormField(
           controller: _plateCtrl,
           decoration: const InputDecoration(
