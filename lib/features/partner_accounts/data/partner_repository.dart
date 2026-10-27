@@ -27,6 +27,20 @@ class PartnerProfile {
   final Map<String, dynamic> user;
   final Map<String, dynamic> account;
   String get companyName => account['company_name']?.toString() ?? '';
+  String get contactName => account['contact_name']?.toString() ?? '';
+
+  /// Le nom à AFFICHER, qui n'est jamais vide.
+  ///
+  /// `company_name` est facultatif à l'inscription : un revendeur particulier
+  /// n'a pas de raison sociale. Le profil privé rend donc `null` — à dessein,
+  /// pour que le titulaire voie que le champ est vide plutôt que son propre
+  /// nom recopié. Mais un titre vide dans l'en-tête de l'espace partenaire ne
+  /// dit rien à personne, d'où ce repli, côté affichage seulement.
+  ///
+  /// La vitrine PUBLIQUE a le sien, côté serveur
+  /// (`PartnerListingPresentation::seller()`), parce que les téléphones déjà
+  /// installés lisent ce champ en `String` nu et ne peuvent pas se replier.
+  String get displayName => companyName.isNotEmpty ? companyName : contactName;
   String get status => account['status']?.toString() ?? 'pending';
   String? get reviewReason => account['review_reason']?.toString();
   bool get approved => status == 'approved';

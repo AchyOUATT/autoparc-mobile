@@ -103,6 +103,58 @@ void main() {
     expect(find.text('Créer une annonce'), findsNothing);
   });
 
+  /// ── L'ENTREPRISE N'EST PLUS EXIGEE ──────────────────────────────────────
+  ///
+  /// Le vendeur type ici est un particulier ou un petit revendeur sans raison
+  /// sociale. L'exiger lui faisait inventer un nom, ou abandonner
+  /// l'inscription — et la seconde perte est muette.
+  testWidgets('une inscription sans nom d’entreprise part quand même',
+      (tester) async {
+    final repository = _Repository();
+    await _open(tester, repository);
+    await tester.tap(find.text('Inscription'));
+    await tester.pumpAndSettle();
+    for (final entry in {
+      'partner-contact': 'Salif Kaboré', 'partner-phone': '+22670000001',
+      'partner-email': 'salif@example.test',
+      'partner-password': 'Partenaire12345', 'partner-confirmation': 'Partenaire12345',
+    }.entries) {
+      final field = find.byKey(Key(entry.key));
+      await tester.ensureVisible(field);
+      await tester.enterText(field, entry.value);
+    }
+    tester.testTextInput.hide();
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('partner-submit')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('partner-submit')));
+    await tester.pumpAndSettle();
+
+    expect(repository.registration, isNotNull,
+        reason: 'Le formulaire a refusé une inscription que le serveur accepte.');
+    expect(repository.registration!.containsKey('company_name'), isFalse,
+        reason: '« Absent » et « vide » doivent arriver distinctement : une '
+            'chaîne vide s’enregistrerait comme un nom.');
+    expect(repository.registration!['contact_name'], 'Salif Kaboré');
+  });
+
+  /// Le titre de l'espace ne peut pas rester vide.
+  ///
+  /// Le profil PRIVE rend bien `null` — à dessein, pour que le titulaire voie
+  /// que le champ est vide plutôt que son propre nom recopié. C'est
+  /// l'affichage qui se replie.
+  testWidgets('sans entreprise, l’espace porte le nom du responsable',
+      (tester) async {
+    final repository = _Repository()
+      ..savedProfile = PartnerProfile(user: const {'role': 'partner'}, account: const {
+        'company_name': null, 'contact_name': 'Salif Kaboré', 'status': 'approved',
+      });
+
+    await _open(tester, repository);
+
+    expect(find.text('Salif Kaboré'), findsWidgets);
+  });
+
   testWidgets('le motif du refus reste visible et la déconnexion est disponible', (tester) async {
     final repository = _Repository()..savedProfile = _profile('rejected');
     await _open(tester, repository);

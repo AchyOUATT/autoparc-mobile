@@ -36,7 +36,12 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
     final notifier = ref.read(partnerSessionProvider.notifier);
     if (_register) {
       await notifier.register({
-        'company_name': _company.text.trim(), 'contact_name': _contact.text.trim(),
+        // Le champ vide ne part PAS comme nom : le serveur le refuserait en
+        // `max:160` sans broncher, mais il l’enregistrerait comme une chaîne
+        // vide si la couche de nettoyage du cadre venait à changer. « Absent »
+        // et « vide » doivent arriver distinctement.
+        if (_company.text.trim().isNotEmpty) 'company_name': _company.text.trim(),
+        'contact_name': _contact.text.trim(),
         'email': _email.text.trim(), 'phone': _phone.text.trim(),
         if (_whatsapp.text.trim().isNotEmpty) 'whatsapp': _whatsapp.text.trim(),
         'password': _password.text, 'password_confirmation': _confirmation.text,
@@ -85,7 +90,19 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
         selected: {_register}, onSelectionChanged: session.loading ? null : (value) => setState(() { _register = value.first; _form.currentState?.reset(); })),
       const SizedBox(height: 20),
       if (_register) ...[
-        _field(_company, 'Nom de l’entreprise', 'partner-company', icon: Icons.business_outlined),
+        // ── LE NOM D’ENTREPRISE EST FACULTATIF ──────────────────────────
+        //
+        // Le vendeur type ici est un particulier ou un petit revendeur sans
+        // raison sociale. L’exiger lui faisait inventer un nom, ou abandonner
+        // l’inscription — et la seconde perte est muette.
+        //
+        // Le nom affiché sur l’annonce se replie alors sur celui du
+        // responsable, côté SERVEUR
+        // (`PartnerListingPresentation::seller()`), parce que les téléphones
+        // déjà installés lisent ce champ en `String` nu.
+        _field(_company, 'Nom de l’entreprise (facultatif)', 'partner-company',
+            required: false, icon: Icons.business_outlined,
+            helper: 'Sans entreprise, vos annonces porteront votre nom.'),
         _field(_contact, 'Nom du responsable', 'partner-contact', icon: Icons.person_outline),
         _field(_phone, 'Téléphone professionnel', 'partner-phone', keyboard: TextInputType.phone, icon: Icons.phone_outlined),
         _field(_whatsapp, 'WhatsApp (facultatif)', 'partner-whatsapp', required: false, keyboard: TextInputType.phone, icon: Icons.chat_outlined),
@@ -119,10 +136,11 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
     ])),
   );
 
-  Widget _field(TextEditingController controller, String label, String key, {bool required = true, TextInputType? keyboard, IconData? icon, String? Function(String?)? validator}) =>
+  Widget _field(TextEditingController controller, String label, String key, {bool required = true, TextInputType? keyboard, IconData? icon, String? helper, String? Function(String?)? validator}) =>
     Padding(padding: const EdgeInsets.only(bottom: 14), child: TextFormField(key: Key(key), controller: controller, keyboardType: keyboard,
       textCapitalization: keyboard == null ? TextCapitalization.words : TextCapitalization.none,
-      decoration: InputDecoration(labelText: label, prefixIcon: icon == null ? null : Icon(icon), border: const OutlineInputBorder()),
+      decoration: InputDecoration(labelText: label, helperText: helper, helperMaxLines: 2,
+        prefixIcon: icon == null ? null : Icon(icon), border: const OutlineInputBorder()),
       validator: validator ?? (value) => required && (value?.trim().isEmpty ?? true) ? 'Ce champ est obligatoire.' : null));
 
   Widget _profile(BuildContext context, PartnerProfile profile, PartnerSession session) {
@@ -142,7 +160,7 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
           ? const Chip(avatar: Icon(Icons.sync, size: 18), label: Text('Statut à confirmer…'))
           : const Chip(avatar: Icon(Icons.verified_outlined, size: 18), label: Text('Compte approuvé'))),
         const SizedBox(height: 12),
-        Text(profile.companyName, style: Theme.of(context).textTheme.headlineSmall),
+        Text(profile.displayName, style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 8),
         const Text('Créez une annonce, ajoutez vos photos puis publiez-la. Vos coordonnées accompagneront vos annonces.'),
         const SizedBox(height: 24),
@@ -171,7 +189,7 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
       const SizedBox(height: 24),
       Text(title, style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
       const SizedBox(height: 12),
-      if (session.profile != null) Text(session.profile!.companyName, style: Theme.of(context).textTheme.titleMedium, textAlign: TextAlign.center),
+      if (session.profile != null) Text(session.profile!.displayName, style: Theme.of(context).textTheme.titleMedium, textAlign: TextAlign.center),
       const SizedBox(height: 12),
       Text(description, textAlign: TextAlign.center),
       if (reason?.isNotEmpty == true) Padding(padding: const EdgeInsets.only(top: 20), child: Card(child: Padding(padding: const EdgeInsets.all(16), child: Text('Motif : $reason')))),
