@@ -5,6 +5,7 @@ import 'package:auto/features/auth/data/auth_repository.dart';
 import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
 import 'package:auto/features/needs/data/needs_repository.dart';
 import 'package:auto/features/needs/presentation/pages/submit_need_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -39,6 +40,23 @@ class _Auth extends StateNotifier<AuthState> implements AuthNotifier {
   Object? noSuchMethod(Invocation invocation) => null;
 }
 
+/// Le PENDANT client, pour que la capture montre les deux versants du
+/// bandeau : c'est la seule difference que le correctif introduit.
+class _FauxClient extends Fake implements User {
+  @override
+  String? get displayName => 'Issa Ouedraogo';
+  @override
+  String get uid => 'uid-client';
+}
+
+class _AuthClient extends StateNotifier<AuthState> implements AuthNotifier {
+  _AuthClient()
+      : super(AuthState(type: AuthType.client, firebaseUser: _FauxClient()));
+
+  @override
+  Object? noSuchMethod(Invocation invocation) => null;
+}
+
 class _Depot extends NeedsRepository {
   _Depot() : super(ApiClient());
 
@@ -54,7 +72,7 @@ void main() {
   // chargeur, et `captures_catalogue_test.dart` l'emploie de la meme facon.
   setUpAll(chargerPolices);
 
-  Future<void> ouvrir(WidgetTester tester) async {
+  Future<void> ouvrir(WidgetTester tester, {bool client = false}) async {
     // 360x720 : la plus petite taille que `responsive_test.dart` eprouve, donc
     // celle ou un champ de trop se verrait le plus vite.
     tester.view.physicalSize = const Size(360, 720);
@@ -65,7 +83,7 @@ void main() {
     await tester.pumpWidget(ProviderScope(
       overrides: [
         needsRepositoryProvider.overrideWithValue(_Depot()),
-        authProvider.overrideWith((_) => _Auth()),
+        authProvider.overrideWith((_) => client ? _AuthClient() : _Auth()),
 
         // ── POURQUOI OUTREPASSER LES REFERENTIELS ─────────────────────────
         //
@@ -109,6 +127,16 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     return cible;
+  }
+
+  /// Le bandeau se lit sous les champs telephone : on en remplit un, sans
+  /// quoi la capture montrerait un formulaire vierge.
+  Future<void> saisirUnNumero(WidgetTester tester) async {
+    await tester.enterText(
+      await atteindre(tester, find.byKey(const ValueKey('besoin-telephone-0'))),
+      '+226 70 00 00 01',
+    );
+    await tester.pump(const Duration(milliseconds: 100));
   }
 
   Future<void> capturer(WidgetTester tester, String nom) async {
@@ -189,5 +217,35 @@ void main() {
     await atteindre(tester, find.text('Indiquez un numéro.'));
 
     await capturer(tester, 'besoin-telephone-refus');
+  });
+
+  /// ── LES DEUX VERSANTS DU BANDEAU ────────────────────────────────────────
+  ///
+  /// Le bandeau annoncait « votre demande sera liee a votre compte » a
+  /// QUICONQUE etait connecte. Or le `firebase_uid` ne part que
+  /// `if (auth.isClient)` : la demande saisie au comptoir par un membre du
+  /// personnel n'est rattachee a aucun compte, et surtout pas a celui du
+  /// client qu'il a devant lui. Les deux captures montrent ce que chacun
+  /// lit desormais.
+  testWidgets('le bandeau, côté personnel', (tester) async {
+    await ouvrir(tester);
+    await saisirUnNumero(tester);
+    await atteindre(tester, find.textContaining('Saisie par'));
+
+    expect(find.textContaining('ne sera rattachée à aucun compte'),
+        findsOneWidget,
+        reason: 'La capture ne montrerait pas ce que le correctif change.');
+
+    await capturer(tester, 'besoin-bandeau-personnel');
+  });
+
+  testWidgets('le bandeau, côté client', (tester) async {
+    await ouvrir(tester, client: true);
+    await saisirUnNumero(tester);
+    await atteindre(tester, find.textContaining('Connecté en tant que'));
+
+    expect(find.textContaining('liée à votre compte'), findsOneWidget);
+
+    await capturer(tester, 'besoin-bandeau-client');
   });
 }
