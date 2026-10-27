@@ -23,6 +23,9 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
   bool _register = false;
   bool _obscure = true;
 
+  /// La forme d'une adresse, employée aux deux endroits où on en vérifie une.
+  static final _adresse = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+
   @override
   void dispose() {
     for (final controller in [_company, _contact, _email, _phone, _whatsapp, _password, _confirmation]) {
@@ -42,7 +45,9 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
         // et « vide » doivent arriver distinctement.
         if (_company.text.trim().isNotEmpty) 'company_name': _company.text.trim(),
         'contact_name': _contact.text.trim(),
-        'email': _email.text.trim(), 'phone': _phone.text.trim(),
+        // Même raison pour l’adresse : laissée vide, elle ne part pas.
+        if (_email.text.trim().isNotEmpty) 'email': _email.text.trim(),
+        'phone': _phone.text.trim(),
         if (_whatsapp.text.trim().isNotEmpty) 'whatsapp': _whatsapp.text.trim(),
         'password': _password.text, 'password_confirmation': _confirmation.text,
       });
@@ -107,8 +112,43 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
         _field(_phone, 'Téléphone professionnel', 'partner-phone', keyboard: TextInputType.phone, icon: Icons.phone_outlined),
         _field(_whatsapp, 'WhatsApp (facultatif)', 'partner-whatsapp', required: false, keyboard: TextInputType.phone, icon: Icons.chat_outlined),
       ],
-      _field(_email, 'Adresse email', 'partner-email', keyboard: TextInputType.emailAddress, icon: Icons.alternate_email,
-        validator: (value) => value == null || !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value.trim()) ? 'Indiquez une adresse email valide.' : null),
+      // ── À L’INSCRIPTION, L’ADRESSE EST FACULTATIVE ──────────────────────
+      //
+      // Elle ne servait qu’à se connecter : aucun courriel n’est envoyé nulle
+      // part, toutes les notifications passent dans l’application. C’est le
+      // numéro de téléphone qui identifie désormais un partenaire, et c’est
+      // la seule chose que tout vendeur a.
+      //
+      // ── À LA CONNEXION, LE CHAMP ACCEPTE LES DEUX ───────────────────────
+      //
+      // Les partenaires inscrits avant ce changement ont une adresse et s’en
+      // servent. Leur retirer ce choix les mettrait dehors ; le serveur
+      // tranche sur la présence d’un « @ ».
+      if (_register)
+        _field(_email, 'Adresse email (facultatif)', 'partner-email',
+            required: false, keyboard: TextInputType.emailAddress,
+            icon: Icons.alternate_email,
+            helper: 'Vous vous connecterez avec votre numéro de téléphone.',
+            validator: (value) {
+              final saisie = value?.trim() ?? '';
+              if (saisie.isEmpty) return null;
+              return _adresse.hasMatch(saisie) ? null : 'Indiquez une adresse email valide.';
+            })
+      else
+        _field(_email, 'Téléphone ou adresse email', 'partner-email',
+            keyboard: TextInputType.text, icon: Icons.person_outline,
+            validator: (value) {
+              final saisie = value?.trim() ?? '';
+              if (saisie.isEmpty) return 'Indiquez votre numéro ou votre adresse email.';
+              if (saisie.contains('@')) {
+                return _adresse.hasMatch(saisie) ? null : 'Indiquez une adresse email valide.';
+              }
+              // Six chiffres : de quoi écarter une faute de frappe sans
+              // refuser un format de numéro que personne n’a mesuré.
+              return RegExp(r'\d').allMatches(saisie).length >= 6
+                  ? null
+                  : 'Indiquez un numéro de téléphone ou une adresse email.';
+            }),
       Padding(padding: const EdgeInsets.only(bottom: 14), child: TextFormField(
         key: const Key('partner-password'), controller: _password, obscureText: _obscure,
         autofillHints: [_register ? AutofillHints.newPassword : AutofillHints.password],

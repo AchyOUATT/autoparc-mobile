@@ -173,7 +173,10 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
     }
   }
 
-  Future<void> login(String email, String password) => _authenticate(() => _repository.login(email, password));
+  /// [identifiant] : un numéro de téléphone ou une adresse. Voir
+  /// `PartnerRepository.login`.
+  Future<void> login(String identifiant, String password) =>
+      _authenticate(() => _repository.login(identifiant, password));
   Future<void> register(Map<String, dynamic> fields) => _authenticate(() => _repository.register(fields));
   /// Reinterroge le serveur sur la session courante.
   ///

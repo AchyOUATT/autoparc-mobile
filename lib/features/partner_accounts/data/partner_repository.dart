@@ -267,8 +267,18 @@ class PartnerRepository {
     return profile;
   }
 
-  Future<PartnerProfile> login(String email, String password) => _authenticate('login', {
-    'email': email.trim(), 'password': password, 'device_name': 'AutoParc partenaire',
+  /// Se connecter avec un NUMÉRO ou une adresse.
+  ///
+  /// Le courriel est devenu facultatif à l'inscription : il ne servait qu'à se
+  /// connecter, aucun courriel n'étant envoyé nulle part. C'est le numéro qui
+  /// identifie désormais un partenaire, et le serveur décide de la colonne à
+  /// interroger selon la présence d'un « @ ».
+  ///
+  /// Le champ s'appelle `identifiant` et non `email` : le serveur accepte
+  /// encore l'ancien nom, pour les téléphones qui n'ont pas mis à jour, mais
+  /// cette version-ci n'a aucune raison de l'employer.
+  Future<PartnerProfile> login(String identifiant, String password) => _authenticate('login', {
+    'identifiant': identifiant.trim(), 'password': password, 'device_name': 'AutoParc partenaire',
   });
   Future<PartnerProfile> register(Map<String, dynamic> fields) => _authenticate('register', {
     ...fields, 'device_name': 'AutoParc partenaire',

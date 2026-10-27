@@ -67,7 +67,22 @@ void main() {
     expect(SecurePartnerTokenStore.tokenKey, 'partner_sanctum_token');
     expect(adapter.requests.single.path, '/partner/login');
     expect(adapter.requests.single.headers.containsKey('Authorization'), isFalse);
-    expect(adapter.requests.single.data['email'], 'garage@example.test');
+    // Le champ s'appelle `identifiant` : le courriel étant devenu facultatif,
+    // un partenaire se connecte avec son numéro OU son adresse, et c'est le
+    // serveur qui tranche sur la présence d'un « @ ».
+    expect(adapter.requests.single.data['identifiant'], 'garage@example.test');
+    expect(adapter.requests.single.data.containsKey('email'), isFalse);
+  });
+
+  test('un numéro de téléphone part comme identifiant', () async {
+    final adapter = _Adapter((_) => (200, {..._profile(), 'token': 'partner-test-token'}));
+    dio.httpClientAdapter = adapter;
+
+    await repository.login(' +226 70 00 00 01 ', 'password12345');
+
+    expect(adapter.requests.single.data['identifiant'], '+226 70 00 00 01',
+        reason: 'Le numéro part tel quel : c est le serveur qui le normalise, '
+            'et lui seul sait quelle forme la colonne porte.');
   });
 
   test('restaurer une session envoie seulement son jeton partenaire', () async {

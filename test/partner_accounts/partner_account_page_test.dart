@@ -138,6 +138,74 @@ void main() {
     expect(repository.registration!['contact_name'], 'Salif Kaboré');
   });
 
+  /// ── L'ADRESSE N'EST PLUS EXIGEE NON PLUS ────────────────────────────────
+  ///
+  /// Mesure faite côté serveur : aucun courriel n'est envoyé nulle part, toutes
+  /// les notifications passent par `AppNotification`. L'adresse ne servait donc
+  /// qu'à se connecter, et c'est le numéro qui le fait désormais.
+  testWidgets('une inscription sans courriel part quand même', (tester) async {
+    final repository = _Repository();
+    await _open(tester, repository);
+    await tester.tap(find.text('Inscription'));
+    await tester.pumpAndSettle();
+    for (final entry in {
+      'partner-contact': 'Salif Kaboré', 'partner-phone': '+22670000001',
+      'partner-password': 'Partenaire12345', 'partner-confirmation': 'Partenaire12345',
+    }.entries) {
+      final field = find.byKey(Key(entry.key));
+      await tester.ensureVisible(field);
+      await tester.enterText(field, entry.value);
+    }
+    tester.testTextInput.hide();
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('partner-submit')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('partner-submit')));
+    await tester.pumpAndSettle();
+
+    expect(repository.registration, isNotNull,
+        reason: 'Le formulaire a refusé une inscription que le serveur accepte.');
+    expect(repository.registration!.containsKey('email'), isFalse);
+    expect(repository.registration!['phone'], '+22670000001');
+  });
+
+  /// Le champ de connexion accepte les deux : les partenaires inscrits avant
+  /// ce changement ont une adresse et s'en servent.
+  testWidgets('la connexion accepte un numéro comme une adresse', (tester) async {
+    for (final identifiant in ['+226 70 00 00 01', 'salif@example.test']) {
+      final repository = _Repository();
+      await _open(tester, repository);
+
+      await tester.enterText(find.byKey(const Key('partner-email')), identifiant);
+      await tester.enterText(find.byKey(const Key('partner-password')), 'Partenaire12345');
+      tester.testTextInput.hide();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('partner-submit')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Indiquez une adresse email valide.'), findsNothing,
+          reason: '« $identifiant » a été refusé avant même de partir.');
+      expect(find.text('Indiquez un numéro de téléphone ou une adresse email.'),
+          findsNothing);
+    }
+  });
+
+  testWidgets('la connexion refuse un identifiant qui n’est ni l’un ni l’autre',
+      (tester) async {
+    final repository = _Repository();
+    await _open(tester, repository);
+
+    await tester.enterText(find.byKey(const Key('partner-email')), 'salif');
+    await tester.enterText(find.byKey(const Key('partner-password')), 'Partenaire12345');
+    tester.testTextInput.hide();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('partner-submit')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Indiquez un numéro de téléphone ou une adresse email.'),
+        findsOneWidget);
+  });
+
   /// Le titre de l'espace ne peut pas rester vide.
   ///
   /// Le profil PRIVE rend bien `null` — à dessein, pour que le titulaire voie
