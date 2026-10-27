@@ -43,6 +43,30 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
   final _descCtrl   = TextEditingController();
   final _budgetCtrl = TextEditingController();
 
+  // ── DE QUOI RAPPELER ──────────────────────────────────────────────────
+  //
+  // Ce formulaire n'envoyait AUCUN contact : sa charge se limitait au type, a
+  // la description, au budget et au `firebase_uid` quand il y en avait un.
+  //
+  // QUI EST INJOIGNABLE, EXACTEMENT. Le garde de cette page est
+  // `!auth.isAuthenticated`, donc un depot n'est jamais anonyme ICI. Mais ce
+  // garde laisse passer le PERSONNEL autant que les clients, et le
+  // `firebase_uid` ne part que `if (auth.isClient)` : un membre du personnel
+  // qui saisit la demande de quelqu'un au comptoir n'envoyait donc AUCUN
+  // contact, et c'est le cas le plus courant en pratique.
+  //
+  // Un `firebase_uid` donne d'ailleurs un compte, pas un numero — et ici on
+  // rappelle au telephone.
+  //
+  // Le serveur ne validait pas davantage les trois colonnes de contact qui
+  // existaient : un numero envoye aurait ete jete en silence.
+  //
+  // PLUSIEURS numeros, parce qu'au Burkina Faso un acheteur donne volontiers
+  // deux lignes de deux operateurs : l'une passe quand l'autre ne passe pas.
+  // Le serveur en accepte trois au plus.
+  static const _maxTelephones = 3;
+  final _telephones = <TextEditingController>[TextEditingController()];
+
   bool _saving = false;
 
   @override
@@ -52,6 +76,9 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
     _oemCtrl.dispose();
     _descCtrl.dispose();
     _budgetCtrl.dispose();
+    for (final champ in _telephones) {
+      champ.dispose();
+    }
     super.dispose();
   }
 
@@ -80,9 +107,17 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
     final yearMax = int.tryParse(_yearMaxCtrl.text.trim());
     final oem     = _oemCtrl.text.trim();
 
+    // Les vides sont retires : un champ ajoute puis laisse blanc ne doit pas
+    // partir comme un numero.
+    final telephones = _telephones
+        .map((champ) => champ.text.trim())
+        .where((numero) => numero.isNotEmpty)
+        .toList();
+
     final payload = <String, dynamic>{
       'type':        _needType,
       'description': _descCtrl.text.trim(),
+      'contact_phones': telephones,
       if (auth.isClient && auth.firebaseUser != null)
         'firebase_uid': auth.firebaseUser!.uid,
       if (_budgetCtrl.text.isNotEmpty)
@@ -274,6 +309,7 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
                 _label(context, 'Description du besoin *'),
                 const SizedBox(height: 8),
                 TextFormField(
+                  key: const Key('besoin-description'),
                   controller: _descCtrl,
                   maxLines: 4,
                   textCapitalization: TextCapitalization.sentences,
@@ -314,6 +350,79 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
 
                 const SizedBox(height: 28),
 
+                // ── Pour vous rappeler ──────────────────────────────────
+                _label(context, 'Téléphone pour vous rappeler *'),
+                const SizedBox(height: 4),
+                Text(
+                  'Sans numéro, nous ne pouvons pas vous répondre. Vous pouvez '
+                  'en donner un second, d’un autre opérateur.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                for (final (index, champ) in _telephones.indexed) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          key: ValueKey('besoin-telephone-$index'),
+                          controller: champ,
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(
+                            border: const OutlineInputBorder(),
+                            hintText: '+226 70 00 00 00',
+                            prefixIcon: const Icon(Icons.phone_outlined),
+                            labelText: index == 0
+                                ? 'Numéro principal'
+                                : 'Autre numéro (optionnel)',
+                          ),
+                          // Seul le premier est exige : les suivants sont des
+                          // ajouts que l'on peut laisser vides sans bloquer
+                          // l'envoi.
+                          validator: (valeur) {
+                            final numero = valeur?.trim() ?? '';
+                            if (numero.isEmpty) {
+                              return index == 0 ? 'Indiquez un numéro.' : null;
+                            }
+
+                            return numero.length < 6
+                                ? 'Numéro trop court.'
+                                : null;
+                          },
+                        ),
+                      ),
+                      if (index > 0)
+                        IconButton(
+                          tooltip: 'Retirer ce numéro',
+                          icon: const Icon(Icons.remove_circle_outline),
+                          onPressed: _saving
+                              ? null
+                              : () => setState(() {
+                                    _telephones.removeAt(index).dispose();
+                                  }),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (_telephones.length < _maxTelephones)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      key: const Key('besoin-ajouter-telephone'),
+                      onPressed: _saving
+                          ? null
+                          : () => setState(
+                                () => _telephones.add(TextEditingController()),
+                              ),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Ajouter un numéro'),
+                    ),
+                  ),
+
+                const SizedBox(height: 28),
+
                 // ── Compte connecté ──────────────────────────────────────
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -341,6 +450,7 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
                 const SizedBox(height: 32),
 
                 FilledButton.icon(
+                  key: const Key('besoin-soumettre'),
                   onPressed: _saving ? null : _submit,
                   icon: _saving
                       ? const SizedBox(
@@ -349,6 +459,9 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
                               strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.send_outlined),
                   label: const Text('Soumettre mon besoin'),
+                  // La page vit dans un `ListView` : un banc ne peut pas viser
+                  // par texte un bouton que la construction paresseuse n'a pas
+                  // encore pose.
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
                   ),
