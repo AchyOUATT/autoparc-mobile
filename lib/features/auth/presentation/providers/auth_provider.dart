@@ -83,6 +83,9 @@ class AuthState {
   /// Annuaire des partenaires et rattachement aux produits.
   bool get canManagePartners => _roleIn(const {'admin', 'manager'});
 
+  /// Paramètres de contact de la plateforme.
+  bool get canManageSettings => _roleIn(const {'admin', 'manager'});
+
   /// Envoyer une notification a tous les clients.
   bool get canBroadcast      => _roleIn(const {'admin', 'manager'});
 

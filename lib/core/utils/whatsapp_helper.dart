@@ -1,11 +1,10 @@
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../features/cart/data/models/cart_item.dart';
-import 'contact_info.dart';
+import '../contact/autoparc_contact.dart';
 import 'currency_format.dart';
 
-// Le numéro vient désormais de contact_info.dart — il vivait ici en double,
-// avec une valeur fictive différente de celle de main.dart.
+// Le numéro confirmé par le serveur est fourni par l'écran appelant.
 
 /// Les cinq chaînes du message de commande, LUES DANS L'ÉCRAN.
 ///
@@ -116,9 +115,11 @@ String buildWhatsAppMessage(List<CartItem> items, LibellesCommande libelles) {
   final totalTtc = items.fold(0.0, (s, i) => s + i.lineTotalTtc);
   final tva = totalTtc - totalHt;
 
-  final largeur = [libelles.sousTotal, libelles.taxe, libelles.total]
-      .map((l) => l.length)
-      .reduce((a, b) => a > b ? a : b);
+  final largeur = [
+    libelles.sousTotal,
+    libelles.taxe,
+    libelles.total,
+  ].map((l) => l.length).reduce((a, b) => a > b ? a : b);
 
   buf
     ..writeln()
@@ -137,14 +138,13 @@ String buildWhatsAppMessage(List<CartItem> items, LibellesCommande libelles) {
 /// Retourne `true` si l'app a pu être ouverte.
 Future<bool> launchWhatsApp(
   List<CartItem> items,
-  LibellesCommande libelles,
-) async {
+  LibellesCommande libelles, {
+  required AutoParcContact contact,
+}) async {
   final text = buildWhatsAppMessage(items, libelles);
-  final encoded = Uri.encodeComponent(text);
-  final uri = Uri.parse('https://wa.me/$kContactWhatsApp?text=$encoded');
+  final uri = contact.whatsappUri.replace(queryParameters: {'text': text});
   if (await canLaunchUrl(uri)) {
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-    return true;
+    return launchUrl(uri, mode: LaunchMode.externalApplication);
   }
   return false;
 }

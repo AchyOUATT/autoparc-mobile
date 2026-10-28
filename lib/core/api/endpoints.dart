@@ -108,6 +108,10 @@ class Endpoints {
   /// périmée doit être arrêtée même chez un visiteur sans compte.
   static const String appVersion = '/app/version';
 
+  // ── Contact AutoParc ─────────────────────────────────────────────
+  static const String appContact = '/app/contact';
+  static const String contactSettings = '/settings/contact';
+
   // ── Catalogue public ────────────────────────────────────────────
   static const String catalogVehicles       = '/catalog/vehicles';
   static const String catalogParts          = '/catalog/parts';

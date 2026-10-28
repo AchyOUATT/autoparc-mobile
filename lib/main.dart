@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker_android/image_picker_android.dart';
 import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'core/l10n/langue.dart';
 import 'core/l10n/tuile_langue.dart';
@@ -16,6 +15,7 @@ import 'core/update/ecran_mise_a_jour.dart';
 import 'core/utils/currency_format.dart';
 import 'core/update/version_minimale.dart';
 import 'core/utils/lien_externe.dart';
+import 'core/contact/autoparc_contact_provider.dart';
 import 'core/widgets/navigation_bar_theme.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
@@ -56,6 +56,7 @@ import 'features/partners/presentation/pages/partner_list_page.dart';
 import 'features/partners/presentation/pages/partner_form_page.dart';
 import 'features/partner_accounts/partner_accounts.dart';
 import 'features/partner_accounts/presentation/partner_applications_page.dart';
+import 'features/settings/presentation/contact_settings_page.dart';
 import 'core/providers/shell_scaffold_provider.dart';
 import 'core/local/catalog_local_cache.dart';
 import 'features/vehicles/presentation/providers/vehicle_refs_provider.dart';
@@ -140,6 +141,10 @@ GoRouter _buildRouter({required bool onboardingDone}) => GoRouter(
     GoRoute(
       path: '/partner-applications',
       builder: (_, __) => const PartnerApplicationsPage(),
+    ),
+    GoRoute(
+      path: '/settings/contact',
+      builder: (_, _) => const ContactSettingsPage(),
     ),
 
     // Shell avec NavigationBar (3 onglets catalogue)
@@ -335,10 +340,34 @@ class AutoParcApp extends ConsumerStatefulWidget {
   ConsumerState<AutoParcApp> createState() => _AutoParcAppState();
 }
 
-class _AutoParcAppState extends ConsumerState<AutoParcApp> {
+class _AutoParcAppState extends ConsumerState<AutoParcApp>
+    with WidgetsBindingObserver {
   late final GoRouter _routeur = _buildRouter(
     onboardingDone: widget.onboardingDone,
   );
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(autoparcContactProvider.notifier).refresh();
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.read(autoparcContactProvider.notifier).refresh();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _routeur.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -423,7 +452,7 @@ class _PorteMiseAJour extends ConsumerWidget {
   }
 }
 
-// Coordonnées de contact : voir core/utils/contact_info.dart.
+// Le téléphone de contact est chargé depuis le serveur par le provider contact.
 
 // ── Shell avec NavigationBar + Drawer ─────────────────────────────
 
@@ -708,6 +737,11 @@ class AppDrawer extends ConsumerWidget {
           // STAFF
           // ════════════════════════════════════════════════════════
           if (auth.isStaff) ...[
+            if (auth.canManageSettings) _DrawerTile(
+              icon: Icons.settings_phone_outlined,
+              label: 'Paramètres · Contact AutoParc',
+              onTap: () { _close(context); context.push('/settings/contact'); },
+            ),
             if (auth.canManagePartners) _DrawerTile(
               icon: Icons.how_to_reg_outlined,
               label: 'Validation des partenaires',
@@ -791,7 +825,7 @@ class AppDrawer extends ConsumerWidget {
               label: l10n.shellContact,
               onTap: () {
                 _close(context);
-                _showContactSheet(context);
+                _showContactSheet(context, ref);
               },
             ),
             const Divider(),
@@ -877,16 +911,20 @@ class AppDrawer extends ConsumerWidget {
     );
   }
 
-  void _showContactSheet(BuildContext context) {
+  void _showContactSheet(BuildContext context, WidgetRef ref) {
+    ref.read(autoparcContactProvider.notifier).refresh();
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (contexteFeuille) {
+      builder: (contexteFeuille) => Consumer(builder: (context, ref, _) {
         final l10n = AppLocalizations.of(contexteFeuille);
+        final contact = ref.watch(autoparcContactProvider);
 
-        return Padding(
+        return SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -899,11 +937,11 @@ class AppDrawer extends ConsumerWidget {
             _ContactTile(
               icon: Icons.phone_outlined,
               label: l10n.shellContactPhone,
-              value: kContactPhoneDisplay,
+              value: contact.phoneDisplay,
               onTap: () => ouvrirLien(
                 context,
-                Uri.parse('tel:$kContactPhone'),
-                valeurACopier: kContactPhoneDisplay,
+                contact.phoneUri,
+                valeurACopier: contact.phoneDisplay,
                 ceQuiNePeutPasSOuvrir: l10n.shellContactDialerTarget,
               ),
             ),
@@ -912,11 +950,11 @@ class AppDrawer extends ConsumerWidget {
               icon: Icons.chat_outlined,
               iconColor: const Color(0xFF25D366),
               label: 'WhatsApp',
-              value: kContactPhoneDisplay,
+              value: contact.phoneDisplay,
               onTap: () => ouvrirLien(
                 context,
-                Uri.parse('https://wa.me/$kContactWhatsApp'),
-                valeurACopier: kContactPhoneDisplay,
+                contact.whatsappUri,
+                valeurACopier: contact.phoneDisplay,
                 // « WhatsApp » reste en dur, et n'a pas de clé : c'est un nom
                 // de marque, identique dans les deux langues, et lui donner une
                 // clé inviterait un traducteur à le traduire.
@@ -938,7 +976,7 @@ class AppDrawer extends ConsumerWidget {
           ],
         ),
       );
-      },
+      }),
     );
   }
 }

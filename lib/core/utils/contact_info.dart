@@ -1,20 +1,8 @@
-/// Coordonnées de contact AutoParc, et l'adresse publique d'un article.
-///
-/// Rassemblées ici parce que le numéro vivait auparavant en trois exemplaires
-/// — `main.dart`, `whatsapp_helper.dart`, et implicitement la fiche véhicule —
-/// avec trois valeurs fictives différentes qui divergeaient silencieusement.
+/// Adresse courriel AutoParc et adresses publiques des articles.
+/// Le téléphone est chargé par core/contact/autoparc_contact_provider.dart.
 library;
 
 import '../api/endpoints.dart';
-
-/// Numéro d'appel, au format international avec indicatif.
-const kContactPhone = '+22675570484';
-
-/// Même numéro, mis en forme pour l'affichage.
-const kContactPhoneDisplay = '+226 75 57 04 84';
-
-/// Numéro WhatsApp. `wa.me` n'accepte ni le « + » ni les espaces.
-const kContactWhatsApp = '22675570484';
 
 const kContactEmail = 'contact@autoparc.com';
 

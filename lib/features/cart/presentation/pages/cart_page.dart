@@ -7,6 +7,7 @@ import '../../data/order_repository.dart';
 import '../providers/cart_provider.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/utils/whatsapp_helper.dart';
+import '../../../../core/contact/autoparc_contact_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 
@@ -410,7 +411,11 @@ class _CheckoutBarState extends ConsumerState<_CheckoutBar> {
       pied: l10n.cartWhatsAppFooter,
     );
 
-    final ok = await launchWhatsApp(widget.items, libelles);
+    final ok = await launchWhatsApp(
+      widget.items,
+      libelles,
+      contact: ref.read(autoparcContactProvider),
+    );
     if (!mounted) return;
     setState(() => _launching = false);
     if (!ok) {
