@@ -7,6 +7,7 @@ import 'package:auto/features/auth/data/auth_repository.dart';
 import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
 import 'package:auto/features/garage/data/models/owned_vehicle.dart';
 import 'package:auto/features/private_sales/data/private_listing_repository.dart';
+import 'package:auto/features/private_sales/presentation/private_listing_detail.dart';
 import 'package:auto/features/private_sales/presentation/private_listing_form.dart';
 import 'package:auto/features/private_sales/presentation/private_listings_page.dart';
 import 'package:auto/l10n/app_localizations.dart';
@@ -186,6 +187,18 @@ Map<String, dynamic> listingFields({
   'photos': <Map<String, dynamic>>[],
 };
 
+/// Ce que la liste PUBLIQUE sert réellement : tout, sauf le numéro.
+///
+/// `PrivateVehicleListingResource` pose `phone` derrière la présence du
+/// paramètre de route : l'index n'en a pas, la fiche si. Sans cette aide, les
+/// bancs mobiles mesureraient une liste plus bavarde que celle de production,
+/// et la régression qu'ils doivent attraper leur échapperait.
+Map<String, dynamic> sansNumeroPublic(Map<String, dynamic> fields) =>
+    Map<String, dynamic>.from(fields)
+      ..remove('phone')
+      ..remove('phone_claimed')
+      ..remove('phone_verified_at');
+
 class FakeSalesApi implements ApiClient {
   final queries = <({String path, Map<String, dynamic>? params})>[];
   final commands = <({String path, Map<String, dynamic>? data})>[];
@@ -207,16 +220,43 @@ class FakeSalesApi implements ApiClient {
         statusCode: 503,
       );
     }
+    // La FICHE rend un objet, la LISTE un tableau — et c'est la fiche, elle
+    // seule, qui porte le numéro du vendeur depuis que la liste publique ne le
+    // sert plus. Le chemin se termine par un identifiant.
+    if (RegExp(r'/\d+$').hasMatch(path)) {
+      return {
+        'data': listingFields(
+          id: 1,
+          status: status,
+          appelPasse: appelPasse,
+          numeroSaisi: numeroSaisi,
+        ),
+      };
+    }
+
     return {
       'data': empty
           ? []
           : [
-              listingFields(
-                id: params?['page'] as int? ?? 1,
-                status: status,
-                appelPasse: appelPasse,
-                numeroSaisi: numeroSaisi,
-              ),
+              // Seule la liste PUBLIQUE est depouillee. Celle du vendeur et
+              // celle du moderateur portent le numero : pour le serveur ces
+              // deux lecteurs sont « prives ».
+              if (path == '/private-listings')
+                sansNumeroPublic(
+                  listingFields(
+                    id: params?['page'] as int? ?? 1,
+                    status: status,
+                    appelPasse: appelPasse,
+                    numeroSaisi: numeroSaisi,
+                  ),
+                )
+              else
+                listingFields(
+                  id: params?['page'] as int? ?? 1,
+                  status: status,
+                  appelPasse: appelPasse,
+                  numeroSaisi: numeroSaisi,
+                ),
             ],
       'meta': {'current_page': params?['page'] ?? 1, 'last_page': 2},
     };
@@ -423,6 +463,55 @@ void main() {
     expect(api.commands.single.path, '/private-listing-reviews/1/approve');
     expect(api.commands.single.data, {'revision': 4});
     expect(find.text('Aucune annonce à examiner.'), findsOneWidget);
+  });
+
+  /// L'acheteur peut appeler, même si la liste ne porte plus le numéro.
+  ///
+  /// C'est la moitié cliente d'une correction serveur : la liste publique ne
+  /// sert plus le téléphone — elle était un annuaire de particuliers
+  /// moissonnable d'un seul appel — et la fiche le sert. Or cet écran recevait
+  /// son annonce de la liste et ne rechargeait jamais : sans la requête que ce
+  /// banc mesure, les deux boutons disparaîtraient pour tous les acheteurs.
+  testWidgets('la fiche publique charge le numéro que la liste ne donne plus', (
+    tester,
+  ) async {
+    final api = FakeSalesApi();
+    final depuisLaListe = PrivateListing(
+      sansNumeroPublic(listingFields()),
+    );
+    expect(depuisLaListe.verifiedPhone, isEmpty, reason: 'La liste ne le donne pas.');
+
+    await open(
+      tester,
+      api,
+      PrivateListingDetail(listing: depuisLaListe),
+    );
+    await tester.pumpAndSettle();
+
+    expect(api.queries.single.path, '/private-listings/1');
+    expect(find.text('Appeler le vendeur'), findsOneWidget);
+    expect(find.text('Téléphone vérifié'), findsOneWidget);
+  });
+
+  /// Le vendeur et le modérateur, eux, ne déclenchent aucune requête.
+  ///
+  /// Pour le serveur ils sont « privés » : leur liste porte déjà le numéro. Et
+  /// la route publique rendrait 404 sur une annonce non publiée, donc charger
+  /// serait non seulement inutile mais faux.
+  testWidgets('la fiche du vendeur ne recharge rien', (tester) async {
+    final api = FakeSalesApi();
+    await open(
+      tester,
+      api,
+      PrivateListingDetail(
+        listing: PrivateListing(listingFields()),
+        publicListing: false,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(api.queries, isEmpty);
+    expect(find.text('Appeler le vendeur'), findsOneWidget);
   });
 
   /// Un numéro au format local est refusé SOUS LE CHAMP, pas par une exception.

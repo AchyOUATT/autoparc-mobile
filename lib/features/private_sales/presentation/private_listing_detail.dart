@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/utils/currency_format.dart';
@@ -90,34 +91,98 @@ class PrivateListingDetail extends StatelessWidget {
         if (listing.fields['phone_verified'] == true)
           const Text('Téléphone vérifié'),
         const Text('Le véhicule n’a pas été inspecté par AutoParc.'),
-        if (listing.text('phone').isNotEmpty) ...[
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            icon: const Icon(Icons.call_outlined),
-            label: const Text('Appeler le vendeur'),
-            onPressed: () => ouvrirLien(
-              context,
-              Uri(scheme: 'tel', path: listing.text('phone')),
-              valeurACopier: listing.text('phone'),
-              ceQuiNePeutPasSOuvrir: 'le composeur',
-            ),
-          ),
-          if (listing.fields['whatsapp_enabled'] == true)
-            OutlinedButton.icon(
-              icon: const Icon(Icons.chat_outlined),
-              label: const Text('Contacter sur WhatsApp'),
-              onPressed: () => ouvrirLien(
-                context,
-                Uri.https(
-                  'wa.me',
-                  '/${listing.text('phone').replaceAll(RegExp(r'\D'), '')}',
-                ),
-                valeurACopier: listing.text('phone'),
-                ceQuiNePeutPasSOuvrir: 'WhatsApp',
-              ),
-            ),
-        ],
+        _BlocDeContact(listing: listing, depuisLaListePublique: publicListing),
       ],
     ),
   );
+}
+
+/// Les boutons pour joindre le vendeur, et d'où leur numéro vient.
+///
+/// POURQUOI CE BLOC CHARGE AU LIEU DE LIRE L'OBJET DÉJÀ EN MAIN
+///
+/// La liste publique `GET private-listings` ne sert plus le numéro : avec
+/// vingt fiches par page et aucune authentification, c'était un annuaire de
+/// particuliers moissonnable d'un seul appel. Le serveur le sert maintenant
+/// sur la FICHE, `GET private-listings/{id}` — l'endroit d'où l'on appelle.
+///
+/// Or cet écran recevait son annonce de la liste et ne rechargeait jamais. Sans
+/// cette requête, les deux boutons disparaîtraient purement et simplement pour
+/// tous les acheteurs, c'est-à-dire la raison d'être de la page. Le reste de
+/// l'écran s'affiche tout de suite avec ce que la liste portait déjà ; seul ce
+/// bloc attend.
+///
+/// En mode vendeur ou modérateur, en revanche, on ne charge RIEN : la liste
+/// porte déjà le numéro — ces deux lecteurs sont « privés » pour le serveur —
+/// et la route publique rendrait 404 sur une annonce non publiée.
+class _BlocDeContact extends ConsumerStatefulWidget {
+  const _BlocDeContact({
+    required this.listing,
+    required this.depuisLaListePublique,
+  });
+  final PrivateListing listing;
+  final bool depuisLaListePublique;
+
+  @override
+  ConsumerState<_BlocDeContact> createState() => _BlocDeContactState();
+}
+
+class _BlocDeContactState extends ConsumerState<_BlocDeContact> {
+  PrivateListing? _fiche;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.depuisLaListePublique) {
+      _fiche = widget.listing;
+
+      return;
+    }
+    ref
+        .read(privateListingRepositoryProvider)
+        .get(widget.listing.id)
+        .then((fiche) {
+          if (mounted) setState(() => _fiche = fiche);
+        })
+        // Un échec ne doit rien casser : l'écran reste lisible, et le numéro
+        // n'apparaît pas plutôt que d'apparaître faux.
+        .catchError((_) => null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final numero = _fiche?.verifiedPhone ?? '';
+    if (numero.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          icon: const Icon(Icons.call_outlined),
+          label: const Text('Appeler le vendeur'),
+          onPressed: () => ouvrirLien(
+            context,
+            Uri(scheme: 'tel', path: numero),
+            valeurACopier: numero,
+            ceQuiNePeutPasSOuvrir: 'le composeur',
+          ),
+        ),
+        if (_fiche?.fields['whatsapp_enabled'] == true)
+          OutlinedButton.icon(
+            icon: const Icon(Icons.chat_outlined),
+            label: const Text('Contacter sur WhatsApp'),
+            onPressed: () => ouvrirLien(
+              context,
+              Uri.https(
+                'wa.me',
+                '/${numero.replaceAll(RegExp(r'\D'), '')}',
+              ),
+              valeurACopier: numero,
+              ceQuiNePeutPasSOuvrir: 'WhatsApp',
+            ),
+          ),
+      ],
+    );
+  }
 }
