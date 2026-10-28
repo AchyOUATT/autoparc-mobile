@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/api/api_exception.dart';
 import '../../../core/utils/currency_format.dart';
+import '../../../core/utils/lien_externe.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../data/private_listing_repository.dart';
 import 'private_listing_detail.dart';
@@ -159,6 +160,108 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
           listing.id,
           revision: listing.number('revision'),
           reason: reason,
+        ),
+      );
+    }
+  }
+
+  /// Publier, c'est-a-dire : appeler le vendeur, puis l'affirmer.
+  ///
+  /// POURQUOI UNE BOITE PLUTOT QU'UN ENVOI DIRECT
+  ///
+  /// La verification par SMS prouvait la possession du numero par
+  /// cryptographie. L'appel la prouve par un geste humain, et un geste n'a de
+  /// valeur que s'il est demande explicitement. Le serveur refuse de publier
+  /// sans l'affirmation ; cette boite est l'endroit ou on la donne, et elle
+  /// porte la question a poser — sans elle, l'appel verifie un numero au lieu
+  /// de verifier une annonce, ce qui ne protege personne.
+  ///
+  /// Quand la ligne porte deja un appel valable pour le numero courant, on
+  /// publie sans rien redemander : le vendeur a seulement corrige son prix ou
+  /// ses photos, et rappeler la meme personne a chaque retouche userait vite
+  /// la file de moderation.
+  Future<void> _publier(PrivateListing listing) async {
+    if (listing.phoneVerified && listing.verifiedPhone == listing.phoneClaimed) {
+      await _run(
+        () => _repo.review(listing.id, revision: listing.number('revision')),
+      );
+
+      return;
+    }
+
+    final numero = listing.phoneClaimed;
+    if (numero.isEmpty) {
+      setState(
+        () => _error =
+            'Cette annonce n’indique aucun numéro : elle ne peut pas être '
+            'publiée. Refusez-la en demandant au vendeur de le renseigner.',
+      );
+
+      return;
+    }
+
+    var confirme = false;
+    final publier = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Appeler le vendeur'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(numero, style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 8),
+              const Text(
+                'Demandez-lui si c’est bien LUI qui a déposé cette annonce — '
+                'pas seulement si le numéro est le sien.',
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.call_outlined),
+                label: const Text('Composer'),
+                onPressed: () => ouvrirLien(
+                  context,
+                  Uri(scheme: 'tel', path: numero),
+                  valeurACopier: numero,
+                  ceQuiNePeutPasSOuvrir: 'le composeur',
+                ),
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                value: confirme,
+                onChanged: (value) =>
+                    setDialogState(() => confirme = value ?? false),
+                title: const Text(
+                  'J’ai appelé ce numéro et le vendeur a confirmé avoir '
+                  'déposé cette annonce.',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: confirme
+                  ? () => Navigator.of(context).pop(true)
+                  : null,
+              child: const Text('Publier'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (publier == true && mounted) {
+      await _run(
+        () => _repo.review(
+          listing.id,
+          revision: listing.number('revision'),
+          phoneVerified: true,
         ),
       );
     }
@@ -423,14 +526,7 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
               children: [
                 if (listing.status == 'pending')
                   FilledButton(
-                    onPressed: _busy
-                        ? null
-                        : () => _run(
-                            () => _repo.review(
-                              listing.id,
-                              revision: listing.number('revision'),
-                            ),
-                          ),
+                    onPressed: _busy ? null : () => _publier(listing),
                     child: const Text('Publier'),
                   ),
                 if (const ['pending', 'published'].contains(listing.status))

@@ -21,6 +21,16 @@ class PrivateListing {
   }
 
   String get status => text('status');
+
+  /// Le numero SAISI par le vendeur, que le personnel appellera.
+  String get phoneClaimed => text('phone_claimed');
+
+  /// Le numero VERIFIE : vide tant que personne n'a appele. C'est lui,
+  /// et lui seul, que les acheteurs voient.
+  String get verifiedPhone => text('phone');
+
+  /// Un appel a-t-il ete passe et consigne ?
+  bool get phoneVerified => text('phone_verified_at').isNotEmpty;
   bool get editable =>
       const ['draft', 'pending', 'published', 'rejected'].contains(status);
   List<Map<String, dynamic>> get photos => (fields['photos'] as List? ?? [])
@@ -118,10 +128,28 @@ class PrivateListingRepository {
 
   Future<void> deletePhoto(int id, int photo) =>
       client.delete('$minePath/$id/photos/$photo');
-  Future<void> review(int id, {required int revision, String? reason}) async {
+  /// Publie ou refuse une annonce.
+  ///
+  /// `phoneVerified` est l'affirmation du moderateur : « j'ai appele ce numero
+  /// et la personne a confirme avoir depose cette annonce ». Le serveur
+  /// l'exige pour publier, sauf si la ligne porte deja un appel valable pour
+  /// le numero courant — voir `approve()` cote serveur.
+  Future<void> review(
+    int id, {
+    required int revision,
+    String? reason,
+    bool phoneVerified = false,
+  }) async {
     await client.post(
       '/private-listing-reviews/$id/${reason == null ? 'approve' : 'reject'}',
-      data: {'revision': revision, 'reason': ?reason},
+      data: {
+        'revision': revision,
+        'reason': ?reason,
+        // La cle n'apparait QUE si l'affirmation est faite : une annonce
+        // dont le numero est deja verifie se republie sans la porter, et la
+        // charge dit alors exactement ce qui s'est passe.
+        if (reason == null && phoneVerified) 'phone_verified': true,
+      },
     );
   }
 

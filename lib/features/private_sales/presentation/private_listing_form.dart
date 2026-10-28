@@ -12,7 +12,6 @@ import '../../vehicles/data/models/vehicle_classification_selection.dart';
 import '../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../vehicles/presentation/widgets/vehicle_identity_fields.dart';
 import '../data/private_listing_repository.dart';
-import '../data/seller_phone_verification.dart';
 
 class PrivateListingForm extends ConsumerStatefulWidget {
   const PrivateListingForm({super.key, this.existing, this.vehicle});
@@ -25,8 +24,6 @@ class PrivateListingForm extends ConsumerStatefulWidget {
 class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
   final _formKey = GlobalKey<FormState>();
   final _inputs = <String, TextEditingController>{};
-  final _phone = TextEditingController();
-  final _code = TextEditingController();
   final _freeModelController = TextEditingController();
   VehicleClassificationSelection _classification =
       VehicleClassificationSelection();
@@ -37,7 +34,7 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
   OwnedVehicle? _source;
   bool _busy = false, _whatsapp = false, _owner = false, _consent = false;
   bool _dirty = false;
-  String? _error, _verificationId, _verifiedPhone, _transmission;
+  String? _error, _transmission;
   String? _editingSession;
   PrivateListingRepository get _repo =>
       ref.read(privateListingRepositoryProvider);
@@ -57,6 +54,17 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
     ]) {
       _inputs[key] = TextEditingController(text: _saved?.text(key) ?? '');
     }
+    // ASYMETRIE VOULUE : on ECRIT `phone` et on LIT `phone_claimed`.
+    //
+    // Le serveur distingue deux numeros. `phone` dans la reponse est le numero
+    // VERIFIE par un appel du personnel — vide tant que personne n'a appele, et
+    // ce n'est pas au vendeur de le remplir. `phone_claimed` est ce qu'il a
+    // tape. C'est donc `phone_claimed` qui revient dans le champ, et le champ
+    // repart sous la cle `phone`, la seule que le formulaire ait le droit
+    // d'ecrire.
+    _inputs['phone'] = TextEditingController(
+      text: _saved?.text('phone_claimed') ?? '',
+    );
     _freeModelController.text = _saved?.text('model_libre') ?? '';
     _freeModel =
         _saved?.fields['vehicle_model_id'] == null &&
@@ -71,8 +79,6 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
     for (final controller in _inputs.values) {
       controller.dispose();
     }
-    _phone.dispose();
-    _code.dispose();
     _freeModelController.dispose();
     super.dispose();
   }
@@ -214,34 +220,6 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
     });
   }
 
-  Future<void> _sendCode() => _run(() async {
-    if (!RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(_phone.text.trim())) {
-      throw StateError(
-        'Saisissez votre numéro avec l’indicatif, par exemple +22670000000.',
-      );
-    }
-    await ref
-        .read(sellerPhoneVerificationProvider)
-        .send(
-          _phone.text.trim(),
-          codeSent: (id) {
-            if (mounted) setState(() => _verificationId = id);
-          },
-          verified: (phone) {
-            if (mounted) setState(() => _verifiedPhone = phone);
-          },
-          failed: (error) {
-            if (mounted) setState(() => _error = error);
-          },
-        );
-  });
-
-  Future<void> _confirmCode() => _run(() async {
-    final phone = await ref
-        .read(sellerPhoneVerificationProvider)
-        .confirm(_verificationId!, _code.text.trim());
-    if (mounted) setState(() => _verifiedPhone = phone);
-  });
 
   Future<void> _submit() => _run(() async {
     if (_dirty) {
@@ -413,6 +391,12 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
               maxLength: 80,
               enabled: editable,
             ),
+            _field(
+              'phone',
+              'Téléphone avec indicatif',
+              maxLength: 20,
+              enabled: editable,
+            ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Être contacté sur WhatsApp'),
@@ -488,44 +472,16 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
             if (canSubmit) ...[
               const Divider(height: 32),
               Text(
-                'Vérifier mon téléphone',
+                'Avant la mise en ligne',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const Text(
-                'Le numéro vérifié sera affiché aux acheteurs après validation de votre annonce.',
+                'Une personne d’AutoParc vous appellera au numéro indiqué pour '
+                'confirmer que l’annonce vient bien de vous. Votre numéro ne '
+                'sera affiché aux acheteurs qu’après cet appel.',
               ),
-              TextField(
-                controller: _phone,
-                enabled: !_busy,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Téléphone avec indicatif',
-                  hintText: '+22670000000',
-                ),
-              ),
-              OutlinedButton(
-                onPressed: _busy ? null : _sendCode,
-                child: const Text('Recevoir un code SMS'),
-              ),
-              if (_verificationId != null) ...[
-                TextField(
-                  controller: _code,
-                  enabled: !_busy,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Code reçu par SMS',
-                  ),
-                ),
-                OutlinedButton(
-                  onPressed: _busy ? null : _confirmCode,
-                  child: const Text('Vérifier le code'),
-                ),
-              ],
-              if (_verifiedPhone != null)
-                Text('Téléphone vérifié : $_verifiedPhone'),
-              const Text(
-                'Si votre compte possède déjà un téléphone vérifié, vous pouvez directement envoyer l’annonce.',
-              ),
+              if (_saved?.phoneVerified ?? false)
+                Text('Numéro vérifié : ${_saved!.verifiedPhone}'),
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
                 value: _owner,
@@ -589,6 +545,17 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
         if (text.isEmpty) return 'Renseignez ce champ.';
         if (key == 'description' && text.length < 20) {
           return 'Décrivez le véhicule en au moins 20 caractères.';
+        }
+        // LE GARDE DU NUMERO VIT ICI, et pas dans une exception.
+        //
+        // Il refusait auparavant depuis `_sendCode`, par un StateError dont
+        // `messageFor` jetait le texte : l'ecran affichait « Une erreur est
+        // survenue » et le vendeur ne savait pas qu'il manquait « +226 ». Dans
+        // le `validator`, Material pose la phrase SOUS le champ fautif, et
+        // c'est le meme format que le serveur exige — un numero qu'on ne peut
+        // pas composer ne vaut rien a qui doit appeler.
+        if (key == 'phone' && !RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(text)) {
+          return 'Indiquez le numéro avec l’indicatif, par exemple +22670000000.';
         }
         if (numeric) {
           final number = int.tryParse(text);

@@ -129,6 +129,9 @@ Future<void> fillSaleCommercial(WidgetTester tester) async {
     'État du véhicule et informations utiles':
         'Véhicule entretenu et disponible pour une visite.',
     'Nom affiché aux acheteurs': 'Vendeur particulier',
+    // Le numéro que le personnel appellera : champ obligatoire du formulaire
+    // depuis que la vérification ne passe plus par un SMS.
+    'Téléphone avec indicatif': '+22670000000',
   }.entries) {
     await tester.ensureVisible(saleTextField(entry.key));
     await tester.enterText(saleTextField(entry.key), entry.value);
@@ -147,6 +150,10 @@ Future<void> saveSaleDraft(WidgetTester tester) async {
 Map<String, dynamic> listingFields({
   int id = 1,
   String status = 'published',
+  /// Un modérateur a-t-il déjà appelé ce vendeur ?
+  bool appelPasse = true,
+  /// Ce que le vendeur a saisi, vide pour l'annonce qui n'indique aucun numéro.
+  String numeroSaisi = '+22670000000',
 }) => {
   'id': id,
   'title': 'Toyota Corolla 2018',
@@ -164,8 +171,13 @@ Map<String, dynamic> listingFields({
   'city': 'Ouagadougou',
   'seller_type': 'private',
   'seller_name': 'Vendeur de démonstration',
-  'phone': '',
-  'phone_verified': true,
+  // Les deux numeros du serveur, et ils ne disent pas la meme chose :
+  // `phone` est le numero VERIFIE par un appel du personnel, `phone_claimed`
+  // est celui que le vendeur a saisi. Une annonce publiee porte les deux.
+  'phone': appelPasse ? numeroSaisi : '',
+  'phone_claimed': numeroSaisi,
+  'phone_verified_at': appelPasse ? '2026-10-28T10:00:00+00:00' : null,
+  'phone_verified': appelPasse,
   'description':
       'Véhicule entretenu, climatisation fonctionnelle. Disponible pour une visite.',
   'whatsapp_enabled': false,
@@ -178,6 +190,8 @@ class FakeSalesApi implements ApiClient {
   final queries = <({String path, Map<String, dynamic>? params})>[];
   final commands = <({String path, Map<String, dynamic>? data})>[];
   bool fail = false, empty = false;
+  bool appelPasse = true;
+  String numeroSaisi = '+22670000000';
   String status = 'published';
   Map<String, dynamic>? saved;
 
@@ -196,7 +210,14 @@ class FakeSalesApi implements ApiClient {
     return {
       'data': empty
           ? []
-          : [listingFields(id: params?['page'] as int? ?? 1, status: status)],
+          : [
+              listingFields(
+                id: params?['page'] as int? ?? 1,
+                status: status,
+                appelPasse: appelPasse,
+                numeroSaisi: numeroSaisi,
+              ),
+            ],
       'meta': {'current_page': params?['page'] ?? 1, 'last_page': 2},
     };
   }
@@ -402,6 +423,110 @@ void main() {
     expect(api.commands.single.path, '/private-listing-reviews/1/approve');
     expect(api.commands.single.data, {'revision': 4});
     expect(find.text('Aucune annonce à examiner.'), findsOneWidget);
+  });
+
+  /// Un numéro au format local est refusé SOUS LE CHAMP, pas par une exception.
+  ///
+  /// Le garde vivait dans `_sendCode` et levait un `StateError` dont
+  /// `messageFor` jetait le texte : l'écran affichait « Une erreur est
+  /// survenue » et le vendeur ne savait pas qu'il manquait « +226 ». Dans le
+  /// `validator`, Material pose la phrase sous le champ fautif. C'est la forme
+  /// que le serveur exige aussi : un numéro qu'on ne peut pas composer ne vaut
+  /// rien à qui doit appeler.
+  testWidgets('un numéro sans indicatif est refusé sous le champ', (
+    tester,
+  ) async {
+    final api = FakeSalesApi();
+    saleViewport(tester);
+    await open(tester, api, const PrivateListingForm());
+    await chooseSale<BrandRef>(tester, saleToyota);
+    await chooseSale<ModelRef>(tester, saleCorolla);
+    await tester.enterText(
+      find.byKey(const ValueKey('private-sale-year')),
+      '2018',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('private-sale-mileage')),
+      '85000',
+    );
+    await fillSaleCommercial(tester);
+
+    // Le format local, celui que le vendeur dit à l'oral.
+    await tester.ensureVisible(saleTextField('Téléphone avec indicatif'));
+    await tester.enterText(
+      saleTextField('Téléphone avec indicatif'),
+      '70000000',
+    );
+    await saveSaleDraft(tester);
+
+    expect(api.commands, isEmpty, reason: 'Rien ne doit partir au serveur.');
+    expect(find.textContaining('+22670000000'), findsWidgets);
+    expect(find.text('Une erreur est survenue. Réessayez.'), findsNothing);
+  });
+
+  /// Publier un numéro jamais appelé exige l'appel, et le dit.
+  ///
+  /// C'est tout ce qui reste de la preuve de possession depuis que la
+  /// vérification par SMS est abandonnée : le serveur refuse de publier sans
+  /// l'affirmation, et cette boîte est l'endroit où elle est demandée. Le banc
+  /// tient les trois points qui comptent — le numéro est affiché, la
+  /// publication est impossible tant que la case n'est pas cochée, et la
+  /// question à poser est à l'écran.
+  testWidgets('publier un numéro jamais appelé exige l’appel', (tester) async {
+    final api = FakeSalesApi()
+      ..status = 'pending'
+      ..appelPasse = false;
+    await open(
+      tester,
+      api,
+      const PrivateListingsPage(mode: PrivateListingMode.review),
+      auth: manager,
+    );
+
+    await tester.tap(find.text('Publier'));
+    await tester.pumpAndSettle();
+
+    // Rien n'est parti : la boîte attend.
+    expect(api.commands, isEmpty);
+    expect(find.text('+22670000000'), findsOneWidget);
+    expect(find.textContaining('déposé cette annonce'), findsWidgets);
+
+    // Le bouton de la boîte est mort tant que la case n'est pas cochée.
+    final publier = find.widgetWithText(FilledButton, 'Publier').last;
+    expect(tester.widget<FilledButton>(publier).onPressed, isNull);
+
+    await tester.tap(find.byType(CheckboxListTile));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Publier').last);
+    await tester.pumpAndSettle();
+
+    expect(api.commands.single.path, '/private-listing-reviews/1/approve');
+    expect(api.commands.single.data, {'revision': 4, 'phone_verified': true});
+  });
+
+  /// Une annonce sans numéro ne peut pas être publiée, et on dit quoi faire.
+  ///
+  /// La colonne est nullable : une annonce déposée avant la bascule du SMS
+  /// vers l'appel n'a aucun numéro. Le serveur la refuserait de toute façon ;
+  /// ce banc tient que le modérateur l'apprend ici, au lieu de voir une erreur
+  /// venue du serveur sans savoir qu'en faire.
+  testWidgets('une annonce sans numéro n’offre pas de publier', (tester) async {
+    final api = FakeSalesApi()
+      ..status = 'pending'
+      ..appelPasse = false
+      ..numeroSaisi = '';
+    await open(
+      tester,
+      api,
+      const PrivateListingsPage(mode: PrivateListingMode.review),
+      auth: manager,
+    );
+
+    await tester.tap(find.text('Publier'));
+    await tester.pumpAndSettle();
+
+    expect(api.commands, isEmpty);
+    expect(find.textContaining('n’indique aucun numéro'), findsOneWidget);
   });
 
   testWidgets('failed moderation stays visible with an actionable message', (
