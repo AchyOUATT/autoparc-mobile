@@ -1,11 +1,10 @@
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../features/cart/data/models/cart_item.dart';
-import 'contact_info.dart';
+import '../contact/autoparc_contact.dart';
 import 'currency_format.dart';
 
-// Le numéro vient désormais de contact_info.dart — il vivait ici en double,
-// avec une valeur fictive différente de celle de main.dart.
+// Le numéro confirmé par le serveur est fourni par l'écran appelant.
 
 /// Les cinq chaînes du message de commande, LUES DANS L'ÉCRAN.
 ///
@@ -116,9 +115,11 @@ String buildWhatsAppMessage(List<CartItem> items, LibellesCommande libelles) {
   final totalTtc = items.fold(0.0, (s, i) => s + i.lineTotalTtc);
   final tva = totalTtc - totalHt;
 
-  final largeur = [libelles.sousTotal, libelles.taxe, libelles.total]
-      .map((l) => l.length)
-      .reduce((a, b) => a > b ? a : b);
+  final largeur = [
+    libelles.sousTotal,
+    libelles.taxe,
+    libelles.total,
+  ].map((l) => l.length).reduce((a, b) => a > b ? a : b);
 
   buf
     ..writeln()
@@ -137,14 +138,29 @@ String buildWhatsAppMessage(List<CartItem> items, LibellesCommande libelles) {
 /// Retourne `true` si l'app a pu être ouverte.
 Future<bool> launchWhatsApp(
   List<CartItem> items,
-  LibellesCommande libelles,
-) async {
+  LibellesCommande libelles, {
+  required AutoParcContact contact,
+}) async {
   final text = buildWhatsAppMessage(items, libelles);
-  final encoded = Uri.encodeComponent(text);
-  final uri = Uri.parse('https://wa.me/$kContactWhatsApp?text=$encoded');
+  // L'ENCODAGE EST ÉCRIT À LA MAIN, et il ne faut pas revenir à
+  // `replace(queryParameters: …)`.
+  //
+  // Cette méthode encode la requête en `application/x-www-form-urlencoded`,
+  // où une espace devient « + ». Mesuré sur deux lignes de message : neuf
+  // « + » littéraux, là où `Uri.encodeComponent` n'en met aucun et pose
+  // « %20 ». Le message de commande est plein d'espaces — les montants sont
+  // alignés par `padRight` —, donc il en porterait des dizaines, et wa.me ne
+  // garantit pas de les relire comme des espaces.
+  //
+  // C'est le SEUL chemin de commande d'un acheteur qui n'est pas du personnel
+  // (`cart_page.dart` : `isStaff ? Row(…) : FilledButton.icon(…)`). La forme
+  // ci-dessous est identique au caractère près à celle que l'application déjà
+  // publiée envoie — mesure : `correctif == avant` vaut `true`.
+  final uri = contact.whatsappUri.replace(
+    query: 'text=${Uri.encodeComponent(text)}',
+  );
   if (await canLaunchUrl(uri)) {
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-    return true;
+    return launchUrl(uri, mode: LaunchMode.externalApplication);
   }
   return false;
 }

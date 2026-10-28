@@ -28,6 +28,7 @@ void main() {
     'canManageFaults':   {'admin', 'manager', 'mechanic'},
     'canManageStock':    {'admin', 'manager', 'warehouse'},
     'canManagePartners': {'admin', 'manager'},
+    'canManageSettings': {'admin', 'manager'},
     'canBroadcast':      {'admin', 'manager'},
   };
 
@@ -37,6 +38,7 @@ void main() {
     'canManageFaults'   => s.canManageFaults,
     'canManageStock'    => s.canManageStock,
     'canManagePartners' => s.canManagePartners,
+    'canManageSettings' => s.canManageSettings,
     'canBroadcast'      => s.canBroadcast,
     _ => throw ArgumentError('Capacité inconnue : $capability'),
   };

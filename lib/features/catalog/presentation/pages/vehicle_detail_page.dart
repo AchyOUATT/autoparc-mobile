@@ -11,7 +11,7 @@ import '../../data/models/vehicle.dart';
 import '../../data/models/promotion.dart';
 import '../promotion_affichage.dart';
 import '../providers/catalog_providers.dart';
-import '../../../../core/utils/contact_info.dart';
+import '../../../../core/contact/autoparc_contact_provider.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/utils/partage.dart';
 import '../../../../core/widgets/brand_logo.dart';
@@ -799,11 +799,12 @@ class _ImportSection extends StatelessWidget {
 
 // ── Barre d'actions ────────────────────────────────────────────────
 
-class _ActionBar extends StatelessWidget {
+class _ActionBar extends ConsumerWidget {
   const _ActionBar();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final contact = ref.watch(autoparcContactProvider);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -831,7 +832,7 @@ class _ActionBar extends StatelessWidget {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () => launchUrl(Uri.parse('tel:$kContactPhone')),
+                onPressed: () => launchUrl(contact.phoneUri),
                 icon: const Icon(Icons.phone),
                 label: FittedBox(
                   fit: BoxFit.scaleDown,
@@ -843,7 +844,7 @@ class _ActionBar extends StatelessWidget {
             Expanded(
               child: FilledButton.icon(
                 onPressed: () => launchUrl(
-                  Uri.parse('https://wa.me/$kContactWhatsApp'),
+                  contact.whatsappUri,
                   mode: LaunchMode.externalApplication,
                 ),
                 icon: const Icon(Icons.chat),
