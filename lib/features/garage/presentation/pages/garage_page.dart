@@ -12,6 +12,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
 import '../../../../core/api/api_exception.dart';
 import '../../../../core/widgets/brand_logo.dart';
+import '../../../private_sales/data/private_listing_repository.dart';
 
 class GaragePage extends ConsumerWidget {
   const GaragePage({super.key});
@@ -475,6 +476,10 @@ class _VehicleCard extends ConsumerWidget {
           ),
 
           // ── Bouton pièces compatibles ─────────────────────────────
+          if (privateSalesEnabled) Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: OutlinedButton.icon(
+            onPressed: () => context.push('/sell', extra: vehicle),
+            icon: const Icon(Icons.sell_outlined), label: const Text('Vendre ce véhicule'),
+          )),
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
             child: Row(

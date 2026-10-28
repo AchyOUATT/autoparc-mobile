@@ -20,6 +20,7 @@ import '../../../garage/presentation/widgets/mileage_dialog.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
 import '../providers/home_providers.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../private_sales/data/private_listing_repository.dart';
 
 /// Accueil.
 ///
@@ -62,6 +63,18 @@ class HomePage extends ConsumerWidget {
             if (!auth.isStaff) const _MyVehicleSection(),
             const _DealsSection(),
             const _BrowseSection(),
+            if (privateSalesEnabled) Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Les voitures de particuliers', style: Theme.of(context).textTheme.titleLarge),
+                const Text('Vendez votre voiture depuis votre compte habituel. Une annonce en cours gratuite.'),
+                const SizedBox(height: 8),
+                Wrap(spacing: 8, children: [
+                  if (!auth.isStaff) FilledButton.icon(onPressed: () => context.push('/sell'), icon: const Icon(Icons.sell_outlined), label: const Text('Vendre ma voiture')),
+                  OutlinedButton(onPressed: () => context.push('/private-listings'), child: const Text('Voir les annonces')),
+                  if (auth.canManageCatalog) TextButton(onPressed: () => context.push('/private-listing-reviews'), child: const Text('Valider les annonces')),
+                ]),
+              ],
+            ))),
             const SizedBox(height: 8),
             const _NeedPrompt(),
           ],
