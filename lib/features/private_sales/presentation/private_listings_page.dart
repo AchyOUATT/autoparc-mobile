@@ -123,18 +123,40 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
     }
   }
 
+  /// Refuser une annonce, en disant au modérateur ce qu'on attend de lui.
+  ///
+  /// CE QUE CE DIALOGUE FAISAIT. Sous cinq signes utiles, le bouton ne faisait
+  /// RIEN : pas de message, pas de fermeture, rien. Et le compteur de
+  /// `maxLength` affichait « 4/2000 », ce qui disait l'inverse de la règle.
+  /// Le réviseur touchait deux ou trois fois, puis signalait que la validation
+  /// des annonces ne fonctionnait pas. C'est l'unique guichet de modération de
+  /// cette boutique.
+  ///
+  /// Le patron est celui de `partner_applications_page.dart`, déjà publié : un
+  /// `Form` avec un `validator`, et le message sous le champ. `counterText: ''`
+  /// retire le compteur qui contredisait la règle, remplacé par un
+  /// `helperText` qui la dit.
   Future<void> _reject(PrivateListing listing) async {
-    final controller = TextEditingController();
+    final form = GlobalKey<FormState>();
+    var draft = '';
     final reason = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Motif à communiquer au vendeur'),
-        content: TextField(
-          controller: controller,
-          maxLength: 2000,
-          maxLines: 4,
-          decoration: const InputDecoration(
-            hintText: 'Expliquez ce qui doit être corrigé.',
+        content: Form(
+          key: form,
+          child: TextFormField(
+            onChanged: (value) => draft = value,
+            maxLength: 2000,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              hintText: 'Expliquez ce qui doit être corrigé.',
+              helperText: 'Au moins 5 caractères.',
+              counterText: '',
+            ),
+            validator: (value) => (value ?? '').trim().length < 5
+                ? 'Au moins 5 caractères : le vendeur doit comprendre quoi corriger.'
+                : null,
           ),
         ),
         actions: [
@@ -144,8 +166,8 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
           ),
           FilledButton(
             onPressed: () {
-              if (controller.text.trim().length >= 5) {
-                Navigator.pop(context, controller.text.trim());
+              if (form.currentState!.validate()) {
+                Navigator.pop(context, draft.trim());
               }
             },
             child: const Text('Refuser / retirer'),

@@ -553,6 +553,98 @@ void main() {
     expect(find.text('Une erreur est survenue. Réessayez.'), findsNothing);
   });
 
+  /// Le bouton d'envoi DIT ce qui l'empêche, au lieu d'être grisé en silence.
+  ///
+  /// La phrase prévue pour l'expliquer vivait dans `_submit`, derrière le même
+  /// `_dirty` qui désactive le bouton qui appelle `_submit` : elle ne pouvait
+  /// jamais s'afficher. Le vendeur devait devenir qu'il fallait d'abord
+  /// enregistrer.
+  ///
+  /// Et le bouton « Ajouter des photos » n'est PLUS grisé par `_dirty` : un
+  /// envoi de photo n'a besoin que de l'identifiant, et la sauvegarde n'envoie
+  /// aucune révision.
+  testWidgets('l’envoi grisé dit son premier obstacle', (tester) async {
+    final api = FakeSalesApi();
+    saleViewport(tester);
+    await open(
+      tester,
+      api,
+      PrivateListingForm(
+        existing: PrivateListing(listingFields(status: 'draft')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Sans photo : c'est le premier obstacle, et il est écrit.
+    expect(find.text('Ajoutez au moins une photo.'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Envoyer pour validation'),
+          )
+          .onPressed,
+      isNull,
+    );
+
+    // Une frappe lève `_dirty` : l'obstacle change, et il le dit aussi.
+    await tester.ensureVisible(saleTextField('Ville'));
+    await tester.enterText(saleTextField('Ville'), 'Bobo-Dioulasso');
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Enregistrez vos modifications avant d’envoyer l’annonce.'),
+      findsOneWidget,
+    );
+
+    // Et le bouton des photos reste utilisable malgré `_dirty`.
+    final photos = find.widgetWithText(OutlinedButton, 'Ajouter des photos');
+    expect(photos, findsOneWidget);
+    expect(tester.widget<OutlinedButton>(photos).onPressed, isNotNull);
+  });
+
+  /// Refuser avec un motif trop court le DIT, au lieu de ne rien faire.
+  ///
+  /// Sous cinq signes, le bouton ne faisait rien : pas de message, pas de
+  /// fermeture. Et le compteur de `maxLength` affichait « 4/2000 », ce qui
+  /// disait l'inverse de la règle du serveur. C'est l'unique guichet de
+  /// modération de cette boutique.
+  testWidgets('un motif trop court est refusé en le disant', (tester) async {
+    final api = FakeSalesApi()..status = 'pending';
+    await open(
+      tester,
+      api,
+      const PrivateListingsPage(mode: PrivateListingMode.review),
+      auth: manager,
+    );
+
+    await tester.tap(find.text('Refuser / retirer'));
+    await tester.pumpAndSettle();
+    expect(find.text('Au moins 5 caractères.'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextFormField).last, 'flou');
+    await tester.tap(find.widgetWithText(FilledButton, 'Refuser / retirer'));
+    await tester.pumpAndSettle();
+
+    // Le message du VALIDATEUR, et non le `helperText` — celui-ci est
+    // toujours affiché, donc le chercher ne distinguerait pas un refus dit
+    // d'un refus muet. C'est la phrase longue qui prouve que le validateur
+    // a tourné.
+    expect(
+      find.text(
+        'Au moins 5 caractères : le vendeur doit comprendre quoi corriger.',
+      ),
+      findsOneWidget,
+      reason: 'Le refus muet laissait le réviseur croire le bouton cassé.',
+    );
+    expect(api.commands, isEmpty);
+
+    // Un motif suffisant, lui, passe.
+    await tester.enterText(find.byType(TextFormField).last, 'Photos floues');
+    await tester.tap(find.widgetWithText(FilledButton, 'Refuser / retirer'));
+    await tester.pumpAndSettle();
+    expect(api.commands.single.path, '/private-listing-reviews/1/reject');
+    expect(api.commands.single.data?['reason'], 'Photos floues');
+  });
+
   /// Publier un numéro jamais appelé exige l'appel, et le dit.
   ///
   /// C'est tout ce qui reste de la preuve de possession depuis que la

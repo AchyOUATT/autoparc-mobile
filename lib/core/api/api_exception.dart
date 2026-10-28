@@ -192,12 +192,39 @@ class ApiException implements Exception {
       '${requestId == null ? '' : ' [réf. $requestId]'}';
 }
 
+/// Un refus que l'écran a décidé lui-même, avec sa phrase pour l'utilisateur.
+///
+/// POURQUOI UN TYPE À NOUS PLUTÔT QU'UN `StateError`.
+///
+/// Les écrans levaient des `StateError` portant un texte français
+/// actionnable — « Vous pouvez ajouter au plus 10 photos au total. » — et
+/// [messageFor] le JETAIT : il ne connaît qu'[ApiException] et [DioException],
+/// donc l'utilisateur lisait « Une erreur est survenue. Réessayez. » sans
+/// savoir ce qui n'allait pas.
+///
+/// Et on ne peut PAS apprendre `StateError` à [messageFor] : Dart en lève
+/// lui-même, en anglais, sur des fautes de programmation — « No element »,
+/// « Bad state: Future already completed ». Les afficher reviendrait à montrer
+/// un message interne anglais là où l'on veut une phrase française qui dit
+/// quoi faire. D'où un type qui ne peut venir que de nous.
+class RefusLocal implements Exception {
+  const RefusLocal(this.message);
+
+  /// La phrase montrée telle quelle, déjà en français et déjà actionnable.
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 /// Message présentable pour n'importe quelle erreur remontée à l'écran.
 ///
 /// Les pages reçoivent parfois autre chose qu'une [ApiException] — une erreur
 /// de parsing, une exception Firebase. Plutôt que d'afficher `toString()`, on
 /// dit au moins quelque chose d'utilisable, sans prétendre connaître la cause.
 String messageFor(Object? error) {
+  if (error is RefusLocal) return error.message;
+
   if (error is ApiException) return error.userMessage;
 
   if (error is DioException) return ApiException.fromDioError(error).userMessage;

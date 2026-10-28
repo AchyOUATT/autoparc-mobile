@@ -166,5 +166,31 @@ void main() {
     test('déballe une DioException brute', () {
       expect(messageFor(coupure()), contains('connexion'));
     });
+  });
+  group('RefusLocal', () {
+    /// Un refus décidé par l'écran arrive à l'écran, mot pour mot.
+    ///
+    /// Les écrans levaient des `StateError` portant un texte français
+    /// actionnable, et `messageFor` le jetait : l'utilisateur lisait « Une
+    /// erreur est survenue. Réessayez. » sans savoir ce qui n'allait pas.
+    test('son texte est rendu tel quel', () {
+      expect(
+        messageFor(const RefusLocal('Vous pouvez ajouter au plus 10 photos.')),
+        'Vous pouvez ajouter au plus 10 photos.',
+      );
+    });
+
+    /// Et `StateError` reste générique, à dessein.
+    ///
+    /// Dart en lève lui-même, en anglais, sur des fautes de programmation
+    /// (« No element »). L'élargissement de `messageFor` à `StateError`
+    /// amènerait ces messages internes à l'écran : c'est précisément ce qu'on
+    /// ne veut pas, et c'est pourquoi le refus a son propre type.
+    test('un StateError de Dart ne fuit pas à l’écran', () {
+      expect(
+        messageFor(StateError('No element')),
+        'Une erreur est survenue. Réessayez.',
+      );
+    });
   });
 }

@@ -210,7 +210,12 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
       );
       if (files.isEmpty || !mounted) return;
       if (files.length + (_saved?.photos.length ?? 0) > 10) {
-        throw StateError('Vous pouvez ajouter au plus 10 photos au total.');
+        // `RefusLocal` et non `StateError` : `messageFor` connaît le premier
+        // et JETAIT le texte du second, donc l'écran affichait « Une erreur
+        // est survenue » au lieu de dire ce qui n'allait pas. On ne peut pas
+        // apprendre `StateError` à `messageFor` : Dart en lève lui-même, en
+        // anglais (« No element »), et ils arriveraient à l'écran.
+        throw const RefusLocal('Vous pouvez ajouter au plus 10 photos au total.');
       }
       // One image per request keeps a mobile upload below PHP's total body limit.
       for (final file in files) {
@@ -221,12 +226,19 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
   }
 
 
+  /// Ce qui empêche l'envoi, dit au vendeur — ou `null` s'il peut envoyer.
+  ///
+  /// L'ordre compte : on nomme le premier geste à faire, pas la liste de tout
+  /// ce qui manque. Le vendeur en corrige un, la phrase suivante apparaît.
+  String? _obstacleAEnvoyer(PrivateListing saved) {
+    if (_dirty) return 'Enregistrez vos modifications avant d’envoyer l’annonce.';
+    if (saved.photos.isEmpty) return 'Ajoutez au moins une photo.';
+    if (!_owner || !_consent) return 'Cochez les deux cases ci-dessus.';
+
+    return null;
+  }
+
   Future<void> _submit() => _run(() async {
-    if (_dirty) {
-      throw StateError(
-        'Enregistrez vos modifications avant d’envoyer l’annonce.',
-      );
-    }
     final saved = await _repo.action(
       _saved!.id,
       'submit',
@@ -463,8 +475,15 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
                         ),
                 ),
               if (editable && saved.photos.length < 10)
+                // `_dirty` NE grise PAS ce bouton, contrairement à l'envoi.
+                //
+                // Envoyer une photo n'a besoin que de `_saved!.id`, et la
+                // sauvegarde n'envoie aucune `revision` : une saisie en cours
+                // ailleurs dans le formulaire ne rend pas cet envoi faux. Le
+                // griser au moindre caractère tapé obligeait à enregistrer
+                // avant d'ajouter une photo, sans dire pourquoi.
                 OutlinedButton.icon(
-                  onPressed: _busy || _dirty ? null : _upload,
+                  onPressed: _busy ? null : _upload,
                   icon: const Icon(Icons.add_photo_alternate_outlined),
                   label: const Text('Ajouter des photos'),
                 ),
@@ -502,13 +521,29 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
                   'J’accepte que mon nom affiché et mon téléphone vérifié soient publics sur cette annonce.',
                 ),
               ),
+              // LE PREMIER OBSTACLE EST DIT, au lieu d'être deviné.
+              //
+              // Le bouton restait grisé sans un mot, et la phrase prévue pour
+              // l'expliquer était INATTEIGNABLE : elle vivait dans `_submit`,
+              // derrière le même `_dirty` qui désactive le bouton qui appelle
+              // `_submit`. Un garde qui ne peut jamais se déclencher est un
+              // garde qui ment.
+              //
+              // On garde `_dirty` sur l'envoi — soumettre la ligne persistée
+              // pendant que l'écran montre autre chose serait pire —, mais on
+              // affiche la raison au-dessus.
+              if (_obstacleAEnvoyer(saved) != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    _obstacleAEnvoyer(saved)!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
               FilledButton(
-                onPressed:
-                    _busy ||
-                        _dirty ||
-                        !_owner ||
-                        !_consent ||
-                        saved.photos.isEmpty
+                onPressed: _busy || _obstacleAEnvoyer(saved) != null
                     ? null
                     : _submit,
                 child: const Text('Envoyer pour validation'),

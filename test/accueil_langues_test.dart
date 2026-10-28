@@ -579,19 +579,30 @@ void main() {
           locale: langue.value,
         );
 
-        // La vitrine est sous le pli : on descend jusqu'à elle.
-        for (var i = 0; i < 6; i++) {
-          await tester.drag(
-            find
-                .descendant(
-                  of: find.byType(HomePage),
-                  matching: find.byType(Scrollable),
-                )
-                .first,
-            const Offset(0, -240),
-          );
-          await tester.pump(const Duration(milliseconds: 50));
-        }
+        // La vitrine est sous le pli : on descend JUSQU'À elle, et non d'un
+        // nombre fixe de gestes.
+        //
+        // Six glissements de 240 points suffisaient quand ce banc a été écrit.
+        // Toute carte ajoutée plus haut dans l'accueil les rend insuffisants —
+        // et l'échec ne dit alors PAS que c'est le défilement qui a manqué : le
+        // `renderObject` ci-dessous lève « Bad state: No element », ce qui
+        // envoie chercher du côté de la traduction ou de la police.
+        //
+        // C'est exactement ce qui est arrivé. La carte des annonces entre
+        // particuliers vit derrière `bool.fromEnvironment('ENABLE_PRIVATE_SALES')`,
+        // donc ce banc passait tant que le drapeau restait éteint et tombait
+        // dès qu'on l'allumait : la configuration qu'on publierait le jour de
+        // l'allumage était la seule jamais éprouvée au vert.
+        await tester.scrollUntilVisible(
+          find.text(titreVitrine[langue.key]!),
+          240,
+          scrollable: find
+              .descendant(
+                of: find.byType(HomePage),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
 
         return tester.renderObject<RenderParagraph>(
           find.text(titreVitrine[langue.key]!),
