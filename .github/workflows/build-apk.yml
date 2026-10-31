@@ -176,6 +176,7 @@ jobs:
           echo "versionCode de ce build : ${{ github.run_number }}"
           flutter build appbundle --release --no-tree-shake-icons \
             --build-number=${{ github.run_number }} \
+            --dart-define=ENABLE_PRIVATE_SALES=true \
             --dart-define=API_BASE_URL=https://autoparc-backend.onrender.com/api
 
       # L'APK reste utile pour l'installation directe (test terrain, partage
@@ -185,6 +186,7 @@ jobs:
         run: |
           flutter build apk --release --no-tree-shake-icons \
             --build-number=${{ github.run_number }} \
+            --dart-define=ENABLE_PRIVATE_SALES=true \
             --dart-define=API_BASE_URL=https://autoparc-backend.onrender.com/api
 
       # Le garde-fou qui compte.

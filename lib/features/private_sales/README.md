@@ -1,8 +1,15 @@
 # Annonces de particuliers
 
-Module local, masqué par défaut. L’activer dans un build de développement avec
-`--dart-define=ENABLE_PRIVATE_SALES=true`. Le serveur de développement doit aussi
-activer `PRIVATE_SALES_ENABLED=true` après avoir appliqué sa migration.
+Le workflow `.github/workflows/build-apk.yml` active le module dans ses deux
+builds de publication, App Bundle et APK, avec
+`--dart-define=ENABLE_PRIVATE_SALES=true`. Les prochaines versions compilées
+par ce workflow afficheront donc le parcours particulier. Une version déjà
+installée doit être mise à jour pour recevoir cette activation.
+
+Un build lancé sans ce drapeau garde le module masqué. Pour le développement ou
+un build manuel, passer aussi `--dart-define=ENABLE_PRIVATE_SALES=true`.
+Le serveur doit activer `PRIVATE_SALES_ENABLED=true` après avoir appliqué les
+migrations du module.
 
 La saisie du véhicule reprend les sélecteurs du formulaire d’enregistrement :
 `VehicleReferenceDropdown` est désormais partagé avec `VehicleRegisterPage`, et
@@ -29,9 +36,11 @@ Routes ajoutées : `/sell`, `/private-listings`, `/my-listings`,
 existant ; son intégration définitive peut être décidée après examen.
 
 Le client utilise sa session Firebase habituelle ; le personnel sa session
-Sanctum existante. La liaison du téléphone utilise Firebase Phone Auth et force
-le rafraîchissement du jeton avant l’envoi. Le serveur reste seul juge de la
-vérification téléphonique et des droits de publication.
+Sanctum existante. Le vendeur saisit son téléphone avec l’indicatif international.
+Il n’y a pas de vérification par SMS : avant de publier, le personnel appelle
+ce numéro et confirme que la personne a bien déposé l’annonce. Le serveur exige
+cette confirmation, sauf si le numéro courant a déjà été vérifié par un appel.
+Il reste seul juge de la vérification téléphonique et des droits de publication.
 
 Interface initiale en français, comme l’espace partenaire existant. La traduction
 anglaise du module reste à prévoir avant une diffusion aux utilisateurs anglophones.

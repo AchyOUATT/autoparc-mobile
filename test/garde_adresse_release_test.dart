@@ -166,6 +166,34 @@ void main() {
   // ── Et la CI, qui doit continuer à passer la valeur ─────────────────────
 
   group('le workflow de publication', () {
+    test('active les ventes de particuliers dans le bundle et l’APK', () {
+      final doc = loadYaml(
+        File('.github/workflows/build-apk.yml').readAsStringSync(),
+      ) as YamlMap;
+      final etapes = (doc['jobs'] as YamlMap).values.first['steps'] as YamlList;
+      final commandes = <({String cible, String commande})>[];
+      for (final etape in etapes.cast<YamlMap>()) {
+        final script = etape['run']?.toString().replaceAll(
+          RegExp(r'\\\r?\n\s*'),
+          ' ',
+        ) ?? '';
+        for (final commande in RegExp(
+          r'^\s*flutter\s+build\s+(appbundle|apk)\b[^\r\n]*',
+          multiLine: true,
+        ).allMatches(script)) {
+          commandes.add((cible: commande.group(1)!, commande: commande.group(0)!));
+        }
+      }
+      expect(commandes.map((c) => c.cible), unorderedEquals(['appbundle', 'apk']));
+      for (final commande in commandes) {
+        final drapeaux = commande.commande.split(RegExp(r'\s+')).where(
+          (argument) => argument.startsWith('--dart-define=ENABLE_PRIVATE_SALES='),
+        );
+        expect(drapeaux, ['--dart-define=ENABLE_PRIVATE_SALES=true'],
+          reason: 'Le build ${commande.cible} doit activer les ventes de particuliers.');
+      }
+    });
+
     /// La garde ne sert à rien si la CI cesse de passer l'adresse : le build
     /// échouerait alors sur GitHub, après plusieurs minutes, au lieu de
     /// n'échouer qu'à la main. Ce test fait tomber la suite d'abord.
