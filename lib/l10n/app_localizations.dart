@@ -1982,6 +1982,390 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'{label} dans {days, plural, one{{days} jour} other{{days} jours}}'**
   String homeDeadlineInDays(String label, int days);
+
+  /// No description provided for @garageConsumptionCorresponding.
+  ///
+  /// In fr, this message translates to:
+  /// **'Référence de cette version'**
+  String get garageConsumptionCorresponding;
+
+  /// No description provided for @garageConsumptionApproximate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Référence approchante'**
+  String get garageConsumptionApproximate;
+
+  /// No description provided for @garageConsumptionIncomplete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Version à préciser'**
+  String get garageConsumptionIncomplete;
+
+  /// No description provided for @garageConsumptionLegacy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Référence héritée à vérifier'**
+  String get garageConsumptionLegacy;
+
+  /// No description provided for @garageConsumptionWithdrawn.
+  ///
+  /// In fr, this message translates to:
+  /// **'Référence retirée'**
+  String get garageConsumptionWithdrawn;
+
+  /// No description provided for @garageConsumptionUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Consommation de référence indisponible'**
+  String get garageConsumptionUnavailable;
+
+  /// No description provided for @garageConsumptionDetails.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détails et source'**
+  String get garageConsumptionDetails;
+
+  /// No description provided for @garageConsumptionChoose.
+  ///
+  /// In fr, this message translates to:
+  /// **'Préciser la version'**
+  String get garageConsumptionChoose;
+
+  /// No description provided for @garageConsumptionChange.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer la référence'**
+  String get garageConsumptionChange;
+
+  /// No description provided for @garageConsumptionQuestion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quelle est ma consommation ?'**
+  String get garageConsumptionQuestion;
+
+  /// No description provided for @garageConsumptionSelectionNotice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir une référence ne constitue pas une vérification documentaire du véhicule.'**
+  String get garageConsumptionSelectionNotice;
+
+  /// No description provided for @garageConsumptionNotVerified.
+  ///
+  /// In fr, this message translates to:
+  /// **'Correspondance documentaire non vérifiée'**
+  String get garageConsumptionNotVerified;
+
+  /// No description provided for @garageConsumptionMarketUnknown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marché d’origine inconnu'**
+  String get garageConsumptionMarketUnknown;
+
+  /// No description provided for @garageConsumptionYearMissing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Année de référence inconnue'**
+  String get garageConsumptionYearMissing;
+
+  /// No description provided for @garageConsumptionSourceUnknown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Source non renseignée'**
+  String get garageConsumptionSourceUnknown;
+
+  /// No description provided for @garageConsumptionCycleUnknown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Protocole non renseigné'**
+  String get garageConsumptionCycleUnknown;
+
+  /// No description provided for @garageConsumptionMethodTest.
+  ///
+  /// In fr, this message translates to:
+  /// **'Méthode : essai'**
+  String get garageConsumptionMethodTest;
+
+  /// No description provided for @garageConsumptionMethodAdjustment.
+  ///
+  /// In fr, this message translates to:
+  /// **'Méthode : ajustement'**
+  String get garageConsumptionMethodAdjustment;
+
+  /// No description provided for @garageConsumptionMethodAggregation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Méthode : agrégation d’immatriculations'**
+  String get garageConsumptionMethodAggregation;
+
+  /// No description provided for @garageConsumptionMethodTranscription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Méthode : transcription documentaire'**
+  String get garageConsumptionMethodTranscription;
+
+  /// No description provided for @garageConsumptionMethodUnknown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Méthode non établie'**
+  String get garageConsumptionMethodUnknown;
+
+  /// No description provided for @garageConsumptionLimitedSample.
+  ///
+  /// In fr, this message translates to:
+  /// **'Résultat issu d’un échantillon limité ; il ne décrit pas un exemplaire précis.'**
+  String get garageConsumptionLimitedSample;
+
+  /// No description provided for @garageConsumptionMissingDetails.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les informations absentes restent inconnues. Aucun rapprochement exact n’est déduit du seul modèle.'**
+  String get garageConsumptionMissingDetails;
+
+  /// No description provided for @garageConsumptionChooseInstruction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comparez l’année, le marché, le moteur et la boîte. Plusieurs références peuvent décrire des variantes ou des protocoles différents.'**
+  String get garageConsumptionChooseInstruction;
+
+  /// No description provided for @garageConsumptionNoCandidates.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune référence de consommation disponible pour ce modèle.'**
+  String get garageConsumptionNoCandidates;
+
+  /// No description provided for @garageConsumptionCandidatesUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Liste des références indisponible. Réessayez plus tard.'**
+  String get garageConsumptionCandidatesUnavailable;
+
+  /// No description provided for @garageConsumptionMissingModel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Consommation indisponible : le modèle de ce véhicule n’est pas encore au catalogue.'**
+  String get garageConsumptionMissingModel;
+
+  /// No description provided for @garageConsumptionSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Référence sélectionnée. Consultez son niveau de correspondance.'**
+  String get garageConsumptionSaved;
+
+  /// No description provided for @garageConsumptionSourceTarget.
+  ///
+  /// In fr, this message translates to:
+  /// **'le document source'**
+  String get garageConsumptionSourceTarget;
+
+  /// No description provided for @garageConsumptionOpenSource.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir le document source'**
+  String get garageConsumptionOpenSource;
+
+  /// No description provided for @garageConsumptionReasonYear.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le millésime de la référence diffère de l’année renseignée.'**
+  String get garageConsumptionReasonYear;
+
+  /// No description provided for @garageConsumptionReasonMarket.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le marché de commercialisation n’est pas confirmé.'**
+  String get garageConsumptionReasonMarket;
+
+  /// No description provided for @garageConsumptionReasonAggregation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une agrégation ne constitue pas la cote exacte de ce véhicule.'**
+  String get garageConsumptionReasonAggregation;
+
+  /// No description provided for @garageConsumptionReasonLegacy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette ancienne référence reste à requalifier.'**
+  String get garageConsumptionReasonLegacy;
+
+  /// No description provided for @garageConsumptionReasonIncomplete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Des caractéristiques nécessaires au rapprochement restent inconnues.'**
+  String get garageConsumptionReasonIncomplete;
+
+  /// No description provided for @garageConsumptionReasonContradiction.
+  ///
+  /// In fr, this message translates to:
+  /// **'La référence contredit les caractéristiques renseignées.'**
+  String get garageConsumptionReasonContradiction;
+
+  /// No description provided for @garageConsumptionReasonUnverified.
+  ///
+  /// In fr, this message translates to:
+  /// **'La version sélectionnée n’a pas été vérifiée sur un document.'**
+  String get garageConsumptionReasonUnverified;
+
+  /// No description provided for @garageConsumptionValue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Référence : {value} L/100 km'**
+  String garageConsumptionValue(String value);
+
+  /// No description provided for @garageConsumptionSourceValue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Valeur de la source : {value} L/100 km'**
+  String garageConsumptionSourceValue(String value);
+
+  /// No description provided for @garageConsumptionVehicleYear.
+  ///
+  /// In fr, this message translates to:
+  /// **'Année renseignée : {year}'**
+  String garageConsumptionVehicleYear(int year);
+
+  /// No description provided for @garageConsumptionModelYear.
+  ///
+  /// In fr, this message translates to:
+  /// **'Millésime de référence : {year}'**
+  String garageConsumptionModelYear(int year);
+
+  /// No description provided for @garageConsumptionRegistrationYear.
+  ///
+  /// In fr, this message translates to:
+  /// **'Année du registre : {year}'**
+  String garageConsumptionRegistrationYear(int year);
+
+  /// No description provided for @garageConsumptionUnknownYear.
+  ///
+  /// In fr, this message translates to:
+  /// **'Année de référence : {year} (type non établi)'**
+  String garageConsumptionUnknownYear(int year);
+
+  /// No description provided for @garageConsumptionMarket.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marché de référence : {market}'**
+  String garageConsumptionMarket(String market);
+
+  /// No description provided for @garageConsumptionSource.
+  ///
+  /// In fr, this message translates to:
+  /// **'Source : {source}'**
+  String garageConsumptionSource(String source);
+
+  /// No description provided for @garageConsumptionProtocol.
+  ///
+  /// In fr, this message translates to:
+  /// **'Protocole : {cycle}'**
+  String garageConsumptionProtocol(String cycle);
+
+  /// No description provided for @garageConsumptionVerified.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérification documentaire : {date}'**
+  String garageConsumptionVerified(String date);
+
+  /// No description provided for @garageConsumptionImported.
+  ///
+  /// In fr, this message translates to:
+  /// **'Import : {date}'**
+  String garageConsumptionImported(String date);
+
+  /// No description provided for @garageConsumptionPublished.
+  ///
+  /// In fr, this message translates to:
+  /// **'Publication : {date}'**
+  String garageConsumptionPublished(String date);
+
+  /// No description provided for @garageConsumptionRevision.
+  ///
+  /// In fr, this message translates to:
+  /// **'Révision : {revision}'**
+  String garageConsumptionRevision(String revision);
+
+  /// No description provided for @garageConsumptionResource.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ressource : {resource}'**
+  String garageConsumptionResource(String resource);
+
+  /// No description provided for @garageConsumptionHash.
+  ///
+  /// In fr, this message translates to:
+  /// **'Empreinte SHA-256 : {hash}'**
+  String garageConsumptionHash(String hash);
+
+  /// No description provided for @garageConsumptionRecords.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effectif : {count}'**
+  String garageConsumptionRecords(String count);
+
+  /// No description provided for @garageConsumptionVersionTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Références pour votre {model}'**
+  String garageConsumptionVersionTitle(String model);
+
+  /// No description provided for @garageConsumptionReasonRevision.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une révision plus récente existe ; ce choix conserve sa référence initiale.'**
+  String get garageConsumptionReasonRevision;
+
+  /// No description provided for @garageConsumptionSourceRecord.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ligne/enregistrement source : {record}'**
+  String garageConsumptionSourceRecord(String record);
+
+  /// No description provided for @garageConsumptionOriginalUnit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Unité d’origine : {unit}'**
+  String garageConsumptionOriginalUnit(String unit);
+
+  /// No description provided for @garageConsumptionLicense.
+  ///
+  /// In fr, this message translates to:
+  /// **'Licence indiquée par la ressource : {license}'**
+  String garageConsumptionLicense(String license);
+
+  /// No description provided for @catalogDeclaredConsumption.
+  ///
+  /// In fr, this message translates to:
+  /// **'Consommation déclarée par le vendeur'**
+  String get catalogDeclaredConsumption;
+
+  /// No description provided for @catalogConsumptionReferences.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comparer les références de consommation'**
+  String get catalogConsumptionReferences;
+
+  /// No description provided for @catalogConsumptionComparisonNotice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ces références décrivent des versions et protocoles distincts. Aucune n’est attribuée à cette annonce.'**
+  String get catalogConsumptionComparisonNotice;
+
+  /// No description provided for @garageConsumptionRetrieved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récupération : {date}'**
+  String garageConsumptionRetrieved(String date);
+
+  /// No description provided for @garageConsumptionSourceCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Valeur ville de la source : {value} L/100 km'**
+  String garageConsumptionSourceCity(String value);
+
+  /// No description provided for @garageConsumptionSourceHighway.
+  ///
+  /// In fr, this message translates to:
+  /// **'Valeur route de la source : {value} L/100 km'**
+  String garageConsumptionSourceHighway(String value);
 }
 
 class _AppLocalizationsDelegate

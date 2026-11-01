@@ -1,3 +1,4 @@
+import 'package:auto/l10n/app_localizations.dart';
 import 'package:auto/features/garage/data/models/motorisation.dart';
 import 'package:auto/features/garage/data/models/owned_vehicle.dart';
 import 'package:auto/features/garage/presentation/widgets/consumption_tile.dart';
@@ -40,25 +41,38 @@ void main() {
   );
 
   Widget ecran(OwnedVehicle v) => ProviderScope(
-        child: MaterialApp(
-          home: Scaffold(body: ConsumptionTile(vehicle: v)),
-        ),
-      );
+    child: MaterialApp(
+      locale: const Locale('fr'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: ConsumptionTile(vehicle: v)),
+    ),
+  );
 
   group('Consommation du véhicule', () {
-    testWidgets('la fiche porte le chiffre, et lui seul', (tester) async {
-      await tester.pumpWidget(ecran(vehicule(conso: cote)));
+    testWidgets(
+      'une ancienne cote reste à vérifier et son chiffre est en détails',
+      (tester) async {
+        await tester.pumpWidget(ecran(vehicule(conso: cote)));
 
-      expect(find.textContaining('8,2 l/100 km'), findsOneWidget);
-      expect(find.textContaining('ville 9,5'), findsOneWidget);
+        expect(find.text('Référence héritée à vérifier'), findsOneWidget);
+        expect(find.textContaining('8,2'), findsNothing);
+        expect(find.textContaining('Cote constructeur'), findsNothing);
+        expect(find.text('Marché d’origine inconnu'), findsOneWidget);
 
-      // La motorisation, la boîte et la provenance restent dans le dialogue
-      // de choix : sur la fiche, elles encombrent une carte qui doit se lire
-      // d'un coup d'œil.
-      expect(find.textContaining('4 cyl.'), findsNothing);
-      expect(find.textContaining('Ressources naturelles Canada'), findsNothing);
-      expect(find.textContaining('cinq cycles'), findsNothing);
-    });
+        await tester.tap(find.text('Détails et source'));
+        await tester.pumpAndSettle();
+        expect(find.text('Valeur de la source : 8,2 L/100 km'), findsOneWidget);
+        expect(
+          find.textContaining('Ressources naturelles Canada'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Correspondance documentaire non vérifiée'),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('la virgule décimale est celle du français', (tester) async {
       await tester.pumpWidget(ecran(vehicule(conso: cote)));
@@ -66,13 +80,17 @@ void main() {
       expect(find.textContaining('8.2'), findsNothing);
     });
 
-    testWidgets('sans motorisation choisie, l\'application demande',
-        (tester) async {
+    testWidgets('sans motorisation choisie, l\'application demande', (
+      tester,
+    ) async {
       await tester.pumpWidget(ecran(vehicule()));
 
       expect(find.text('Quelle est ma consommation ?'), findsOneWidget);
-      expect(find.textContaining('l/100 km'), findsNothing,
-          reason: 'Aucune estimation inventée en attendant le choix.');
+      expect(
+        find.textContaining('l/100 km'),
+        findsNothing,
+        reason: 'Aucune estimation inventée en attendant le choix.',
+      );
     });
   });
 

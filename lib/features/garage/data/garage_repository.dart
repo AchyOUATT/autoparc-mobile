@@ -21,7 +21,10 @@ class GarageRepository {
 
   /// Liste des véhicules du garage de l'utilisateur connecté.
   Future<List<OwnedVehicle>> getVehicles() async {
-    final json = await _client.get(Endpoints.myVehicles, params: {'per_page': 100});
+    final json = await _client.get(
+      Endpoints.myVehicles,
+      params: {'per_page': 100},
+    );
     final page = PaginatedResponse.fromJson(json, OwnedVehicle.fromJson);
     return page.data;
   }
@@ -33,25 +36,38 @@ class GarageRepository {
   }
 
   /// Met à jour un véhicule du garage (kilométrage, surnom…).
-  Future<OwnedVehicle> updateVehicle(int id, Map<String, dynamic> payload) async {
-    final json = await _client.put('${Endpoints.myVehicles}/$id', data: payload);
+  Future<OwnedVehicle> updateVehicle(
+    int id,
+    Map<String, dynamic> payload,
+  ) async {
+    final json = await _client.put(
+      '${Endpoints.myVehicles}/$id',
+      data: payload,
+    );
     return OwnedVehicle.fromJson(json['data'] as Map<String, dynamic>);
   }
 
-  /// Motorisations connues pour un modèle, avec leur cote officielle.
-  ///
-  /// L'année sert à classer : le serveur remonte d'abord les millésimes les
-  /// plus proches, puis élague les doublons. Une liste vide signifie qu'aucune
-  /// source publique ne couvre ce modèle — le cas des Fortuner, Prado et
-  /// autres véhicules vendus ni en Amérique du Nord ni en Europe.
+  /// Références distinctes proposées à la comparaison, sans fusion des sources.
+  /// L'année renseignée ne prouve pas le millésime ni le marché d'origine.
   Future<List<Motorisation>> motorisations({
     required int vehicleModelId,
     int? year,
+    int? engineTypeId,
+    int? drivetrainId,
+    int? trimId,
+    String? engineCode,
   }) async {
-    final json = await _client.get(Endpoints.catalogMotorisations, params: {
-      'vehicle_model_id': vehicleModelId,
-      if (year != null) 'year': year,
-    });
+    final json = await _client.get(
+      Endpoints.catalogMotorisations,
+      params: {
+        'vehicle_model_id': vehicleModelId,
+        if (year != null) 'year': year,
+        if (engineTypeId != null) 'engine_type_id': engineTypeId,
+        if (drivetrainId != null) 'drivetrain_id': drivetrainId,
+        if (trimId != null) 'trim_id': trimId,
+        if (engineCode?.isNotEmpty == true) 'engine_code': engineCode,
+      },
+    );
 
     return (json['data'] as List)
         .map((m) => Motorisation.fromJson(m as Map<String, dynamic>))
@@ -84,8 +100,14 @@ class GarageRepository {
   /// La charge porte une `client_reference` : un contrôle se remplit capot
   /// ouvert, souvent sans réseau, et l'envoi sera rejoué. Le serveur retrouve
   /// alors le passage au lieu d'en créer un second.
-  Future<VehicleCheck> submitCheck(int ownedVehicleId, Map<String, dynamic> payload) async {
-    final json = await _client.post(Endpoints.myChecks(ownedVehicleId), data: payload);
+  Future<VehicleCheck> submitCheck(
+    int ownedVehicleId,
+    Map<String, dynamic> payload,
+  ) async {
+    final json = await _client.post(
+      Endpoints.myChecks(ownedVehicleId),
+      data: payload,
+    );
     return VehicleCheck.fromJson(json['data'] as Map<String, dynamic>);
   }
 
@@ -151,7 +173,10 @@ class GarageRepository {
   /// [categoryId] restreint à une catégorie et à ses sous-catégories : c'est le
   /// chemin qu'emprunte un point de contrôle en défaut. Sans lui, un pneu usé
   /// ouvrirait cinq cents pièces.
-  Future<List<Part>> compatibleParts(int ownedVehicleId, {int? categoryId}) async {
+  Future<List<Part>> compatibleParts(
+    int ownedVehicleId, {
+    int? categoryId,
+  }) async {
     final json = await _client.get(
       Endpoints.myCompatibleParts(ownedVehicleId),
       params: {if (categoryId != null) 'category_id': categoryId},
@@ -187,7 +212,9 @@ class GarageRepository {
   /// Décode un VIN via l'API publique (/catalog/vin-decode/{vin}).
   /// Retourne toujours un résultat (valid=false si le VIN est mal formé).
   Future<VinDecodeResult> decodeVin(String vin) async {
-    final json = await _client.get(Endpoints.vinDecode(vin.toUpperCase().trim()));
+    final json = await _client.get(
+      Endpoints.vinDecode(vin.toUpperCase().trim()),
+    );
     return VinDecodeResult.fromJson(json);
   }
 }

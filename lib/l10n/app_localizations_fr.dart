@@ -1082,4 +1082,265 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$label dans $_temp0';
   }
+
+  @override
+  String get garageConsumptionCorresponding => 'Référence de cette version';
+
+  @override
+  String get garageConsumptionApproximate => 'Référence approchante';
+
+  @override
+  String get garageConsumptionIncomplete => 'Version à préciser';
+
+  @override
+  String get garageConsumptionLegacy => 'Référence héritée à vérifier';
+
+  @override
+  String get garageConsumptionWithdrawn => 'Référence retirée';
+
+  @override
+  String get garageConsumptionUnavailable =>
+      'Consommation de référence indisponible';
+
+  @override
+  String get garageConsumptionDetails => 'Détails et source';
+
+  @override
+  String get garageConsumptionChoose => 'Préciser la version';
+
+  @override
+  String get garageConsumptionChange => 'Changer la référence';
+
+  @override
+  String get garageConsumptionQuestion => 'Quelle est ma consommation ?';
+
+  @override
+  String get garageConsumptionSelectionNotice =>
+      'Choisir une référence ne constitue pas une vérification documentaire du véhicule.';
+
+  @override
+  String get garageConsumptionNotVerified =>
+      'Correspondance documentaire non vérifiée';
+
+  @override
+  String get garageConsumptionMarketUnknown => 'Marché d’origine inconnu';
+
+  @override
+  String get garageConsumptionYearMissing => 'Année de référence inconnue';
+
+  @override
+  String get garageConsumptionSourceUnknown => 'Source non renseignée';
+
+  @override
+  String get garageConsumptionCycleUnknown => 'Protocole non renseigné';
+
+  @override
+  String get garageConsumptionMethodTest => 'Méthode : essai';
+
+  @override
+  String get garageConsumptionMethodAdjustment => 'Méthode : ajustement';
+
+  @override
+  String get garageConsumptionMethodAggregation =>
+      'Méthode : agrégation d’immatriculations';
+
+  @override
+  String get garageConsumptionMethodTranscription =>
+      'Méthode : transcription documentaire';
+
+  @override
+  String get garageConsumptionMethodUnknown => 'Méthode non établie';
+
+  @override
+  String get garageConsumptionLimitedSample =>
+      'Résultat issu d’un échantillon limité ; il ne décrit pas un exemplaire précis.';
+
+  @override
+  String get garageConsumptionMissingDetails =>
+      'Les informations absentes restent inconnues. Aucun rapprochement exact n’est déduit du seul modèle.';
+
+  @override
+  String get garageConsumptionChooseInstruction =>
+      'Comparez l’année, le marché, le moteur et la boîte. Plusieurs références peuvent décrire des variantes ou des protocoles différents.';
+
+  @override
+  String get garageConsumptionNoCandidates =>
+      'Aucune référence de consommation disponible pour ce modèle.';
+
+  @override
+  String get garageConsumptionCandidatesUnavailable =>
+      'Liste des références indisponible. Réessayez plus tard.';
+
+  @override
+  String get garageConsumptionMissingModel =>
+      'Consommation indisponible : le modèle de ce véhicule n’est pas encore au catalogue.';
+
+  @override
+  String get garageConsumptionSaved =>
+      'Référence sélectionnée. Consultez son niveau de correspondance.';
+
+  @override
+  String get garageConsumptionSourceTarget => 'le document source';
+
+  @override
+  String get garageConsumptionOpenSource => 'Ouvrir le document source';
+
+  @override
+  String get garageConsumptionReasonYear =>
+      'Le millésime de la référence diffère de l’année renseignée.';
+
+  @override
+  String get garageConsumptionReasonMarket =>
+      'Le marché de commercialisation n’est pas confirmé.';
+
+  @override
+  String get garageConsumptionReasonAggregation =>
+      'Une agrégation ne constitue pas la cote exacte de ce véhicule.';
+
+  @override
+  String get garageConsumptionReasonLegacy =>
+      'Cette ancienne référence reste à requalifier.';
+
+  @override
+  String get garageConsumptionReasonIncomplete =>
+      'Des caractéristiques nécessaires au rapprochement restent inconnues.';
+
+  @override
+  String get garageConsumptionReasonContradiction =>
+      'La référence contredit les caractéristiques renseignées.';
+
+  @override
+  String get garageConsumptionReasonUnverified =>
+      'La version sélectionnée n’a pas été vérifiée sur un document.';
+
+  @override
+  String garageConsumptionValue(String value) {
+    return 'Référence : $value L/100 km';
+  }
+
+  @override
+  String garageConsumptionSourceValue(String value) {
+    return 'Valeur de la source : $value L/100 km';
+  }
+
+  @override
+  String garageConsumptionVehicleYear(int year) {
+    return 'Année renseignée : $year';
+  }
+
+  @override
+  String garageConsumptionModelYear(int year) {
+    return 'Millésime de référence : $year';
+  }
+
+  @override
+  String garageConsumptionRegistrationYear(int year) {
+    return 'Année du registre : $year';
+  }
+
+  @override
+  String garageConsumptionUnknownYear(int year) {
+    return 'Année de référence : $year (type non établi)';
+  }
+
+  @override
+  String garageConsumptionMarket(String market) {
+    return 'Marché de référence : $market';
+  }
+
+  @override
+  String garageConsumptionSource(String source) {
+    return 'Source : $source';
+  }
+
+  @override
+  String garageConsumptionProtocol(String cycle) {
+    return 'Protocole : $cycle';
+  }
+
+  @override
+  String garageConsumptionVerified(String date) {
+    return 'Vérification documentaire : $date';
+  }
+
+  @override
+  String garageConsumptionImported(String date) {
+    return 'Import : $date';
+  }
+
+  @override
+  String garageConsumptionPublished(String date) {
+    return 'Publication : $date';
+  }
+
+  @override
+  String garageConsumptionRevision(String revision) {
+    return 'Révision : $revision';
+  }
+
+  @override
+  String garageConsumptionResource(String resource) {
+    return 'Ressource : $resource';
+  }
+
+  @override
+  String garageConsumptionHash(String hash) {
+    return 'Empreinte SHA-256 : $hash';
+  }
+
+  @override
+  String garageConsumptionRecords(String count) {
+    return 'Effectif : $count';
+  }
+
+  @override
+  String garageConsumptionVersionTitle(String model) {
+    return 'Références pour votre $model';
+  }
+
+  @override
+  String get garageConsumptionReasonRevision =>
+      'Une révision plus récente existe ; ce choix conserve sa référence initiale.';
+
+  @override
+  String garageConsumptionSourceRecord(String record) {
+    return 'Ligne/enregistrement source : $record';
+  }
+
+  @override
+  String garageConsumptionOriginalUnit(String unit) {
+    return 'Unité d’origine : $unit';
+  }
+
+  @override
+  String garageConsumptionLicense(String license) {
+    return 'Licence indiquée par la ressource : $license';
+  }
+
+  @override
+  String get catalogDeclaredConsumption =>
+      'Consommation déclarée par le vendeur';
+
+  @override
+  String get catalogConsumptionReferences =>
+      'Comparer les références de consommation';
+
+  @override
+  String get catalogConsumptionComparisonNotice =>
+      'Ces références décrivent des versions et protocoles distincts. Aucune n’est attribuée à cette annonce.';
+
+  @override
+  String garageConsumptionRetrieved(String date) {
+    return 'Récupération : $date';
+  }
+
+  @override
+  String garageConsumptionSourceCity(String value) {
+    return 'Valeur ville de la source : $value L/100 km';
+  }
+
+  @override
+  String garageConsumptionSourceHighway(String value) {
+    return 'Valeur route de la source : $value L/100 km';
+  }
 }

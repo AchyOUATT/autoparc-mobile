@@ -1594,5 +1594,234 @@
         "example": "21"
       }
     }
+  },
+
+  "garageConsumptionCorresponding": "Référence de cette version",
+  "garageConsumptionApproximate": "Référence approchante",
+  "garageConsumptionIncomplete": "Version à préciser",
+  "garageConsumptionLegacy": "Référence héritée à vérifier",
+  "garageConsumptionWithdrawn": "Référence retirée",
+  "garageConsumptionUnavailable": "Consommation de référence indisponible",
+  "garageConsumptionDetails": "Détails et source",
+  "garageConsumptionChoose": "Préciser la version",
+  "garageConsumptionChange": "Changer la référence",
+  "garageConsumptionQuestion": "Quelle est ma consommation ?",
+  "garageConsumptionSelectionNotice": "Choisir une référence ne constitue pas une vérification documentaire du véhicule.",
+  "garageConsumptionNotVerified": "Correspondance documentaire non vérifiée",
+  "garageConsumptionMarketUnknown": "Marché d’origine inconnu",
+  "garageConsumptionYearMissing": "Année de référence inconnue",
+  "garageConsumptionSourceUnknown": "Source non renseignée",
+  "garageConsumptionCycleUnknown": "Protocole non renseigné",
+  "garageConsumptionMethodTest": "Méthode : essai",
+  "garageConsumptionMethodAdjustment": "Méthode : ajustement",
+  "garageConsumptionMethodAggregation": "Méthode : agrégation d’immatriculations",
+  "garageConsumptionMethodTranscription": "Méthode : transcription documentaire",
+  "garageConsumptionMethodUnknown": "Méthode non établie",
+  "garageConsumptionLimitedSample": "Résultat issu d’un échantillon limité ; il ne décrit pas un exemplaire précis.",
+  "garageConsumptionMissingDetails": "Les informations absentes restent inconnues. Aucun rapprochement exact n’est déduit du seul modèle.",
+  "garageConsumptionChooseInstruction": "Comparez l’année, le marché, le moteur et la boîte. Plusieurs références peuvent décrire des variantes ou des protocoles différents.",
+  "garageConsumptionNoCandidates": "Aucune référence de consommation disponible pour ce modèle.",
+  "garageConsumptionCandidatesUnavailable": "Liste des références indisponible. Réessayez plus tard.",
+  "garageConsumptionMissingModel": "Consommation indisponible : le modèle de ce véhicule n’est pas encore au catalogue.",
+  "garageConsumptionSaved": "Référence sélectionnée. Consultez son niveau de correspondance.",
+  "garageConsumptionSourceTarget": "le document source",
+  "garageConsumptionOpenSource": "Ouvrir le document source",
+  "garageConsumptionReasonYear": "Le millésime de la référence diffère de l’année renseignée.",
+  "garageConsumptionReasonMarket": "Le marché de commercialisation n’est pas confirmé.",
+  "garageConsumptionReasonAggregation": "Une agrégation ne constitue pas la cote exacte de ce véhicule.",
+  "garageConsumptionReasonLegacy": "Cette ancienne référence reste à requalifier.",
+  "garageConsumptionReasonIncomplete": "Des caractéristiques nécessaires au rapprochement restent inconnues.",
+  "garageConsumptionReasonContradiction": "La référence contredit les caractéristiques renseignées.",
+  "garageConsumptionReasonUnverified": "La version sélectionnée n’a pas été vérifiée sur un document.",
+  "garageConsumptionValue": "Référence : {value} L/100 km",
+  "@garageConsumptionValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionSourceValue": "Valeur de la source : {value} L/100 km",
+  "@garageConsumptionSourceValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionVehicleYear": "Année renseignée : {year}",
+  "@garageConsumptionVehicleYear": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  "garageConsumptionModelYear": "Millésime de référence : {year}",
+  "@garageConsumptionModelYear": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  "garageConsumptionRegistrationYear": "Année du registre : {year}",
+  "@garageConsumptionRegistrationYear": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  "garageConsumptionUnknownYear": "Année de référence : {year} (type non établi)",
+  "@garageConsumptionUnknownYear": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  "garageConsumptionMarket": "Marché de référence : {market}",
+  "@garageConsumptionMarket": {
+    "placeholders": {
+      "market": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionSource": "Source : {source}",
+  "@garageConsumptionSource": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionProtocol": "Protocole : {cycle}",
+  "@garageConsumptionProtocol": {
+    "placeholders": {
+      "cycle": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionVerified": "Vérification documentaire : {date}",
+  "@garageConsumptionVerified": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionImported": "Import : {date}",
+  "@garageConsumptionImported": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionPublished": "Publication : {date}",
+  "@garageConsumptionPublished": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionRevision": "Révision : {revision}",
+  "@garageConsumptionRevision": {
+    "placeholders": {
+      "revision": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionResource": "Ressource : {resource}",
+  "@garageConsumptionResource": {
+    "placeholders": {
+      "resource": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionHash": "Empreinte SHA-256 : {hash}",
+  "@garageConsumptionHash": {
+    "placeholders": {
+      "hash": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionRecords": "Effectif : {count}",
+  "@garageConsumptionRecords": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionVersionTitle": "Références pour votre {model}",
+  "@garageConsumptionVersionTitle": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+
+  "garageConsumptionReasonRevision": "Une révision plus récente existe ; ce choix conserve sa référence initiale.",
+  "garageConsumptionSourceRecord": "Ligne/enregistrement source : {record}",
+  "@garageConsumptionSourceRecord": {
+    "placeholders": {
+      "record": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionOriginalUnit": "Unité d’origine : {unit}",
+  "@garageConsumptionOriginalUnit": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionLicense": "Licence indiquée par la ressource : {license}",
+  "@garageConsumptionLicense": {
+    "placeholders": {
+      "license": {
+        "type": "String"
+      }
+    }
+  },
+
+  "catalogDeclaredConsumption": "Consommation déclarée par le vendeur",
+  "catalogConsumptionReferences": "Comparer les références de consommation",
+  "catalogConsumptionComparisonNotice": "Ces références décrivent des versions et protocoles distincts. Aucune n’est attribuée à cette annonce.",
+
+  "garageConsumptionRetrieved": "Récupération : {date}",
+  "@garageConsumptionRetrieved": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionSourceCity": "Valeur ville de la source : {value} L/100 km",
+  "@garageConsumptionSourceCity": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionSourceHighway": "Valeur route de la source : {value} L/100 km",
+  "@garageConsumptionSourceHighway": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
   }
 }

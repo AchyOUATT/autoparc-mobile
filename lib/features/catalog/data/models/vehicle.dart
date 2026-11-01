@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import 'promotion.dart';
+import '../../../garage/data/models/motorisation.dart';
 
 import '../../../../shared/models/product_seller.dart';
 
@@ -14,22 +15,23 @@ double? _dq(dynamic v) => v == null ? null : _d(v);
 /// Un cast direct en `num?` lève une exception qui fait échouer le parsing de
 /// tout le catalogue, pas seulement du champ concerné.
 double? _asDouble(Object? value) => switch (value) {
-  null    => null,
-  num n   => n.toDouble(),
-  _       => double.tryParse(value.toString()),
+  null => null,
+  num n => n.toDouble(),
+  _ => double.tryParse(value.toString()),
 };
 
 int? _asInt(Object? value) => switch (value) {
-  null    => null,
-  int n   => n,
-  num n   => n.toInt(),
-  _       => int.tryParse(value.toString()),
+  null => null,
+  int n => n,
+  num n => n.toInt(),
+  _ => int.tryParse(value.toString()),
 };
 
 class VehicleFeature extends Equatable {
-  final int    id;
+  final int id;
   final String name;
-  final String category; // 'dotation' | 'confort' | 'securite' | 'multimedia' | 'aide_conduite' | 'autre'
+  final String
+  category; // 'dotation' | 'confort' | 'securite' | 'multimedia' | 'aide_conduite' | 'autre'
 
   const VehicleFeature({
     required this.id,
@@ -38,8 +40,8 @@ class VehicleFeature extends Equatable {
   });
 
   factory VehicleFeature.fromJson(Map<String, dynamic> json) => VehicleFeature(
-    id:       json['id']       as int,
-    name:     json['name']     as String,
+    id: json['id'] as int,
+    name: json['name'] as String,
     category: json['category'] as String,
   );
 
@@ -63,8 +65,8 @@ class Vehicle extends Equatable {
   final String? vin;
   final String designation;
   final String registrationStatus; // 'unregistered' | 'registered'
-  final String vehicleType;        // 'passenger' | 'utility' | 'heavy'
-  final String? bodyStyle;         // 'sedan' | 'suv' | 'pickup' | 'minibus' | 'bus' | …
+  final String vehicleType; // 'passenger' | 'utility' | 'heavy'
+  final String? bodyStyle; // 'sedan' | 'suv' | 'pickup' | 'minibus' | 'bus' | …
   final VehicleIdentity identity;
   final VehicleCommercial commercial;
   final VehicleImport? import_;
@@ -159,13 +161,12 @@ class Vehicle extends Equatable {
   /// Consommation mixte, en L/100 km.
   final double? combinedL100km;
 
-  /// Fourchette officielle du modèle, sur la fiche détaillée uniquement.
-  ///
-  /// Une annonce connaît son modèle et son millésime, rarement sa
-  /// motorisation : le vendeur saisit « Toyota Camry 2013 », pas « 2,5 l
-  /// quatre cylindres ». Or l'écart entre les moteurs d'un même modèle atteint
-  /// couramment un litre et demi aux cent. On annonce donc une fourchette.
+  /// Ancienne plage reçue d'un serveur précédent, conservée pour la lecture.
+  /// Elle n'est plus affichée : moteurs, marchés et cycles ne se fusionnent pas.
   final OfficialConsumption? officialConsumption;
+
+  /// Références source distinctes, uniquement proposées à la comparaison.
+  final List<Motorisation> consumptionReferences;
 
   /// Nombre d'équipements hors dotation standard, calculé par l'API.
   ///
@@ -218,6 +219,7 @@ class Vehicle extends Equatable {
     this.engineCode,
     this.combinedL100km,
     this.officialConsumption,
+    this.consumptionReferences = const [],
     this.optionalFeatureCount,
     this.isFullOption = false,
   });
@@ -258,78 +260,95 @@ class Vehicle extends Equatable {
       // médias peuvent porter la même adresse — voir `Part.fromJson`, le
       // catalogue en a eu deux pointant sur « /0 » après une panne de
       // stockage — et un filtre par URL les aurait tous perdus.
-      photos = <dynamic>[
-        couverture,
-        ...medias.where((m) => !identical(m, couverture)),
-      ]
-          // Le filtre des URL vides existait déjà et reste : un média sans
-          // adresse ferait un cadre noir dans la galerie, ou pire, partirait
-          // en vignette de partage.
-          .map((m) => m['url'] as String? ?? '')
-          .where((u) => u.isNotEmpty)
-          .toList(growable: false);
+      photos =
+          <dynamic>[
+                couverture,
+                ...medias.where((m) => !identical(m, couverture)),
+              ]
+              // Le filtre des URL vides existait déjà et reste : un média sans
+              // adresse ferait un cadre noir dans la galerie, ou pire, partirait
+              // en vignette de partage.
+              .map((m) => m['url'] as String? ?? '')
+              .where((u) => u.isNotEmpty)
+              .toList(growable: false);
     }
 
     final status = json['registration_status'];
     return Vehicle(
-      id:                 json['id'] as int,
-      seller:             json['seller'] is Map<String, dynamic>
+      id: json['id'] as int,
+      seller: json['seller'] is Map<String, dynamic>
           ? ProductSeller.fromJson(json['seller'] as Map<String, dynamic>)
           : null,
-      brandId:            _asInt(json['brand_id']),
-      vehicleModelId:     _asInt(json['vehicle_model_id']),
-      trimId:             _asInt(json['trim_id']),
-      engineTypeId:       _asInt(json['engine_type_id']),
-      drivetrainId:       _asInt(json['drivetrain_id']),
-      colorId:            _asInt(json['color_id']),
-      reference:          json['reference'] as String? ?? '',
-      vin:                json['vin'] as String?,
-      designation:        json['designation'] as String,
-      registrationStatus: status is Map ? status['value'] as String : status as String,
-      vehicleType:        json['vehicle_type'] as String? ?? 'passenger',
-      bodyStyle:          json['body_style']   as String?,
-      identity:           VehicleIdentity.fromJson(json['identity'] as Map<String, dynamic>),
-      commercial:         VehicleCommercial.fromJson(json['commercial'] as Map<String, dynamic>),
-      import_:            json['import'] != null
-                              ? VehicleImport.fromJson(json['import'] as Map<String, dynamic>)
-                              : null,
-      faultsCount:        json['faults_count'] as int? ?? 0,
-      mediaUrls:          photos,
+      brandId: _asInt(json['brand_id']),
+      vehicleModelId: _asInt(json['vehicle_model_id']),
+      trimId: _asInt(json['trim_id']),
+      engineTypeId: _asInt(json['engine_type_id']),
+      drivetrainId: _asInt(json['drivetrain_id']),
+      colorId: _asInt(json['color_id']),
+      reference: json['reference'] as String? ?? '',
+      vin: json['vin'] as String?,
+      designation: json['designation'] as String,
+      registrationStatus: status is Map
+          ? status['value'] as String
+          : status as String,
+      vehicleType: json['vehicle_type'] as String? ?? 'passenger',
+      bodyStyle: json['body_style'] as String?,
+      identity: VehicleIdentity.fromJson(
+        json['identity'] as Map<String, dynamic>,
+      ),
+      commercial: VehicleCommercial.fromJson(
+        json['commercial'] as Map<String, dynamic>,
+      ),
+      import_: json['import'] != null
+          ? VehicleImport.fromJson(json['import'] as Map<String, dynamic>)
+          : null,
+      faultsCount: json['faults_count'] as int? ?? 0,
+      mediaUrls: photos,
       // `coverUrl` n'est pas une seconde lecture de `media` : c'est le même
       // premier élément, nommé. Les deux ne peuvent donc pas diverger.
-      coverUrl:           photos.isEmpty ? null : photos.first,
+      coverUrl: photos.isEmpty ? null : photos.first,
       // Une date illisible compte comme « pas publié », et c'est le bon sens
       // de l'erreur : le seul lecteur de ce champ masque le partage quand il
       // est nul. Un bouton absent se remarque et se signale ; un lien mort
       // part dans une conversation et n'en revient pas.
-      publishedAt:        DateTime.tryParse(json['published_at'] as String? ?? ''),
+      publishedAt: DateTime.tryParse(json['published_at'] as String? ?? ''),
       // Clef absente → `null`, et le partage repart sur l'adresse nue. Pas de
       // `?? ''` ici, à la différence de la ligne au-dessus : la date, elle,
       // traverse un `tryParse` qui rend `null` sur l'illisible, alors que le
       // marqueur est recopié. « Absent » et « vide » doivent arriver
       // distinctement à `adresseArticle`, qui les traite déjà tous les deux.
-      shareVersion:       json['share_version'] as String?,
-      deal:               Promotion.fromJson(json['deal']),
-      features:           (json['features'] as List?)
-                              ?.map((f) => VehicleFeature.fromJson(f as Map<String, dynamic>))
-                              .toList() ??
-                          [],
-      mileageKm:          _asInt(technique?['mileage_km']),
-      transmission:        technique?['transmission'] as String?,
-      powerHp:             _asInt(technique?['power_hp']),
-      seats:               _asInt(technique?['seats']),
-      doors:               _asInt(technique?['doors']),
-      cylinders:           _asInt(technique?['cylinders']),
+      shareVersion: json['share_version'] as String?,
+      deal: Promotion.fromJson(json['deal']),
+      features:
+          (json['features'] as List?)
+              ?.map((f) => VehicleFeature.fromJson(f as Map<String, dynamic>))
+              .toList() ??
+          [],
+      mileageKm: _asInt(technique?['mileage_km']),
+      transmission: technique?['transmission'] as String?,
+      powerHp: _asInt(technique?['power_hp']),
+      seats: _asInt(technique?['seats']),
+      doors: _asInt(technique?['doors']),
+      cylinders: _asInt(technique?['cylinders']),
       engineDisplacementCc: _asInt(technique?['engine_displacement_cc']),
-      torqueNm:            _asInt(technique?['torque_nm']),
-      gearCount:           _asInt(technique?['gear_count']),
-      engineCode:          technique?['engine_code'] as String?,
-      combinedL100km:     _asDouble(
-                              (json['consumption'] as Map<String, dynamic>?)?['combined_l_100km']),
+      torqueNm: _asInt(technique?['torque_nm']),
+      gearCount: _asInt(technique?['gear_count']),
+      engineCode: technique?['engine_code'] as String?,
+      combinedL100km: _asDouble(
+        (json['consumption'] as Map<String, dynamic>?)?['combined_l_100km'],
+      ),
       officialConsumption: OfficialConsumption.depuisJson(
-                              (json['consumption'] as Map<String, dynamic>?)?['official']),
+        (json['consumption'] as Map<String, dynamic>?)?['official'],
+      ),
+      consumptionReferences:
+          ((json['consumption'] as Map<String, dynamic>?)?['references']
+                  as List?)
+              ?.whereType<Map<String, dynamic>>()
+              .map(Motorisation.fromJson)
+              .toList() ??
+          const [],
       optionalFeatureCount: _asInt(json['optional_feature_count']),
-      isFullOption:         json['is_full_option'] as bool? ?? false,
+      isFullOption: json['is_full_option'] as bool? ?? false,
     );
   }
 
@@ -381,11 +400,11 @@ class Vehicle extends Equatable {
   /// valident l'une l'autre.
   bool get aUnePagePublique => !_statutsSansPage.contains(commercial.status);
 
-  bool get isImported    => registrationStatus == 'unregistered';
-  bool get isRegistered  => registrationStatus == 'registered';
-  bool get isUtility     => vehicleType == 'utility';
-  bool get isHeavy       => vehicleType == 'heavy';
-  bool get isPassenger   => vehicleType == 'passenger';
+  bool get isImported => registrationStatus == 'unregistered';
+  bool get isRegistered => registrationStatus == 'registered';
+  bool get isUtility => vehicleType == 'utility';
+  bool get isHeavy => vehicleType == 'heavy';
+  bool get isPassenger => vehicleType == 'passenger';
 
   @override
   List<Object?> get props => [id, reference];
@@ -435,22 +454,24 @@ class VehicleIdentity extends Equatable {
     this.year,
   });
 
-  factory VehicleIdentity.fromJson(Map<String, dynamic> json) => VehicleIdentity(
-    brand:         json['brand']           as String,
-    brandSlug:     json['brand_slug']      as String?,
-    brandLogoPath: json['brand_logo_path'] as String?,
-    model:       json['model']       as String,
-    generation:  json['generation']  as String?,
-    trim:        json['trim']        as String?,
-    engineType:  json['engine_type'] as String?,
-    drivetrain:  json['drivetrain']  as String?,
-    color:       json['color']       as String?,
-    colorHex:    json['color_hex']    as String?,
-    colorFinish: json['color_finish'] as String?,
-    year:        json['year']        as int?,
-  );
+  factory VehicleIdentity.fromJson(Map<String, dynamic> json) =>
+      VehicleIdentity(
+        brand: json['brand'] as String,
+        brandSlug: json['brand_slug'] as String?,
+        brandLogoPath: json['brand_logo_path'] as String?,
+        model: json['model'] as String,
+        generation: json['generation'] as String?,
+        trim: json['trim'] as String?,
+        engineType: json['engine_type'] as String?,
+        drivetrain: json['drivetrain'] as String?,
+        color: json['color'] as String?,
+        colorHex: json['color_hex'] as String?,
+        colorFinish: json['color_finish'] as String?,
+        year: json['year'] as int?,
+      );
 
-  String get fullName => year != null ? '$brand $model ($year)' : '$brand $model';
+  String get fullName =>
+      year != null ? '$brand $model ($year)' : '$brand $model';
 
   @override
   List<Object?> get props => [brand, model, generation, trim, year];
@@ -475,20 +496,21 @@ class VehiclePartner {
   });
 
   factory VehiclePartner.fromJson(Map<String, dynamic> json) => VehiclePartner(
-    id:          json['id']           as int,
+    id: json['id'] as int,
     companyName: json['company_name'] as String,
     contactName: json['contact_name'] as String?,
-    phone:       json['phone']        as String,
-    whatsapp:    json['whatsapp']     as String?,
+    phone: json['phone'] as String,
+    whatsapp: json['whatsapp'] as String?,
   );
 
-  String get displayName => contactName != null ? '$companyName — $contactName' : companyName;
-  String get callNumber  => whatsapp ?? phone;
+  String get displayName =>
+      contactName != null ? '$companyName — $contactName' : companyName;
+  String get callNumber => whatsapp ?? phone;
 }
 
 class VehicleCommercial extends Equatable {
-  final String condition;   // 'new' | 'used' | 'damaged'
-  final String status;      // 'in_stock' | 'reserved' | 'sold' | 'rented'
+  final String condition; // 'new' | 'used' | 'damaged'
+  final String status; // 'in_stock' | 'reserved' | 'sold' | 'rented'
   final String availability; // 'sale' | 'rent' | 'both'
   final double? salePrice;
   final double? rentalDailyRate;
@@ -499,8 +521,8 @@ class VehicleCommercial extends Equatable {
   final bool priceNegotiable;
   final String? site;
   final int? locationId;
-  final String? locationName;  // "Showroom Paspanga"
-  final String? locationCity;  // "Ouagadougou"
+  final String? locationName; // "Showroom Paspanga"
+  final String? locationCity; // "Ouagadougou"
   final VehiclePartner? partner; // partenaire source (staff)
 
   /// Mise en avant commerciale : `good_deal`, `flash_sale`, `clearance`.
@@ -531,43 +553,54 @@ class VehicleCommercial extends Equatable {
     this.dealLabel,
   });
 
-  bool get isForSale   => availability == 'sale' || availability == 'both';
-  bool get isForRent   => availability == 'rent' || availability == 'both';
-  bool get isInStock   => status == 'in_stock';
-  bool get isDamaged   => condition == 'damaged';
-  bool get isDeal      => dealType != null;
+  bool get isForSale => availability == 'sale' || availability == 'both';
+  bool get isForRent => availability == 'rent' || availability == 'both';
+  bool get isInStock => status == 'in_stock';
+  bool get isDamaged => condition == 'damaged';
+  bool get isDeal => dealType != null;
 
-  factory VehicleCommercial.fromJson(Map<String, dynamic> json) => VehicleCommercial(
-    condition:        json['condition']    as String,
-    status:           json['status']       as String,
-    availability:     json['availability'] as String,
-    salePrice:        _dq(json['sale_price']),
-    rentalDailyRate:  _dq(json['rental_daily_rate']),
-    rentalWeeklyRate: _dq(json['rental_weekly_rate']),
-    rentalMonthlyRate:_dq(json['rental_monthly_rate']),
-    rentalDeposit:    _dq(json['rental_deposit']),
-    currency:         json['currency']       as String? ?? 'XOF',
-    priceNegotiable:  json['price_negotiable'] as bool? ?? false,
-    site:             json['site'] as String?,
-    locationId:       json['location_id'] as int?,
-    locationName:     (json['location'] as Map<String, dynamic>?)?['name'] as String?,
-    locationCity:     (json['location'] as Map<String, dynamic>?)?['city'] as String?,
-    partner:          json['partner'] != null
-                        ? VehiclePartner.fromJson(json['partner'] as Map<String, dynamic>)
-                        : null,
-    dealType:         json['deal_type']  as String?,
-    dealLabel:        json['deal_label'] as String?,
-  );
+  factory VehicleCommercial.fromJson(Map<String, dynamic> json) =>
+      VehicleCommercial(
+        condition: json['condition'] as String,
+        status: json['status'] as String,
+        availability: json['availability'] as String,
+        salePrice: _dq(json['sale_price']),
+        rentalDailyRate: _dq(json['rental_daily_rate']),
+        rentalWeeklyRate: _dq(json['rental_weekly_rate']),
+        rentalMonthlyRate: _dq(json['rental_monthly_rate']),
+        rentalDeposit: _dq(json['rental_deposit']),
+        currency: json['currency'] as String? ?? 'XOF',
+        priceNegotiable: json['price_negotiable'] as bool? ?? false,
+        site: json['site'] as String?,
+        locationId: json['location_id'] as int?,
+        locationName:
+            (json['location'] as Map<String, dynamic>?)?['name'] as String?,
+        locationCity:
+            (json['location'] as Map<String, dynamic>?)?['city'] as String?,
+        partner: json['partner'] != null
+            ? VehiclePartner.fromJson(json['partner'] as Map<String, dynamic>)
+            : null,
+        dealType: json['deal_type'] as String?,
+        dealLabel: json['deal_label'] as String?,
+      );
 
   /// Label de localisation affiché sur les cartes et fiches.
   String? get locationLabel {
-    if (locationName != null && locationCity != null) return '$locationName — $locationCity';
+    if (locationName != null && locationCity != null)
+      return '$locationName — $locationCity';
     if (locationCity != null) return locationCity;
     return site; // fallback sur l'ancien champ texte libre
   }
 
   @override
-  List<Object?> get props => [status, availability, salePrice, rentalDailyRate, locationId, partner?.id];
+  List<Object?> get props => [
+    status,
+    availability,
+    salePrice,
+    rentalDailyRate,
+    locationId,
+    partner?.id,
+  ];
 }
 
 // ── Détails import ────────────────────────────────────────────────
@@ -590,10 +623,10 @@ class VehicleImport extends Equatable {
   bool get isRightHandDrive => steeringside == 'right';
 
   factory VehicleImport.fromJson(Map<String, dynamic> json) => VehicleImport(
-    originCountry:      json['origin_country']       as String?,
-    customsCleared:     json['customs_cleared']      as bool? ?? false,
-    portOfEntry:        json['port_of_entry']         as String?,
-    steeringside:       json['steering_side']         as String?,
+    originCountry: json['origin_country'] as String?,
+    customsCleared: json['customs_cleared'] as bool? ?? false,
+    portOfEntry: json['port_of_entry'] as String?,
+    steeringside: json['steering_side'] as String?,
     odometerAtImportKm: json['odometer_at_import_km'] as int?,
   );
 
@@ -601,12 +634,8 @@ class VehicleImport extends Equatable {
   List<Object?> get props => [originCountry, customsCleared];
 }
 
-/// La fourchette de consommation officielle d'un modèle.
-///
-/// Deux bornes plutôt qu'un chiffre : une annonce connaît son modèle, rarement
-/// sa motorisation, et l'écart entre les moteurs d'un même modèle atteint
-/// couramment un litre et demi aux cent. Annoncer une valeur unique
-/// reviendrait à choisir un moteur au hasard pour le compte de l'acheteur.
+/// Ancien format de réponse conservé pour les serveurs précédents.
+/// Cette plage n'est plus présentée comme applicable à une annonce.
 class OfficialConsumption {
   final double min;
   final double max;
@@ -635,12 +664,12 @@ class OfficialConsumption {
     if (min == null || max == null) return null;
 
     return OfficialConsumption(
-      min:           min,
-      max:           max,
+      min: min,
+      max: max,
       motorisations: _asInt(json['motorisations']) ?? 1,
-      modelYear:     _asInt(json['model_year']) ?? 0,
-      source:        json['source'] as String? ?? '',
-      cycle:         json['cycle']  as String? ?? '',
+      modelYear: _asInt(json['model_year']) ?? 0,
+      source: json['source'] as String? ?? '',
+      cycle: json['cycle'] as String? ?? '',
     );
   }
 
