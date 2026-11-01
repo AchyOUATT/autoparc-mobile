@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../../l10n/app_localizations.dart';
 import '../../data/garage_repository.dart';
 import '../../data/models/fuel_fill.dart';
 import '../../data/models/motorisation.dart';
 import '../../data/models/owned_vehicle.dart';
 import '../providers/garage_provider.dart';
 import 'fuel_fill_dialog.dart';
+import 'consumption_reference_details.dart';
 
 /// Ce que cette voiture consomme — mesuré d'abord, homologué ensuite.
 ///
@@ -141,7 +143,8 @@ class _FaitsBruts extends StatelessWidget {
               Text(
                 [
                   '${_nombre(t.litres)} l',
-                  if (t.amountFcfa > 0) '${_entier(t.amountFcfa.toDouble())} FCFA',
+                  if (t.amountFcfa > 0)
+                    '${_entier(t.amountFcfa.toDouble())} FCFA',
                   '${_entier(t.distanceKm.toDouble())} km',
                 ].join(' · '),
                 style: textes.bodyMedium,
@@ -154,9 +157,9 @@ class _FaitsBruts extends StatelessWidget {
               Text(
                 suivi.fullFills == 0
                     ? 'Deux pleins — pompe arrêtée toute seule — et votre '
-                        'consommation réelle s\'affiche ici.'
+                          'consommation réelle s\'affiche ici.'
                     : 'Encore un plein et votre consommation réelle s\'affiche '
-                        'ici.',
+                          'ici.',
                 style: textes.bodySmall?.copyWith(color: cs.outline),
               ),
             ],
@@ -193,10 +196,9 @@ class _Invitation extends StatelessWidget {
               Text(
                 'Enregistrez vos passages à la pompe : l\'application calcule '
                 'ce que vous consommez vraiment.',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: cs.outline),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: cs.outline),
               ),
             ],
           ),
@@ -251,8 +253,8 @@ class _Anomalie extends StatelessWidget {
                   (suivi.baselineL100km == null || suivi.alerteL100km == null)
                       ? 'Votre consommation a augmenté.'
                       : 'Votre consommation a augmenté : '
-                          '${_nombre(suivi.alerteL100km!)} l/100 km contre '
-                          '${_nombre(suivi.baselineL100km!)} d\'habitude.',
+                            '${_nombre(suivi.alerteL100km!)} l/100 km contre '
+                            '${_nombre(suivi.baselineL100km!)} d\'habitude.',
                   style: textes.bodySmall?.copyWith(
                     color: cs.onErrorContainer,
                     fontWeight: FontWeight.bold,
@@ -270,10 +272,8 @@ class _Anomalie extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton(
-              onPressed: () => context.push(
-                '/garage/${vehicle.id}/parts',
-                extra: vehicle,
-              ),
+              onPressed: () =>
+                  context.push('/garage/${vehicle.id}/parts', extra: vehicle),
               style: TextButton.styleFrom(
                 foregroundColor: cs.onErrorContainer,
                 padding: EdgeInsets.zero,
@@ -320,10 +320,9 @@ class _SerieRompue extends StatelessWidget {
             child: Text(
               'Compteur remplacé : les passages d\'avant restent dans votre '
               'historique, mais n\'entrent plus dans ce calcul.',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: cs.outline),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: cs.outline),
             ),
           ),
         ],
@@ -332,12 +331,7 @@ class _SerieRompue extends StatelessWidget {
   }
 }
 
-/// La cote d'homologation, en second et comme repère.
-///
-/// Elle ne disparaît pas avec le chiffre mesuré : elle dit ce que la voiture
-/// devrait faire en laboratoire, et l'écart entre les deux est une information
-/// en soi. Le choix de motorisation reste accessible d'ici — il a cessé d'être
-/// la seule réponse à la question, pas d'être utile.
+/// La référence choisie, distincte de la consommation mesurée.
 class _CoteReference extends ConsumerWidget {
   final OwnedVehicle vehicle;
 
@@ -345,33 +339,20 @@ class _CoteReference extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
-    final textes = Theme.of(context).textTheme;
-    final mixte = vehicle.consumption?.combinedL100km;
-
+    final reference = vehicle.consumption;
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(left: 26, top: 4),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              mixte == null
-                  ? 'Cote constructeur inconnue'
-                  : 'Cote constructeur ${_nombre(mixte)} l/100 km',
-              style: textes.bodySmall?.copyWith(color: cs.outline),
+      child: reference == null
+          ? TextButton(
+              onPressed: () => choisirMotorisation(context, ref, vehicle),
+              child: Text(l10n.garageConsumptionChoose),
+            )
+          : ConsumptionReferenceSummary(
+              reference: reference,
+              vehicleYear: vehicle.year,
+              onChange: () => choisirMotorisation(context, ref, vehicle),
             ),
-          ),
-          TextButton(
-            onPressed: () => choisirMotorisation(context, ref, vehicle),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              minimumSize: const Size(0, 32),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(mixte == null ? 'Préciser' : 'Changer'),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -407,10 +388,8 @@ class _Actions extends ConsumerWidget {
           ),
           if (!suivi.vide)
             TextButton(
-              onPressed: () => context.push(
-                '/garage/${vehicle.id}/fuel',
-                extra: vehicle,
-              ),
+              onPressed: () =>
+                  context.push('/garage/${vehicle.id}/fuel', extra: vehicle),
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 minimumSize: const Size(0, 36),
@@ -428,14 +407,13 @@ class _Actions extends ConsumerWidget {
 
     if (!enregistre || !context.mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Passage enregistré.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Passage enregistré.')));
   }
 }
 
-/// L'ancienne tuile, conservée pour un serveur qui ne rend pas encore
-/// `fuel_tracking`.
+/// Sans suivi des pleins, la même qualification prudente s'applique.
 class _CoteSeule extends ConsumerWidget {
   final OwnedVehicle vehicle;
 
@@ -443,131 +421,80 @@ class _CoteSeule extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final conso = vehicle.consumption;
-    final cs = Theme.of(context).colorScheme;
-
-    if (conso == null) {
+    if (vehicle.consumption == null) {
       return Align(
         alignment: Alignment.centerLeft,
         child: TextButton.icon(
           onPressed: () => choisirMotorisation(context, ref, vehicle),
-          icon: const Icon(Icons.local_gas_station_outlined, size: 18),
-          label: const Text('Quelle est ma consommation ?'),
+          icon: const Icon(Icons.local_gas_station_outlined),
+          label: Text(AppLocalizations.of(context).garageConsumptionQuestion),
         ),
       );
     }
-
-    final mixte = conso.combinedL100km;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.local_gas_station_outlined, size: 18, color: cs.outline),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  mixte == null ? '—' : '${_nombre(mixte)} l/100 km',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                if (conso.cityL100km != null && conso.highwayL100km != null)
-                  Text(
-                    'ville ${_nombre(conso.cityL100km!)} · '
-                    'route ${_nombre(conso.highwayL100km!)}',
-                    style: Theme.of(context).textTheme.bodySmall
-                        ?.copyWith(color: cs.outline),
-                  ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () => choisirMotorisation(context, ref, vehicle),
-            child: const Text('Changer'),
-          ),
-        ],
-      ),
-    );
+    return _CoteReference(vehicle: vehicle);
   }
 }
 
-/// Demande sa motorisation au propriétaire, puis enregistre son choix.
-///
-/// On ne demande ni la finition ni la puissance : ce qui détermine la
-/// consommation, c'est le moteur et la boîte. Une Camry 2013 existe en 2,5 l
-/// quatre cylindres et en 3,5 l V6 — 8,2 contre 9,4 l/100.
+/// Le propriétaire sélectionne une référence ; cela ne la vérifie pas.
 Future<void> choisirMotorisation(
   BuildContext context,
   WidgetRef ref,
   OwnedVehicle vehicle,
 ) async {
+  final l10n = AppLocalizations.of(context);
   // Les cotes de consommation sont indexées par modèle du catalogue : sans
   // lui, aucune source ne peut être interrogée. On le dit, plutôt que de
   // laisser partir une requête sans identifiant.
   final modelId = vehicle.vehicleModelId;
 
   if (modelId == null) {
-    _dire(
-      context,
-      'Consommation indisponible : le modèle de ce véhicule n\'est pas '
-      'encore au catalogue.',
-      erreur: false,
-    );
+    _dire(context, l10n.garageConsumptionMissingModel, erreur: false);
     return;
   }
 
   List<Motorisation> options;
 
   try {
-    options = await ref.read(garageRepositoryProvider).motorisations(
+    options = await ref
+        .read(garageRepositoryProvider)
+        .motorisations(
           vehicleModelId: modelId,
           year: vehicle.year,
+          engineTypeId: vehicle.engineTypeId,
+          drivetrainId: vehicle.drivetrainId,
+          trimId: vehicle.trimId,
+          engineCode: vehicle.engineCode,
         );
   } catch (_) {
     if (!context.mounted) return;
-    _dire(context, 'Liste des motorisations indisponible. Réessayez plus tard.',
-        erreur: true);
+    _dire(context, l10n.garageConsumptionCandidatesUnavailable, erreur: true);
     return;
   }
 
   if (!context.mounted) return;
 
   if (options.isEmpty) {
-    // Aucune source publique ne couvre ce modèle — Fortuner, Prado, D-Max et
-    // les autres, vendus ni en Amérique du Nord ni en Europe. Le dire
-    // franchement vaut mieux qu'une liste vide sans explication.
-    _dire(
-      context,
-      'Aucune donnée officielle de consommation pour ce modèle.',
-      erreur: false,
-    );
+    // Une liste vide ne permet pas de conclure à une absence mondiale de
+    // données : le catalogue courant ne propose simplement aucun candidat.
+    _dire(context, l10n.garageConsumptionNoCandidates, erreur: false);
     return;
   }
 
   final choix = await showDialog<Motorisation>(
     context: context,
-    builder: (ctx) => _DialogueMotorisation(
-      vehicle: vehicle,
-      options: options,
-    ),
+    builder: (ctx) => _DialogueMotorisation(vehicle: vehicle, options: options),
   );
 
   if (choix == null || !context.mounted) return;
 
-  final erreur = await ref
-      .read(garageProvider.notifier)
-      .updateVehicle(vehicle.id, {'motorisation_id': choix.id});
+  final erreur = await ref.read(garageProvider.notifier).updateVehicle(
+    vehicle.id,
+    {'motorisation_id': choix.id},
+  );
 
   if (!context.mounted) return;
 
-  _dire(
-    context,
-    erreur ?? 'Motorisation enregistrée.',
-    erreur: erreur != null,
-  );
+  _dire(context, erreur ?? l10n.garageConsumptionSaved, erreur: erreur != null);
 }
 
 class _DialogueMotorisation extends StatelessWidget {
@@ -579,9 +506,14 @@ class _DialogueMotorisation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return AlertDialog(
-      title: Text('Motorisation de votre ${vehicle.identity.model ?? 'véhicule'}'),
+      title: Text(
+        l10n.garageConsumptionVersionTitle(
+          vehicle.identity.model ?? vehicle.designation,
+        ),
+      ),
       content: SizedBox(
         width: double.maxFinite,
         child: Column(
@@ -589,10 +521,10 @@ class _DialogueMotorisation extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Choisissez le moteur qui se trouve sous le capot. '
-              'La finition ne change pas la consommation.',
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: cs.outline),
+              l10n.garageConsumptionChooseInstruction,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: cs.outline),
             ),
             const SizedBox(height: 8),
             Flexible(
@@ -601,26 +533,55 @@ class _DialogueMotorisation extends StatelessWidget {
                 itemCount: options.length,
                 itemBuilder: (_, i) {
                   final m = options[i];
-                  final mixte = m.consumption.combinedL100km;
+                  final reference = m.consumption;
+                  final mixte = reference.sourceCombinedL100km;
 
                   final choisie = m.id == vehicle.motorisationId;
 
                   return ListTile(
                     onTap: () => Navigator.pop(context, m),
-                    title: Text(m.label),
-                    // Le cycle d'essai accompagne chaque ligne, pas seulement
-                    // celle qui sera choisie : la liste melange des cotes
-                    // canadiennes et europeennes, et 5,2 l/100 en WLTP ne se
-                    // compare pas a 8,9 en cinq cycles. Sans cette mention,
-                    // l'ecart passerait pour une difference de moteur.
-                    subtitle: Text([
-                      if (m.fuel != null) m.fuel!,
-                      if (mixte != null) '${_nombre(mixte)} l/100 km',
-                      if (m.consumption.cycle.isNotEmpty) m.consumption.cycle,
-                    ].join(' · ')),
-                    trailing: choisie
-                        ? Icon(Icons.check, color: cs.primary)
-                        : null,
+                    title: Text(
+                      [
+                        if (reference.sourceModel?.isNotEmpty == true)
+                          reference.sourceModel!,
+                        m.label,
+                        if (reference.powerKw != null)
+                          '${reference.powerKw} kW',
+                      ].join(' · '),
+                    ),
+                    subtitle: Text(
+                      [
+                        consumptionMatchLabel(l10n, reference),
+                        l10n.garageConsumptionVehicleYear(vehicle.year),
+                        consumptionYearLabel(l10n, reference),
+                        reference.market?.isNotEmpty == true
+                            ? l10n.garageConsumptionMarket(reference.market!)
+                            : l10n.garageConsumptionMarketUnknown,
+                        if (m.fuel != null) m.fuel!,
+                        if (mixte != null)
+                          l10n.garageConsumptionSourceValue(
+                            Localizations.localeOf(context).languageCode == 'fr'
+                                ? _nombre(mixte)
+                                : mixte.toStringAsFixed(1),
+                          ),
+                        if (reference.source.isNotEmpty) reference.source,
+                        if (reference.cycle.isNotEmpty) reference.cycle,
+                      ].join(' · '),
+                    ),
+                    trailing: IconButton(
+                      tooltip: l10n.garageConsumptionDetails,
+                      onPressed: () => showConsumptionReferenceDetails(
+                        context,
+                        reference,
+                        vehicleYear: vehicle.year,
+                      ),
+                      icon: Icon(
+                        choisie
+                            ? Icons.check_circle_outline
+                            : Icons.info_outline,
+                        color: choisie ? cs.primary : null,
+                      ),
+                    ),
                     contentPadding: EdgeInsets.zero,
                   );
                 },
@@ -632,7 +593,7 @@ class _DialogueMotorisation extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Annuler'),
+          child: Text(l10n.commonCancel),
         ),
       ],
     );
@@ -640,8 +601,7 @@ class _DialogueMotorisation extends StatelessWidget {
 }
 
 /// « 8,2 » et non « 8.2 » : la virgule décimale est celle du français.
-String _nombre(double valeur) =>
-    valeur.toStringAsFixed(1).replaceAll('.', ',');
+String _nombre(double valeur) => valeur.toStringAsFixed(1).replaceAll('.', ',');
 
 /// « 6 800 » : l'espace insécable sépare les milliers, sinon « 133000 FCFA »
 /// se lit de travers sur un écran de téléphone.

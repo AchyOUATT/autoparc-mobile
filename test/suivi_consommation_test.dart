@@ -1,3 +1,4 @@
+import 'package:auto/l10n/app_localizations.dart';
 import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
 import 'package:auto/features/garage/data/models/fuel_fill.dart';
 import 'package:auto/features/garage/data/models/owned_vehicle.dart';
@@ -97,11 +98,11 @@ void main() {
     /// affiché reposerait sur moins de mesures, et rien ne le dirait.
     test('is_full tient le 0/1 d\'un tinyint non casté', () {
       bool lu(Object? brut) => FuelFill.fromJson({
-            'id': 1,
-            'is_full': brut,
-            'mileage_km': 95000,
-            'litres': '40.00',
-          }).isFull;
+        'id': 1,
+        'is_full': brut,
+        'mileage_km': 95000,
+        'litres': '40.00',
+      }).isFull;
 
       expect(lu(1), isTrue);
       expect(lu(0), isFalse);
@@ -135,12 +136,12 @@ void main() {
     /// d'avant et ouvre celui d'après.
     test('le nombre d\'intervalles bornés se lit', () {
       int bornees(Map<String, dynamic> extra) => FuelFill.fromJson({
-            'id': 3,
-            'is_full': true,
-            'mileage_km': 90600,
-            'litres': '48.00',
-            ...extra,
-          }).bornesIntervalles;
+        'id': 3,
+        'is_full': true,
+        'mileage_km': 90600,
+        'litres': '48.00',
+        ...extra,
+      }).bornesIntervalles;
 
       expect(bornees({'bornes_intervalles': 2, 'retenu': true}), 2);
       expect(bornees({'bornes_intervalles': 1, 'retenu': true}), 1);
@@ -155,12 +156,12 @@ void main() {
     /// n'annonce jamais une destruction qui n'aura pas lieu.
     test('sans la clé, les intervalles bornés se replient sur « retenu »', () {
       int bornees(bool retenu) => FuelFill.fromJson({
-            'id': 3,
-            'is_full': true,
-            'mileage_km': 90600,
-            'litres': '48.00',
-            'retenu': retenu,
-          }).bornesIntervalles;
+        'id': 3,
+        'is_full': true,
+        'mileage_km': 90600,
+        'litres': '48.00',
+        'retenu': retenu,
+      }).bornesIntervalles;
 
       expect(bornees(true), 1);
       expect(bornees(false), 0);
@@ -168,12 +169,12 @@ void main() {
 
     test('chaque motif d\'écart a sa phrase', () {
       String? phrase(String? motif) => FuelFill.fromJson({
-            'id': 1,
-            'is_full': true,
-            'mileage_km': 95000,
-            'litres': '40.00',
-            'motif_ecart': motif,
-          }).motifLibelle;
+        'id': 1,
+        'is_full': true,
+        'mileage_km': 95000,
+        'litres': '40.00',
+        'motif_ecart': motif,
+      }).motifLibelle;
 
       expect(phrase('trop_long'), isNotNull);
       expect(phrase('invraisemblable'), isNotNull);
@@ -182,8 +183,7 @@ void main() {
       // saisi — et non le chiffre, parce que 4,0 l/100 km sur une voiture qui
       // en fait 8,0 se lit comme une bonne nouvelle.
       expect(phrase('anormalement_bas'), isNotNull);
-      expect(phrase('anormalement_bas'),
-          contains('n\'a pas été enregistré'));
+      expect(phrase('anormalement_bas'), contains('n\'a pas été enregistré'));
       // Disparu du serveur : en dessous de 50 km l'intervalle se prolonge au
       // lieu d'être écarté, donc plus aucun passage ne peut porter ce motif.
       // Un libellé laissé derrière finirait par être cité dans une revue comme
@@ -297,9 +297,9 @@ void main() {
     /// seule explication de la chute du nombre d'intervalles.
     test('la série rompue se lit, booléen comme tinyint', () {
       bool lu(Object? brut) => FuelTracking.fromJson({
-            'total_fills': 11,
-            'series_rompue': brut,
-          }).seriesRompue;
+        'total_fills': 11,
+        'series_rompue': brut,
+      }).seriesRompue;
 
       expect(lu(true), isTrue);
       expect(lu(1), isTrue);
@@ -311,17 +311,17 @@ void main() {
 
   group('Lecture d\'un véhicule du garage', () {
     Map<String, dynamic> brut() => {
-          'id': 1,
-          'designation': 'Toyota Camry 2013',
-          'nickname': null,
-          'brand_id': 1,
-          'vehicle_model_id': 7,
-          'year': 2013,
-          'mileage_km': 97400,
-          'identity': {'brand': 'Toyota', 'model': 'Camry'},
-          'compatibility_ready': true,
-          'deadlines': <dynamic>[],
-        };
+      'id': 1,
+      'designation': 'Toyota Camry 2013',
+      'nickname': null,
+      'brand_id': 1,
+      'vehicle_model_id': 7,
+      'year': 2013,
+      'mileage_km': 97400,
+      'identity': {'brand': 'Toyota', 'model': 'Camry'},
+      'compatibility_ready': true,
+      'deadlines': <dynamic>[],
+    };
 
     /// Le serveur d'avant le déploiement ne connaît pas la clé. L'application
     /// est publiée sur les téléphones avant que l'API ne soit en ligne : si
@@ -378,57 +378,72 @@ void main() {
   );
 
   OwnedVehicle avecSuivi(FuelTracking? suivi) => OwnedVehicle(
-        id: vehicule.id,
-        designation: vehicule.designation,
-        brandId: vehicule.brandId,
-        vehicleModelId: vehicule.vehicleModelId,
-        year: vehicule.year,
-        mileageKm: vehicule.mileageKm,
-        identity: vehicule.identity,
-        compatibilityReady: true,
-        consumption: vehicule.consumption,
-        fuelTracking: suivi,
-      );
+    id: vehicule.id,
+    designation: vehicule.designation,
+    brandId: vehicule.brandId,
+    vehicleModelId: vehicule.vehicleModelId,
+    year: vehicule.year,
+    mileageKm: vehicule.mileageKm,
+    identity: vehicule.identity,
+    compatibilityReady: true,
+    consumption: vehicule.consumption,
+    fuelTracking: suivi,
+  );
 
   const tailles = [1.0, 1.3];
 
-  Future<void> monter(WidgetTester t, Widget enfant, double echelle,
-      {List<Override> overrides = const []}) async {
+  Future<void> monter(
+    WidgetTester t,
+    Widget enfant,
+    double echelle, {
+    List<Override> overrides = const [],
+  }) async {
     t.view.physicalSize = const Size(320, 640);
     t.view.devicePixelRatio = 1.0;
     addTearDown(t.view.reset);
 
-    await t.pumpWidget(ProviderScope(
-      overrides: overrides,
-      child: MaterialApp(
-        home: MediaQuery(
-          data: MediaQueryData(textScaler: TextScaler.linear(echelle)),
-          child: enfant,
+    await t.pumpWidget(
+      ProviderScope(
+        overrides: overrides,
+        child: MaterialApp(
+          locale: const Locale('fr'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MediaQuery(
+            data: MediaQueryData(textScaler: TextScaler.linear(echelle)),
+            child: enfant,
+          ),
         ),
       ),
-    ));
+    );
   }
 
   // ── La tuile, ses quatre états ───────────────────────────────────────────
 
   group('Tuile de consommation', () {
     for (final echelle in tailles) {
-      testWidgets('le chiffre mesuré passe devant la cote, x$echelle',
-          (tester) async {
+      testWidgets('le chiffre mesuré passe devant la cote, x$echelle', (
+        tester,
+      ) async {
         await monter(
           tester,
           Scaffold(
             body: SingleChildScrollView(
               child: ConsumptionTile(
-                vehicle: avecSuivi(const FuelTracking(
-                  l100km: 8.4,
-                  fcfa100km: 6800,
-                  basedOnFills: 5,
-                  totalFills: 11,
-                  fullFills: 6,
-                  totals: FuelTotals(
-                      litres: 182.4, amountFcfa: 133000, distanceKm: 2310),
-                )),
+                vehicle: avecSuivi(
+                  const FuelTracking(
+                    l100km: 8.4,
+                    fcfa100km: 6800,
+                    basedOnFills: 5,
+                    totalFills: 11,
+                    fullFills: 6,
+                    totals: FuelTotals(
+                      litres: 182.4,
+                      amountFcfa: 133000,
+                      distanceKm: 2310,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -438,7 +453,8 @@ void main() {
         expect(find.textContaining('8,4 l/100 km'), findsOneWidget);
         expect(find.textContaining('6 800 FCFA/100 km'), findsOneWidget);
         // La cote d'homologation reste, mais comme repère.
-        expect(find.textContaining('Cote constructeur 8,2'), findsOneWidget);
+        expect(find.text('Référence héritée à vérifier'), findsOneWidget);
+        expect(find.textContaining('8,2'), findsNothing);
       });
 
       testWidgets('sans intervalle retenu, des faits bruts et non une moyenne, '
@@ -448,11 +464,16 @@ void main() {
           Scaffold(
             body: SingleChildScrollView(
               child: ConsumptionTile(
-                vehicle: avecSuivi(const FuelTracking(
-                  totalFills: 4,
-                  totals: FuelTotals(
-                      litres: 82.4, amountFcfa: 60000, distanceKm: 910),
-                )),
+                vehicle: avecSuivi(
+                  const FuelTracking(
+                    totalFills: 4,
+                    totals: FuelTotals(
+                      litres: 82.4,
+                      amountFcfa: 60000,
+                      distanceKm: 910,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -484,22 +505,25 @@ void main() {
         expect(find.textContaining('Historique'), findsNothing);
       });
 
-      testWidgets('anomalie : dite, et suivie de quoi faire, x$echelle',
-          (tester) async {
+      testWidgets('anomalie : dite, et suivie de quoi faire, x$echelle', (
+        tester,
+      ) async {
         await monter(
           tester,
           Scaffold(
             body: SingleChildScrollView(
               child: ConsumptionTile(
-                vehicle: avecSuivi(const FuelTracking(
-                  l100km: 10.9,
-                  basedOnFills: 5,
-                  totalFills: 14,
-                  fullFills: 9,
-                  baselineL100km: 7.1,
-                  abnormal: true,
-                  alerteL100km: 10.9,
-                )),
+                vehicle: avecSuivi(
+                  const FuelTracking(
+                    l100km: 10.9,
+                    basedOnFills: 5,
+                    totalFills: 14,
+                    fullFills: 9,
+                    baselineL100km: 7.1,
+                    abnormal: true,
+                    alerteL100km: 10.9,
+                  ),
+                ),
               ),
             ),
           ),
@@ -520,22 +544,25 @@ void main() {
     /// d'habitude » sous le titre « Votre consommation a augmenté » : il
     /// annonçait une BAISSE en criant à la hausse, et le propriétaire ne
     /// pouvait qu'en conclure que l'application se trompe.
-    testWidgets('l\'encart cite le chiffre du verdict, pas la moyenne',
-        (tester) async {
+    testWidgets('l\'encart cite le chiffre du verdict, pas la moyenne', (
+      tester,
+    ) async {
       await monter(
         tester,
         Scaffold(
           body: SingleChildScrollView(
             child: ConsumptionTile(
-              vehicle: avecSuivi(const FuelTracking(
-                l100km: 7.2,
-                basedOnFills: 5,
-                totalFills: 9,
-                fullFills: 9,
-                baselineL100km: 8.0,
-                abnormal: true,
-                alerteL100km: 11.0,
-              )),
+              vehicle: avecSuivi(
+                const FuelTracking(
+                  l100km: 7.2,
+                  basedOnFills: 5,
+                  totalFills: 9,
+                  fullFills: 9,
+                  baselineL100km: 8.0,
+                  abnormal: true,
+                  alerteL100km: 11.0,
+                ),
+              ),
             ),
           ),
         ),
@@ -553,21 +580,24 @@ void main() {
     /// Un serveur qui annonce l'anomalie sans donner le taux du verdict : on
     /// dit la hausse sans l'illustrer, plutôt que de l'illustrer avec la
     /// moyenne — c'est exactement le chiffre qui contredisait le titre.
-    testWidgets('sans taux de verdict, l\'encart ne cite aucun chiffre',
-        (tester) async {
+    testWidgets('sans taux de verdict, l\'encart ne cite aucun chiffre', (
+      tester,
+    ) async {
       await monter(
         tester,
         Scaffold(
           body: SingleChildScrollView(
             child: ConsumptionTile(
-              vehicle: avecSuivi(const FuelTracking(
-                l100km: 7.2,
-                basedOnFills: 5,
-                totalFills: 9,
-                fullFills: 9,
-                baselineL100km: 8.0,
-                abnormal: true,
-              )),
+              vehicle: avecSuivi(
+                const FuelTracking(
+                  l100km: 7.2,
+                  basedOnFills: 5,
+                  totalFills: 9,
+                  fullFills: 9,
+                  baselineL100km: 8.0,
+                  abnormal: true,
+                ),
+              ),
             ),
           ),
         ),
@@ -589,15 +619,20 @@ void main() {
         Scaffold(
           body: SingleChildScrollView(
             child: ConsumptionTile(
-              vehicle: avecSuivi(const FuelTracking(
-                l100km: 7.0,
-                basedOnFills: 3,
-                totalFills: 11,
-                fullFills: 11,
-                seriesRompue: true,
-                totals: FuelTotals(
-                    litres: 420.0, amountFcfa: 300000, distanceKm: 1800),
-              )),
+              vehicle: avecSuivi(
+                const FuelTracking(
+                  l100km: 7.0,
+                  basedOnFills: 3,
+                  totalFills: 11,
+                  fullFills: 11,
+                  seriesRompue: true,
+                  totals: FuelTotals(
+                    litres: 420.0,
+                    amountFcfa: 300000,
+                    distanceKm: 1800,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -605,8 +640,10 @@ void main() {
       );
 
       expect(find.textContaining('Compteur remplacé'), findsOneWidget);
-      expect(find.textContaining('n\'entrent plus dans ce calcul'),
-          findsOneWidget);
+      expect(
+        find.textContaining('n\'entrent plus dans ce calcul'),
+        findsOneWidget,
+      );
     });
 
     /// La ligne ne s'invite pas sur un véhicule au compteur continu : elle
@@ -618,12 +655,14 @@ void main() {
         Scaffold(
           body: SingleChildScrollView(
             child: ConsumptionTile(
-              vehicle: avecSuivi(const FuelTracking(
-                l100km: 8.4,
-                basedOnFills: 5,
-                totalFills: 11,
-                fullFills: 6,
-              )),
+              vehicle: avecSuivi(
+                const FuelTracking(
+                  l100km: 8.4,
+                  basedOnFills: 5,
+                  totalFills: 11,
+                  fullFills: 6,
+                ),
+              ),
             ),
           ),
         ),
@@ -637,8 +676,9 @@ void main() {
     /// charge utile où les décimaux sont des chaînes, et un écran qui écrit
     /// « 8,4 ». Le point décimal est la marque d'un chiffre recopié d'un JSON
     /// sans passer par la mise en forme — ici, personne n'écrit « 8.4 ».
-    testWidgets('le chiffre s\'écrit à la virgule, depuis une charge réelle',
-        (tester) async {
+    testWidgets('le chiffre s\'écrit à la virgule, depuis une charge réelle', (
+      tester,
+    ) async {
       final v = OwnedVehicle.fromJson({
         'id': 1,
         'designation': 'Toyota Camry 2013',
@@ -673,34 +713,44 @@ void main() {
 
       await monter(
         tester,
-        Scaffold(body: SingleChildScrollView(child: ConsumptionTile(vehicle: v))),
+        Scaffold(
+          body: SingleChildScrollView(child: ConsumptionTile(vehicle: v)),
+        ),
         1.0,
       );
 
       expect(find.textContaining('8,4 l/100 km'), findsOneWidget);
-      expect(find.textContaining('Cote constructeur 8,2'), findsOneWidget);
+      expect(find.text('Référence héritée à vérifier'), findsOneWidget);
+      expect(find.textContaining('8,2'), findsNothing);
       expect(find.textContaining('8.4'), findsNothing);
       expect(find.textContaining('8.2'), findsNothing);
     });
 
-    testWidgets('serveur sans fuel_tracking : l\'ancienne tuile, intacte',
-        (tester) async {
-      await monter(tester, Scaffold(body: ConsumptionTile(vehicle: vehicule)),
-          1.0);
+    testWidgets(
+      'serveur sans fuel_tracking : la cote héritée reste à vérifier',
+      (tester) async {
+        await monter(
+          tester,
+          Scaffold(body: ConsumptionTile(vehicle: vehicule)),
+          1.0,
+        );
 
-      // Pas d'invitation à saisir un passage vers une route que ce serveur
-      // ne connaît pas.
-      expect(find.textContaining('Passage à la pompe'), findsNothing);
-      expect(find.textContaining('8,2 l/100 km'), findsOneWidget);
-    });
+        // Pas d'invitation à saisir un passage vers une route que ce serveur
+        // ne connaît pas.
+        expect(find.textContaining('Passage à la pompe'), findsNothing);
+        expect(find.text('Référence héritée à vérifier'), findsOneWidget);
+        expect(find.textContaining('8,2'), findsNothing);
+      },
+    );
   });
 
   // ── La saisie ────────────────────────────────────────────────────────────
 
   group('Saisie d\'un passage', () {
     for (final echelle in tailles) {
-      testWidgets('demi-plein par défaut, litres déduits, x$echelle',
-          (tester) async {
+      testWidgets('demi-plein par défaut, litres déduits, x$echelle', (
+        tester,
+      ) async {
         await monter(
           tester,
           Scaffold(
@@ -723,19 +773,28 @@ void main() {
         expect(find.widgetWithText(TextField, '97400'), findsOneWidget);
 
         await tester.enterText(
-            find.widgetWithText(TextField, 'Montant payé'), '10000');
+          find.widgetWithText(TextField, 'Montant payé'),
+          '10000',
+        );
         await tester.enterText(
-            find.widgetWithText(TextField, 'Prix au litre'), '730');
+          find.widgetWithText(TextField, 'Prix au litre'),
+          '730',
+        );
         await tester.pumpAndSettle();
 
         // 10 000 / 730 = 13,70 l, affiché avant de valider.
         expect(find.textContaining('13,7 l'), findsOneWidget);
 
-        final choix = tester
-            .widget<SegmentedButton<bool>>(find.byType(SegmentedButton<bool>));
-        expect(choix.selected, {false},
-            reason: 'Un demi-plein pris pour un plein rend le chiffre FAUX ; '
-                'un plein pris pour un demi-plein ne coûte qu\'une mesure.');
+        final choix = tester.widget<SegmentedButton<bool>>(
+          find.byType(SegmentedButton<bool>),
+        );
+        expect(
+          choix.selected,
+          {false},
+          reason:
+              'Un demi-plein pris pour un plein rend le chiffre FAUX ; '
+              'un plein pris pour un demi-plein ne coûte qu\'une mesure.',
+        );
 
         // Les litres restent saisissables, sans être un quatrième champ
         // permanent.
@@ -780,20 +839,27 @@ void main() {
     /// price_per_litre=730 — or 40 l à 730 F font 29 200 F. Le coût aux 100 km
     /// sortait divisé par près de trois, sans aucune alerte, chaque champ
     /// étant individuellement valide.
-    testWidgets('basculer de mode n\'emporte pas les chiffres de l\'autre',
-        (tester) async {
+    testWidgets('basculer de mode n\'emporte pas les chiffres de l\'autre', (
+      tester,
+    ) async {
       await ouvrir(tester);
 
       await tester.enterText(
-          find.widgetWithText(TextField, 'Montant payé'), '10000');
+        find.widgetWithText(TextField, 'Montant payé'),
+        '10000',
+      );
       await tester.enterText(
-          find.widgetWithText(TextField, 'Prix au litre'), '730');
+        find.widgetWithText(TextField, 'Prix au litre'),
+        '730',
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Je connais les litres'));
       await tester.pumpAndSettle();
       await tester.enterText(
-          find.widgetWithText(TextField, 'Litres pris'), '40');
+        find.widgetWithText(TextField, 'Litres pris'),
+        '40',
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Enregistrer'));
@@ -801,9 +867,13 @@ void main() {
 
       final envoi = _PassagesCaptes.envois.single;
       expect(envoi['litres'], 40.0);
-      expect(envoi.containsKey('amount_fcfa'), isFalse,
-          reason: 'Un montant du mode abandonné rend le coût aux 100 km faux '
-              'sans rien déclencher.');
+      expect(
+        envoi.containsKey('amount_fcfa'),
+        isFalse,
+        reason:
+            'Un montant du mode abandonné rend le coût aux 100 km faux '
+            'sans rien déclencher.',
+      );
       expect(envoi.containsKey('price_per_litre'), isFalse);
     });
 
@@ -814,9 +884,13 @@ void main() {
       await ouvrir(tester);
 
       await tester.enterText(
-          find.widgetWithText(TextField, 'Montant payé'), '10000');
+        find.widgetWithText(TextField, 'Montant payé'),
+        '10000',
+      );
       await tester.enterText(
-          find.widgetWithText(TextField, 'Prix au litre'), '730');
+        find.widgetWithText(TextField, 'Prix au litre'),
+        '730',
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Enregistrer'));
       await tester.pumpAndSettle();
@@ -842,14 +916,19 @@ void main() {
     /// consommation qui n'avait pas bougé d'un dixième. Le doublon de
     /// demi-plein REMONTE le chiffre : ses litres entrent dans l'intervalle
     /// alors que la distance, elle, ne bouge pas.
-    testWidgets('la même saisie rouverte garde la même clé d\'idempotence',
-        (tester) async {
+    testWidgets('la même saisie rouverte garde la même clé d\'idempotence', (
+      tester,
+    ) async {
       for (var essai = 0; essai < 2; essai++) {
         await ouvrir(tester);
         await tester.enterText(
-            find.widgetWithText(TextField, 'Montant payé'), '10000');
+          find.widgetWithText(TextField, 'Montant payé'),
+          '10000',
+        );
         await tester.enterText(
-            find.widgetWithText(TextField, 'Prix au litre'), '730');
+          find.widgetWithText(TextField, 'Prix au litre'),
+          '730',
+        );
         await tester.pumpAndSettle();
         await tester.tap(find.text('Enregistrer'));
         await tester.pumpAndSettle();
@@ -862,9 +941,13 @@ void main() {
       expect(cles, hasLength(2));
       expect(cles.first, isNotNull);
       expect(cles.first, isNotEmpty);
-      expect(cles.last, cles.first,
-          reason: 'Deux clés distinctes pour la même saisie, et le serveur '
-              'enregistre deux passages au lieu d\'un.');
+      expect(
+        cles.last,
+        cles.first,
+        reason:
+            'Deux clés distinctes pour la même saisie, et le serveur '
+            'enregistre deux passages au lieu d\'un.',
+      );
 
       // La largeur de la colonne : au-delà, la clé serait tronquée en base et
       // deux saisies distinctes deviendraient le même passage.
@@ -873,14 +956,19 @@ void main() {
 
     /// L'autre face de la clé dérivée : elle ne doit pas confondre deux
     /// passages différents. Changer la nature du passage suffit à la changer.
-    testWidgets('un demi-plein et un plein ne partagent pas la clé',
-        (tester) async {
+    testWidgets('un demi-plein et un plein ne partagent pas la clé', (
+      tester,
+    ) async {
       for (final plein in [false, true]) {
         await ouvrir(tester);
         await tester.enterText(
-            find.widgetWithText(TextField, 'Montant payé'), '10000');
+          find.widgetWithText(TextField, 'Montant payé'),
+          '10000',
+        );
         await tester.enterText(
-            find.widgetWithText(TextField, 'Prix au litre'), '730');
+          find.widgetWithText(TextField, 'Prix au litre'),
+          '730',
+        );
         await tester.pumpAndSettle();
         if (plein) {
           await tester.tap(find.text('Plein'));
@@ -906,7 +994,9 @@ void main() {
   /// que son corps annonce des pièces au catalogue.
   group('Alerte de surconsommation', () {
     Future<void> toucherLAlerte(
-        WidgetTester tester, AppNotification alerte) async {
+      WidgetTester tester,
+      AppNotification alerte,
+    ) async {
       final routeur = GoRouter(
         initialLocation: '/notifications',
         routes: [
@@ -927,14 +1017,17 @@ void main() {
         ],
       );
 
-      await tester.pumpWidget(ProviderScope(
-        overrides: [
-          authProvider
-              .overrideWith((_) => _FauxAuth(const AuthState(type: AuthType.client))),
-          notificationsProvider.overrideWith((_) async => [alerte]),
-        ],
-        child: MaterialApp.router(routerConfig: routeur),
-      ));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authProvider.overrideWith(
+              (_) => _FauxAuth(const AuthState(type: AuthType.client)),
+            ),
+            notificationsProvider.overrideWith((_) async => [alerte]),
+          ],
+          child: MaterialApp.router(routerConfig: routeur),
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Consommation en hausse'));
@@ -947,7 +1040,8 @@ void main() {
       id: 31,
       type: 'fuel_anomaly',
       title: 'Consommation en hausse',
-      body: 'Toyota Camry : 10,7 l/100 km, contre 8,0 habituellement. '
+      body:
+          'Toyota Camry : 10,7 l/100 km, contre 8,0 habituellement. '
           'Les pièces sont au catalogue.',
       data: {'type': 'fuel_anomaly', 'owned_vehicle_id': 7},
       isRead: true,
@@ -956,10 +1050,14 @@ void main() {
     testWidgets('la ligne mène aux pleins du véhicule nommé', (tester) async {
       await toucherLAlerte(tester, dejaLue);
 
-      expect(find.text('pleins du véhicule 7'), findsOneWidget,
-          reason: 'C\'est là que le chiffre se vérifie et qu\'une saisie '
-              'fautive se supprime — la cause la plus fréquente d\'une '
-              'hausse soudaine.');
+      expect(
+        find.text('pleins du véhicule 7'),
+        findsOneWidget,
+        reason:
+            'C\'est là que le chiffre se vérifie et qu\'une saisie '
+            'fautive se supprime — la cause la plus fréquente d\'une '
+            'hausse soudaine.',
+      );
     });
 
     /// Une alerte d'une version du serveur qui n'enverrait pas l'identifiant
@@ -985,8 +1083,9 @@ void main() {
 
   group('Historique des passages', () {
     for (final echelle in tailles) {
-      testWidgets('chaque ligne dit sa nature et son intervalle, x$echelle',
-          (tester) async {
+      testWidgets('chaque ligne dit sa nature et son intervalle, x$echelle', (
+        tester,
+      ) async {
         await monter(
           tester,
           const FuelFillsPage(ownedVehicleId: 1),
@@ -1002,8 +1101,10 @@ void main() {
         expect(find.text('Demi-plein'), findsOneWidget);
         // Un intervalle écarté le dit en clair : sans motif visible, il passe
         // pour un défaut de l'application et le propriétaire cesse de saisir.
-        expect(find.textContaining('Un passage a probablement été oublié'),
-            findsOneWidget);
+        expect(
+          find.textContaining('Un passage a probablement été oublié'),
+          findsOneWidget,
+        );
       });
     }
 
@@ -1024,8 +1125,9 @@ void main() {
     /// L'espace des milliers est INSÉCABLE — c'est celui que `_entier` écrit —
     /// et il s'épelle ici pour qu'une comparaison ne tombe jamais sur une
     /// espace ordinaire invisible à la relecture.
-    testWidgets('la première ligne porte le compteur le plus haut',
-        (tester) async {
+    testWidgets('la première ligne porte le compteur le plus haut', (
+      tester,
+    ) async {
       await monter(
         tester,
         const FuelFillsPage(ownedVehicleId: 1),
@@ -1038,8 +1140,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final haut = tester.getTopLeft(find.textContaining('97 400 km')).dy;
-      final milieu =
-          tester.getTopLeft(find.textContaining('95 600 km')).dy;
+      final milieu = tester.getTopLeft(find.textContaining('95 600 km')).dy;
       final bas = tester.getTopLeft(find.textContaining('95 000 km')).dy;
 
       expect(haut, lessThan(milieu));
@@ -1049,8 +1150,9 @@ void main() {
     /// Le motif de la seconde passe du serveur. Il ne se dit pas comme un
     /// défaut du véhicule : 4,0 l/100 km sur une voiture qui en fait 8,0 n'est
     /// pas une voiture économe, c'est un passage que personne n'a saisi.
-    testWidgets('un intervalle anormalement bas nomme sa vraie cause',
-        (tester) async {
+    testWidgets('un intervalle anormalement bas nomme sa vraie cause', (
+      tester,
+    ) async {
       await monter(
         tester,
         const FuelFillsPage(ownedVehicleId: 1),
@@ -1077,8 +1179,9 @@ void main() {
     /// parfaitement correct — les 98 L restants s'étalent sur 1 200 km et
     /// l'écran passe à 4,2, présenté comme une mesure valide. Le texte
     /// générique d'avant ne laissait rien deviner de cette fusion.
-    testWidgets('supprimer un passage central annonce la fusion',
-        (tester) async {
+    testWidgets('supprimer un passage central annonce la fusion', (
+      tester,
+    ) async {
       await monter(
         tester,
         const FuelFillsPage(ownedVehicleId: 1),
@@ -1095,8 +1198,10 @@ void main() {
       await tester.tap(find.byIcon(Icons.delete_outline).at(1));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('ces deux mesures disparaissent'),
-          findsOneWidget);
+      expect(
+        find.textContaining('ces deux mesures disparaissent'),
+        findsOneWidget,
+      );
       expect(find.textContaining('n\'en font plus qu\'un'), findsOneWidget);
 
       // La liste n'a pas bougé : on a seulement lu l'avertissement.
@@ -1107,8 +1212,9 @@ void main() {
 
     /// Le dernier plein de la série n'en borne qu'UNE : la phrase de fusion y
     /// serait fausse, et une alarme fausse se paie en confiance.
-    testWidgets('supprimer le dernier plein n\'annonce pas de fusion',
-        (tester) async {
+    testWidgets('supprimer le dernier plein n\'annonce pas de fusion', (
+      tester,
+    ) async {
       await monter(
         tester,
         const FuelFillsPage(ownedVehicleId: 1),
@@ -1169,9 +1275,19 @@ final _passages = [
     motifEcart: 'trop_long',
   ),
   const FuelFill(
-      id: 2, isFull: false, mileageKm: 95600, litres: 13.7, amountFcfa: 10000),
+    id: 2,
+    isFull: false,
+    mileageKm: 95600,
+    litres: 13.7,
+    amountFcfa: 10000,
+  ),
   const FuelFill(
-      id: 1, isFull: true, mileageKm: 95000, litres: 40.0, amountFcfa: 29000),
+    id: 1,
+    isFull: true,
+    mileageKm: 95000,
+    litres: 40.0,
+    amountFcfa: 29000,
+  ),
 ];
 
 /// Les trois passages de la mesure citée par la revue : 90 000/40 L,
@@ -1204,7 +1320,12 @@ final _passagesBornes = [
     bornesIntervalles: 2,
   ),
   const FuelFill(
-      id: 1, isFull: true, mileageKm: 90000, litres: 40.0, amountFcfa: 29000),
+    id: 1,
+    isFull: true,
+    mileageKm: 90000,
+    litres: 40.0,
+    amountFcfa: 29000,
+  ),
 ];
 
 class _PassagesFictifs extends FuelFillsNotifier {
@@ -1223,24 +1344,25 @@ class _PassagesBornes extends FuelFillsNotifier {
 class _PassageAnormalementBas extends FuelFillsNotifier {
   @override
   Future<List<FuelFill>> build(int ownedVehicleId) async => const [
-        FuelFill(
-          id: 2,
-          isFull: true,
-          mileageKm: 91000,
-          litres: 40.0,
-          amountFcfa: 29000,
-          l100km: 4.0,
-          distanceKm: 1000,
-          retenu: false,
-          motifEcart: 'anormalement_bas',
-        ),
-        FuelFill(
-            id: 1,
-            isFull: true,
-            mileageKm: 90000,
-            litres: 40.0,
-            amountFcfa: 29000),
-      ];
+    FuelFill(
+      id: 2,
+      isFull: true,
+      mileageKm: 91000,
+      litres: 40.0,
+      amountFcfa: 29000,
+      l100km: 4.0,
+      distanceKm: 1000,
+      retenu: false,
+      motifEcart: 'anormalement_bas',
+    ),
+    FuelFill(
+      id: 1,
+      isFull: true,
+      mileageKm: 90000,
+      litres: 40.0,
+      amountFcfa: 29000,
+    ),
+  ];
 }
 
 class _AucunPassage extends FuelFillsNotifier {

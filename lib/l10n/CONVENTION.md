@@ -33,21 +33,22 @@ Exemples tels qu'ils existent aujourd'hui :
 ## L'inventaire, au comptage du jour
 
 Mesuré — pas estimé — en parsant les deux `.arb` et en comptant les clés hors
-`@métadonnées` : **306 clés de chaque côté, et exactement le même jeu** ;
+`@métadonnées` : **376 clés de chaque côté, et exactement le même jeu** ;
 `app_fr.arb` moins `app_en.arb` est vide, et la différence inverse aussi.
 
 | zone | clés |
 |---|---:|
-| `catalog` | 205 |
+| `catalog` | 212 |
 | `cart` | 26 |
-| `shell` | 22 |
+| `shell` | 23 |
 | `home` | 16 |
 | `auth` | 14 |
-| `common` | 11 |
+| `common` | 12 |
 | `onboarding` | 9 |
 | `update` | 2 |
 | `partage` | 1 |
-| **total** | **306** |
+| `garage` | 61 |
+| **total** | **376** |
 
 Ce paragraphe annonçait « 51 clés chacun : 10 `common`, 22 `shell`, 16 `home`,
 2 `update`, 1 `catalog` » — le compte du lot de fondation, laissé tel quel
@@ -56,7 +57,7 @@ D'INVENTAIRE**, c'est à partir de lui qu'on juge si une zone est traitée : un
 inventaire faux ne se détecte pas, il se recopie. Il se remesure à chaque lot
 qui ajoute des clés.
 
-`catalog` pèse les deux tiers du total parce que la zone couvre les trois
+`catalog` représente plus de la moitié du total parce que la zone couvre les trois
 fiches produit, leurs trois listes et leurs bandes de filtres — soit la plus
 grosse part du parcours client, et non parce que la règle du préfixe y serait
 mal appliquée.

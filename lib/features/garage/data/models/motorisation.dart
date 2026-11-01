@@ -2,11 +2,7 @@ import 'package:equatable/equatable.dart';
 
 import 'owned_vehicle.dart' show VehicleConsumption;
 
-/// Une motorisation proposée au choix du propriétaire.
-///
-/// Ce qu'il doit reconnaître, c'est son moteur — « 2,5 l 4 cyl., boîte auto.
-/// 6 » — et non une finition : « LE » et « XLE » ne changent la consommation
-/// que sur les hybrides, où le poids des équipements pèse.
+/// Un candidat de référence conservant sa variante, sa source et sa révision.
 class Motorisation extends Equatable {
   final int id;
   final String label;
@@ -29,24 +25,27 @@ class Motorisation extends Equatable {
   });
 
   factory Motorisation.fromJson(Map<String, dynamic> json) {
-    final conso  = json['consumption'] as Map<String, dynamic>? ?? const {};
-    final source = json['source'] as Map<String, dynamic>? ?? const {};
+    final conso = json['consumption'] is Map<String, dynamic>
+        ? json['consumption'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    final source = json['source'] is Map<String, dynamic>
+        ? json['source'] as Map<String, dynamic>
+        : const <String, dynamic>{};
 
     return Motorisation(
-      id:        json['id']         as int,
-      label:     json['label']      as String? ?? '',
+      id: json['id'] as int,
+      label: json['label'] as String? ?? '',
       modelYear: json['model_year'] as int? ?? 0,
-      fuel:      json['fuel']       as String?,
-      engineL:   _double(json['engine_l']),
-      cylinders: json['cylinders']  as int?,
+      fuel: json['fuel'] as String?,
+      engineL: _double(json['engine_l']),
+      cylinders: json['cylinders'] as int?,
       consumption: VehicleConsumption.fromJson({
-        'label':            json['label'],
-        'fuel':             json['fuel'],
-        'city_l_100km':     conso['city_l_100km'],
-        'highway_l_100km':  conso['highway_l_100km'],
-        'combined_l_100km': conso['combined_l_100km'],
-        'source':           source['label'],
-        'cycle':            source['cycle'],
+        ...json,
+        ...conso,
+        'label': json['label'],
+        'fuel': json['fuel'],
+        'source': source['label'],
+        'cycle': source['cycle'],
       }),
     );
   }

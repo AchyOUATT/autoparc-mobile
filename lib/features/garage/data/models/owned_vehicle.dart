@@ -25,6 +25,7 @@ class OwnedVehicle extends Equatable {
   /// Le modèle tel que le propriétaire l'a tapé, faute de l'avoir trouvé.
   final String? modelLibre;
   final String? vin;
+
   /// Code moteur (ex: "1NZ", "K20", "OM651") — renseigné via décodage VIN
   /// ou saisi manuellement. Optionnel : améliore la précision de la recherche
   /// de pièces compatibles quand il est présent.
@@ -102,48 +103,50 @@ class OwnedVehicle extends Equatable {
   });
 
   /// Nom affiché : le surnom en priorité, sinon la désignation complète.
-  String get displayName => nickname?.isNotEmpty == true ? nickname! : designation;
+  String get displayName =>
+      nickname?.isNotEmpty == true ? nickname! : designation;
 
   factory OwnedVehicle.fromJson(Map<String, dynamic> json) => OwnedVehicle(
-    id:                json['id']               as int,
-    designation:       json['designation']       as String,
-    nickname:          json['nickname']          as String?,
-    brandId:           json['brand_id']          as int,
-    trimId:            json['trim_id']           as int?,
-    engineTypeId:      json['engine_type_id']    as int?,
-    drivetrainId:      json['drivetrain_id']     as int?,
-    colorId:           json['color_id']          as int?,
-    vehicleModelId:    json['vehicle_model_id']  as int?,
-    modelLibre:        json['model_libre']       as String?,
-    vin:               json['vin']               as String?,
-    engineCode:        json['engine_code']       as String?,
-    plateNumber:       json['plate_number']      as String?,
-    mileageKm:         json['mileage_km']        as int?,
-    year:              json['year']              as int,
-    identity:          OwnedVehicleIdentity.fromJson(
-                           json['identity'] as Map<String, dynamic>),
+    id: json['id'] as int,
+    designation: json['designation'] as String,
+    nickname: json['nickname'] as String?,
+    brandId: json['brand_id'] as int,
+    trimId: json['trim_id'] as int?,
+    engineTypeId: json['engine_type_id'] as int?,
+    drivetrainId: json['drivetrain_id'] as int?,
+    colorId: json['color_id'] as int?,
+    vehicleModelId: json['vehicle_model_id'] as int?,
+    modelLibre: json['model_libre'] as String?,
+    vin: json['vin'] as String?,
+    engineCode: json['engine_code'] as String?,
+    plateNumber: json['plate_number'] as String?,
+    mileageKm: json['mileage_km'] as int?,
+    year: json['year'] as int,
+    identity: OwnedVehicleIdentity.fromJson(
+      json['identity'] as Map<String, dynamic>,
+    ),
     compatibilityReady: json['compatibility_ready'] as bool? ?? false,
-    motorisationId:    json['motorisation_id']   as int?,
-    consumption:       json['consumption'] == null
-                           ? null
-                           : VehicleConsumption.fromJson(
-                               json['consumption'] as Map<String, dynamic>),
-    fuelTracking:      json['fuel_tracking'] == null
-                           ? null
-                           : FuelTracking.fromJson(
-                               json['fuel_tracking'] as Map<String, dynamic>),
-    lastCheck:         json['last_check'] == null
-                           ? null
-                           : LastCheck.fromJson(
-                               json['last_check'] as Map<String, dynamic>),
-    deadlines:         (json['deadlines'] as List?)
-                           ?.map((d) => VehicleDeadline.fromJson(d as Map<String, dynamic>))
-                           .toList() ??
-                       const [],
+    motorisationId: json['motorisation_id'] as int?,
+    consumption: json['consumption'] == null
+        ? null
+        : VehicleConsumption.fromJson(
+            json['consumption'] as Map<String, dynamic>,
+          ),
+    fuelTracking: json['fuel_tracking'] == null
+        ? null
+        : FuelTracking.fromJson(json['fuel_tracking'] as Map<String, dynamic>),
+    lastCheck: json['last_check'] == null
+        ? null
+        : LastCheck.fromJson(json['last_check'] as Map<String, dynamic>),
+    deadlines:
+        (json['deadlines'] as List?)
+            ?.map((d) => VehicleDeadline.fromJson(d as Map<String, dynamic>))
+            .toList() ??
+        const [],
     technicalInspectionExpiry: _date(json['technical_inspection_expiry']),
-    insuranceExpiry:           _date(json['insurance_expiry']),
-    lastServiceMileageKm:      json['last_service_mileage_km'] as int?,
-    serviceIntervalKm:         json['service_interval_km']     as int?,
+    insuranceExpiry: _date(json['insurance_expiry']),
+    lastServiceMileageKm: json['last_service_mileage_km'] as int?,
+    serviceIntervalKm: json['service_interval_km'] as int?,
   );
 
   @override
@@ -171,47 +174,161 @@ class OwnedVehicle extends Equatable {
 DateTime? _date(Object? value) =>
     value == null ? null : DateTime.tryParse(value.toString());
 
-/// La cote de consommation officielle d'une motorisation.
+/// Une référence de consommation avec son domaine d'applicabilité.
 ///
-/// Toujours accompagnée de sa provenance et de son cycle d'essai : la même
-/// voiture se lit 8,2 l/100 selon la méthode canadienne et 6,4 selon la norme
-/// européenne. Afficher le chiffre seul ferait passer deux protocoles pour une
-/// contradiction.
+/// La valeur source reste consultable même lorsqu'elle ne peut pas être
+/// attribuée au véhicule. Une sélection ne vaut pas vérification documentaire.
 class VehicleConsumption extends Equatable {
-  /// La motorisation, telle que le propriétaire doit la reconnaître :
-  /// « 2,5 l 4 cyl. boîte auto. 6 ».
   final String label;
+  final String? sourceModel;
+  final double? powerKw;
+  final String? hybridType;
   final String? fuel;
   final double? cityL100km;
   final double? highwayL100km;
   final double? combinedL100km;
+  final double? referenceCityL100km;
+  final double? referenceHighwayL100km;
+  final double? referenceCombinedL100km;
   final String source;
   final String cycle;
+  final String matchLevel;
+  final List<String> matchReasons;
+  final int? modelYear;
+  final int? requestedYear;
+  final String yearKind;
+  final String? market;
+  final String method;
+  final String referenceStatus;
+  final String? verifiedAt;
+  final Map<String, dynamic> provenance;
 
   const VehicleConsumption({
     required this.label,
+    this.sourceModel,
+    this.powerKw,
+    this.hybridType,
     this.fuel,
     this.cityL100km,
     this.highwayL100km,
     this.combinedL100km,
+    this.referenceCityL100km,
+    this.referenceHighwayL100km,
+    this.referenceCombinedL100km,
     required this.source,
     required this.cycle,
+    this.matchLevel = 'incomplete',
+    this.matchReasons = const [],
+    this.modelYear,
+    this.requestedYear,
+    this.yearKind = 'unknown',
+    this.market,
+    this.method = 'unknown',
+    this.referenceStatus = 'legacy',
+    this.verifiedAt,
+    this.provenance = const {},
   });
 
-  factory VehicleConsumption.fromJson(Map<String, dynamic> json) =>
-      VehicleConsumption(
-        label:          json['label']  as String? ?? '',
-        fuel:           json['fuel']   as String?,
-        cityL100km:     _double(json['city_l_100km']),
-        highwayL100km:  _double(json['highway_l_100km']),
-        combinedL100km: _double(json['combined_l_100km']),
-        source:         json['source'] as String? ?? '',
-        cycle:          json['cycle']  as String? ?? '',
-      );
+  factory VehicleConsumption.fromJson(Map<String, dynamic> json) {
+    final match = json['match'] is Map<String, dynamic>
+        ? json['match'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    final level = match['level'];
+    return VehicleConsumption(
+      label: json['label'] as String? ?? '',
+      sourceModel: json['model_raw'] as String?,
+      powerKw: _double(json['power_kw']),
+      hybridType: json['hybrid_type'] as String?,
+      fuel: json['fuel'] as String?,
+      cityL100km: _double(json['city_l_100km']),
+      highwayL100km: _double(json['highway_l_100km']),
+      combinedL100km: _double(json['combined_l_100km']),
+      // Older responses only carry the source number. It remains available
+      // in details, without becoming a verified vehicle reference.
+      referenceCityL100km: _double(
+        json['reference_city_l_100km'] ?? json['city_l_100km'],
+      ),
+      referenceHighwayL100km: _double(
+        json['reference_highway_l_100km'] ?? json['highway_l_100km'],
+      ),
+      referenceCombinedL100km: _double(
+        json['reference_combined_l_100km'] ?? json['combined_l_100km'],
+      ),
+      source: json['source'] as String? ?? '',
+      cycle: json['cycle'] as String? ?? '',
+      matchLevel:
+          const ['corresponding', 'approximate', 'incomplete'].contains(level)
+          ? level as String
+          : 'incomplete',
+      matchReasons:
+          (match['reasons'] as List?)?.whereType<String>().toList() ?? const [],
+      modelYear: _consumptionInt(json['model_year']),
+      requestedYear: _consumptionInt(json['requested_year']),
+      yearKind: json['year_kind'] as String? ?? 'unknown',
+      market: json['market'] as String?,
+      method: json['method'] as String? ?? 'unknown',
+      referenceStatus: json['reference_status'] as String? ?? 'legacy',
+      verifiedAt: json['verified_at'] as String?,
+      provenance: json['provenance'] is Map<String, dynamic>
+          ? json['provenance'] as Map<String, dynamic>
+          : const {},
+    );
+  }
+
+  /// An unknown/legacy server cannot silently promote a source value.
+  double? get primaryCombinedL100km =>
+      matchLevel == 'corresponding' && referenceStatus == 'documented'
+      ? combinedL100km
+      : null;
+
+  double? get sourceCombinedL100km => referenceCombinedL100km ?? combinedL100km;
+
+  /// Open only web URLs with a real host, never an executable URI or userinfo.
+  Uri? get sourceUri {
+    for (final field in ['document_url', 'resource_url', 'source_url', 'url']) {
+      final value = provenance[field];
+      if (value is! String) continue;
+      final uri = Uri.tryParse(value);
+      if (uri != null &&
+          const ['https', 'http'].contains(uri.scheme) &&
+          uri.host.isNotEmpty &&
+          uri.userInfo.isEmpty) {
+        return uri;
+      }
+    }
+    return null;
+  }
 
   @override
-  List<Object?> get props => [label, combinedL100km, source, cycle];
+  List<Object?> get props => [
+    label,
+    sourceModel,
+    powerKw,
+    hybridType,
+    fuel,
+    cityL100km,
+    highwayL100km,
+    combinedL100km,
+    referenceCityL100km,
+    referenceHighwayL100km,
+    referenceCombinedL100km,
+    source,
+    cycle,
+    matchLevel,
+    matchReasons,
+    modelYear,
+    requestedYear,
+    yearKind,
+    market,
+    method,
+    referenceStatus,
+    verifiedAt,
+    provenance,
+  ];
 }
+
+int? _consumptionInt(Object? value) =>
+    value is int ? value : int.tryParse(value?.toString() ?? '');
 
 /// Laravel sérialise les décimaux en chaînes : « 8.20 », pas 8.2.
 double? _double(Object? value) =>
@@ -245,14 +362,15 @@ class VehicleDeadline {
     this.detail,
   });
 
-  factory VehicleDeadline.fromJson(Map<String, dynamic> json) => VehicleDeadline(
-    kind:     json['kind']   as String,
-    label:    json['label']  as String,
-    dueOn:    _date(json['due_on']),
-    daysLeft: json['days_left'] as int?,
-    overdue:  json['overdue'] as bool? ?? false,
-    detail:   json['detail'] as String?,
-  );
+  factory VehicleDeadline.fromJson(Map<String, dynamic> json) =>
+      VehicleDeadline(
+        kind: json['kind'] as String,
+        label: json['label'] as String,
+        dueOn: _date(json['due_on']),
+        daysLeft: json['days_left'] as int?,
+        overdue: json['overdue'] as bool? ?? false,
+        detail: json['detail'] as String?,
+      );
 
   /// Texte court résumant l'urgence, prêt pour une pastille.
   String get summary {
@@ -291,13 +409,13 @@ class OwnedVehicleIdentity extends Equatable {
 
   factory OwnedVehicleIdentity.fromJson(Map<String, dynamic> json) =>
       OwnedVehicleIdentity(
-        brand:      json['brand']       as String?,
-        brandSlug:  json['brand_slug']  as String?,
-        model:      json['model']       as String?,
-        trim:       json['trim']        as String?,
+        brand: json['brand'] as String?,
+        brandSlug: json['brand_slug'] as String?,
+        model: json['model'] as String?,
+        trim: json['trim'] as String?,
         engineType: json['engine_type'] as String?,
-        drivetrain: json['drivetrain']  as String?,
-        color:      json['color']       as String?,
+        drivetrain: json['drivetrain'] as String?,
+        color: json['color'] as String?,
       );
 
   String get fullName {

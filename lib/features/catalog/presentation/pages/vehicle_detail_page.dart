@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/models/vehicle.dart';
+import '../../../garage/presentation/widgets/consumption_reference_details.dart';
 import '../../data/models/promotion.dart';
 import '../promotion_affichage.dart';
 import '../providers/catalog_providers.dart';
@@ -395,22 +396,20 @@ class _VehicleDetailView extends ConsumerWidget {
                       (l10n.catalogFieldEngineCode, vehicle.engineCode!),
                     if (vehicle.combinedL100km != null)
                       (
-                        l10n.catalogFieldConsumption,
+                        l10n.catalogDeclaredConsumption,
                         l10n.catalogUnitConsumption(
                           formatDecimal(vehicle.combinedL100km!),
                         ),
                       ),
                   ]),
 
-                  // ── Consommation officielle ─────────────────────
-                  //
-                  // Une fourchette, et non un chiffre : l'annonce connaît son
-                  // modèle et son millésime, rarement sa motorisation. Entre
-                  // le 2,5 l quatre cylindres et le 3,5 l V6 d'une même Camry,
-                  // l'écart atteint 1,2 l/100. Choisir pour l'acheteur serait
-                  // lui mentir sur une dépense qu'il paiera chaque semaine.
-                  if (vehicle.officialConsumption != null)
-                    _ConsommationOfficielle(cote: vehicle.officialConsumption!),
+                  if (vehicle.consumptionReferences.isNotEmpty)
+                    ConsumptionReferenceCandidates(
+                      references: vehicle.consumptionReferences
+                          .map((candidate) => candidate.consumption)
+                          .toList(),
+                      vehicleYear: vehicle.identity.year,
+                    ),
 
                   if (id.color != null)
                     _ColorRow(
@@ -637,7 +636,10 @@ class _PriceSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final rentalPrices = vehicleRentalPriceLabels(commercial, AppLocalizations.of(context));
+    final rentalPrices = vehicleRentalPriceLabels(
+      commercial,
+      AppLocalizations.of(context),
+    );
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -726,25 +728,27 @@ class _PriceSection extends StatelessWidget {
             ),
           ],
           if (rentalPrices.isNotEmpty) ...[
-            for (final price in rentalPrices) Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(
-                children: [
-                  const Icon(Icons.key, size: 18),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        price,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: cs.secondary),
+            for (final price in rentalPrices)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.key, size: 18),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          price,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(color: cs.secondary),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
             if (commercial.rentalDeposit != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4, left: 24),
@@ -1428,84 +1432,6 @@ class _InfoGrid extends StatelessWidget {
     final filtered = items.where((e) => e.$2 != null).toList();
     return Column(
       children: filtered.map((e) => _InfoRow(e.$1, e.$2!)).toList(),
-    );
-  }
-}
-
-/// La consommation officielle du modèle, sur la fiche d'une annonce.
-///
-/// Elle vit hors de la grille d'identité, parce qu'elle ne décrit pas ce
-/// véhicule-ci mais son modèle : une fourchette, sa provenance et son cycle
-/// d'essai. Rangée entre « Finition » et « Transmission », elle se lirait
-/// comme une caractéristique mesurée sur l'exemplaire en vente.
-class _ConsommationOfficielle extends StatelessWidget {
-  final OfficialConsumption cote;
-
-  const _ConsommationOfficielle({required this.cote});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.local_gas_station_outlined, size: 18, color: cs.outline),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppLocalizations.of(
-                    context,
-                  ).catalogOfficialConsumption(cote.libelle),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  // LA SECONDE PHRASE ÉTAIT COMPOSÉE DE QUATRE MORCEAUX, dont
-                  // l'un se terminait par une espace pour tenir au suivant.
-                  // Une phrase traduite ne se découpe pas ainsi : l'anglais ne
-                  // met ni la parenthèse ni l'incise au même endroit, et
-                  // « Millésime » précède l'année en français quand l'anglais
-                  // la fait précéder (« 2016 model year »). Les deux variantes
-                  // sont donc deux clés entières.
-                  cote.estUnique
-                      ? AppLocalizations.of(
-                          context,
-                        ).catalogOfficialConsumptionSingle(
-                          cote.modelYear,
-                          cote.source,
-                          cote.cycle,
-                        )
-                      : AppLocalizations.of(
-                          context,
-                        ).catalogOfficialConsumptionRange(
-                          cote.motorisations,
-                          cote.modelYear,
-                          cote.source,
-                          cote.cycle,
-                        ),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
