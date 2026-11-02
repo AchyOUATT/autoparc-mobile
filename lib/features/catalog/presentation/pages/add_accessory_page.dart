@@ -111,7 +111,7 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
     try {
       final complet = await ref
           .read(catalogRepositoryProvider)
-          .getAccessory(e.id);
+          .getAccessory(e.id, forStaff: true);
       if (!mounted) return;
       setState(() => _fitments = _versEntrees(complet.fitments ?? const []));
     } catch (erreur) {
