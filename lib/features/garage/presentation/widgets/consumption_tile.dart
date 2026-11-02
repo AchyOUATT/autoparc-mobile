@@ -1,8 +1,10 @@
+import '../garage_labels.dart';
+import '../../../../core/l10n/consumption_labels.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../../l10n/app_localizations.dart';
 import '../../data/garage_repository.dart';
 import '../../data/models/fuel_fill.dart';
 import '../../data/models/motorisation.dart';
@@ -87,7 +89,9 @@ class _ChiffreMesure extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${_nombre(suivi.l100km!)} l/100 km',
+                AppLocalizations.of(context).garageMeasuredConsumptionValue(
+                  (_nombre(context, suivi.l100km!)).toString(),
+                ),
                 style: textes.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: cs.primary,
@@ -96,12 +100,15 @@ class _ChiffreMesure extends StatelessWidget {
               Text(
                 [
                   if (suivi.fcfa100km != null)
-                    '${_entier(suivi.fcfa100km!)} FCFA/100 km',
+                    AppLocalizations.of(context).garageFuelCostValue(
+                      (_entier(context, suivi.fcfa100km!)).toString(),
+                    ),
                   // Sur combien de pleins repose le chiffre : à deux pleins il
                   // bouge encore beaucoup, à cinq il est posé. Le cacher
                   // laisserait croire à la même certitude dans les deux cas.
-                  'mesuré sur ${suivi.basedOnFills} '
-                      '${suivi.basedOnFills > 1 ? 'intervalles' : 'intervalle'}',
+                  AppLocalizations.of(
+                    context,
+                  ).garageConsumptionMeasuredOn(suivi.basedOnFills),
                 ].join(' · '),
                 style: textes.bodySmall?.copyWith(color: cs.outline),
               ),
@@ -142,24 +149,28 @@ class _FaitsBruts extends StatelessWidget {
             children: [
               Text(
                 [
-                  '${_nombre(t.litres)} l',
+                  AppLocalizations.of(
+                    context,
+                  ).garageLitresValue((_nombre(context, t.litres)).toString()),
                   if (t.amountFcfa > 0)
-                    '${_entier(t.amountFcfa.toDouble())} FCFA',
-                  '${_entier(t.distanceKm.toDouble())} km',
+                    AppLocalizations.of(context).garageCurrencyValue(
+                      (_entier(context, t.amountFcfa.toDouble())).toString(),
+                    ),
+                  AppLocalizations.of(context).garageMileageValue(
+                    (_entier(context, t.distanceKm.toDouble())).toString(),
+                  ),
                 ].join(' · '),
                 style: textes.bodyMedium,
               ),
               Text(
-                'depuis votre premier passage',
+                AppLocalizations.of(context).garageSinceFirstRefill,
                 style: textes.bodySmall?.copyWith(color: cs.outline),
               ),
               const SizedBox(height: 2),
               Text(
                 suivi.fullFills == 0
-                    ? 'Deux pleins — pompe arrêtée toute seule — et votre '
-                          'consommation réelle s\'affiche ici.'
-                    : 'Encore un plein et votre consommation réelle s\'affiche '
-                          'ici.',
+                    ? AppLocalizations.of(context).garageNeedTwoFullRefills
+                    : AppLocalizations.of(context).garageNeedOneFullRefill,
                 style: textes.bodySmall?.copyWith(color: cs.outline),
               ),
             ],
@@ -190,12 +201,11 @@ class _Invitation extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Suivre ma consommation',
+                AppLocalizations.of(context).garageTrackConsumptionAction,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               Text(
-                'Enregistrez vos passages à la pompe : l\'application calcule '
-                'ce que vous consommez vraiment.',
+                AppLocalizations.of(context).garageTrackConsumptionBody,
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(color: cs.outline),
@@ -251,10 +261,13 @@ class _Anomalie extends StatelessWidget {
                 // sans l'illustrer, plutôt que de l'illustrer de travers.
                 child: Text(
                   (suivi.baselineL100km == null || suivi.alerteL100km == null)
-                      ? 'Votre consommation a augmenté.'
-                      : 'Votre consommation a augmenté : '
-                            '${_nombre(suivi.alerteL100km!)} l/100 km contre '
-                            '${_nombre(suivi.baselineL100km!)} d\'habitude.',
+                      ? AppLocalizations.of(context).garageConsumptionIncreased
+                      : AppLocalizations.of(
+                          context,
+                        ).garageConsumptionIncreasedCompared(
+                          (_nombre(context, suivi.alerteL100km!)).toString(),
+                          (_nombre(context, suivi.baselineL100km!)).toString(),
+                        ),
                   style: textes.bodySmall?.copyWith(
                     color: cs.onErrorContainer,
                     fontWeight: FontWeight.bold,
@@ -265,8 +278,7 @@ class _Anomalie extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Filtre à air encrassé, pression des pneus : ce sont les deux '
-            'causes les plus courantes.',
+            AppLocalizations.of(context).garageConsumptionCommonCauses,
             style: textes.bodySmall?.copyWith(color: cs.onErrorContainer),
           ),
           Align(
@@ -280,7 +292,7 @@ class _Anomalie extends StatelessWidget {
                 minimumSize: const Size(0, 32),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text('Voir les pièces'),
+              child: Text(AppLocalizations.of(context).garageViewPartsAction),
             ),
           ),
         ],
@@ -318,8 +330,7 @@ class _SerieRompue extends StatelessWidget {
           const SizedBox(width: 6),
           Expanded(
             child: Text(
-              'Compteur remplacé : les passages d\'avant restent dans votre '
-              'historique, mais n\'entrent plus dans ce calcul.',
+              AppLocalizations.of(context).garageOdometerReplacedExplanation,
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: cs.outline),
@@ -379,7 +390,7 @@ class _Actions extends ConsumerWidget {
           TextButton.icon(
             onPressed: () => _enregistrer(context, ref),
             icon: const Icon(Icons.add, size: 18),
-            label: const Text('Passage à la pompe'),
+            label: Text(AppLocalizations.of(context).garageRecordRefillTitle),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               minimumSize: const Size(0, 36),
@@ -395,7 +406,11 @@ class _Actions extends ConsumerWidget {
                 minimumSize: const Size(0, 36),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: Text('Historique (${suivi.totalFills})'),
+              child: Text(
+                AppLocalizations.of(
+                  context,
+                ).garageRefillHistoryCount((suivi.totalFills).toString()),
+              ),
             ),
         ],
       ),
@@ -407,9 +422,9 @@ class _Actions extends ConsumerWidget {
 
     if (!enregistre || !context.mounted) return;
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Passage enregistré.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context).garageRefillSaved)),
+    );
   }
 }
 
@@ -426,7 +441,7 @@ class _CoteSeule extends ConsumerWidget {
         alignment: Alignment.centerLeft,
         child: TextButton.icon(
           onPressed: () => choisirMotorisation(context, ref, vehicle),
-          icon: const Icon(Icons.local_gas_station_outlined),
+          icon: const Icon(Icons.local_gas_station_outlined, size: 18),
           label: Text(AppLocalizations.of(context).garageConsumptionQuestion),
         ),
       );
@@ -544,7 +559,13 @@ class _DialogueMotorisation extends StatelessWidget {
                       [
                         if (reference.sourceModel?.isNotEmpty == true)
                           reference.sourceModel!,
-                        m.label,
+                        consumptionEngineLabel(
+                          m.label,
+                          l10n,
+                          engineL: m.engineL,
+                          cylinders: m.cylinders,
+                          transmissionCode: m.transmissionCode,
+                        ),
                         if (reference.powerKw != null)
                           '${reference.powerKw} kW',
                       ].join(' · '),
@@ -557,15 +578,24 @@ class _DialogueMotorisation extends StatelessWidget {
                         reference.market?.isNotEmpty == true
                             ? l10n.garageConsumptionMarket(reference.market!)
                             : l10n.garageConsumptionMarketUnknown,
-                        if (m.fuel != null) m.fuel!,
+                        if (m.fuel != null)
+                          consumptionFuelLabel(m.fuel!, l10n, code: m.fuelCode),
                         if (mixte != null)
                           l10n.garageConsumptionSourceValue(
-                            Localizations.localeOf(context).languageCode == 'fr'
-                                ? _nombre(mixte)
-                                : mixte.toStringAsFixed(1),
+                            _nombre(context, mixte),
                           ),
-                        if (reference.source.isNotEmpty) reference.source,
-                        if (reference.cycle.isNotEmpty) reference.cycle,
+                        if (reference.source.isNotEmpty)
+                          consumptionSourceLabel(
+                            reference.source,
+                            l10n,
+                            code: reference.sourceCode,
+                          ),
+                        if (reference.cycle.isNotEmpty)
+                          consumptionCycleLabel(
+                            reference.cycle,
+                            l10n,
+                            code: reference.cycleCode,
+                          ),
                       ].join(' · '),
                     ),
                     trailing: IconButton(
@@ -601,21 +631,13 @@ class _DialogueMotorisation extends StatelessWidget {
 }
 
 /// « 8,2 » et non « 8.2 » : la virgule décimale est celle du français.
-String _nombre(double valeur) => valeur.toStringAsFixed(1).replaceAll('.', ',');
+String _nombre(BuildContext context, double valeur) =>
+    garageDecimal(AppLocalizations.of(context), valeur);
 
 /// « 6 800 » : l'espace insécable sépare les milliers, sinon « 133000 FCFA »
 /// se lit de travers sur un écran de téléphone.
-String _entier(double valeur) {
-  final chiffres = valeur.round().toString();
-  final tampon = StringBuffer();
-
-  for (var i = 0; i < chiffres.length; i++) {
-    if (i > 0 && (chiffres.length - i) % 3 == 0) tampon.write(' ');
-    tampon.write(chiffres[i]);
-  }
-
-  return tampon.toString();
-}
+String _entier(BuildContext context, double valeur) =>
+    garageInteger(AppLocalizations.of(context), valeur);
 
 void _dire(BuildContext context, String message, {required bool erreur}) {
   ScaffoldMessenger.of(context).showSnackBar(

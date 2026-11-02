@@ -1025,7 +1025,12 @@ void main() {
             ),
             notificationsProvider.overrideWith((_) async => [alerte]),
           ],
-          child: MaterialApp.router(routerConfig: routeur),
+          child: MaterialApp.router(
+            locale: const Locale('fr'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: routeur,
+          ),
         ),
       );
       await tester.pumpAndSettle();

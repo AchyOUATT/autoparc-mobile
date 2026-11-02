@@ -141,7 +141,11 @@ void main() {
   );
 
   Future<void> poser(WidgetTester tester, Widget enfant) async {
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: enfant)));
+    await tester.pumpWidget(MaterialApp(
+      locale: const Locale('fr'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: enfant)));
     await tester.pump();
   }
 
@@ -287,6 +291,9 @@ void main() {
         espace.partnerSessionProvider.overrideWith((_) => _Session(plafond: plafond)),
       ],
       child: MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: espace.PartnerListingFormPage(
           kind: espace.PartnerListingKind.accessories,
           initialListing: annonce,

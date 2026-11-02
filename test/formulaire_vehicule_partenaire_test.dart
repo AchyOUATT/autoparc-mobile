@@ -20,6 +20,7 @@ import 'package:auto/features/vehicles/presentation/pages/vehicle_form_mode.dart
 import 'package:auto/features/vehicles/presentation/pages/vehicle_register_page.dart';
 import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provider.dart';
 import 'package:auto/shared/models/paginated_response.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 /// Le formulaire unifié, vu du côté PARTENAIRE.
 ///
@@ -153,6 +154,9 @@ Future<void> _ouvrir(
       annuaire.partnerRepositoryProvider.overrideWithValue(_Annuaire()),
     ],
     child: MaterialApp(
+      locale: const Locale('fr'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: VehicleRegisterPage(mode: mode, existing: existant),
     ),
   ));

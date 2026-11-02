@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'support/echelles.dart';
 import 'support/polices.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 /// Le bandeau qui réclame la motorisation manquante.
 ///
@@ -51,6 +52,9 @@ Future<void> _afficher(WidgetTester tester, OwnedVehicle vehicule) async {
   await tester.pumpWidget(
     ProviderScope(
       child: MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(body: MissingEngineBanner(vehicle: vehicule)),
       ),
     ),
@@ -127,6 +131,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
+            locale: const Locale('fr'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             debugShowCheckedModeBanner: false,
             theme: themeAutoParc(Brightness.light),
             home: MediaQuery(

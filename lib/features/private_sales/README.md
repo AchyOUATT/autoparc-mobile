@@ -42,8 +42,9 @@ ce numéro et confirme que la personne a bien déposé l’annonce. Le serveur e
 cette confirmation, sauf si le numéro courant a déjà été vérifié par un appel.
 Il reste seul juge de la vérification téléphonique et des droits de publication.
 
-Interface initiale en français, comme l’espace partenaire existant. La traduction
-anglaise du module reste à prévoir avant une diffusion aux utilisateurs anglophones.
+L’interface et ses validations suivent la langue choisie, français ou anglais.
+Les descriptions du vendeur, motifs de modération et noms fournis par le catalogue
+restent les données reçues ; les traductions ne modifient ni l’annonce ni ses références.
 
 Tests : `flutter test test/private_sales`. Les tests ne contactent ni Firebase,
 ni l’API en ligne, ni un destinataire SMS. Les captures optionnelles utilisent

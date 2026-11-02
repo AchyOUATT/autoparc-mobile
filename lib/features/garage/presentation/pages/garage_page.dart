@@ -1,3 +1,6 @@
+import '../garage_labels.dart';
+import '../../../../core/l10n/reference_labels.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -41,23 +44,29 @@ class GaragePage extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.garage_outlined, size: 72,
-                    color: Theme.of(context).colorScheme.outline),
+                Icon(
+                  Icons.garage_outlined,
+                  size: 72,
+                  color: Theme.of(context).colorScheme.outline,
+                ),
                 const SizedBox(height: 16),
-                Text('Connectez-vous pour accéder à votre garage',
-                    style: Theme.of(context).textTheme.titleMedium,
-                    textAlign: TextAlign.center),
+                Text(
+                  AppLocalizations.of(context).garageSignInGarageTitle,
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Retrouvez rapidement les pièces compatibles '
-                  'avec vos véhicules.',
+                Text(
+                  AppLocalizations.of(context).garageSignInGarageBody,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   onPressed: () => context.push('/login'),
                   icon: const Icon(Icons.login),
-                  label: const Text('Se connecter / S\'inscrire'),
+                  label: Text(
+                    AppLocalizations.of(context).garageSignInOrRegister,
+                  ),
                 ),
               ],
             ),
@@ -73,14 +82,14 @@ class GaragePage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mon garage'),
+        title: Text(AppLocalizations.of(context).garageTitle),
         centerTitle: false,
         actions: [
           const NotificationIconButton(),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => ref.read(garageProvider.notifier).refresh(),
-            tooltip: 'Actualiser',
+            tooltip: AppLocalizations.of(context).garageRefreshAction,
           ),
           IconButton(
             icon: CircleAvatar(
@@ -92,7 +101,7 @@ class GaragePage extends ConsumerWidget {
                 style: const TextStyle(fontSize: 12),
               ),
             ),
-            tooltip: 'Mon compte',
+            tooltip: AppLocalizations.of(context).garageAccountTitle,
             onPressed: () => _showAccountSheet(context, ref, auth),
           ),
         ],
@@ -103,13 +112,13 @@ class GaragePage extends ConsumerWidget {
           await context.push('/garage/add');
         },
         icon: const Icon(Icons.add),
-        label: const Text('Ajouter un véhicule'),
+        label: Text(AppLocalizations.of(context).garageAddVehicleAction),
       ),
 
       body: garageAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => _ErrorView(
-          error: messageFor(e),
+          error: messageFor(e, l10n: AppLocalizations.of(context)),
           onRetry: () => ref.read(garageProvider.notifier).refresh(),
         ),
         data: (vehicles) => vehicles.isEmpty
@@ -141,11 +150,11 @@ class GaragePage extends ConsumerWidget {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.logout),
-              title: const Text('Se déconnecter'),
+              title: Text(AppLocalizations.of(context).garageSignOutAction),
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Vous êtes déconnecté.'),
+                  SnackBar(
+                    content: Text(AppLocalizations.of(context).garageSignedOut),
                     behavior: SnackBarBehavior.floating,
                     duration: Duration(seconds: 2),
                   ),
@@ -165,8 +174,10 @@ class GaragePage extends ConsumerWidget {
             // c'est une invitation à se tromper.
             ListTile(
               leading: const Icon(Icons.delete_forever, color: Colors.red),
-              title: const Text('Supprimer mon compte',
-                  style: TextStyle(color: Colors.red)),
+              title: Text(
+                AppLocalizations.of(context).garageDeleteAccountTitle,
+                style: TextStyle(color: Colors.red),
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _confirmerSuppression(context, ref, auth);
@@ -204,9 +215,12 @@ class GaragePage extends ConsumerWidget {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(erreur ?? 'Votre compte et vos données ont été supprimés.'),
-        backgroundColor:
-            erreur != null ? Theme.of(context).colorScheme.error : null,
+        content: Text(
+          erreur ?? AppLocalizations.of(context).garageAccountDeleted,
+        ),
+        backgroundColor: erreur != null
+            ? Theme.of(context).colorScheme.error
+            : null,
       ),
     );
   }
@@ -242,28 +256,27 @@ class _SuppressionDialogState extends State<_SuppressionDialog> {
     final cs = Theme.of(context).colorScheme;
 
     return AlertDialog(
-      title: const Text('Supprimer mon compte'),
+      title: Text(AppLocalizations.of(context).garageDeleteAccountTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Seront supprimés définitivement :'),
+          Text(AppLocalizations.of(context).garageAccountDeletionListTitle),
           const SizedBox(height: 8),
-          const Text(
-            '• vos véhicules et leurs échéances\n'
-            '• vos demandes de recherche\n'
-            '• vos notifications\n'
-            '• votre compte de connexion',
-          ),
+          Text(AppLocalizations.of(context).garageAccountDeletionList),
           const SizedBox(height: 12),
           Text(
-            'Les factures des commandes déjà honorées sont conservées, '
-            'la comptabilité l\'impose.',
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: cs.onSurfaceVariant),
+            AppLocalizations.of(context).garageInvoicesRetained,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
           ),
           const SizedBox(height: 16),
-          Text('Pour confirmer, saisissez ${widget.email} :'),
+          Text(
+            AppLocalizations.of(
+              context,
+            ).garageDeleteAccountConfirmText((widget.email).toString()),
+          ),
           const SizedBox(height: 8),
           TextField(
             controller: _saisie,
@@ -277,12 +290,12 @@ class _SuppressionDialogState extends State<_SuppressionDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Annuler'),
+          child: Text(AppLocalizations.of(context).commonCancel),
         ),
         FilledButton(
           onPressed: _correspond ? () => Navigator.pop(context, true) : null,
           style: FilledButton.styleFrom(backgroundColor: cs.error),
-          child: const Text('Supprimer définitivement'),
+          child: Text(AppLocalizations.of(context).garageDeletePermanently),
         ),
       ],
     );
@@ -342,9 +355,7 @@ class _VehicleCard extends ConsumerWidget {
                   color: cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Center(
-                  child: BrandLogo(slug: id.brandSlug, size: 30),
-                ),
+                child: Center(child: BrandLogo(slug: id.brandSlug, size: 30)),
               ),
             ),
             title: Text(
@@ -369,16 +380,27 @@ class _VehicleCard extends ConsumerWidget {
                 if (vehicle.plateNumber != null)
                   _InfoChip(Icons.badge_outlined, vehicle.plateNumber!),
                 if (vehicle.mileageKm != null)
-                  _InfoChip(Icons.speed, '${_fmt(vehicle.mileageKm!)} km'),
+                  _InfoChip(
+                    Icons.speed,
+                    AppLocalizations.of(context).garageMileageValue(
+                      (_fmt(context, vehicle.mileageKm!)).toString(),
+                    ),
+                  ),
                 if (id.engineType != null)
-                  _InfoChip(Icons.local_gas_station_outlined, id.engineType!),
+                  _InfoChip(Icons.local_gas_station_outlined, referenceFuelLabel(id.engineTypeCode, id.engineType!, AppLocalizations.of(context))),
                 if (id.color != null)
-                  _InfoChip(Icons.palette_outlined, id.color!),
+                  _InfoChip(Icons.palette_outlined, referenceColourLabel(id.color!, AppLocalizations.of(context))),
                 if (vehicle.compatibilityReady)
                   Chip(
-                    avatar: const Icon(Icons.check_circle, size: 14, color: Colors.green),
-                    label: const Text('Compatibilité précise',
-                        style: TextStyle(fontSize: 11)),
+                    avatar: const Icon(
+                      Icons.check_circle,
+                      size: 14,
+                      color: Colors.green,
+                    ),
+                    label: Text(
+                      AppLocalizations.of(context).garagePreciseCompatibility,
+                      style: TextStyle(fontSize: 11),
+                    ),
                     padding: EdgeInsets.zero,
                     visualDensity: VisualDensity.compact,
                   ),
@@ -413,7 +435,9 @@ class _VehicleCard extends ConsumerWidget {
                 child: TextButton.icon(
                   onPressed: () => _editDeadlines(context, ref, vehicle),
                   icon: const Icon(Icons.notifications_none, size: 18),
-                  label: const Text('Suivre mes échéances'),
+                  label: Text(
+                    AppLocalizations.of(context).garageTrackDeadlinesAction,
+                  ),
                 ),
               ),
             ),
@@ -466,9 +490,15 @@ class _VehicleCard extends ConsumerWidget {
                     // l'écran propose désormais aussi le contrôle de saison, et
                     // un bouton qui annonce l'un de ses contenus donne à croire
                     // que l'autre n'est pas là.
-                    label: Text(vehicle.lastCheck == null
-                        ? 'Contrôler mon véhicule'
-                        : 'Refaire un contrôle'),
+                    label: Text(
+                      vehicle.lastCheck == null
+                          ? AppLocalizations.of(
+                              context,
+                            ).garageCheckVehicleAction
+                          : AppLocalizations.of(
+                              context,
+                            ).garageRepeatCheckAction,
+                    ),
                   ),
                 ),
               ],
@@ -476,10 +506,17 @@ class _VehicleCard extends ConsumerWidget {
           ),
 
           // ── Bouton pièces compatibles ─────────────────────────────
-          if (privateSalesEnabled) Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: OutlinedButton.icon(
-            onPressed: () => context.push('/sell', extra: vehicle),
-            icon: const Icon(Icons.sell_outlined), label: const Text('Vendre ce véhicule'),
-          )),
+          if (privateSalesEnabled)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: OutlinedButton.icon(
+                onPressed: () => context.push('/sell', extra: vehicle),
+                icon: const Icon(Icons.sell_outlined),
+                label: Text(
+                  AppLocalizations.of(context).privateSalesSellThisVehicle,
+                ),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
             child: Row(
@@ -491,14 +528,16 @@ class _VehicleCard extends ConsumerWidget {
                       extra: vehicle,
                     ),
                     icon: const Icon(Icons.settings_outlined, size: 18),
-                    label: const Text('Pièces compatibles'),
+                    label: Text(
+                      AppLocalizations.of(context).garageMatchingPartsTitle,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
                   onPressed: () => showMileageDialog(context, ref, vehicle),
                   icon: const Icon(Icons.speed, size: 18),
-                  label: const Text('Mettre à jour'),
+                  label: Text(AppLocalizations.of(context).garageUpdateAction),
                 ),
               ],
             ),
@@ -508,8 +547,11 @@ class _VehicleCard extends ConsumerWidget {
     );
   }
 
-  String _fmt(int n) {
-    if (n >= 1000) return '${(n / 1000).toStringAsFixed(0)} k';
+  String _fmt(BuildContext context, int n) {
+    if (n >= 1000)
+      return AppLocalizations.of(
+        context,
+      ).garageCompactThousands(((n / 1000).toStringAsFixed(0)).toString());
     return n.toString();
   }
 
@@ -526,8 +568,9 @@ class _VehicleCard extends ConsumerWidget {
 
     if (result == null || !context.mounted) return;
 
-    final error =
-        await ref.read(garageProvider.notifier).updateVehicle(vehicle.id, result);
+    final error = await ref
+        .read(garageProvider.notifier)
+        .updateVehicle(vehicle.id, result);
 
     if (error != null && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -535,7 +578,6 @@ class _VehicleCard extends ConsumerWidget {
       );
     }
   }
-
 }
 
 // ── Menu contextuel (éditer / supprimer) ─────────────────────────────
@@ -555,19 +597,14 @@ class _DeadlinesSheet extends StatefulWidget {
 
 class _DeadlinesSheetState extends State<_DeadlinesSheet> {
   late DateTime? _inspection = widget.vehicle.technicalInspectionExpiry;
-  late DateTime? _insurance  = widget.vehicle.insuranceExpiry;
+  late DateTime? _insurance = widget.vehicle.insuranceExpiry;
   late final _serviceKmCtrl = TextEditingController(
     text: widget.vehicle.lastServiceMileageKm?.toString() ?? '',
   );
   late int? _interval = widget.vehicle.serviceIntervalKm;
 
   /// Intervalles courants. « Aucun » coupe le suivi kilométrique.
-  static const _intervals = [
-    (value: null, label: 'Aucun'),
-    (value: 5000, label: '5 000 km'),
-    (value: 10000, label: '10 000 km'),
-    (value: 15000, label: '15 000 km'),
-  ];
+  static const _intervals = <int?>[null, 5000, 10000, 15000];
 
   @override
   void dispose() {
@@ -600,17 +637,16 @@ class _DeadlinesSheetState extends State<_DeadlinesSheet> {
     if (_interval == null) return null; // aucun suivi demandé
 
     final hasLastService = int.tryParse(_serviceKmCtrl.text) != null;
-    final hasCurrent     = widget.vehicle.mileageKm != null;
+    final hasCurrent = widget.vehicle.mileageKm != null;
 
     if (!hasLastService && !hasCurrent) {
-      return 'Renseignez le kilométrage ci-dessus, ainsi que le kilométrage '
-          'actuel du véhicule via « Mettre à jour ».';
+      return AppLocalizations.of(context).garageServiceMissingBoth;
     }
     if (!hasLastService) {
-      return 'Renseignez le kilométrage de la dernière vidange ci-dessus.';
+      return AppLocalizations.of(context).garageServiceMissingLastMileage;
     }
     if (!hasCurrent) {
-      return 'Renseignez le kilométrage actuel du véhicule via « Mettre à jour ».';
+      return AppLocalizations.of(context).garageServiceMissingCurrentMileage;
     }
 
     return null;
@@ -625,32 +661,39 @@ class _DeadlinesSheetState extends State<_DeadlinesSheet> {
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        16, 16, 16, MediaQuery.viewInsetsOf(context).bottom + 16,
+        16,
+        16,
+        16,
+        MediaQuery.viewInsetsOf(context).bottom + 16,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Échéances d\'entretien',
-              style: Theme.of(context).textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold)),
+          Text(
+            AppLocalizations.of(context).garageMaintenanceTitle,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 4),
           Text(
-            'Vous serez prévenu 30 jours avant, puis en cas de dépassement.',
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: cs.onSurfaceVariant),
+            AppLocalizations.of(context).garageMaintenanceReminders,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
           ),
           const SizedBox(height: 16),
 
           _DateField(
-            label: 'Visite technique',
+            label: AppLocalizations.of(context).garageInspectionLabel,
             value: _inspection,
             format: _fmtDate,
             onPick: () => _pick(true),
             onClear: () => setState(() => _inspection = null),
           ),
           _DateField(
-            label: 'Assurance',
+            label: AppLocalizations.of(context).garageInsuranceLabel,
             value: _insurance,
             format: _fmtDate,
             onPick: () => _pick(false),
@@ -658,9 +701,12 @@ class _DeadlinesSheetState extends State<_DeadlinesSheet> {
           ),
 
           const SizedBox(height: 12),
-          Text('Vidange',
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: cs.onSurfaceVariant)),
+          Text(
+            AppLocalizations.of(context).garageOilChangeLabel,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+          ),
           const SizedBox(height: 8),
           TextField(
             controller: _serviceKmCtrl,
@@ -668,8 +714,10 @@ class _DeadlinesSheetState extends State<_DeadlinesSheet> {
             // Le message d'aide dépend de ce champ : il doit suivre la saisie,
             // pas attendre la fermeture de la feuille.
             onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(
-              labelText: 'Kilométrage de la dernière vidange',
+            decoration: InputDecoration(
+              labelText: AppLocalizations.of(
+                context,
+              ).garageLastOilChangeMileage,
               suffixText: 'km',
               border: OutlineInputBorder(),
             ),
@@ -680,9 +728,18 @@ class _DeadlinesSheetState extends State<_DeadlinesSheet> {
             children: [
               for (final i in _intervals)
                 ChoiceChip(
-                  label: Text(i.label),
-                  selected: _interval == i.value,
-                  onSelected: (_) => setState(() => _interval = i.value),
+                  label: Text(
+                    i == null
+                        ? AppLocalizations.of(context).garageNoInterval
+                        : AppLocalizations.of(context).commonMileageKm(
+                            garageInteger(
+                              AppLocalizations.of(context),
+                              i,
+                            ).replaceAll('\u00a0', ' '),
+                          ),
+                  ),
+                  selected: _interval == i,
+                  onSelected: (_) => setState(() => _interval = i),
                 ),
             ],
           ),
@@ -691,48 +748,55 @@ class _DeadlinesSheetState extends State<_DeadlinesSheet> {
           // autres ne produisait aucun rappel, et aucun message : l'utilisateur
           // croyait avoir activé un suivi inexistant. On dit donc précisément
           // ce qui manque, au moment où il fait le choix.
-          Builder(builder: (context) {
-            final missing = _missingForService();
-            final warn = missing != null;
+          Builder(
+            builder: (context) {
+              final missing = _missingForService();
+              final warn = missing != null;
 
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (warn) ...[
-                  Icon(Icons.info_outline, size: 15, color: cs.error),
-                  const SizedBox(width: 6),
-                ],
-                Expanded(
-                  child: Text(
-                    missing ??
-                        'Le rappel de vidange dépend du kilométrage que vous tenez à jour.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: warn ? cs.error : cs.onSurfaceVariant,
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (warn) ...[
+                    Icon(Icons.info_outline, size: 15, color: cs.error),
+                    const SizedBox(width: 6),
+                  ],
+                  Expanded(
+                    child: Text(
+                      missing ??
+                          AppLocalizations.of(
+                            context,
+                          ).garageOilReminderMileageExplanation,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: warn ? cs.error : cs.onSurfaceVariant,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            );
-          }),
+                ],
+              );
+            },
+          ),
 
           const SizedBox(height: 20),
           Row(
             children: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Annuler'),
+                child: Text(AppLocalizations.of(context).commonCancel),
               ),
               const Spacer(),
               FilledButton(
                 onPressed: () => Navigator.pop(context, {
-                  'technical_inspection_expiry':
-                      _inspection?.toIso8601String().substring(0, 10),
-                  'insurance_expiry':
-                      _insurance?.toIso8601String().substring(0, 10),
+                  'technical_inspection_expiry': _inspection
+                      ?.toIso8601String()
+                      .substring(0, 10),
+                  'insurance_expiry': _insurance?.toIso8601String().substring(
+                    0,
+                    10,
+                  ),
                   'last_service_mileage_km': int.tryParse(_serviceKmCtrl.text),
                   'service_interval_km': _interval,
                 }),
-                child: const Text('Enregistrer'),
+                child: Text(AppLocalizations.of(context).catalogFeaturesSave),
               ),
             ],
           ),
@@ -779,7 +843,7 @@ class _DateField extends StatelessWidget {
         ),
         if (value != null)
           IconButton(
-            tooltip: 'Effacer',
+            tooltip: AppLocalizations.of(context).garageClearAction,
             icon: const Icon(Icons.close, size: 18),
             onPressed: onClear,
           ),
@@ -809,8 +873,8 @@ class _DeadlineRow extends StatelessWidget {
     final (color, icon) = deadline.overdue
         ? (cs.error, Icons.error_outline)
         : soon
-            ? (const Color(0xFFB26A00), Icons.schedule)
-            : (cs.onSurfaceVariant, Icons.check_circle_outline);
+        ? (const Color(0xFFB26A00), Icons.schedule)
+        : (cs.onSurfaceVariant, Icons.check_circle_outline);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -820,23 +884,25 @@ class _DeadlineRow extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              deadline.label,
+              garageDeadlineLabel(AppLocalizations.of(context), deadline),
               // Le libelle suit la couleur du delai quand l'echeance est
               // depassee : « Assurance » en gris a cote d'un « Depassee de
               // 12 j » en rouge laissait croire a un detail de mise en forme.
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: deadline.overdue ? cs.error : cs.onSurfaceVariant,
-                fontWeight:
-                    deadline.overdue ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: deadline.overdue
+                    ? FontWeight.w600
+                    : FontWeight.normal,
               ),
             ),
           ),
           Text(
-            deadline.summary,
+            garageDeadlineSummary(AppLocalizations.of(context), deadline),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: color,
-              fontWeight:
-                  deadline.overdue || soon ? FontWeight.w600 : FontWeight.normal,
+              fontWeight: deadline.overdue || soon
+                  ? FontWeight.w600
+                  : FontWeight.normal,
             ),
           ),
         ],
@@ -865,8 +931,8 @@ class _DernierControle extends StatelessWidget {
     final (Color couleur, IconData icone) = lastCheck.bloque
         ? (cs.error, Icons.report_outlined)
         : aReprendre > 0
-            ? (const Color(0xFFB26A00), Icons.schedule)
-            : (cs.onSurfaceVariant, Icons.check_circle_outline);
+        ? (const Color(0xFFB26A00), Icons.schedule)
+        : (cs.onSurfaceVariant, Icons.check_circle_outline);
 
     return Row(
       children: [
@@ -874,16 +940,20 @@ class _DernierControle extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            'Dernier contrôle · ${_quand(lastCheck.performedAt)}',
+            AppLocalizations.of(context).garageLastCheckTitle(
+              (_quand(context, lastCheck.performedAt)).toString(),
+            ),
             style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
           ),
         ),
         Text(
           aReprendre == 0
-              ? 'Rien à reprendre'
+              ? AppLocalizations.of(context).garageCheckNothingToFix
               : aReprendre == 1
-                  ? '1 point à reprendre'
-                  : '$aReprendre points à reprendre',
+              ? AppLocalizations.of(context).garageCheckOnePointToFix
+              : AppLocalizations.of(
+                  context,
+                ).garageCheckPointsToFix((aReprendre).toString()),
           style: tt.bodySmall?.copyWith(
             color: couleur,
             fontWeight: lastCheck.bloque ? FontWeight.w600 : FontWeight.normal,
@@ -894,18 +964,24 @@ class _DernierControle extends StatelessWidget {
   }
 
   /// Une date relative : « hier » se situe sans calculer, « 14/09 » non.
-  String _quand(DateTime? date) {
-    if (date == null) return 'récemment';
+  String _quand(BuildContext context, DateTime? date) {
+    if (date == null) return AppLocalizations.of(context).garageRecentlyLower;
 
     final jours = DateTime.now().difference(date).inDays;
 
     return switch (jours) {
-      <= 0 => "aujourd'hui",
-      1 => 'hier',
-      < 7 => 'il y a $jours jours',
-      < 14 => 'la semaine dernière',
-      < 60 => 'il y a ${(jours / 7).round()} semaines',
-      _ => 'il y a ${(jours / 30).round()} mois',
+      <= 0 => AppLocalizations.of(context).garageTodayLower,
+      1 => AppLocalizations.of(context).garageYesterdayLower,
+      < 7 => AppLocalizations.of(
+        context,
+      ).garageDaysAgoLower((jours).toString()),
+      < 14 => AppLocalizations.of(context).garageLastWeekLower,
+      < 60 => AppLocalizations.of(
+        context,
+      ).garageWeeksAgoLower(((jours / 7).round()).toString()),
+      _ => AppLocalizations.of(
+        context,
+      ).garageMonthsAgoLower(((jours / 30).round()).toString()),
     };
   }
 }
@@ -933,11 +1009,14 @@ class _MoreMenu extends ConsumerWidget {
         }
       },
       itemBuilder: (_) => [
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'delete',
           child: ListTile(
             leading: Icon(Icons.delete_outline, color: Colors.red),
-            title: Text('Retirer du garage', style: TextStyle(color: Colors.red)),
+            title: Text(
+              AppLocalizations.of(context).garageRemoveVehicleAction,
+              style: TextStyle(color: Colors.red),
+            ),
             contentPadding: EdgeInsets.zero,
             minLeadingWidth: 0,
           ),
@@ -950,17 +1029,21 @@ class _MoreMenu extends ConsumerWidget {
       showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text('Retirer du garage ?'),
-          content: Text('$name sera retiré de votre garage. Cette action est irréversible.'),
+          title: Text(AppLocalizations.of(context).garageRemoveVehicleTitle),
+          content: Text(
+            AppLocalizations.of(
+              context,
+            ).garageRemoveVehicleBody((name).toString()),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuler'),
+              child: Text(AppLocalizations.of(context).commonCancel),
             ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Retirer'),
+              child: Text(AppLocalizations.of(context).garageRemoveAction),
             ),
           ],
         ),
@@ -1006,25 +1089,27 @@ class _EmptyGarage extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.garage_outlined, size: 80,
-              color: Theme.of(context).colorScheme.outline),
+          Icon(
+            Icons.garage_outlined,
+            size: 80,
+            color: Theme.of(context).colorScheme.outline,
+          ),
           const SizedBox(height: 16),
           Text(
-            'Votre garage est vide',
+            AppLocalizations.of(context).garageEmptyTitle,
             style: Theme.of(context).textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Ajoutez vos véhicules pour retrouver rapidement '
-            'les pièces compatibles.',
+          Text(
+            AppLocalizations.of(context).garageEmptyBody,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: onAdd,
             icon: const Icon(Icons.add),
-            label: const Text('Ajouter un véhicule'),
+            label: Text(AppLocalizations.of(context).garageAddVehicleAction),
           ),
         ],
       ),
@@ -1052,7 +1137,10 @@ class _ErrorView extends StatelessWidget {
           const SizedBox(height: 12),
           Text(error, textAlign: TextAlign.center),
           const SizedBox(height: 16),
-          FilledButton(onPressed: onRetry, child: const Text('Réessayer')),
+          FilledButton(
+            onPressed: onRetry,
+            child: Text(AppLocalizations.of(context).commonRetry),
+          ),
         ],
       ),
     ),
@@ -1067,11 +1155,13 @@ class _StaffProfilePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs   = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
     final user = auth.staffUser;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mon profil')),
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context).garageProfileTitle),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -1094,19 +1184,26 @@ class _StaffProfilePage extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Center(
-            child: Text(auth.displayName,
-                style: Theme.of(context).textTheme.titleLarge),
+            child: Text(
+              auth.displayName,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
           ),
           if (user?.email != null)
             Center(
-              child: Text(user!.email,
-                  style: Theme.of(context).textTheme.bodyMedium
-                      ?.copyWith(color: cs.outline)),
+              child: Text(
+                user!.email,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: cs.outline),
+              ),
             ),
           const SizedBox(height: 8),
           Center(
             child: Chip(
-              label: Text(user?.role ?? 'Staff'),
+              label: Text(
+                user?.role ?? AppLocalizations.of(context).garageStaffLabel,
+              ),
               avatar: const Icon(Icons.shield_outlined, size: 16),
             ),
           ),
@@ -1118,8 +1215,8 @@ class _StaffProfilePage extends ConsumerWidget {
           OutlinedButton.icon(
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Vous êtes déconnecté.'),
+                SnackBar(
+                  content: Text(AppLocalizations.of(context).garageSignedOut),
                   behavior: SnackBarBehavior.floating,
                   duration: Duration(seconds: 2),
                 ),
@@ -1127,8 +1224,10 @@ class _StaffProfilePage extends ConsumerWidget {
               ref.read(authProvider.notifier).signOut();
             },
             icon: const Icon(Icons.logout, color: Colors.red),
-            label: const Text('Se déconnecter',
-                style: TextStyle(color: Colors.red)),
+            label: Text(
+              AppLocalizations.of(context).garageSignOutAction,
+              style: TextStyle(color: Colors.red),
+            ),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Colors.red),
               minimumSize: const Size.fromHeight(48),

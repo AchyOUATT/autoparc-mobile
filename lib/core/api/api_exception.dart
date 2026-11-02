@@ -1,11 +1,18 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import '../../l10n/app_localizations.dart';
+import '../l10n/error_messages.dart';
+
+/// An application error whose message can be presented in the current locale.
+abstract interface class DisplayableException implements Exception {
+  String get message;
+}
 
 /// Exception standard retournée par [ApiClient] à la place des [DioException] bruts.
 ///
 /// Convertit la réponse JSON Laravel en message lisible.
 /// Les erreurs de validation (422) exposent le champ [errors].
-class ApiException implements Exception {
+class ApiException implements DisplayableException {
   final int? statusCode;
   final String message;
 
@@ -61,7 +68,9 @@ class ApiException implements Exception {
     if (raw is Map<String, dynamic>) {
       parsed = raw;
     } else if (raw is String && raw.isNotEmpty) {
-      try { parsed = jsonDecode(raw) as Map<String, dynamic>?; } catch (_) {}
+      try {
+        parsed = jsonDecode(raw) as Map<String, dynamic>?;
+      } catch (_) {}
     }
 
     final message = (parsed != null && parsed.containsKey('message'))
@@ -76,7 +85,8 @@ class ApiException implements Exception {
       statusCode: e.response?.statusCode,
       message: message,
       errors: parsed?['errors'] as Map<String, dynamic>?,
-      requestId: (parsed?['request_id'] as String?) ??
+      requestId:
+          (parsed?['request_id'] as String?) ??
           e.response?.headers.value('x-request-id'),
       isNetworkFailure: e.response == null,
       code: code is String ? code : null,
@@ -84,8 +94,8 @@ class ApiException implements Exception {
   }
 
   bool get isUnauthorized => statusCode == 401;
-  bool get isForbidden    => statusCode == 403;
-  bool get isNotFound     => statusCode == 404;
+  bool get isForbidden => statusCode == 403;
+  bool get isNotFound => statusCode == 404;
 
   /// Le compte est désactivé. La session est morte, où qu'en soit le jeton.
   bool get isAccountDisabled => code == 'account_disabled';
@@ -123,9 +133,9 @@ class ApiException implements Exception {
   /// middleware de Laravel, avant l'authentification et avant toute
   /// validation. Il peut aussi venir d'un mandataire place devant
   /// l'application, qui ne renvoie alors aucun JSON.
-  bool get isTooLarge     => statusCode == 413;
-  bool get isValidation   => statusCode == 422;
-  bool get isServerError  => statusCode != null && statusCode! >= 500;
+  bool get isTooLarge => statusCode == 413;
+  bool get isValidation => statusCode == 422;
+  bool get isServerError => statusCode != null && statusCode! >= 500;
 
   /// Le serveur est joignable mais ne peut pas traiter la demande pour le
   /// moment — vérification de session impossible, maintenance.
@@ -161,16 +171,18 @@ class ApiException implements Exception {
       // aucun JSON a rendre, et l'utilisateur lisait alors la seule
       // reference de requete. Ce refus-la se repare a l'ecran : il vaut
       // mieux dire comment.
-      413 => 'Envoi trop volumineux. Retirez quelques photos ou '
-             'réduisez-les, puis réessayez.',
+      413 =>
+        'Envoi trop volumineux. Retirez quelques photos ou '
+            'réduisez-les, puis réessayez.',
       422 => _validationMessage(),
       // Le serveur dit combien de temps patienter et pourquoi : son message
       // est plus utile que « trop de requêtes ».
       429 => message,
       503 => '$message${_reference()}',
-      _   => statusCode != null && statusCode! >= 500
-                ? 'Erreur du serveur.${_reference()}'
-                : '$message${_reference()}',
+      _ =>
+        statusCode != null && statusCode! >= 500
+            ? 'Erreur du serveur.${_reference()}'
+            : '$message${_reference()}',
     };
   }
 
@@ -187,8 +199,29 @@ class ApiException implements Exception {
 
   String _reference() => requestId == null ? '' : ' (réf. $requestId)';
 
+  String localizedUserMessage(AppLocalizations l10n) {
+    if (l10n.localeName.startsWith('fr')) return userMessage;
+    if (isNetworkFailure) return l10n.commonErrorNetwork;
+    final text = switch (statusCode) {
+      401 => l10n.commonErrorSessionExpired,
+      403 when isAccountDisabled => l10n.commonErrorDisabled,
+      403 when isPermissionDenied => l10n.commonErrorPermission,
+      404 => l10n.commonErrorNotFound,
+      413 => l10n.commonErrorUploadTooLarge,
+      422 => localizeExceptionMessage(_validationMessage(), l10n),
+      429 => l10n.commonErrorThrottled,
+      503 => l10n.commonErrorUnavailable,
+      _ when isServerError => l10n.commonErrorServer,
+      _ => localizeExceptionMessage(message, l10n),
+    };
+    return requestId != null && (isServerError || statusCode == null)
+        ? l10n.commonErrorReference(text, requestId!)
+        : text;
+  }
+
   @override
-  String toString() => 'ApiException(${statusCode ?? "?"}): $message'
+  String toString() =>
+      'ApiException(${statusCode ?? "?"}): $message'
       '${requestId == null ? '' : ' [réf. $requestId]'}';
 }
 
@@ -207,10 +240,10 @@ class ApiException implements Exception {
 /// « Bad state: Future already completed ». Les afficher reviendrait à montrer
 /// un message interne anglais là où l'on veut une phrase française qui dit
 /// quoi faire. D'où un type qui ne peut venir que de nous.
-class RefusLocal implements Exception {
+class RefusLocal implements DisplayableException {
   const RefusLocal(this.message);
 
-  /// La phrase montrée telle quelle, déjà en français et déjà actionnable.
+  /// La phrase actionnable, composée dans la langue active par l'écran.
   final String message;
 
   @override
@@ -222,12 +255,34 @@ class RefusLocal implements Exception {
 /// Les pages reçoivent parfois autre chose qu'une [ApiException] — une erreur
 /// de parsing, une exception Firebase. Plutôt que d'afficher `toString()`, on
 /// dit au moins quelque chose d'utilisable, sans prétendre connaître la cause.
-String messageFor(Object? error) {
-  if (error is RefusLocal) return error.message;
+String messageFor(Object? error, {AppLocalizations? l10n}) {
+  if (error is RefusLocal) {
+    return l10n == null
+        ? error.message
+        : localizeExceptionMessage(error.message, l10n);
+  }
+  if (error is ApiException) {
+    return l10n == null ? error.userMessage : error.localizedUserMessage(l10n);
+  }
 
-  if (error is ApiException) return error.userMessage;
+  if (error is DioException) {
+    final exception = ApiException.fromDioError(error);
+    return l10n == null
+        ? exception.userMessage
+        : exception.localizedUserMessage(l10n);
+  }
 
-  if (error is DioException) return ApiException.fromDioError(error).userMessage;
+  if (l10n == null) return 'Une erreur est survenue. Réessayez.';
 
-  return 'Une erreur est survenue. Réessayez.';
+  final source = switch (error) {
+    DisplayableException() => error.message,
+    String() => error,
+    _ => null,
+  };
+  if (source != null &&
+      !const {'No element', 'Too many elements'}.contains(source)) {
+    return localizeExceptionMessage(source, l10n);
+  }
+
+  return l10n.commonErrorGeneric;
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,6 +13,7 @@ import '../../vehicles/data/models/vehicle_classification_selection.dart';
 import '../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../vehicles/presentation/widgets/vehicle_identity_fields.dart';
 import '../data/private_listing_repository.dart';
+import 'private_listing_labels.dart';
 
 class PrivateListingForm extends ConsumerStatefulWidget {
   const PrivateListingForm({super.key, this.existing, this.vehicle});
@@ -22,6 +24,8 @@ class PrivateListingForm extends ConsumerStatefulWidget {
 }
 
 class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   final _formKey = GlobalKey<FormState>();
   final _inputs = <String, TextEditingController>{};
   final _freeModelController = TextEditingController();
@@ -134,7 +138,7 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
     try {
       await action();
     } catch (error) {
-      if (mounted) setState(() => _error = messageFor(error));
+      if (mounted) setState(() => _error = messageFor(error, l10n: l10n));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -173,10 +177,7 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
       final vehicles = await ref.read(garageProvider.future);
       if (!mounted) return;
       if (vehicles.isEmpty) {
-        setState(
-          () => _error =
-              'Votre garage est vide. Vous pouvez saisir le véhicule directement ici.',
-        );
+        setState(() => _error = l10n.privateSalesGarageEmpty);
         return;
       }
       final selected = await showModalBottomSheet<OwnedVehicle>(
@@ -185,7 +186,7 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
           child: ListView(
             shrinkWrap: true,
             children: [
-              const ListTile(title: Text('Choisir un véhicule de mon garage')),
+              ListTile(title: Text(l10n.privateSalesChooseGarageTitle)),
               for (final vehicle in vehicles)
                 ListTile(
                   title: Text(vehicle.displayName),
@@ -215,7 +216,7 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
         // est survenue » au lieu de dire ce qui n'allait pas. On ne peut pas
         // apprendre `StateError` à `messageFor` : Dart en lève lui-même, en
         // anglais (« No element »), et ils arriveraient à l'écran.
-        throw const RefusLocal('Vous pouvez ajouter au plus 10 photos au total.');
+        throw RefusLocal(l10n.privateSalesPhotosLimit);
       }
       // One image per request keeps a mobile upload below PHP's total body limit.
       for (final file in files) {
@@ -225,15 +226,14 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
     });
   }
 
-
   /// Ce qui empêche l'envoi, dit au vendeur — ou `null` s'il peut envoyer.
   ///
   /// L'ordre compte : on nomme le premier geste à faire, pas la liste de tout
   /// ce qui manque. Le vendeur en corrige un, la phrase suivante apparaît.
   String? _obstacleAEnvoyer(PrivateListing saved) {
-    if (_dirty) return 'Enregistrez vos modifications avant d’envoyer l’annonce.';
-    if (saved.photos.isEmpty) return 'Ajoutez au moins une photo.';
-    if (!_owner || !_consent) return 'Cochez les deux cases ci-dessus.';
+    if (_dirty) return l10n.privateSalesSaveBeforeSubmit;
+    if (saved.photos.isEmpty) return l10n.privateSalesSubmitPhotosRequired;
+    if (!_owner || !_consent) return l10n.privateSalesSubmitConsentRequired;
 
     return null;
   }
@@ -246,13 +246,9 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
     );
     if (mounted) {
       setState(() => _saved = saved);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Annonce envoyée. Vous retrouverez la décision dans « Mes annonces ».',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.privateSalesSubmitted)));
     }
   });
 
@@ -261,11 +257,11 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
     final auth = ref.watch(authProvider);
     if (!auth.isClient) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Vendre ma voiture')),
+        appBar: AppBar(title: Text(l10n.privateSalesSellTitle)),
         body: Center(
           child: FilledButton(
             onPressed: () => context.push('/login'),
-            child: const Text('Se connecter pour vendre'),
+            child: Text(l10n.privateSalesSignInSell),
           ),
         ),
       );
@@ -274,32 +270,28 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
     _editingSession ??= session;
     if (_editingSession != session) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Vendre ma voiture')),
-        body: const Center(
-          child: Text(
-            'Le compte a changé. Fermez ce formulaire et rouvrez « Mes annonces ».',
-          ),
-        ),
+        appBar: AppBar(title: Text(l10n.privateSalesSellTitle)),
+        body: Center(child: Text(l10n.privateSalesAccountChanged)),
       );
     }
     final references = ref.watch(catalogRefsProvider);
     return references.when(
       loading: () => Scaffold(
-        appBar: AppBar(title: const Text('Vendre ma voiture')),
-        body: const Center(child: CircularProgressIndicator()),
+        appBar: AppBar(title: Text(l10n.privateSalesSellTitle)),
+        body: Center(child: CircularProgressIndicator()),
       ),
       error: (error, _) => Scaffold(
-        appBar: AppBar(title: const Text('Vendre ma voiture')),
+        appBar: AppBar(title: Text(l10n.privateSalesSellTitle)),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(messageFor(error)),
+                Text(messageFor(error, l10n: l10n)),
                 TextButton(
                   onPressed: () => ref.invalidate(catalogRefsProvider),
-                  child: const Text('Réessayer'),
+                  child: Text(l10n.commonRetry),
                 ),
               ],
             ),
@@ -319,7 +311,7 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
     final canSubmit =
         saved != null && const ['draft', 'rejected'].contains(saved.status);
     return Scaffold(
-      appBar: AppBar(title: const Text('Vendre ma voiture')),
+      appBar: AppBar(title: Text(l10n.privateSalesSellTitle)),
       body: Form(
         key: _formKey,
         onChanged: () {
@@ -329,26 +321,23 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
           padding: const EdgeInsets.all(16),
           children: [
             Text(
-              'Votre voiture, votre annonce',
+              l10n.privateSalesFormHeading,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
-            const Text(
-              'Une annonce en cours gratuite. Aucun compte partenaire nécessaire.',
-            ),
+            Text(l10n.privateSalesNoPartnerRequired),
             const SizedBox(height: 12),
             if (saved == null)
               OutlinedButton.icon(
                 onPressed: _busy ? null : _chooseGarage,
                 icon: const Icon(Icons.garage_outlined),
-                label: const Text('Préremplir depuis mon garage'),
+                label: Text(l10n.privateSalesPrefillGarage),
               ),
-            const Text(
-              'Votre garage reste privé. Seules les informations saisies ici seront publiées.',
-            ),
-            if (saved != null) Chip(label: Text(saved.statusLabel)),
+            Text(l10n.privateSalesGaragePrivacy),
+            if (saved != null)
+              Chip(label: Text(privateListingStatusLabel(saved, l10n))),
             if (saved?.text('review_reason').isNotEmpty == true)
               Text(
-                'À corriger : ${saved!.text('review_reason')}',
+                l10n.privateSalesReviewReason(saved!.text('review_reason')),
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             if (_busy) const LinearProgressIndicator(),
@@ -388,30 +377,40 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
                 _dirty = true;
               }),
             ),
-            _field('price', 'Prix en FCFA', numeric: true, enabled: editable),
-            _field('city', 'Ville', maxLength: 100, enabled: editable),
+            _field(
+              'price',
+              l10n.privateSalesPriceLabel,
+              numeric: true,
+              enabled: editable,
+            ),
+            _field(
+              'city',
+              l10n.privateSalesCityLabel,
+              maxLength: 100,
+              enabled: editable,
+            ),
             _field(
               'description',
-              'État du véhicule et informations utiles',
+              l10n.privateSalesDescriptionLabel,
               maxLength: 5000,
               lines: 4,
               enabled: editable,
             ),
             _field(
               'seller_name',
-              'Nom affiché aux acheteurs',
+              l10n.privateSalesSellerNameLabel,
               maxLength: 80,
               enabled: editable,
             ),
             _field(
               'phone',
-              'Téléphone avec indicatif',
+              l10n.privateSalesPhoneLabel,
               maxLength: 20,
               enabled: editable,
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Être contacté sur WhatsApp'),
+              title: Text(l10n.privateSalesWhatsappOptIn),
               value: _whatsapp,
               onChanged: !editable || _busy
                   ? null
@@ -426,23 +425,19 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
                 icon: const Icon(Icons.save_outlined),
                 label: Text(
                   saved == null
-                      ? 'Enregistrer le brouillon'
-                      : 'Enregistrer les modifications',
+                      ? l10n.privateSalesSaveDraft
+                      : l10n.privateSalesSaveChanges,
                 ),
               ),
             if (saved?.status == 'published' || saved?.status == 'pending')
-              const Text(
-                'Une modification remettra l’annonce en brouillon et demandera une nouvelle validation.',
-              ),
+              Text(l10n.privateSalesChangesNeedReview),
             if (saved != null) ...[
               const Divider(height: 32),
               Text(
-                'Photos (${saved.photos.length}/10)',
+                l10n.privateSalesPhotosHeading(saved.photos.length),
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              const Text(
-                'La première photo sera la couverture. Ajoutez uniquement des photos destinées à être publiques.',
-              ),
+              Text(l10n.privateSalesPhotosPrivacy),
               for (final photo in saved.photos)
                 ListTile(
                   leading: SizedBox(
@@ -454,11 +449,11 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
                           const Icon(Icons.image_outlined),
                     ),
                   ),
-                  title: const Text('Photo du véhicule'),
+                  title: Text(l10n.privateSalesVehiclePhoto),
                   trailing: !editable
                       ? null
                       : IconButton(
-                          tooltip: 'Supprimer la photo',
+                          tooltip: l10n.privateSalesDeletePhoto,
                           icon: const Icon(Icons.delete_outline),
                           onPressed: _busy
                               ? null
@@ -485,31 +480,25 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
                 OutlinedButton.icon(
                   onPressed: _busy ? null : _upload,
                   icon: const Icon(Icons.add_photo_alternate_outlined),
-                  label: const Text('Ajouter des photos'),
+                  label: Text(l10n.privateSalesAddPhotos),
                 ),
             ],
             if (canSubmit) ...[
               const Divider(height: 32),
               Text(
-                'Avant la mise en ligne',
+                l10n.privateSalesBeforePublication,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              const Text(
-                'Une personne d’AutoParc vous appellera au numéro indiqué pour '
-                'confirmer que l’annonce vient bien de vous. Votre numéro ne '
-                'sera affiché aux acheteurs qu’après cet appel.',
-              ),
+              Text(l10n.privateSalesPhoneCallNotice),
               if (_saved?.phoneVerified ?? false)
-                Text('Numéro vérifié : ${_saved!.verifiedPhone}'),
+                Text(l10n.privateSalesVerifiedNumber(_saved!.verifiedPhone)),
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
                 value: _owner,
                 onChanged: _busy
                     ? null
                     : (v) => setState(() => _owner = v ?? false),
-                title: const Text(
-                  'Je suis propriétaire de ce véhicule ou autorisé à le vendre.',
-                ),
+                title: Text(l10n.privateSalesOwnerConfirmation),
               ),
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
@@ -517,9 +506,7 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
                 onChanged: _busy
                     ? null
                     : (v) => setState(() => _consent = v ?? false),
-                title: const Text(
-                  'J’accepte que mon nom affiché et mon téléphone vérifié soient publics sur cette annonce.',
-                ),
+                title: Text(l10n.privateSalesContactConsent),
               ),
               // LE PREMIER OBSTACLE EST DIT, au lieu d'être deviné.
               //
@@ -546,7 +533,7 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
                 onPressed: _busy || _obstacleAEnvoyer(saved) != null
                     ? null
                     : _submit,
-                child: const Text('Envoyer pour validation'),
+                child: Text(l10n.privateSalesSubmit),
               ),
             ],
             const SizedBox(height: 32),
@@ -577,9 +564,9 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
       ),
       validator: (value) {
         final text = value?.trim() ?? '';
-        if (text.isEmpty) return 'Renseignez ce champ.';
+        if (text.isEmpty) return l10n.privateSalesRequiredField;
         if (key == 'description' && text.length < 20) {
-          return 'Décrivez le véhicule en au moins 20 caractères.';
+          return l10n.privateSalesDescriptionTooShort;
         }
         // LE GARDE DU NUMERO VIT ICI, et pas dans une exception.
         //
@@ -590,16 +577,16 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
         // c'est le meme format que le serveur exige — un numero qu'on ne peut
         // pas composer ne vaut rien a qui doit appeler.
         if (key == 'phone' && !RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(text)) {
-          return 'Indiquez le numéro avec l’indicatif, par exemple +22670000000.';
+          return l10n.privateSalesPhoneInvalid;
         }
         if (numeric) {
           final number = int.tryParse(text);
           if (number == null || number < (key == 'mileage_km' ? 0 : 1)) {
-            return 'Saisissez un nombre entier valide.';
+            return l10n.privateSalesIntegerInvalid;
           }
           if (key == 'year' &&
               (number < 1900 || number > DateTime.now().year + 1)) {
-            return 'Vérifiez l’année.';
+            return l10n.privateSalesYearInvalid;
           }
         }
         return null;

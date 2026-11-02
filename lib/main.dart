@@ -505,6 +505,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       FcmAppService.instance.initialize(
         apiClient: ref.read(apiClientProvider),
+        l10n: AppLocalizations.of(context),
         onTap: (data) {
           final type      = data['type'] as String? ?? '';
           final vehicleId = int.tryParse(data['vehicle_id']?.toString() ?? '');
@@ -606,6 +607,9 @@ class _AppShellState extends ConsumerState<_AppShell> {
     final location    = GoRouterState.of(context).uri.path;
     final tabIndex    = _tabs.indexWhere((t) => t.path == location).clamp(0, _tabs.length - 1);
     final libelles    = _libelles(AppLocalizations.of(context));
+    ref.listen(langueProvider, (_, locale) {
+      AppLocalizations.delegate.load(locale).then(FcmAppService.instance.updateLanguage);
+    });
 
     // canPop: false intercepte le Retour systeme pour tout le shell.
     //
@@ -748,12 +752,12 @@ class AppDrawer extends ConsumerWidget {
           if (auth.isStaff) ...[
             if (auth.canManageSettings) _DrawerTile(
               icon: Icons.settings_phone_outlined,
-              label: 'Paramètres · Contact AutoParc',
+              label: l10n.shellContactSettings,
               onTap: () { _close(context); context.push('/settings/contact'); },
             ),
             if (auth.canManagePartners) _DrawerTile(
               icon: Icons.how_to_reg_outlined,
-              label: 'Validation des partenaires',
+              label: AppLocalizations.of(context).shellPartnerApplications,
               onTap: () { _close(context); context.push('/partner-applications'); },
             ),
             _DrawerTile(
@@ -820,7 +824,7 @@ class AppDrawer extends ConsumerWidget {
           // ════════════════════════════════════════════════════════
           if (auth.isClient) ...[
             if (privateSalesEnabled) _DrawerTile(
-              icon: Icons.sell_outlined, label: 'Mes annonces',
+              icon: Icons.sell_outlined, label: AppLocalizations.of(context).privateSalesMineTitle,
               onTap: () { _close(context); context.push('/my-listings'); },
             ),
             _DrawerTile(
@@ -865,7 +869,7 @@ class AppDrawer extends ConsumerWidget {
           // ════════════════════════════════════════════════════════
           if (!auth.isAuthenticated) ...[
             if (privateSalesEnabled) _DrawerTile(
-              icon: Icons.directions_car_outlined, label: 'Voitures de particuliers',
+              icon: Icons.directions_car_outlined, label: AppLocalizations.of(context).privateSalesBrowseTitle,
               onTap: () { _close(context); context.push('/private-listings'); },
             ),
             _DrawerTile(
@@ -883,8 +887,8 @@ class AppDrawer extends ConsumerWidget {
           // `/settings/contact` et `ContactSettingsPage`, réservées à
           // `manage-settings` et atteintes par la tuile « Paramètres · Contact
           // AutoParc » du bloc STAFF, plus haut. Elle règle le numéro de la
-          // boutique, pas le comportement de l'application, et elle est en
-          // français en dur comme le reste du back-office.
+          // boutique, pas le comportement de l'application. Ses libellés
+          // suivent la langue active, comme le reste du back-office.
           //
           // AUCUN RÉGLAGE D'APPLICATION N'Y VIT, et la langue n'a donc pas à
           // y aller. Le seul endroit où un réglage d'application ait jamais
@@ -925,7 +929,7 @@ class AppDrawer extends ConsumerWidget {
           // Ceci n'évite que l'entrée morte.
           if (ref.watch(espacePartenaireOuvertProvider)) _DrawerTile(
             icon: Icons.storefront_outlined,
-            label: 'Espace partenaire',
+            label: AppLocalizations.of(context).shellPartnerSpace,
             onTap: () { _close(context); context.push('/partner'); },
           ),
           const TuileLangue(),

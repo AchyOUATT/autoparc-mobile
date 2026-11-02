@@ -13,6 +13,7 @@ import 'package:auto/features/catalog/data/models/accessory.dart';
 import 'package:auto/features/catalog/data/models/part.dart';
 import 'package:auto/features/catalog/data/models/part_category.dart';
 import 'package:auto/features/catalog/data/models/vehicle.dart';
+import 'package:auto/features/catalog/data/models/catalog_vehicle_item.dart';
 import 'package:auto/features/catalog/presentation/pages/accessory_list_page.dart';
 import 'package:auto/features/catalog/presentation/pages/part_list_page.dart';
 import 'package:auto/features/catalog/presentation/pages/vehicle_list_page.dart';
@@ -119,12 +120,14 @@ void main() {
       (jsonDecode(File('test/fixtures/vehicles_list.json').readAsStringSync())
               as Map<String, dynamic>)['data'][0]
           as Map<String, dynamic>;
+  var nextVehicleId = 1000;
 
   /// Le pire contenu du référentiel, comme dans `carte_geometrie_test.dart` :
   /// une annonce pauvre ferait des rangées courtes et rendrait les mesures de
   /// recouvrement du bouton flottant optimistes.
   Vehicle vehicule() {
     final json = jsonDecode(jsonEncode(gabarit)) as Map<String, dynamic>;
+    json['id'] = nextVehicleId++;
     final id = json['identity'] as Map<String, dynamic>;
     final tec = json['technical'] as Map<String, dynamic>;
     final com = json['commercial'] as Map<String, dynamic>;
@@ -454,6 +457,9 @@ void main() {
     // bandes de la page des véhicules avant ce lot.
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: themeAutoParc(Brightness.light),
         home: Scaffold(
           body: SizedBox(
@@ -3321,6 +3327,34 @@ class _Depot implements CatalogRepository {
     currentPage: 1,
     lastPage: 1,
     total: accessoires.length,
+    perPage: perPage,
+  );
+
+  @override
+  Future<PaginatedResponse<CatalogVehicleItem>> getVehicleListings({
+    int page = 1,
+    int perPage = 20,
+    String? search,
+    String? availability,
+    String? vehicleType,
+    String? bodyStyle,
+    String? brandId,
+    int? yearMin,
+    int? yearMax,
+    double? priceMax,
+    String? condition,
+    String? originCountryId,
+    String? city,
+    int? locationId,
+    bool? customsCleared,
+    bool? deal,
+    String? registrationStatus,
+    bool includePrivate = false,
+  }) async => PaginatedResponse<CatalogVehicleItem>(
+    data: liste.map(CatalogVehicleItem.vehicle).toList(),
+    currentPage: 1,
+    lastPage: 1,
+    total: liste.length,
     perPage: perPage,
   );
 

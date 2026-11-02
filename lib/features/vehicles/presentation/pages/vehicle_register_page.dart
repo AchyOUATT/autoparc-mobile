@@ -1,4 +1,8 @@
+import '../../../catalog/presentation/catalog_reference_labels.dart';
+import '../../../../core/l10n/reference_labels.dart';
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../l10n/app_localizations_fr.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,10 +15,13 @@ import 'vehicle_form_mode.dart';
 // Le depot de l'ESPACE partenaire, a ne pas confondre avec l'annuaire des
 // partenaires du personnel importe plus bas : les deux exposent un
 // `partnerRepositoryProvider`, d'ou l'alias.
-import '../../../../features/partner_accounts/data/partner_repository.dart' as espace;
+import '../../../../features/partner_accounts/data/partner_repository.dart'
+    as espace;
 import '../../../../features/partner_accounts/presentation/marge_recapitulatif.dart';
-import '../../../../features/partner_accounts/presentation/champs_de_promotion.dart' as espace;
-import '../../../../features/partner_accounts/presentation/partner_session.dart' as espace;
+import '../../../../features/partner_accounts/presentation/champs_de_promotion.dart'
+    as espace;
+import '../../../../features/partner_accounts/presentation/partner_session.dart'
+    as espace;
 import '../../../../core/api/api_exception.dart';
 import '../widgets/vehicle_reference_dropdown.dart';
 import '../../../../shared/presentation/pages/media_upload_page.dart';
@@ -25,9 +32,12 @@ import '../../../../features/partners/data/models/partner.dart';
 import '../../../../features/partners/data/partner_repository.dart';
 
 // ── Provider partenaires pour le formulaire ──────────────────────
-final _vehiclePartnersProvider =
-    FutureProvider.autoDispose<List<Partner>>((ref) async {
-  final page = await ref.read(partnerRepositoryProvider).getPartners(perPage: 200);
+final _vehiclePartnersProvider = FutureProvider.autoDispose<List<Partner>>((
+  ref,
+) async {
+  final page = await ref
+      .read(partnerRepositoryProvider)
+      .getPartners(perPage: 200);
   return page.data;
 });
 
@@ -55,6 +65,8 @@ class VehicleRegisterPage extends ConsumerStatefulWidget {
 }
 
 class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   /// Un formulaire PAR ETAPE, et non un seul pour les quatre.
   ///
   /// ── CE QUE LE `Stepper` GARDE DANS L'ARBRE ───────────────────────────
@@ -79,9 +91,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   Vehicle? get _existing => widget.existing;
 
   // ── Step 0 — Type & Identification ───────────────────────────────
-  String  _vehicleType = 'passenger'; // 'passenger' | 'utility' | 'heavy'
-  String? _bodyStyle;                 // 'sedan' | 'suv' | 'pickup' | …
-  final _vinCtrl   = TextEditingController();
+  String _vehicleType = 'passenger'; // 'passenger' | 'utility' | 'heavy'
+  String? _bodyStyle; // 'sedan' | 'suv' | 'pickup' | …
+  final _vinCtrl = TextEditingController();
   final _plateCtrl = TextEditingController(); // plaque (optionnel)
 
   /// Le véhicule est-il immatriculé ? Déclaré, pas déduit.
@@ -105,7 +117,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   bool _immatricule = false;
 
   // ── Step 2 — Identité ──────────────────────────────────────────────
-  VehicleClassificationSelection _classification = VehicleClassificationSelection();
+  VehicleClassificationSelection _classification =
+      VehicleClassificationSelection();
   BrandRef? get _brand => _classification.brand;
   ModelRef? get _model => _classification.model;
   TrimRef? get _trim => _classification.trim;
@@ -126,22 +139,22 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   final Set<int> _selectedFeatureIds = {}; // IDs des équipements sélectionnés
 
   // ── Step 4 — Commercial ────────────────────────────────────────────
-  String _condition    = 'used';   // 'new' | 'used' | 'damaged'
-  String _availability = 'sale';   // 'sale' | 'rent' | 'both'
+  String _condition = 'used'; // 'new' | 'used' | 'damaged'
+  String _availability = 'sale'; // 'sale' | 'rent' | 'both'
 
   /// Mise en avant commerciale. Chaîne vide = aucune promotion : le
   /// `_ChoiceGroup` exige une valeur non nulle, on la traduit en `null` au
   /// moment de l'envoi.
   String _dealType = '';
-  bool   _negotiable   = false;
-  int?   _selectedPartnerId;
-  final _salePriceCtrl       = TextEditingController();
-  final _rentalDailyCtrl     = TextEditingController();
-  final _rentalMonthlyCtrl   = TextEditingController();
-  final _rentalDepositCtrl   = TextEditingController();
-  final _mileageCtrl         = TextEditingController();
-  final _siteCtrl            = TextEditingController();
-  LocationRef? _selectedLocation;   // agence / showroom structuré
+  bool _negotiable = false;
+  int? _selectedPartnerId;
+  final _salePriceCtrl = TextEditingController();
+  final _rentalDailyCtrl = TextEditingController();
+  final _rentalMonthlyCtrl = TextEditingController();
+  final _rentalDepositCtrl = TextEditingController();
+  final _mileageCtrl = TextEditingController();
+  final _siteCtrl = TextEditingController();
+  LocationRef? _selectedLocation; // agence / showroom structuré
 
   /// Le pays d'origine d'un vehicule importe.
   ///
@@ -156,26 +169,25 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   /// Le personnel a sa propre mise en avant, `deal_type`, qui ne touche pas
   /// au prix. La promotion chiffree est l'outil du vendeur tiers.
   espace.PromotionSaisie _promotion = const espace.PromotionSaisie();
-  final _descriptionCtrl     = TextEditingController();
-
+  final _descriptionCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     final e = _existing;
     if (e != null) {
-      _vehicleType  = e.vehicleType;
-      _bodyStyle    = e.bodyStyle;
+      _vehicleType = e.vehicleType;
+      _bodyStyle = e.bodyStyle;
       _transmission = e.transmission ?? '';
       _powerCtrl.text = e.powerHp?.toString() ?? '';
       _seatsCtrl.text = e.seats?.toString() ?? '';
       _doorsCtrl.text = e.doors?.toString() ?? '';
       _vinCtrl.text = e.vin ?? '';
       if (e.identity.year != null) _yearCtrl.text = e.identity.year.toString();
-      _condition    = e.commercial.condition;
+      _condition = e.commercial.condition;
       _availability = e.commercial.availability;
-      _negotiable   = e.commercial.priceNegotiable;
-      _dealType     = e.commercial.dealType ?? '';
+      _negotiable = e.commercial.priceNegotiable;
+      _dealType = e.commercial.dealType ?? '';
       if (e.commercial.salePrice != null)
         _salePriceCtrl.text = _fmtPrice(e.commercial.salePrice!);
       if (e.commercial.rentalDailyRate != null)
@@ -209,10 +221,21 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   @override
   void dispose() {
     for (final c in [
-      _vinCtrl, _plateCtrl, _yearCtrl, _powerCtrl, _seatsCtrl, _doorsCtrl,
-      _salePriceCtrl, _rentalDailyCtrl, _rentalMonthlyCtrl, _rentalDepositCtrl, _mileageCtrl,
-      _siteCtrl, _descriptionCtrl,
-    ]) c.dispose();
+      _vinCtrl,
+      _plateCtrl,
+      _yearCtrl,
+      _powerCtrl,
+      _seatsCtrl,
+      _doorsCtrl,
+      _salePriceCtrl,
+      _rentalDailyCtrl,
+      _rentalMonthlyCtrl,
+      _rentalDepositCtrl,
+      _mileageCtrl,
+      _siteCtrl,
+      _descriptionCtrl,
+    ])
+      c.dispose();
     super.dispose();
   }
 
@@ -292,7 +315,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
     if (fautive != -1) {
       setState(() => _step = fautive);
-      _snackError('Il manque quelque chose à l\'étape ${fautive + 1}.');
+      _snackError(l10n.vehiclesMissingStep(fautive + 1));
 
       return;
     }
@@ -306,7 +329,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     setState(() => _submitting = true);
 
     try {
-      final payload  = _buildPayload();
+      final payload = _buildPayload();
       final existing = _existing;
 
       // ── L'ESPACE PARTENAIRE : AUTRE DEPOT, AUTRE SUITE ─────────────────
@@ -320,7 +343,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       // suit — invalidation des listes du back-office, SnackBar du personnel,
       // navigation vers /media-upload — n'a de sens dans son espace.
       if (widget.mode.estPartenaire) {
-        await ref.read(espace.partnerRepositoryProvider).saveListing(
+        await ref
+            .read(espace.partnerRepositoryProvider)
+            .saveListing(
               espace.PartnerListingKind.vehicles,
               payload,
               id: existing?.id,
@@ -345,22 +370,24 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         if (existing != null) {
           ref.invalidate(vehicleDetailProvider(vehicle.id));
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Véhicule mis à jour ✓'),
-                backgroundColor: Colors.green),
+            SnackBar(
+              content: Text(l10n.vehiclesUpdated),
+              backgroundColor: Colors.green,
+            ),
           );
           context.pop();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Véhicule enregistré — ajoutez des photos !'),
+            SnackBar(
+              content: Text(l10n.vehiclesCreated),
               backgroundColor: Colors.green,
             ),
           );
           context.pushReplacement(
             '/media-upload',
             extra: MediaUploadConfig(
-              type:  MediaOwnerType.vehicle,
-              id:    vehicle.id,
+              type: MediaOwnerType.vehicle,
+              id: vehicle.id,
               title: vehicle.identity.fullName,
             ),
           );
@@ -373,7 +400,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       // champ — le seul utile avec une trentaine de champs a l'ecran.
       if (mounted) {
         _showErrors(
-          titre: 'Enregistrement impossible',
+          titre: l10n.vehiclesSaveFailed,
           message: e.fields.isNotEmpty
               ? e.fields.values.map((texte) => '• $texte').join('\n')
               : e.message,
@@ -388,17 +415,20 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         // la reference, la ou e.message rendait le texte brut du serveur,
         // parfois en anglais, parfois vide.
         _showErrors(
-          titre: titreErreurEnregistrement(e),
+          titre: titreErreurEnregistrement(e, l10n: l10n),
           message: e.errors != null && e.errors!.isNotEmpty
               ? e.errors!.entries
-                  .map((entry) => '• ${entry.value.first}')
-                  .join('\n')
-              : e.userMessage,
+                    .map((entry) => '• ${entry.value.first}')
+                    .join('\n')
+              : messageFor(e, l10n: l10n),
         );
       }
     } catch (e) {
       if (mounted) {
-        _showErrors(titre: 'Enregistrement impossible', message: messageFor(e));
+        _showErrors(
+          titre: l10n.vehiclesSaveFailed,
+          message: messageFor(e, l10n: l10n),
+        );
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -406,27 +436,28 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   }
 
   Map<String, dynamic> _buildPayload() {
-    final bool forSale   = _availability == 'sale' || _availability == 'both';
-    final bool forRent   = _availability == 'rent' || _availability == 'both';
-    final bool hasPlate  = _plateCtrl.text.trim().isNotEmpty;
+    final bool forSale = _availability == 'sale' || _availability == 'both';
+    final bool forRent = _availability == 'rent' || _availability == 'both';
+    final bool hasPlate = _plateCtrl.text.trim().isNotEmpty;
     // On retire le separateur avant de lire : int.tryParse refuse « 85 000 »
     // et rendrait null, c'est-a-dire un kilometrage silencieusement perdu.
-    final int? mileage   = _mileageCtrl.text.isNotEmpty
+    final int? mileage = _mileageCtrl.text.isNotEmpty
         ? int.tryParse(_mileageCtrl.text.replaceAll(RegExp(r'\D'), ''))
         : null;
 
     return <String, dynamic>{
-      'vehicle_type':       _vehicleType,
-      if (_bodyStyle != null || _classificationChanged) 'body_style': _bodyStyle,
-      if (_vinCtrl.text.trim().isNotEmpty)   'vin':          _vinCtrl.text.trim(),
+      'vehicle_type': _vehicleType,
+      if (_bodyStyle != null || _classificationChanged)
+        'body_style': _bodyStyle,
+      if (_vinCtrl.text.trim().isNotEmpty) 'vin': _vinCtrl.text.trim(),
       // DÉCLARÉ, PAS DÉDUIT. L'API ne retombe sur la présence d'une plaque
       // que lorsque ce champ est absent.
       'registration_status': _immatricule ? 'registered' : 'unregistered',
       if (hasPlate) 'plate_number': _plateCtrl.text.trim(),
       ..._classification.toPayload(editing: _existing != null),
-      if (_color != null)      'color_id':     _color!.id,
+      if (_color != null) 'color_id': _color!.id,
       'manufacturing_year': int.parse(_yearCtrl.text),
-      'transmission':       _transmission.isEmpty ? null : _transmission,
+      'transmission': _transmission.isEmpty ? null : _transmission,
       if (_powerCtrl.text.isNotEmpty || _classificationChanged)
         'power_hp': int.tryParse(_powerCtrl.text),
       if (_existing != null && _classificationChanged) ...{
@@ -446,9 +477,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         'seats': int.tryParse(_seatsCtrl.text),
       if (_doorsCtrl.text.isNotEmpty || _classificationChanged)
         'doors': int.tryParse(_doorsCtrl.text),
-      'condition':          _condition,
-      'availability':       _availability,
-      'price_negotiable':   _negotiable,
+      'condition': _condition,
+      'availability': _availability,
+      'price_negotiable': _negotiable,
       // Explicitement null quand aucune promotion : c'est ce qui permet d'en
       // retirer une à l'édition.
       // Les trois champs de la boutique. Le serveur les REFUSE a un
@@ -456,17 +487,28 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       if (widget.mode.peutChoisirLaBoutique)
         'deal_type': _dealType.isEmpty ? null : _dealType,
       if (forSale && _salePriceCtrl.text.trim().isNotEmpty)
-        'sale_price': int.parse(_salePriceCtrl.text.replaceAll(RegExp(r'\s'), '')),
-      if (_existing != null || forRent && _rentalDailyCtrl.text.trim().isNotEmpty)
-        'rental_daily_rate': forRent ? _parsePrice(_rentalDailyCtrl.text) : null,
-      if (_existing != null || forRent && _rentalMonthlyCtrl.text.trim().isNotEmpty)
-        'rental_monthly_rate': forRent ? _parsePrice(_rentalMonthlyCtrl.text) : null,
-      if (_existing != null || forRent && _rentalDepositCtrl.text.trim().isNotEmpty)
+        'sale_price': int.parse(
+          _salePriceCtrl.text.replaceAll(RegExp(r'\s'), ''),
+        ),
+      if (_existing != null ||
+          forRent && _rentalDailyCtrl.text.trim().isNotEmpty)
+        'rental_daily_rate': forRent
+            ? _parsePrice(_rentalDailyCtrl.text)
+            : null,
+      if (_existing != null ||
+          forRent && _rentalMonthlyCtrl.text.trim().isNotEmpty)
+        'rental_monthly_rate': forRent
+            ? _parsePrice(_rentalMonthlyCtrl.text)
+            : null,
+      if (_existing != null ||
+          forRent && _rentalDepositCtrl.text.trim().isNotEmpty)
         'rental_deposit': forRent ? _parsePrice(_rentalDepositCtrl.text) : null,
       if (_siteCtrl.text.isNotEmpty) 'site': _siteCtrl.text.trim(),
-      if (_descriptionCtrl.text.isNotEmpty) 'description': _descriptionCtrl.text.trim(),
-      'currency':           'XOF',
-      if (_selectedFeatureIds.isNotEmpty) 'features': _selectedFeatureIds.toList(),
+      if (_descriptionCtrl.text.isNotEmpty)
+        'description': _descriptionCtrl.text.trim(),
+      'currency': 'XOF',
+      if (_selectedFeatureIds.isNotEmpty)
+        'features': _selectedFeatureIds.toList(),
       if (widget.mode.peutChoisirLaBoutique && _selectedLocation != null)
         'location_id': _selectedLocation!.id,
       if (widget.mode.peutChoisirLaBoutique && _selectedPartnerId != null)
@@ -495,8 +537,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         'deal_price': _promotion.prix,
         'deal_starts_at': _promotion.debut?.toIso8601String(),
         'deal_ends_at': _promotion.fin?.toIso8601String(),
-      }
-      else if (widget.mode.estPartenaire && _existing != null)
+      } else if (widget.mode.estPartenaire && _existing != null)
         'deal_price': null,
       if (!_immatricule && (mileage != null || _paysOrigine != null))
         'import': {
@@ -517,17 +558,19 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   Widget _marge(TextEditingController controller, {String? libelle}) {
     if (!widget.mode.estPartenaire) return const SizedBox.shrink();
 
-    final taux = ref.watch(espace.partnerSessionProvider).profile?.margePourcentage ?? 0;
+    final taux =
+        ref.watch(espace.partnerSessionProvider).profile?.margePourcentage ?? 0;
 
     return MargeRecapitulatif(
       prixPropose: _parsePrice(controller.text),
       pourcentage: taux,
-      libelle: libelle ?? 'Prix affiché à l’acheteur',
+      libelle: libelle ?? l10n.vehiclesBuyerPriceLabel,
     );
   }
 
   bool get _rentalRatesMissing =>
-      _rentalDailyCtrl.text.trim().isEmpty && _rentalMonthlyCtrl.text.trim().isEmpty;
+      _rentalDailyCtrl.text.trim().isEmpty &&
+      _rentalMonthlyCtrl.text.trim().isEmpty;
 
   int? _parsePrice(String value) =>
       int.tryParse(value.replaceAll(RegExp(r'\s'), ''));
@@ -542,13 +585,13 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        icon:     const Icon(Icons.error_outline, color: Colors.red),
-        title:    Text(titre),
-        content:  SingleChildScrollView(child: Text(message)),
+        icon: const Icon(Icons.error_outline, color: Colors.red),
+        title: Text(titre),
+        content: SingleChildScrollView(child: Text(message)),
         actions: [
           TextButton(
             onPressed: Navigator.of(context).pop,
-            child: const Text('OK'),
+            child: Text(l10n.vehiclesOk),
           ),
         ],
       ),
@@ -559,11 +602,14 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final refsAsync = ref.watch(catalogRefsProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_existing != null ? 'Modifier le véhicule' : 'Enregistrer un véhicule'),
+        title: Text(
+          _existing != null ? l10n.vehiclesEditTitle : l10n.vehiclesCreateTitle,
+        ),
         centerTitle: false,
         actions: [
           // ── LES PHOTOS D'UN VÉHICULE DÉJÀ ENREGISTRÉ ─────────────────
@@ -587,12 +633,12 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           if (_existing != null)
             IconButton(
               icon: const Icon(Icons.add_a_photo_outlined),
-              tooltip: 'Photos',
+              tooltip: l10n.vehiclesPhotos,
               onPressed: () => context.push(
                 '/media-upload',
                 extra: MediaUploadConfig(
-                  type:  MediaOwnerType.vehicle,
-                  id:    _existing!.id,
+                  type: MediaOwnerType.vehicle,
+                  id: _existing!.id,
                   title: _existing!.identity.fullName,
                 ),
               ),
@@ -601,8 +647,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       ),
       body: refsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => _LoadingError(error: messageFor(e),
-            onRetry: () => ref.invalidate(catalogRefsProvider)),
+        error: (e, _) => _LoadingError(
+          error: messageFor(e, l10n: l10n),
+          onRetry: () => ref.invalidate(catalogRefsProvider),
+        ),
         data: _buildForm,
       ),
     );
@@ -626,14 +674,15 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         final color = refs.colors.where((c) => c.id == e.colorId).firstOrNull;
         final loc = e.commercial.locationId != null
             ? refs.locations
-                .where((l) => l.id == e.commercial.locationId)
-                .cast<LocationRef?>().firstOrNull
+                  .where((l) => l.id == e.commercial.locationId)
+                  .cast<LocationRef?>()
+                  .firstOrNull
             : null;
         setState(() {
-          _classification   = selection;
-          _color            = color;
+          _classification = selection;
+          _color = color;
           _selectedLocation = loc;
-          _refsInitialized  = true;
+          _refsInitialized = true;
         });
       });
     }
@@ -650,8 +699,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           onStepCancel: () {
             if (_step > 0) setState(() => _step--);
           },
-          controlsBuilder: (context, details) =>
-              _StepControls(details: details, isLast: _step == 3, submitting: _submitting),
+          controlsBuilder: (context, details) => _StepControls(
+            details: details,
+            isLast: _step == 3,
+            submitting: _submitting,
+          ),
           steps: [
             _buildStep1(),
             _buildStep2(refs),
@@ -666,11 +718,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   // ── Step 0 — Type & Identification ───────────────────────────────
 
   Step _buildStep1() => Step(
-    title: const Text('Type de véhicule'),
+    title: Text(l10n.vehiclesTypeTitle),
     subtitle: Text(switch (_vehicleType) {
-      'utility' => 'Utilitaire',
-      'heavy'   => 'Poids lourd',
-      _         => 'Particulier',
+      'utility' => l10n.vehiclesTypeUtility,
+      'heavy' => l10n.vehiclesTypeHeavy,
+      _ => l10n.vehiclesTypePassenger,
     }),
     isActive: _step >= 0,
     content: Form(
@@ -680,22 +732,23 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         children: [
           // ── Type de véhicule ──────────────────────────────────────
           Text(
-            'Catégorie',
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+            l10n.catalogFieldCategory,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 8),
           _ChoiceGroup<String>(
-            options: const [
-              (value: 'passenger', label: 'Particulier'),
-              (value: 'utility',   label: 'Utilitaire'),
-              (value: 'heavy',     label: 'Poids lourd'),
+            options: [
+              (value: 'passenger', label: l10n.vehiclesTypePassenger),
+              (value: 'utility', label: l10n.vehiclesTypeUtility),
+              (value: 'heavy', label: l10n.vehiclesTypeHeavy),
             ],
             selected: _vehicleType,
             onChanged: (v) => setState(() => _vehicleType = v),
           ),
           const SizedBox(height: 16),
-  
+
           // ── Carrosserie ───────────────────────────────────────────
           DropdownButtonFormField<String>(
             value: _bodyStyle,
@@ -703,50 +756,86 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             // lui, le menu prend la largeur de son item le plus long —
             // « Citadine / Hayon » ici — et deborde sur un petit ecran.
             isExpanded: true,
-            decoration: const InputDecoration(
-              labelText: 'Carrosserie *',
-              hintText: 'Berline, SUV, Pickup…',
+            decoration: InputDecoration(
+              labelText: l10n.vehiclesBodyStyleLabel,
+              hintText: l10n.vehiclesBodyStyleHint,
               prefixIcon: Icon(Icons.directions_car_outlined),
             ),
-            items: const [
-              DropdownMenuItem(value: 'sedan',       child: Text('Berline')),
-              DropdownMenuItem(value: 'hatchback',   child: Text('Citadine / Hayon')),
-              DropdownMenuItem(value: 'suv',         child: Text('SUV / 4×4')),
-              DropdownMenuItem(value: 'estate',      child: Text('Break')),
-              DropdownMenuItem(value: 'coupe',       child: Text('Coupé')),
-              DropdownMenuItem(value: 'convertible', child: Text('Cabriolet')),
-              DropdownMenuItem(value: 'pickup',      child: Text('Pickup')),
-              DropdownMenuItem(value: 'van',         child: Text('Fourgonnette')),
-              DropdownMenuItem(value: 'minibus',     child: Text('Minibus')),
-              DropdownMenuItem(value: 'bus',         child: Text('Bus / Car')),
-              DropdownMenuItem(value: 'truck',       child: Text('Camion')),
-              DropdownMenuItem(value: 'other',       child: Text('Autre')),
+            items: [
+              DropdownMenuItem(
+                value: 'sedan',
+                child: Text(l10n.catalogBodyLabelSedan),
+              ),
+              DropdownMenuItem(
+                value: 'hatchback',
+                child: Text(l10n.catalogBodyLabelHatchback),
+              ),
+              DropdownMenuItem(
+                value: 'suv',
+                child: Text(l10n.catalogBodyLabelSuv),
+              ),
+              DropdownMenuItem(
+                value: 'estate',
+                child: Text(l10n.catalogBodyLabelEstate),
+              ),
+              DropdownMenuItem(
+                value: 'coupe',
+                child: Text(l10n.catalogBodyLabelCoupe),
+              ),
+              DropdownMenuItem(
+                value: 'convertible',
+                child: Text(l10n.catalogBodyLabelConvertible),
+              ),
+              DropdownMenuItem(
+                value: 'pickup',
+                child: Text(l10n.catalogBodyLabelPickup),
+              ),
+              DropdownMenuItem(
+                value: 'van',
+                child: Text(l10n.catalogBodyLabelVan),
+              ),
+              DropdownMenuItem(
+                value: 'minibus',
+                child: Text(l10n.catalogBodyLabelMinibus),
+              ),
+              DropdownMenuItem(
+                value: 'bus',
+                child: Text(l10n.catalogBodyLabelBus),
+              ),
+              DropdownMenuItem(
+                value: 'truck',
+                child: Text(l10n.catalogBodyLabelTruck),
+              ),
+              DropdownMenuItem(
+                value: 'other',
+                child: Text(l10n.vehiclesFaultCategoryOther),
+              ),
             ],
             onChanged: (v) => setState(() => _bodyStyle = v),
-            validator: (v) => v == null ? 'Sélectionne un type de carrosserie' : null,
+            validator: (v) => v == null ? l10n.vehiclesBodyStyleRequired : null,
           ),
           const SizedBox(height: 16),
-  
+
           // ── VIN ───────────────────────────────────────────────────
           TextFormField(
             controller: _vinCtrl,
-            decoration: const InputDecoration(
-              labelText: 'VIN (optionnel)',
+            decoration: InputDecoration(
+              labelText: l10n.vehiclesVinOptional,
               hintText: 'WVWZZZ1KZ8W000001',
-              helperText: '17 caractères — numéro de châssis international',
+              helperText: l10n.vehiclesVinHelper,
               prefixIcon: Icon(Icons.qr_code_2),
             ),
             maxLength: 17,
             textCapitalization: TextCapitalization.characters,
             validator: (v) {
               if (v != null && v.isNotEmpty && v.length != 17) {
-                return 'Le VIN doit faire exactement 17 caractères.';
+                return l10n.vehiclesVinLengthError;
               }
               return null;
             },
           ),
           const SizedBox(height: 4),
-  
+
           // ── Immatriculation ───────────────────────────────────────
           //
           // Le commutateur d'abord, la plaque ensuite : c'est l'ordre dans
@@ -756,16 +845,16 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             secondary: const Icon(Icons.assignment_turned_in_outlined),
-            title: const Text('Véhicule immatriculé'),
+            title: Text(l10n.vehiclesRegisteredLabel),
             subtitle: Text(
               _immatricule
-                  ? 'Déjà immatriculé — la plaque peut être ajoutée plus tard.'
-                  : 'Importé, pas encore immatriculé ici.',
+                  ? l10n.vehiclesRegisteredHint
+                  : l10n.vehiclesImportedHint,
             ),
             value: _immatricule,
             onChanged: (v) => setState(() => _immatricule = v),
           ),
-  
+
           // ── CE QUE DECOCHER SUPPRIME, DIT AVANT L'ENREGISTREMENT ──────
           //
           // Le serveur ecrit le bloc qui correspond au statut, et quand il
@@ -787,18 +876,15 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
-                'Ce véhicule est enregistré comme immatriculé. En le déclarant '
-                'importé, ses informations d’immatriculation seront supprimées. '
-                'Ressaisissez le kilométrage : il ne mesure pas la même chose '
-                'pour un véhicule immatriculé et pour un import.',
+                l10n.vehiclesRegistrationRemovalWarning,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ),
           TextFormField(
             controller: _plateCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Plaque d\'immatriculation (optionnel)',
-              hintText: 'Ex. : AA 1234 BF',
+            decoration: InputDecoration(
+              labelText: l10n.vehiclesPlateOptional,
+              hintText: l10n.vehiclesPlateHint,
               prefixIcon: Icon(Icons.badge_outlined),
             ),
             textCapitalization: TextCapitalization.characters,
@@ -819,12 +905,16 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   // ── Step 2 — Identité ─────────────────────────────────────────────
 
   Step _buildStep2(CatalogRefs refs) {
-    final models = _brand != null ? refs.modelsForBrand(_brand!.id) : <ModelRef>[];
-    final trims  = _model != null ? refs.trimsForModel(_model!.id)  : <TrimRef>[];
+    final models = _brand != null
+        ? refs.modelsForBrand(_brand!.id)
+        : <ModelRef>[];
+    final trims = _model != null ? refs.trimsForModel(_model!.id) : <TrimRef>[];
 
     return Step(
-      title: const Text('Identité'),
-      subtitle: _brand != null ? Text(_model?.displayName ?? _brand!.name) : null,
+      title: Text(l10n.vehiclesIdentityTitle),
+      subtitle: _brand != null
+          ? Text(_model == null ? _brand!.name : referenceModelDisplayName(_model!, l10n))
+          : null,
       isActive: _step >= 1,
       content: Form(
         key: _clefsDEtape[1],
@@ -832,8 +922,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           children: [
             // Marque
             VehicleReferenceDropdown<BrandRef>(
-              label: 'Marque *',
-              items: refs.brands.where((b) => b.isActive || b.id == _brand?.id).toList(),
+              label: l10n.vehiclesBrandLabel,
+              items: refs.brands
+                  .where((b) => b.isActive || b.id == _brand?.id)
+                  .toList(),
               value: _brand,
               itemLabel: (b) => b.name,
               onChanged: (b) => setState(() {
@@ -841,49 +933,53 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                 _classification.selectBrand(b);
                 _resetModelTechnicalFields();
               }),
-              validator: (v) => v == null ? 'Marque obligatoire' : null,
+              validator: (v) => v == null ? l10n.vehiclesBrandRequired : null,
             ),
             const SizedBox(height: 12),
-  
+
             // Modèle
             VehicleReferenceDropdown<ModelRef>(
-              label: 'Modèle *',
+              label: l10n.vehiclesModelLabel,
               items: models,
               value: _model,
-              itemLabel: (m) => m.displayName,
+              itemLabel: (m) => referenceModelDisplayName(m, l10n),
               onChanged: (m) => setState(() {
                 if (_model?.id == m?.id) return;
                 _classification.selectModel(m);
                 _resetModelTechnicalFields();
                 if (m == null) return;
-  
+
                 // Carrosserie : valeur DB ou inférence depuis body_type
                 final style = m.inferredBodyStyle;
                 if (style != null) _bodyStyle = style;
-  
+
                 // Type de véhicule : valeur DB en priorité, sinon inférence
                 final vtype = m.resolvedVehicleType;
                 if (vtype != null) _vehicleType = vtype;
-  
+
                 // Transmission : valeur DB uniquement
-                if (m.defaultTransmission != null) _transmission = m.defaultTransmission!;
-  
+                if (m.defaultTransmission != null)
+                  _transmission = m.defaultTransmission!;
+
                 // Places et portes : valeur DB uniquement
-                if (m.defaultSeats != null) _seatsCtrl.text = m.defaultSeats.toString();
-                if (m.defaultDoors != null) _doorsCtrl.text = m.defaultDoors.toString();
-  
+                if (m.defaultSeats != null)
+                  _seatsCtrl.text = m.defaultSeats.toString();
+                if (m.defaultDoors != null)
+                  _doorsCtrl.text = m.defaultDoors.toString();
+
                 // Puissance : valeur DB uniquement (indicative)
-                if (m.defaultPowerHp != null) _powerCtrl.text = m.defaultPowerHp.toString();
+                if (m.defaultPowerHp != null)
+                  _powerCtrl.text = m.defaultPowerHp.toString();
               }),
-              validator: (v) => v == null ? 'Modèle obligatoire' : null,
+              validator: (v) => v == null ? l10n.vehiclesModelRequired : null,
               enabled: _brand != null,
             ),
             const SizedBox(height: 12),
-  
+
             // Finition (optionnel)
             if (trims.isNotEmpty) ...[
               VehicleReferenceDropdown<TrimRef>(
-                label: 'Finition',
+                label: l10n.catalogFieldTrim,
                 items: trims,
                 value: _trim,
                 itemLabel: (t) => t.name,
@@ -892,36 +988,40 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               ),
               const SizedBox(height: 12),
             ],
-  
+
             // Année
             TextFormField(
               controller: _yearCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Année de fabrication *',
+              decoration: InputDecoration(
+                labelText: l10n.vehiclesManufactureYearLabel,
                 prefixIcon: Icon(Icons.calendar_today),
               ),
               keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)],
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(4),
+              ],
               validator: (v) {
-                if (v == null || v.isEmpty) return 'Année obligatoire';
+                if (v == null || v.isEmpty) return l10n.vehiclesYearRequired;
                 final y = int.tryParse(v);
                 if (y == null || y < 1950 || y > DateTime.now().year) {
-                  return 'Année invalide (1950–${DateTime.now().year})';
+                  return l10n.vehiclesYearRangeInvalid(DateTime.now().year);
                 }
                 return null;
               },
             ),
             const SizedBox(height: 12),
-  
+
             // Couleur
             VehicleReferenceDropdown<ColorRef>(
-              label: 'Couleur',
+              label: l10n.catalogFieldColour,
               items: refs.colors,
               value: _color,
-              itemLabel: (c) => c.name,
+              itemLabel: (c) => referenceColourLabel(c.name, l10n),
               itemLeading: (c) => c.hexCode != null
                   ? Container(
-                      width: 16, height: 16,
+                      width: 16,
+                      height: 16,
                       decoration: BoxDecoration(
                         color: _hexColor(c.hexCode!),
                         shape: BoxShape.circle,
@@ -951,15 +1051,16 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   /// ligne qui annonce des tirets.
   Widget? _resumeTechnique() {
     final parts = <String>[
-      if (_engineType != null) _engineType!.label,
+      if (_engineType != null) referenceFuelLabel(_engineType!.code, _engineType!.label, l10n),
       if (_transmission.isNotEmpty)
         switch (_transmission) {
-          'manual'  => 'manuelle',
-          'cvt'     => 'CVT',
-          _         => 'automatique',
+          'manual' => l10n.vehiclesTransmissionManualSummary,
+          'cvt' => l10n.catalogTransmissionCvt,
+          _ => l10n.vehiclesTransmissionAutomaticSummary,
         },
-      if (_drivetrain != null) _drivetrain!.label,
-      if (_powerCtrl.text.trim().isNotEmpty) '${_powerCtrl.text.trim()} ch',
+      if (_drivetrain != null) referenceDrivetrainLabel(_drivetrain!.code, _drivetrain!.label, l10n),
+      if (_powerCtrl.text.trim().isNotEmpty)
+        l10n.vehiclesPowerSummary(_powerCtrl.text.trim()),
     ];
 
     // La transmission a toujours une valeur par defaut : seule, elle ne dit
@@ -974,18 +1075,18 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     final prix = _salePriceCtrl.text.trim();
 
     final offre = switch (_availability) {
-      'rent' => 'location',
-      'both' => 'vente et location',
-      _      => 'vente',
+      'rent' => l10n.vehiclesOfferRentSummary,
+      'both' => l10n.vehiclesOfferBothSummary,
+      _ => l10n.vehiclesOfferSaleSummary,
     };
 
     if (prix.isEmpty) return Text(offre);
 
-    return Text('$offre · $prix FCFA');
+    return Text(l10n.vehiclesOfferSummary(offre, prix));
   }
 
   Step _buildStep3(CatalogRefs refs) => Step(
-    title: const Text('Caractéristiques techniques'),
+    title: Text(l10n.vehiclesTechnicalTitle),
     subtitle: _resumeTechnique(),
     isActive: _step >= 2,
     content: Form(
@@ -994,52 +1095,56 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         children: [
           // Motorisation
           VehicleReferenceDropdown<EngineTypeRef>(
-            label: 'Type de motorisation *',
+            label: l10n.vehiclesEngineTypeLabel,
             items: refs.engineTypes,
             value: _engineType,
-            itemLabel: (e) => e.label,
+            itemLabel: (e) => referenceFuelLabel(e.code, e.label, l10n),
             onChanged: (e) => setState(() => _engineType = e),
-            validator: (v) => v == null ? 'Motorisation obligatoire' : null,
+            validator: (v) =>
+                v == null ? l10n.vehiclesEngineTypeRequired : null,
           ),
           const SizedBox(height: 12),
-  
+
           // Transmission
           Align(
             alignment: Alignment.centerLeft,
-            child: Text('Transmission',
-                style: Theme.of(context).textTheme.bodySmall
-                    ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            child: Text(
+              l10n.vehiclesFaultCategoryTransmission,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
           const SizedBox(height: 6),
           _ChoiceGroup<String>(
-            options: const [
-              (value: 'manual',    label: 'Manuelle'),
-              (value: 'automatic', label: 'Automatique'),
-              (value: 'cvt',       label: 'CVT'),
+            options: [
+              (value: 'manual', label: l10n.catalogTransmissionManual),
+              (value: 'automatic', label: l10n.catalogTransmissionAutomatic),
+              (value: 'cvt', label: l10n.catalogTransmissionCvt),
             ],
             selected: _transmission,
             onChanged: (v) => setState(() => _transmission = v),
           ),
           const SizedBox(height: 16),
-  
+
           // Transmission séquentielle
           VehicleReferenceDropdown<DrivetrainRef>(
-            label: 'Transmission des roues',
+            label: l10n.vehiclesDrivetrainLabel,
             items: refs.drivetrains,
             value: _drivetrain,
-            itemLabel: (d) => d.label,
+            itemLabel: (d) => referenceDrivetrainLabel(d.code, d.label, l10n),
             onChanged: (d) => setState(() => _drivetrain = d),
           ),
           const SizedBox(height: 12),
-  
+
           // Puissance / places / portes
           Row(
             children: [
               Expanded(
                 child: TextFormField(
                   controller: _powerCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Puissance (ch)',
+                  decoration: InputDecoration(
+                    labelText: l10n.vehiclesPowerLabel,
                     suffixText: 'ch',
                   ),
                   keyboardType: TextInputType.number,
@@ -1050,48 +1155,55 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               Expanded(
                 child: TextFormField(
                   controller: _seatsCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Places',
+                  decoration: InputDecoration(
+                    labelText: l10n.catalogFieldSeats,
                     suffixText: 'p',
                   ),
                   keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(2)],
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(2),
+                  ],
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: TextFormField(
                   controller: _doorsCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Portes',
+                  decoration: InputDecoration(
+                    labelText: l10n.catalogFieldDoors,
                     suffixText: 'p',
                   ),
                   keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(1)],
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(1),
+                  ],
                 ),
               ),
             ],
           ),
-  
+
           // ── Équipements / options ────────────────────────────────────
           if (refs.features.isNotEmpty) ...[
             const SizedBox(height: 20),
             const Divider(),
             const SizedBox(height: 8),
             Text(
-              'Équipements & options',
+              l10n.vehiclesFeaturesTitle,
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 4),
             Text(
-              'Sélectionnez les équipements présents sur ce véhicule.',
+              l10n.vehiclesFeaturesHint,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 12),
             // Tri des catégories dans l'ordre défini par _categoryOrder.
             ...(() {
-              final map     = refs.featuresByCategory;
+              final map = refs.featuresByCategory;
               final ordered = _categoryOrder
                   .where(map.containsKey)
                   .map((k) => MapEntry(k, map[k]!))
@@ -1101,18 +1213,20 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                   .where((e) => !_categoryOrder.contains(e.key))
                   .toList();
               return [...ordered, ...extra];
-            })().map((entry) => _FeatureCategorySection(
-              category:           entry.key,
-              features:           entry.value,
-              selectedFeatureIds: _selectedFeatureIds,
-              onToggle: (id, selected) => setState(() {
-                if (selected) {
-                  _selectedFeatureIds.add(id);
-                } else {
-                  _selectedFeatureIds.remove(id);
-                }
-              }),
-            )),
+            })().map(
+              (entry) => _FeatureCategorySection(
+                category: entry.key,
+                features: entry.value,
+                selectedFeatureIds: _selectedFeatureIds,
+                onToggle: (id, selected) => setState(() {
+                  if (selected) {
+                    _selectedFeatureIds.add(id);
+                  } else {
+                    _selectedFeatureIds.remove(id);
+                  }
+                }),
+              ),
+            ),
           ],
         ],
       ),
@@ -1126,7 +1240,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     final forRent = _availability == 'rent' || _availability == 'both';
 
     return Step(
-      title: const Text('Informations commerciales'),
+      title: Text(l10n.vehiclesCommercialTitle),
       subtitle: _resumeCommercial(),
       isActive: _step >= 3,
       content: Form(
@@ -1135,15 +1249,18 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Condition
-            Text('État du véhicule',
-                style: Theme.of(context).textTheme.bodySmall
-                    ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            Text(
+              l10n.vehiclesConditionLabel,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 6),
             _ChoiceGroup<String>(
-              options: const [
-                (value: 'new',     label: 'Neuf'),
-                (value: 'used',    label: 'Occasion'),
-                (value: 'damaged', label: 'Endommagé'),
+              options: [
+                (value: 'new', label: l10n.catalogConditionNew),
+                (value: 'used', label: l10n.catalogConditionUsed),
+                (value: 'damaged', label: l10n.vehiclesConditionDamaged),
               ],
               selected: _condition,
               onChanged: (v) => setState(() {
@@ -1152,13 +1269,13 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               }),
             ),
             const SizedBox(height: 16),
-  
+
             // Kilométrage (uniquement pour occasion / endommagé)
             if (_condition != 'new') ...[
               TextFormField(
                 controller: _mileageCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Kilométrage',
+                decoration: InputDecoration(
+                  labelText: l10n.catalogFieldMileage,
                   suffixText: 'km',
                   hintText: '85 000',
                   prefixIcon: Icon(Icons.speed_outlined),
@@ -1177,7 +1294,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                 ],
               ),
               const SizedBox(height: 16),
-  
+
               // Pays d'origine — uniquement pour un véhicule NON IMMATRICULÉ.
               //
               // C'est la seule branche ou la charge utile porte un bloc
@@ -1193,26 +1310,32 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               if (!_immatricule)
                 Consumer(
                   builder: (context, ref, _) {
-                    final pays = ref.watch(countriesProvider).valueOrNull
-                        ?? const <CountryRef>[];
-  
+                    final pays =
+                        ref.watch(countriesProvider).valueOrNull ??
+                        const <CountryRef>[];
+
                     if (pays.isEmpty) return const SizedBox.shrink();
-  
+
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: DropdownButtonFormField<CountryRef>(
                         initialValue: _paysOrigine,
                         isExpanded: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Pays d\'origine',
-                          helperText: 'Provenance du véhicule importé',
+                        decoration: InputDecoration(
+                          labelText: l10n.vehiclesOriginCountryLabel,
+                          helperText: l10n.vehiclesOriginCountryHint,
                           prefixIcon: Icon(Icons.public_outlined),
                         ),
                         items: pays
-                            .map((c) => DropdownMenuItem(
-                                  value: c,
-                                  child: Text(c.name, overflow: TextOverflow.ellipsis),
-                                ))
+                            .map(
+                              (c) => DropdownMenuItem(
+                                value: c,
+                                child: Text(
+                                  referenceCountryLabel(c.iso2, c.name, l10n),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            )
                             .toList(),
                         onChanged: (c) => setState(() => _paysOrigine = c),
                       ),
@@ -1220,48 +1343,54 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                   },
                 ),
             ],
-  
+
             // Disponibilité
-            Text('Disponible pour',
-                style: Theme.of(context).textTheme.bodySmall
-                    ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            Text(
+              l10n.vehiclesAvailabilityLabel,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: 6),
             _ChoiceGroup<String>(
-              options: const [
-                (value: 'sale', label: 'Vente'),
-                (value: 'rent', label: 'Location'),
-                (value: 'both', label: 'Vente & Location'),
+              options: [
+                (value: 'sale', label: l10n.vehiclesForSale),
+                (value: 'rent', label: l10n.vehiclesForRent),
+                (value: 'both', label: l10n.vehiclesForBoth),
               ],
               selected: _availability,
               onChanged: (v) => setState(() => _availability = v),
             ),
             const SizedBox(height: 16),
-  
+
             // Mise en avant commerciale — la vitrine est a la boutique.
             if (widget.mode.peutChoisirLaBoutique) ...[
-            Text('Mise en avant',
-                style: Theme.of(context).textTheme.bodySmall
-                    ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 6),
-            _ChoiceGroup<String>(
-              options: const [
-                (value: '',           label: 'Aucune'),
-                (value: 'good_deal',  label: 'Bonne affaire'),
-                (value: 'flash_sale', label: 'Vente flash'),
-                (value: 'clearance',  label: 'Déstockage'),
-              ],
-              selected: _dealType,
-              onChanged: (v) => setState(() => _dealType = v),
-            ),
-            const SizedBox(height: 16),
+              Text(
+                l10n.vehiclesDealLabel,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 6),
+              _ChoiceGroup<String>(
+                options: [
+                  (value: '', label: l10n.vehiclesNoDeal),
+                  (value: 'good_deal', label: l10n.vehiclesGoodDeal),
+                  (value: 'flash_sale', label: l10n.vehiclesFlashSale),
+                  (value: 'clearance', label: l10n.vehiclesClearance),
+                ],
+                selected: _dealType,
+                onChanged: (v) => setState(() => _dealType = v),
+              ),
+              const SizedBox(height: 16),
             ],
-  
+
             // Prix de vente
             if (forSale) ...[
               TextFormField(
                 controller: _salePriceCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Prix de vente *',
+                decoration: InputDecoration(
+                  labelText: l10n.vehiclesSalePriceLabel,
                   suffixText: 'FCFA',
                   hintText: '15 000 000',
                 ),
@@ -1269,7 +1398,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                 inputFormatters: [_ThousandsSeparatorFormatter()],
                 validator: (v) {
                   if (forSale && (v == null || v.trim().isEmpty)) {
-                    return 'Prix de vente obligatoire';
+                    return l10n.vehiclesSalePriceRequired;
                   }
                   return null;
                 },
@@ -1282,60 +1411,64 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               if (widget.mode.estPartenaire)
                 espace.ChampsDePromotion(
                   prixNormal: _parsePrice(_salePriceCtrl.text),
-                  plafondPourcentage: ref.watch(espace.partnerSessionProvider)
-                      .profile?.plafondRemisePourcentage ?? 0,
+                  plafondPourcentage:
+                      ref
+                          .watch(espace.partnerSessionProvider)
+                          .profile
+                          ?.plafondRemisePourcentage ??
+                      0,
                   valeur: _promotion,
                   onChanged: (valeur) => setState(() => _promotion = valeur),
                 ),
             ],
-  
+
             // Tarifs location
             if (forRent) ...[
               TextFormField(
                 controller: _rentalDailyCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Tarif journalier',
-                  suffixText: 'FCFA/j',
+                decoration: InputDecoration(
+                  labelText: l10n.vehiclesDailyRateLabel,
+                  suffixText: 'FCFA${l10n.commonPerDaySuffix}',
                   hintText: '25 000',
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [_ThousandsSeparatorFormatter()],
                 validator: (v) {
                   if (forRent && _rentalRatesMissing) {
-                    return 'Saisissez un tarif journalier ou mensuel';
+                    return l10n.vehiclesRentalRateRequired;
                   }
                   return null;
                 },
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),
-              _marge(_rentalDailyCtrl, libelle: 'Tarif affiche a l\u2019acheteur'),
+              _marge(_rentalDailyCtrl, libelle: l10n.vehiclesBuyerRateLabel),
               TextFormField(
                 controller: _rentalMonthlyCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Tarif mensuel',
-                  suffixText: 'FCFA/mois',
+                decoration: InputDecoration(
+                  labelText: l10n.vehiclesMonthlyRateLabel,
+                  suffixText: 'FCFA${l10n.commonPerMonthSuffix}',
                   hintText: '450 000',
-                  helperText: 'Renseignez au moins un tarif : par jour ou par mois.',
+                  helperText: l10n.vehiclesRentalRateHint,
                   helperMaxLines: 2,
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [_ThousandsSeparatorFormatter()],
                 validator: (_) => forRent && _rentalRatesMissing
-                    ? 'Saisissez un tarif journalier ou mensuel'
+                    ? l10n.vehiclesRentalRateRequired
                     : null,
                 onChanged: (_) => setState(() {}),
               ),
               const SizedBox(height: 12),
-              _marge(_rentalMonthlyCtrl, libelle: 'Tarif affiche a l\u2019acheteur'),
+              _marge(_rentalMonthlyCtrl, libelle: l10n.vehiclesBuyerRateLabel),
               // AUCUN recapitulatif sous la caution : elle est rendue au
               // locataire, donc le serveur ne la majore pas
               // (`MargePartenaire::CHAMPS_VEHICULE` l'exclut). Afficher une
               // marge ici annoncerait un total que personne n'encaissera.
               TextFormField(
                 controller: _rentalDepositCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Caution',
+                decoration: InputDecoration(
+                  labelText: l10n.vehiclesDepositLabel,
                   suffixText: 'FCFA',
                   hintText: '100 000',
                 ),
@@ -1344,28 +1477,31 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               ),
               const SizedBox(height: 12),
             ],
-  
+
             // Prix négociable
             SwitchListTile(
-              title: const Text('Prix négociable'),
+              title: Text(l10n.vehiclesNegotiable),
               value: _negotiable,
               onChanged: (v) => setState(() => _negotiable = v),
               contentPadding: EdgeInsets.zero,
             ),
-  
+
             // ── Localisation / agence ────────────────────────────────
             //
             // L'agence est une adresse de la boutique : `location_id` est refuse
             // a un partenaire par le serveur.
-            if (widget.mode.peutChoisirLaBoutique && refs.locations.isNotEmpty) ...[
+            if (widget.mode.peutChoisirLaBoutique &&
+                refs.locations.isNotEmpty) ...[
               VehicleReferenceDropdown<LocationRef>(
-                label: 'Agence / Showroom',
+                label: l10n.vehiclesBranchLabel,
                 items: refs.locations,
                 value: _selectedLocation,
                 itemLabel: (l) => l.displayLabel,
-                itemLeading: (l) => Icon(Icons.location_on_outlined,
-                    size: 18,
-                    color: Theme.of(context).colorScheme.primary),
+                itemLeading: (l) => Icon(
+                  Icons.location_on_outlined,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 onChanged: (l) => setState(() => _selectedLocation = l),
               ),
               const SizedBox(height: 12),
@@ -1373,62 +1509,76 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               // Fallback texte libre si aucune location configurée
               TextFormField(
                 controller: _siteCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Site / Agence',
-                  hintText: 'Ex. : Showroom Ouagadougou Nord',
+                decoration: InputDecoration(
+                  labelText: l10n.vehiclesSiteLabel,
+                  hintText: l10n.vehiclesSiteHint,
                   prefixIcon: Icon(Icons.location_on_outlined),
                 ),
               ),
               const SizedBox(height: 12),
             ],
-  
+
             // ── Partenaire fournisseur ───────────────────────────────
             //
             // Le fournisseur source est une relation de la boutique. Un
             // partenaire n'a pas a rattacher son vehicule a un tiers, et le
             // serveur refuse `partner_id`.
             if (widget.mode.peutChoisirLaBoutique) ...[
-            const SizedBox(height: 4),
-            const Divider(),
-            const SizedBox(height: 4),
-            Text('Fournisseur / Partenaire source',
-                style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 4),
-            Text('Source du véhicule (importateur, enchère, concessionnaire partenaire…)',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
-            const SizedBox(height: 10),
-            ref.watch(_vehiclePartnersProvider).when(
-              loading: () => const LinearProgressIndicator(),
-              error:   (_, __) => const Text('Impossible de charger les partenaires.'),
-              data: (partners) => DropdownButtonFormField<int?>(
-                value: _selectedPartnerId,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  hintText: 'Aucun (optionnel)',
-                  prefixIcon: Icon(Icons.handshake_outlined),
-                  isDense: true,
-                ),
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('Aucun')),
-                  ...partners.map((p) => DropdownMenuItem(
-                    value: p.id,
-                    child: Text(p.displayName,
-                        overflow: TextOverflow.ellipsis),
-                  )),
-                ],
-                onChanged: (v) => setState(() => _selectedPartnerId = v),
+              const SizedBox(height: 4),
+              const Divider(),
+              const SizedBox(height: 4),
+              Text(
+                l10n.vehiclesSupplierLabel,
+                style: Theme.of(context).textTheme.titleSmall,
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 4),
+              Text(
+                l10n.vehiclesSupplierHint,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 10),
+              ref
+                  .watch(_vehiclePartnersProvider)
+                  .when(
+                    loading: () => const LinearProgressIndicator(),
+                    error: (_, __) => Text(l10n.vehiclesPartnersLoadFailed),
+                    data: (partners) => DropdownButtonFormField<int?>(
+                      value: _selectedPartnerId,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        hintText: l10n.vehiclesNoneOptional,
+                        prefixIcon: Icon(Icons.handshake_outlined),
+                        isDense: true,
+                      ),
+                      items: [
+                        DropdownMenuItem(
+                          value: null,
+                          child: Text(l10n.vehiclesNone),
+                        ),
+                        ...partners.map(
+                          (p) => DropdownMenuItem(
+                            value: p.id,
+                            child: Text(
+                              p.displayName,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ],
+                      onChanged: (v) => setState(() => _selectedPartnerId = v),
+                    ),
+                  ),
+              const SizedBox(height: 16),
             ],
-  
+
             // Description
             TextFormField(
               controller: _descriptionCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                hintText: 'Détails supplémentaires sur le véhicule…',
+              decoration: InputDecoration(
+                labelText: l10n.catalogSectionDescription,
+                hintText: l10n.vehiclesDescriptionHint,
                 alignLabelWithHint: true,
               ),
               maxLines: 3,
@@ -1466,42 +1616,57 @@ class _StepControls extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 20, bottom: 8),
-    child: Row(
-      children: [
-        FilledButton(
-          onPressed: submitting ? null : details.onStepContinue,
-          child: submitting
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : Text(isLast ? 'Enregistrer' : 'Suivant'),
-        ),
-        const SizedBox(width: 12),
-        if (details.stepIndex > 0)
-          OutlinedButton(
-            onPressed: details.onStepCancel,
-            child: const Text('Retour'),
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 20, bottom: 8),
+      child: Row(
+        children: [
+          FilledButton(
+            onPressed: submitting ? null : details.onStepContinue,
+            child: submitting
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(isLast ? l10n.catalogFeaturesSave : l10n.vehiclesNext),
           ),
-      ],
-    ),
-  );
+          const SizedBox(width: 12),
+          if (details.stepIndex > 0)
+            OutlinedButton(
+              onPressed: details.onStepCancel,
+              child: Text(l10n.vehiclesBack),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Section équipements par catégorie ───────────────────────────────
 
 /// Labels lisibles pour les catégories de features.
-const _categoryLabels = <String, String>{
-  'dotation':       'Dotation standard',
-  'confort':        'Confort',
-  'securite':       'Sécurité',
-  'multimedia':     'Multimédia',
-  'aide_conduite':  'Aides à la conduite',
-  'autre':          'Autres',
+Map<String, String> _categoryLabels(AppLocalizations l10n) => {
+  'dotation': l10n.vehiclesFeatureStandard,
+  'confort': l10n.vehiclesFeatureComfort,
+  'securite': l10n.vehiclesFeatureSafety,
+  'multimedia': l10n.vehiclesFeatureMultimedia,
+  'aide_conduite': l10n.vehiclesFeatureDriverAssistance,
+  'autre': l10n.vehiclesFeatureOther,
 };
 
 /// Ordre d'affichage des catégories dans le formulaire.
 const _categoryOrder = [
-  'dotation', 'confort', 'securite', 'multimedia', 'aide_conduite', 'autre',
+  'dotation',
+  'confort',
+  'securite',
+  'multimedia',
+  'aide_conduite',
+  'autre',
 ];
 
 class _FeatureCategorySection extends StatelessWidget {
@@ -1521,8 +1686,9 @@ class _FeatureCategorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs    = Theme.of(context).colorScheme;
-    final label = _categoryLabels[category] ?? category;
+    final l10n = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
+    final label = _categoryLabels(l10n)[category] ?? category;
     final color = _isDotation ? Colors.amber.shade700 : cs.primary;
 
     return Column(
@@ -1548,7 +1714,7 @@ class _FeatureCategorySection extends StatelessWidget {
               if (_isDotation) ...[
                 const SizedBox(width: 6),
                 Text(
-                  '— cochez ce qui est présent',
+                  l10n.vehiclesFeatureStandardHint,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: cs.onSurfaceVariant,
                     fontStyle: FontStyle.italic,
@@ -1564,11 +1730,9 @@ class _FeatureCategorySection extends StatelessWidget {
           children: features.map((f) {
             final isSelected = selectedFeatureIds.contains(f.id);
             return FilterChip(
-              label: Text(f.name),
+              label: Text(catalogFeatureLabel(f.name, l10n)),
               selected: isSelected,
-              selectedColor: _isDotation
-                  ? Colors.amber.shade100
-                  : null,
+              selectedColor: _isDotation ? Colors.amber.shade100 : null,
               checkmarkColor: _isDotation ? Colors.amber.shade800 : null,
               onSelected: (v) => onToggle(f.id, v),
               visualDensity: VisualDensity.compact,
@@ -1601,11 +1765,15 @@ class _ChoiceGroup<T> extends StatelessWidget {
   Widget build(BuildContext context) => Wrap(
     spacing: 8,
     runSpacing: 4,
-    children: options.map((opt) => ChoiceChip(
-      label: Text(opt.label),
-      selected: selected == opt.value,
-      onSelected: (_) => onChanged(opt.value),
-    )).toList(),
+    children: options
+        .map(
+          (opt) => ChoiceChip(
+            label: Text(opt.label),
+            selected: selected == opt.value,
+            onSelected: (_) => onChanged(opt.value),
+          ),
+        )
+        .toList(),
   );
 }
 
@@ -1658,22 +1826,27 @@ class _LoadingError extends StatelessWidget {
   const _LoadingError({required this.error, required this.onRetry});
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.cloud_off, size: 56),
-          const SizedBox(height: 12),
-          Text('Impossible de charger les référentiels :\n$error',
-              textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          FilledButton(onPressed: onRetry, child: const Text('Réessayer')),
-        ],
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off, size: 56),
+            const SizedBox(height: 12),
+            Text(
+              l10n.vehiclesReferencesLoadError(error),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            FilledButton(onPressed: onRetry, child: Text(l10n.commonRetry)),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 /// Nomme la cause, au lieu de l'appeler « Erreur serveur ».
@@ -1684,16 +1857,17 @@ class _LoadingError extends StatelessWidget {
 /// serveur ce qui se repare a l'ecran, et il a reellement coute une enquete,
 /// menee jusqu'a sonder la route de production, avant qu'on s'apercoive que
 /// le titre ne disait rien de la cause.
-String titreErreurEnregistrement(ApiException e) {
-  if (e.isNetworkFailure) return 'Pas de connexion';
+String titreErreurEnregistrement(ApiException e, {AppLocalizations? l10n}) {
+  l10n ??= AppLocalizationsFr();
+  if (e.isNetworkFailure) return l10n.vehiclesErrorNetworkTitle;
 
   return switch (e.statusCode) {
-    401 => 'Session expirée',
-    403 => 'Action non autorisée',
-    422 => 'Formulaire incomplet',
-    413 => 'Envoi trop volumineux',
-    429 => 'Trop de tentatives',
-    final int c when c >= 500 => 'Erreur du serveur',
-    _ => 'Enregistrement impossible',
+    401 => l10n.vehiclesErrorSessionTitle,
+    403 => l10n.vehiclesErrorForbiddenTitle,
+    422 => l10n.vehiclesErrorValidationTitle,
+    413 => l10n.vehiclesErrorTooLargeTitle,
+    429 => l10n.vehiclesErrorThrottledTitle,
+    final int c when c >= 500 => l10n.vehiclesErrorServerTitle,
+    _ => l10n.vehiclesSaveFailed,
   };
 }

@@ -1,6 +1,5 @@
 {
   "@@locale": "en",
-
   "commonHome": "Home",
   "commonVehicles": "Vehicles",
   "commonAccessories": "Accessories",
@@ -17,7 +16,6 @@
   "commonMileageKm": "{value} km",
   "commonShareUnavailable": "Cannot open sharing on this device. The message has been copied.",
   "commonLinkUnavailable": "Cannot open {what} on this device. {value} has been copied.",
-
   "shellExitTitle": "Quit AutoParc?",
   "shellExitBody": "Do you want to close the app?",
   "shellExitConfirm": "Quit",
@@ -41,14 +39,11 @@
   "shellContactDialerTarget": "the phone app",
   "shellContactMailTarget": "your mail app",
   "shellLanguage": "Language",
-
   "updateAction": "Update",
   "updateStoreTarget": "the app listing",
-
   "catalogPartListTitle": "Spare parts",
   "catalogCompatibilitySeparator": " · ",
   "catalogCompatibilityMore": "+{count}",
-
   "catalogNeedTooltip": "Submit a request",
   "catalogNeedCta": "Tell us what you are looking for",
   "catalogClearFilters": "Clear all",
@@ -58,7 +53,6 @@
   "catalogActiveFilters": "Active filters: {terms}.",
   "catalogFilterListSeparator": ", ",
   "catalogFilterTermQuery": "“{query}”",
-
   "catalogVehicleAddCta": "Add",
   "catalogVehicleSearchHint": "Make, model…",
   "catalogFilterGroupOffer": "Offer",
@@ -105,7 +99,6 @@
   "catalogFilterTermCategory": "a category",
   "catalogFilterTermFitment": "vehicle fitment",
   "catalogFilterTermInStock": "in stock",
-
   "catalogPartAddCta": "New part",
   "catalogPartSearchHint": "Name, SKU, OEM…",
   "catalogPartTypeOem": "OEM",
@@ -119,7 +112,6 @@
   "catalogGarageFitmentChip": "Fitting",
   "catalogPartNoneFound": "No parts found",
   "catalogPartCatalogEmpty": "The catalogue has no parts at the moment.",
-
   "catalogAccessoryAddCta": "New accessory",
   "catalogAccessorySearchHint": "Name or SKU…",
   "catalogAccessoryCategoryStyling": "Styling",
@@ -129,20 +121,17 @@
   "catalogAccessoryCategoryUtility": "Utility",
   "catalogAccessoryNoneFound": "No accessories found",
   "catalogAccessoryCatalogEmpty": "The catalogue has no accessories at the moment.",
-
   "catalogShareTooltip": "Share",
   "catalogEditTooltip": "Edit",
   "catalogDeleteAction": "Delete",
   "catalogVehicleDeleteTitle": "Delete this vehicle?",
   "catalogVehicleDeleteBody": "“{name}” will be permanently deleted.",
-
   "catalogSectionVehicle": "Vehicle",
   "catalogSectionCondition": "State",
   "catalogSectionImport": "Import",
   "catalogSectionLocation": "Location",
   "catalogSectionFeatures": "Features",
   "catalogSectionPartner": "Source partner",
-
   "catalogFieldBrand": "Make",
   "catalogFieldModel": "Model",
   "catalogFieldYear": "Year",
@@ -169,12 +158,10 @@
   "catalogFieldHandedness": "Steering",
   "catalogFieldBranch": "Branch",
   "catalogFieldColour": "Colour",
-
   "catalogUnitHp": "{value} hp",
   "catalogUnitCc": "{value} cc",
   "catalogUnitTorque": "{value} Nm",
   "catalogUnitConsumption": "{value} L/100 km",
-
   "catalogConditionNew": "New",
   "catalogConditionUsed": "Used",
   "catalogConditionDamaged": "Damaged",
@@ -183,7 +170,6 @@
   "catalogRightHandDrive": "Right (RHD)",
   "catalogColourMetallic": "{name} (metallic)",
   "catalogColourPearl": "{name} (pearl)",
-
   "catalogFeatureCategoryStandard": "Standard equipment",
   "catalogFeatureCategoryComfort": "Comfort",
   "catalogFeatureCategorySafety": "Safety",
@@ -196,15 +182,12 @@
   "catalogFeaturesUpdated": "Features updated ✓",
   "catalogFullOption": "Full option",
   "catalogFullOptionCount": "· {count} features",
-
   "catalogPriceNegotiable": "Negotiable",
   "catalogRentalDeposit": "Deposit: {amount}",
   "catalogCallAction": "Call",
-
   "catalogOfficialConsumption": "Official fuel use: {range}",
   "catalogOfficialConsumptionSingle": "{year} model year — {source}, {cycle}",
   "catalogOfficialConsumptionRange": "Depends on the engine ({count} known for the {year} model year) — {source}, {cycle}",
-
   "catalogBodyLabelSedan": "Saloon",
   "catalogBodyLabelHatchback": "Hatchback",
   "catalogBodyLabelSuv": "SUV / 4×4",
@@ -217,17 +200,14 @@
   "catalogBodyLabelBus": "Bus / Coach",
   "catalogBodyLabelTruck": "Truck",
   "catalogBodyLabelOther": "Other",
-
   "catalogTransmissionManual": "Manual",
   "catalogTransmissionCvt": "CVT",
   "catalogTransmissionAutomatic": "Automatic",
-
   "catalogPhotosTooltip": "Photos",
   "catalogPartDeleteTitle": "Delete this part?",
   "catalogPartDeleteBody": "“{name}” will be permanently deleted.",
   "catalogAccessoryDeleteTitle": "Delete this accessory?",
   "catalogAccessoryDeleteBody": "“{name}” will be permanently deleted.",
-
   "catalogSectionDescription": "Description",
   "catalogSectionInformation": "Information",
   "catalogSectionPrice": "Price",
@@ -237,7 +217,6 @@
   "catalogFieldCategory": "Category",
   "catalogFieldSku": "SKU",
   "catalogFieldManufacturer": "Brand",
-
   "catalogPartTypeOemLong": "OEM — Original manufacturer",
   "catalogPartTypeOesLong": "OES — Approved supplier",
   "catalogPartTypeAftermarketLong": "Aftermarket — Open market",
@@ -245,7 +224,6 @@
   "catalogPartConditionNew": "New",
   "catalogPartConditionRefurbished": "Refurbished",
   "catalogPartConditionUsed": "Used",
-
   "catalogAddToCart": "Add to cart",
   "catalogAddToCartAgain": "Add another",
   "catalogAddedToCart": "{name} added to cart",
@@ -255,7 +233,6 @@
   "catalogStockQuantityLow": "{count} in stock — running low",
   "catalogStockLowChip": "Low stock",
   "catalogStockLocation": "Location: {location}",
-
   "catalogPartNoFitments": "No fitments declared. This part will not show up in a search by vehicle.",
   "catalogAccessoryNoFitments": "No fitments declared. This accessory will not show up in a search by vehicle.",
   "catalogGarageSectionTitle": "Your vehicles",
@@ -266,7 +243,6 @@
   "catalogFitmentUnknown": "Undetermined",
   "catalogFitmentUnknownDetail": "Record your vehicle's engine to get an answer.",
   "catalogVehicleWithYear": "{name} ({year})",
-
   "cartTitle": "Cart",
   "cartTitleCount": "Cart ({count})",
   "cartClear": "Empty",
@@ -293,7 +269,6 @@
   "cartOrderSaved": "Order saved ✓",
   "cartEmptyTitle": "Your cart is empty",
   "cartEmptyBody": "Add accessories or spare parts\nfrom the catalogue.",
-
   "authSignInTab": "Sign in",
   "authRegisterTab": "Register",
   "authEmail": "Email",
@@ -308,7 +283,6 @@
   "authBrowseWithoutAccount": "Browse the catalogue without an account",
   "authWelcome": "Welcome, {name}!",
   "authTagline": "Sale · Rental · Parts · Accessories",
-
   "onboardingSkip": "Skip",
   "onboardingNext": "Next",
   "onboardingStart": "Get started",
@@ -318,7 +292,6 @@
   "onboardingNeedsBody": "Not finding the right one?\nSet up an alert and get a notification as soon as a vehicle or a part matches your search.",
   "onboardingGarageTitle": "Your own garage",
   "onboardingGarageBody": "Add your vehicles to find the spare parts that fit them straight away.\nYour history follows you on every visit.",
-
   "catalogFitmentsTitle": "Compatible vehicles",
   "catalogFitmentsAllProposed": "All auto-suggested: none has been checked.",
   "catalogFitmentsSomeProposed": "{count} of {total} auto-suggested, unchecked.",
@@ -326,7 +299,6 @@
   "catalogFitmentYearRange": " ({from} – {to})",
   "catalogFitmentYearFrom": " (from {year})",
   "catalogFitmentYearTo": " (up to {year})",
-
   "homeDealsSection": "Good deals",
   "homeSeeAll": "See all",
   "homeCompatiblePartsSection": "Parts for {model}",
@@ -343,7 +315,1911 @@
   "homeDeadlineToday": "{label} expires today",
   "homeDeadlineTomorrow": "{label} expires tomorrow",
   "homeDeadlineInDays": "{label} in {days, plural, one{{days} day} other{{days} days}}",
-
+  "privateSalesSellTitle": "Sell my car",
+  "privateSalesMineTitle": "My listings",
+  "privateSalesBrowseTitle": "Cars from private sellers",
+  "privateSalesReviewTitle": "Review listings",
+  "privateSalesStatusDraft": "Draft",
+  "privateSalesStatusPending": "Under review",
+  "privateSalesStatusPublished": "Published",
+  "privateSalesStatusRejected": "Changes needed",
+  "privateSalesStatusWithdrawn": "Withdrawn",
+  "privateSalesStatusSold": "Sold",
+  "privateSalesPrivateSeller": "Private seller",
+  "privateSalesConfirmRemovalBody": "Buyers will no longer see this listing.",
+  "privateSalesConfirm": "Confirm",
+  "privateSalesRejectReasonTitle": "Reason to share with the seller",
+  "privateSalesRejectReasonHint": "Explain what needs to be changed.",
+  "privateSalesRejectAction": "Reject / withdraw",
+  "privateSalesMissingPhonePublication": "This listing has no phone number and cannot be published. Reject it and ask the seller to add one.",
+  "privateSalesCallSeller": "Call the seller",
+  "privateSalesCallCheckInstructions": "Ask whether THEY posted this listing, rather than only checking that the number belongs to them.",
+  "privateSalesDial": "Dial",
+  "privateSalesCallConfirmed": "I called this number and the seller confirmed posting this listing.",
+  "privateSalesPublish": "Publish",
+  "privateSalesReviewAccessDenied": "Only catalogue staff can access this page.",
+  "privateSalesSignInManage": "Sign in to manage my listings",
+  "privateSalesRefresh": "Refresh",
+  "privateSalesSearchHint": "Search for a car or city",
+  "privateSalesReviewFilterLabel": "Listing status",
+  "privateSalesReviewFilterPending": "Pending",
+  "privateSalesReviewFilterPublished": "Published",
+  "privateSalesOneActiveListingHint": "One active listing is free. Withdraw it or mark it as sold before creating another.",
+  "privateSalesEmptyMine": "Create your first listing here.",
+  "privateSalesEmptyReview": "No listings to review.",
+  "privateSalesEmptyBrowse": "No listings yet.",
+  "privateSalesPrevious": "Previous",
+  "privateSalesNext": "Next",
+  "privateSalesEdit": "Edit / complete",
+  "privateSalesConfirmSoldTitle": "Mark this vehicle as sold?",
+  "privateSalesMarkSold": "Mark as sold",
+  "privateSalesConfirmWithdrawTitle": "Withdraw this listing?",
+  "privateSalesWithdraw": "Withdraw",
+  "privateSalesGarageEmpty": "Your garage is empty. You can enter the vehicle here instead.",
+  "privateSalesChooseGarageTitle": "Choose a vehicle from my garage",
+  "privateSalesPhotosLimit": "You can add up to 10 photos in total.",
+  "privateSalesSaveBeforeSubmit": "Save your changes before submitting the listing.",
+  "privateSalesSubmitted": "Listing submitted. Check My listings for the review decision.",
+  "privateSalesSignInSell": "Sign in to sell",
+  "privateSalesAccountChanged": "The account has changed. Close this form and reopen My listings.",
+  "privateSalesFormHeading": "Your car, your listing",
+  "privateSalesNoPartnerRequired": "One active listing is free. No partner account needed.",
+  "privateSalesPrefillGarage": "Fill in from my garage",
+  "privateSalesGaragePrivacy": "Your garage stays private. Only the information entered here will be published.",
+  "privateSalesPriceLabel": "Price in FCFA",
+  "privateSalesCityLabel": "City",
+  "privateSalesDescriptionLabel": "Vehicle condition and useful details",
+  "privateSalesSellerNameLabel": "Name shown to buyers",
+  "privateSalesPhoneLabel": "Phone number with country code",
+  "privateSalesWhatsappOptIn": "Allow contact on WhatsApp",
+  "privateSalesSaveDraft": "Save draft",
+  "privateSalesSaveChanges": "Save changes",
+  "privateSalesChangesNeedReview": "Editing this listing will return it to draft and require another review.",
+  "privateSalesPhotosPrivacy": "The first photo will be the cover. Only add photos you intend to make public.",
+  "privateSalesVehiclePhoto": "Vehicle photo",
+  "privateSalesDeletePhoto": "Delete photo",
+  "privateSalesAddPhotos": "Add photos",
+  "privateSalesBeforePublication": "Before publication",
+  "privateSalesPhoneCallNotice": "Someone from AutoParc will call the number provided to confirm you posted this listing. Your number will only be shown to buyers after this call.",
+  "privateSalesOwnerConfirmation": "I own this vehicle or am authorised to sell it.",
+  "privateSalesContactConsent": "I agree to make my display name and verified phone number public on this listing.",
+  "privateSalesSubmit": "Submit for review",
+  "privateSalesRequiredField": "Fill in this field.",
+  "privateSalesDescriptionTooShort": "Describe the vehicle using at least 20 characters.",
+  "privateSalesPhoneInvalid": "Include the country code, for example +22670000000.",
+  "privateSalesIntegerInvalid": "Enter a valid whole number.",
+  "privateSalesYearInvalid": "Check the year.",
+  "privateSalesDetailTitle": "Private seller listing",
+  "privateSalesShare": "Share listing",
+  "privateSalesFuel": "Fuel",
+  "privateSalesDrivetrain": "Drivetrain",
+  "privateSalesPhoneVerified": "Phone verified",
+  "privateSalesNotInspected": "This vehicle has not been inspected by AutoParc.",
+  "privateSalesContactWhatsapp": "Contact on WhatsApp",
+  "privateSalesBrandRequiredLabel": "Make *",
+  "privateSalesBrandRequiredError": "Make is required",
+  "privateSalesModelRequiredLabel": "Model *",
+  "privateSalesModelSelectionError": "Select a model or enter your own.",
+  "privateSalesFreeModelHint": "Enter your model name",
+  "privateSalesFreeModelRequired": "Enter the model.",
+  "privateSalesModelListAction": "Back to the model list",
+  "privateSalesFreeModelAction": "My model is not listed",
+  "privateSalesManufactureYearLabel": "Year of manufacture *",
+  "privateSalesManufactureYearInvalid": "Check the year of manufacture.",
+  "privateSalesMileageInvalid": "Enter a valid mileage.",
+  "privateSalesClearTrim": "Clear trim",
+  "privateSalesClearFuel": "Clear fuel",
+  "privateSalesClearDrivetrain": "Clear drivetrain",
+  "privateSalesClearColour": "Clear colour",
+  "privateSalesTransmissionOptional": "Transmission (optional)",
+  "privateSalesTransmissionDualClutch": "Dual-clutch",
+  "privateSalesTransmissionSingleSpeed": "Single-speed",
+  "privateSalesClearTransmission": "Clear transmission",
+  "privateSalesReviewReason": "Changes needed: {reason}",
+  "@privateSalesReviewReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "privateSalesPhotosHeading": "Photos ({count}/10)",
+  "@privateSalesPhotosHeading": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "privateSalesVerifiedNumber": "Verified number: {number}",
+  "@privateSalesVerifiedNumber": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "privateSalesGenerationWarning": "This generation is listed for {years}. Check the model and year.",
+  "@privateSalesGenerationWarning": {
+    "placeholders": {
+      "years": {
+        "type": "String"
+      }
+    }
+  },
+  "privateSalesVehicleSummary": "{year} · {mileage} km · {city}",
+  "@privateSalesVehicleSummary": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      },
+      "mileage": {
+        "type": "int"
+      },
+      "city": {
+        "type": "String"
+      }
+    }
+  },
+  "privateSalesPagination": "{page} / {lastPage}",
+  "@privateSalesPagination": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "lastPage": {
+        "type": "int"
+      }
+    }
+  },
+  "privateSalesFieldValue": "{label}: {value}",
+  "@privateSalesFieldValue": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "partnerAccountsPromotionStartTitle": "Promotion start",
+  "partnerAccountsPromotionEndTitle": "Promotion end",
+  "partnerAccountsPromotionEnabled": "Put on promotion",
+  "partnerAccountsPromotionPriceRequired": "Enter a sale price first.",
+  "partnerAccountsPromotionDurationHelp": "For a period you choose.",
+  "partnerAccountsPromotionPrice": "Promotional price (FCFA)",
+  "partnerAccountsPromotionPriceInvalid": "The promotional price must be lower than the regular price.",
+  "partnerAccountsPromotionDiscountInvalid": "Discount is too high.",
+  "partnerAccountsPromotionStart": "Start",
+  "partnerAccountsPromotionEnd": "End",
+  "partnerAccountsMarginYourPrice": "Your price",
+  "partnerAccountsMarginPublicPrice": "Price shown to the buyer",
+  "partnerAccountsMarginLockedHelp": "This total is fixed when you save.",
+  "partnerAccountsSpaceTitle": "Partner area",
+  "partnerAccountsCompanyIntro": "Introduce your business",
+  "partnerAccountsActivityIntro": "Grow your business",
+  "partnerAccountsRegisterIntro": "Once your account is approved, list your vehicles, parts and accessories.",
+  "partnerAccountsLoginIntro": "Manage your sale and rental listings in your business area.",
+  "partnerAccountsLoginTab": "Sign in",
+  "partnerAccountsRegisterTab": "Register",
+  "partnerAccountsCompanyOptional": "Business name (optional)",
+  "partnerAccountsCompanyFallbackHelp": "If you have no business, your listings will show your name.",
+  "partnerAccountsContactName": "Contact name",
+  "partnerAccountsBusinessPhone": "Business phone",
+  "partnerAccountsWhatsappOptional": "WhatsApp (optional)",
+  "partnerAccountsEmailOptional": "Email address (optional)",
+  "partnerAccountsPhoneLoginHelp": "You will sign in with your phone number.",
+  "partnerAccountsInvalidEmail": "Enter a valid email address.",
+  "partnerAccountsLoginIdentifier": "Phone number or email address",
+  "partnerAccountsIdentifierRequired": "Enter your phone number or email address.",
+  "partnerAccountsIdentifierInvalid": "Enter a phone number or email address.",
+  "partnerAccountsPasswordHelp": "At least 12 characters, including letters and numbers.",
+  "partnerAccountsShowPassword": "Show password",
+  "partnerAccountsHidePassword": "Hide password",
+  "partnerAccountsPasswordRequired": "Enter your password.",
+  "partnerAccountsPasswordInvalid": "Use at least 12 characters, including letters and numbers.",
+  "partnerAccountsPasswordMismatch": "Passwords do not match.",
+  "partnerAccountsRestoreSession": "Try restoring my session again",
+  "partnerAccountsRequestAccount": "Request a partner account",
+  "partnerAccountsPublishingAfterApproval": "You can publish listings once your business is approved.",
+  "partnerAccountsRequiredField": "This field is required.",
+  "partnerAccountsStatusUnconfirmed": "Confirming status…",
+  "partnerAccountsAccountApproved": "Account approved",
+  "partnerAccountsCreateListingHelp": "Create a listing, add your photos, then publish it. Your contact details will appear with your listings.",
+  "partnerAccountsSaleAndRental": "Sale and rental",
+  "partnerAccountsInventorySummary": "Prices, availability and stock",
+  "partnerAccountsCustomerRequests": "Customer requests",
+  "partnerAccountsCustomerRequestsSubtitle": "Requests forwarded by the shop",
+  "partnerAccountsRefreshAccount": "Refresh my account",
+  "partnerAccountsRejectedTitle": "Application rejected",
+  "partnerAccountsRejectedDescription": "Your application was not approved. See the reason below.",
+  "partnerAccountsSuspendedTitle": "Account suspended",
+  "partnerAccountsSuspendedDescription": "Managing and publishing your listings is suspended.",
+  "partnerAccountsReceivedTitle": "Registration received",
+  "partnerAccountsReceivedDescription": "Your business is awaiting approval. You can manage your listings once it is approved.",
+  "partnerAccountsRefreshing": "Refreshing…",
+  "partnerAccountsCheckStatus": "Check my status",
+  "partnerAccountsBackToLogin": "Back to sign in",
+  "partnerAccountsPendingStatus": "Pending",
+  "partnerAccountsApprovedStatus": "Approved",
+  "partnerAccountsRejectedStatus": "Rejected",
+  "partnerAccountsSuspendedStatus": "Suspended",
+  "partnerAccountsRejectApplication": "Reject application",
+  "partnerAccountsSuspendAccount": "Suspend account",
+  "partnerAccountsReviewReasonLabel": "Reason shared with the partner",
+  "partnerAccountsReviewReasonRequired": "Explain the reason for this decision.",
+  "partnerAccountsConfirm": "Confirm",
+  "partnerAccountsApplicationIncomplete": "This application is incomplete. Refresh the list.",
+  "partnerAccountsDecisionSaved": "Decision saved.",
+  "partnerAccountsApplicationsTitle": "Partner approval",
+  "partnerAccountsManagerOnly": "Access is restricted to managers.",
+  "partnerAccountsApplicationsFilter": "Applications",
+  "partnerAccountsNoApplications": "No applications in this category.",
+  "partnerAccountsPrevious": "Previous",
+  "partnerAccountsNext": "Next",
+  "partnerAccountsUnnamedCompany": "Unnamed business",
+  "partnerAccountsMissingContact": "Contact not provided",
+  "partnerAccountsMissingPhone": "Phone number not provided",
+  "partnerAccountsReactivate": "Reactivate",
+  "partnerAccountsApprove": "Approve",
+  "partnerAccountsReject": "Reject",
+  "partnerAccountsSuspend": "Suspend",
+  "partnerAccountsListingIncomplete": "This listing is incomplete. Refresh the list.",
+  "partnerAccountsArchiveQuestion": "Archive this listing?",
+  "partnerAccountsArchiveDescription": "It will be removed from your inventory and the public catalogue.",
+  "partnerAccountsArchive": "Archive",
+  "partnerAccountsAdjustStock": "Adjust stock",
+  "partnerAccountsAvailableQuantity": "Available quantity",
+  "partnerAccountsQuantityInvalid": "Enter a valid quantity.",
+  "partnerAccountsSave": "Save",
+  "partnerAccountsListingFallback": "Listing",
+  "partnerAccountsRefresh": "Refresh",
+  "partnerAccountsCreateListing": "Create a listing",
+  "partnerAccountsSearchListings": "Search my listings",
+  "partnerAccountsSearch": "Search",
+  "partnerAccountsInventoryEmpty": "Your inventory starts here",
+  "partnerAccountsNoMatchingListings": "No matching listings",
+  "partnerAccountsInventoryEmptyHelp": "Create a listing, add photos, then choose to publish it.",
+  "partnerAccountsCreateFirstListing": "Create my first listing",
+  "partnerAccountsPreviousPage": "Previous page",
+  "partnerAccountsNextPage": "Next page",
+  "partnerAccountsManageListing": "Manage this listing",
+  "partnerAccountsManagePhotos": "Manage photos",
+  "partnerAccountsMakeAvailable": "Make available",
+  "partnerAccountsMakeUnavailable": "Mark unavailable",
+  "partnerAccountsPublished": "Published",
+  "partnerAccountsDraft": "Draft",
+  "partnerAccountsWithdraw": "Withdraw",
+  "partnerAccountsPublish": "Publish",
+  "partnerAccountsRequestFailed": "Unable to complete the request. Check your connection and try again.",
+  "partnerAccountsPriceRequired": "Enter a price.",
+  "partnerAccountsMoneyInvalid": "Enter an amount of zero or more.",
+  "partnerAccountsNotProvided": "Not provided",
+  "partnerAccountsChoiceRequired": "Choose a value.",
+  "partnerAccountsEditListingHelp": "Update your listing.",
+  "partnerAccountsNewListingHelp": "Your listing will be saved as a draft. You can then add photos and publish it.",
+  "partnerAccountsSaving": "Saving…",
+  "partnerAccountsSaveChanges": "Save changes",
+  "partnerAccountsSaveDraft": "Save draft",
+  "partnerAccountsItemName": "Item name",
+  "partnerAccountsNameRequired": "Enter a name.",
+  "partnerAccountsPartCategory": "Part category",
+  "partnerAccountsPartOrigin": "Part origin",
+  "partnerAccountsPartOem": "Original manufacturer (OEM)",
+  "partnerAccountsPartOes": "Original equipment supplier (OES)",
+  "partnerAccountsPartAftermarket": "Aftermarket",
+  "partnerAccountsPartSalvage": "Salvaged part",
+  "partnerAccountsCondition": "Condition",
+  "partnerAccountsConditionNew": "New",
+  "partnerAccountsConditionRefurbished": "Refurbished",
+  "partnerAccountsConditionUsed": "Used",
+  "partnerAccountsDonorRequiredHelp": "A used part must be linked to a donor vehicle in your own inventory.",
+  "partnerAccountsReloadDonors": "Reload donor vehicles",
+  "partnerAccountsDonorsEmpty": "Add the donor vehicle to your vehicle listings first.",
+  "partnerAccountsDonorVehicle": "Donor vehicle",
+  "partnerAccountsManufacturerReferenceOptional": "Manufacturer reference (optional)",
+  "partnerAccountsAccessoryCategory": "Accessory category",
+  "partnerAccountsManufacturerOptional": "Manufacturer (optional)",
+  "partnerAccountsSkuOptional": "Internal reference / SKU (optional)",
+  "partnerAccountsSalePrice": "Sale price (FCFA)",
+  "partnerAccountsStockQuantity": "Stock quantity",
+  "partnerAccountsStockInvalid": "Enter a whole number of zero or more.",
+  "partnerAccountsPhotosTitle": "Listing photos",
+  "partnerAccountsAddPhotos": "Add photos",
+  "partnerAccountsPhotosHelp": "JPEG, PNG or WebP. Choose a cover and arrange your gallery.",
+  "partnerAccountsPhotosEmpty": "Add the first photos for your listing.",
+  "partnerAccountsCover": "Cover",
+  "partnerAccountsSetCover": "Set as cover",
+  "partnerAccountsMoveBefore": "Move earlier",
+  "partnerAccountsMoveAfter": "Move later",
+  "partnerAccountsDeletePhoto": "Delete photo",
+  "partnerAccountsDeletePhotoQuestion": "Delete this photo?",
+  "partnerAccountsDelete": "Delete",
+  "partnerAccountsPhotoLimit": "Select up to 10 photos per upload.",
+  "partnerAccountsMarkAllRead": "Mark all as read",
+  "partnerAccountsNoRequests": "No requests yet.",
+  "partnersEditTitle": "Edit partner",
+  "partnersCreateTitle": "New partner",
+  "partnersSave": "Save",
+  "partnersCompanySection": "Business",
+  "partnersCompanyName": "Business name *",
+  "partnersRequiredField": "Required field",
+  "partnersContactName": "Contact name",
+  "partnersContactsSection": "Contacts",
+  "partnersPhone": "Phone *",
+  "partnersWhatsappDifferent": "WhatsApp (if different)",
+  "partnersEmail": "Email",
+  "partnersInvalidEmail": "Invalid email address",
+  "partnersNotesSection": "Notes",
+  "partnersInternalNotes": "Internal notes",
+  "partnersNotesHint": "Speciality, terms, opening hours…",
+  "partnersActive": "Active partner",
+  "partnersInactiveHelp": "Inactive partners are hidden from lists",
+  "partnersSearchHint": "Name, contact, phone…",
+  "partnersNoResults": "No partners found",
+  "partnersDelete": "Delete",
+  "partnersDeleteQuestion": "Delete this partner?",
+  "partnersAttach": "Link",
+  "partnersNoLinkedPartners": "No linked partners.",
+  "partnersAttachTitle": "Link a partner",
+  "partnersPartnerRequired": "Partner *",
+  "partnersRoleOptional": "Role (optional)",
+  "partnersRoleHint": "supplier, importer…",
+  "partnersNotesOptional": "Notes (optional)",
+  "partnersRemove": "Remove",
+  "partnersRemoveQuestion": "Remove this partner?",
+  "partnerAccountsReason": "Reason: {reason}",
+  "@partnerAccountsReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "partnerAccountsApplicationPagination": "Page {page} / {lastPage} · {total} application(s)",
+  "@partnerAccountsApplicationPagination": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "lastPage": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "partnerAccountsMarginIncluded": "including {amount} shop margin ({rate}%)",
+  "@partnerAccountsMarginIncluded": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "partnerAccountsStockSummary": "Stock: {quantity}",
+  "@partnerAccountsStockSummary": {
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "partnerAccountsRentalDaily": "Rental: {amount} / day",
+  "@partnerAccountsRentalDaily": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "partnerAccountsRentalMonthly": "Rental: {amount} / month",
+  "@partnerAccountsRentalMonthly": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "partnerAccountsPromotionMaximum": "Discount up to {maximum}%.",
+  "@partnerAccountsPromotionMaximum": {
+    "placeholders": {
+      "maximum": {
+        "type": "String"
+      }
+    }
+  },
+  "partnerAccountsPromotionExceeded": "The discount cannot exceed {maximum}%: this one is {discount}%.",
+  "@partnerAccountsPromotionExceeded": {
+    "placeholders": {
+      "maximum": {
+        "type": "String"
+      },
+      "discount": {
+        "type": "String"
+      }
+    }
+  },
+  "partnerAccountsPromotionPreview": "The buyer will see −{discount}%, with {price} FCFA crossed out.",
+  "@partnerAccountsPromotionPreview": {
+    "placeholders": {
+      "discount": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "partnerAccountsMarginRate": "Shop margin ({rate}%)",
+  "@partnerAccountsMarginRate": {
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "partnerAccountsMyVehicles": "My vehicles",
+  "partnerAccountsMyParts": "My spare parts",
+  "partnerAccountsMyAccessories": "My accessories",
+  "partnerAccountsAddPart": "Add a part",
+  "partnerAccountsEditPart": "Edit a part",
+  "partnerAccountsAddAccessory": "Add an accessory",
+  "partnerAccountsEditAccessory": "Edit an accessory",
+  "partnersDeleteDescription": "{name} will be removed from all products.",
+  "@partnersDeleteDescription": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "partnersRemoveDescription": "The link with {name} will be removed.",
+  "@partnersRemoveDescription": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "partnerAccountsNetworkError": "Unable to connect. Check your network and try again.",
+  "partnerAccountsSessionResponseInvalid": "The response does not match a partner session.",
+  "partnerAccountsSessionInvalid": "This partner session is invalid.",
+  "partnerAccountsSessionCheckFailed": "Unable to verify your session. Try again.",
+  "partnerAccountsLoginFailed": "Sign-in was unsuccessful. Try again.",
+  "partnerAccountsRefreshFailed": "Unable to refresh. Try again.",
+  "privateSalesHomeTitle": "Cars from private sellers",
+  "privateSalesHomeBody": "Sell your car with your regular account. One active listing is free.",
+  "privateSalesBrowseAction": "Browse listings",
+  "privateSalesSellThisVehicle": "Sell this vehicle",
+  "shellPartnerApplications": "Partner applications",
+  "shellPartnerSpace": "Partner area",
+  "commonErrorNetwork": "No connection. Check your network and try again.",
+  "commonErrorSessionExpired": "Your session has expired. Sign in again.",
+  "commonErrorNotFound": "Not found. The item may have been deleted.",
+  "commonErrorUploadTooLarge": "The upload is too large. Remove some photos or reduce their size, then try again.",
+  "commonErrorServer": "Server error.",
+  "commonErrorGeneric": "Something went wrong. Try again.",
+  "commonErrorPermission": "Your role does not allow this action.",
+  "commonErrorDisabled": "This account has been disabled. Contact support.",
+  "commonErrorUnavailable": "The service is currently unavailable. Try again later.",
+  "commonErrorThrottled": "Too many attempts. Try again in a few minutes.",
+  "commonErrorReference": "{message} (ref. {reference})",
+  "@commonErrorReference": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      },
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "partnerAccountsRequestsHelp": "Customer requests appear here as soon as the shop forwards them.",
+  "garageBrandRequiredMessage": "Please select a make.",
+  "garageModelRequiredMessage": "Select a model, or enter your own.",
+  "garageSignInReminderTitle": "An account for your reminders",
+  "garageSignInReminderBody": "Vehicle inspection, insurance, oil changes: these reminders are sent to you, so we need to know who you are.\n\nYour entries are kept.",
+  "garageSignInLater": "Later",
+  "garageSignInAction": "Sign in",
+  "garageSignInCancelled": "Sign-in cancelled — your entries are kept.",
+  "garageAddVehicleTitle": "Add to my garage",
+  "garageReferencesLoadError": "Could not load reference data: {value0}",
+  "@garageReferencesLoadError": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageIdentitySection": "Identification",
+  "garageBrandRequiredLabel": "Make *",
+  "garageSelectPlaceholder": "Select…",
+  "garageBrandRequired": "Make is required",
+  "garageModelRequiredLabel": "Model *",
+  "garageSelectBrandFirst": "Choose a make first",
+  "garageModelRequired": "Model is required",
+  "garageModelExample": "CX-9, Tribute, Prado…",
+  "garageEnterModel": "Enter the model",
+  "garageBackToModels": "Back to the model list",
+  "garageModelNotListed": "My model is not listed",
+  "garageManufacturingYearLabel": "Year of manufacture *",
+  "garageYearRequired": "Year is required",
+  "garageInvalidYear": "Invalid year",
+  "garageEngineCompatibilityExplanation": "It determines which parts fit your vehicle. The trim often identifies it.",
+  "garageFuelLabel": "Fuel",
+  "garageOptionalDetails": "Details (optional)",
+  "garageNicknameLabel": "Nickname",
+  "garageNicknameHint": "E.g. My Corolla, The family car…",
+  "garageRegistrationLabel": "Registration plate",
+  "garageRegistrationHint": "E.g. AA 1234 BF",
+  "garageCurrentMileage": "Current mileage",
+  "garageSaving": "Saving…",
+  "garageCompatibilityAvailable": "You will be able to filter parts that fit this vehicle.",
+  "garageUnlistedModelCompatibility": "As your model is not in the catalogue, matching parts will remain unavailable — even if you enter the fuel type.",
+  "garageMissingEngineCompatibility": "Without this information, the list of matching parts will remain empty. You can complete it later from your garage.",
+  "garageUnlistedModelServices": "Deadlines, mileage, checks and maintenance reminders will work normally. Only matching parts will be unavailable: that search uses the catalogue. Your entry helps us expand it.",
+  "garageVinAutomaticTitle": "Automatic VIN decoding",
+  "garageVinAutomaticExplanation": "Enter the VIN (17-character chassis number) to fill in the form automatically.",
+  "garageVinLabel": "VIN (chassis number)",
+  "garageVinLength": "{value0}/17 characters",
+  "@garageVinLength": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageVinInvalidLength": "The VIN must contain exactly 17 characters.",
+  "garageVinDecodeAction": "Decode",
+  "garageVinInvalidTitle": "Invalid VIN",
+  "garageVinCompletedTitle": "Form filled in",
+  "garageVinCompletedBody": "Check and complete it if needed.",
+  "garageVinPartialTitle": "Partially filled in",
+  "garageVinPartialBody": "Some fields could not be identified — please check.",
+  "garageVinLimitedTitle": "Limited data",
+  "garageVinOfflineYearOnly": "NHTSA API unavailable — only the year was decoded locally.",
+  "garageVinUnknownModel": "Make or model not found in the catalogue — enter the details manually.",
+  "garageVinNoMatchTitle": "No match",
+  "garageVinNoMatchBody": "Fill in the form manually.",
+  "garageVinTwoYears": "Two possible years — choose one:",
+  "garageGenerationMismatch": "{value0} may not match {value1}.",
+  "@garageGenerationMismatch": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      },
+      "value1": {
+        "type": "String"
+      }
+    }
+  },
+  "garageGenerationYearMismatch": "The {value0} was produced {value1}. Your vehicle is from {value2}.",
+  "@garageGenerationYearMismatch": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      },
+      "value1": {
+        "type": "String"
+      },
+      "value2": {
+        "type": "String"
+      }
+    }
+  },
+  "garageGenerationAlternativeQuestion": "Did you mean this one?",
+  "garageGenerationAlternatives": "Generations produced in {value0}:",
+  "@garageGenerationAlternatives": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageGenerationNoAlternative": "No other generation of {value0} is recorded for this year. You can continue: the parts search will simply be less precise.",
+  "@garageGenerationNoAlternative": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageMatchingPartsForVehicle": "Parts — {value0}",
+  "@garageMatchingPartsForVehicle": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageMatchingPartsTitle": "Matching parts",
+  "garageMatchingPartsLimited": "Limited accuracy — add the engine for more precise results.",
+  "garageMatchingPartsCount": "{count, plural, =1{1 part found} other{{count} parts found}}",
+  "@garageMatchingPartsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "garageUnknownEngineTitle": "Engine unknown",
+  "garageNoMatchingPartsTitle": "No parts listed for this model",
+  "garageUnknownEngineBody": "Without the engine, we cannot determine which parts fit this vehicle. Enter it, or enter the chassis number to identify it automatically.",
+  "garageNoVehiclePartsBody": "No catalogue parts are linked to this vehicle yet.",
+  "garageNoModelPartsBody": "No catalogue parts are linked to this model — a {value0} — yet.",
+  "@garageNoModelPartsBody": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageCompleteVehicleAction": "Complete my vehicle",
+  "garageBrowseAllPartsAction": "Browse all parts",
+  "garageRefillsTitle": "Fuel refills",
+  "garageFuelForVehicle": "Fuel — {value0}",
+  "@garageFuelForVehicle": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageRefillLabel": "Refill",
+  "garageRefillSaved": "Refill saved.",
+  "garageFullRefillExplanation": "Full tank — the pump stopped automatically",
+  "garagePartialRefill": "Partial refill",
+  "garageRefillSummary": "{value0} km · {value1} l{value2}",
+  "@garageRefillSummary": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      },
+      "value1": {
+        "type": "String"
+      },
+      "value2": {
+        "type": "String"
+      }
+    }
+  },
+  "garageFullRefill": "Full tank",
+  "garageRefillConsumption": "{value0} l/100 km{value1}{value2}",
+  "@garageRefillConsumption": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      },
+      "value1": {
+        "type": "String"
+      },
+      "value2": {
+        "type": "String"
+      }
+    }
+  },
+  "garageDeleteRefillAction": "Delete this refill",
+  "garageDeleteRefillTitle": "Delete this refill?",
+  "garageRefillDeleted": "Refill deleted.",
+  "garageDeleteTwoIntervals": "This refill closes one measurement and starts another. Deleting it removes both measurements and merges their intervals into one that is twice as long. Your consumption will be recalculated over it and may change significantly.",
+  "garageDeleteOneInterval": "This refill closes one of the measurements used. Deleting it removes that measurement and recalculates your consumption.",
+  "garageDeleteRefillLitres": "The litres from this refill will be removed from the calculation and your consumption will be recalculated.",
+  "garageNoRefillsTitle": "No refills recorded",
+  "garageNoRefillsBody": "Record what you buy at the pump: the amount paid and the price per litre are enough. After two full tanks, the app shows your vehicle’s actual consumption and alerts you if it rises.",
+  "garageSignInGarageTitle": "Sign in to access your garage",
+  "garageSignInGarageBody": "Quickly find parts that fit your vehicles.",
+  "garageSignInOrRegister": "Sign in / Register",
+  "garageTitle": "My garage",
+  "garageRefreshAction": "Refresh",
+  "garageAccountTitle": "My account",
+  "garageAddVehicleAction": "Add a vehicle",
+  "garageSignOutAction": "Sign out",
+  "garageSignedOut": "You are signed out.",
+  "garageDeleteAccountTitle": "Delete my account",
+  "garageAccountDeleted": "Your account and data have been deleted.",
+  "garageAccountDeletionListTitle": "The following will be permanently deleted:",
+  "garageAccountDeletionList": "• your vehicles and their deadlines\n• your search requests\n• your notifications\n• your sign-in account",
+  "garageInvoicesRetained": "Invoices for fulfilled orders are retained for accounting purposes.",
+  "garageDeleteAccountConfirmText": "To confirm, enter {value0}:",
+  "@garageDeleteAccountConfirmText": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageDeletePermanently": "Delete permanently",
+  "garageMileageValue": "{value0} km",
+  "@garageMileageValue": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garagePreciseCompatibility": "Precise compatibility",
+  "garageTrackDeadlinesAction": "Track my deadlines",
+  "garageCheckVehicleAction": "Check my vehicle",
+  "garageRepeatCheckAction": "Check again",
+  "garageSellThisVehicle": "Sell this vehicle",
+  "garageUpdateAction": "Update",
+  "garageCompactThousands": "{value0} k",
+  "@garageCompactThousands": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageServiceMissingBoth": "Enter the last oil-change mileage above and the vehicle’s current mileage using “Update”.",
+  "garageServiceMissingLastMileage": "Enter the last oil-change mileage above.",
+  "garageServiceMissingCurrentMileage": "Enter the vehicle’s current mileage using “Update”.",
+  "garageMaintenanceTitle": "Maintenance deadlines",
+  "garageMaintenanceReminders": "You will be notified 30 days before the deadline, then if it is overdue.",
+  "garageInspectionLabel": "Vehicle inspection",
+  "garageInsuranceLabel": "Insurance",
+  "garageOilChangeLabel": "Oil change",
+  "garageLastOilChangeMileage": "Mileage at last oil change",
+  "garageOilReminderMileageExplanation": "Oil-change reminders depend on keeping your mileage up to date.",
+  "garageClearAction": "Clear",
+  "garageLastCheckTitle": "Last check · {value0}",
+  "@garageLastCheckTitle": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageCheckNothingToFix": "Nothing to address",
+  "garageCheckOnePointToFix": "1 item to address",
+  "garageCheckPointsToFix": "{value0} items to address",
+  "@garageCheckPointsToFix": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageDaysAgoLower": "{value0} days ago",
+  "@garageDaysAgoLower": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageLastWeekLower": "last week",
+  "garageWeeksAgoLower": "{value0} weeks ago",
+  "@garageWeeksAgoLower": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageMonthsAgoLower": "{value0} months ago",
+  "@garageMonthsAgoLower": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageRemoveVehicleAction": "Remove from garage",
+  "garageRemoveVehicleTitle": "Remove from garage?",
+  "garageRemoveVehicleBody": "{value0} will be removed from your garage. This action cannot be undone.",
+  "@garageRemoveVehicleBody": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageRemoveAction": "Remove",
+  "garageEmptyTitle": "Your garage is empty",
+  "garageEmptyBody": "Add your vehicles to quickly find matching parts.",
+  "garageProfileTitle": "My profile",
+  "garageStaffLabel": "Staff",
+  "garageCheckRejected": "The check was not accepted: {value0}\nCorrect the entry, then finish again.",
+  "@garageCheckRejected": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageCheckDeferred": "Cannot send right now: {value0}\nThe check is saved on this phone and will be sent when the network returns.",
+  "@garageCheckDeferred": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageVehicleFallback": "My vehicle",
+  "garageCheckFinishedTitle": "Check complete",
+  "garageCheckWaitingToSend": "A completed check has not been sent yet. It will be sent when the network returns.",
+  "garageTripDestinationQuestion": "Where are you going?",
+  "garageTripOptionDistance": "{value0} · {value1} km",
+  "@garageTripOptionDistance": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      },
+      "value1": {
+        "type": "String"
+      }
+    }
+  },
+  "garageOdometerLabel": "Odometer reading",
+  "garageOdometerExplanation": "You are in front of the dashboard: now is the time. Without this reading, oil-change reminders cannot be sent.",
+  "garageCheckComposing": "Preparing…",
+  "garageViewCheckItems": "See what to check",
+  "garageTripCheckItemsExplanation": "{value0} items for this vehicle and journey. They vary by vehicle: each explains why it is included.",
+  "@garageTripCheckItemsExplanation": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageSeasonCheckItemsExplanation": "{value0} items to check once before the season, not before every journey.",
+  "@garageSeasonCheckItemsExplanation": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageChooseTripAction": "Choose the journey",
+  "garageChangeTripDistance": "{value0} km journey · Change",
+  "@garageChangeTripDistance": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageChangeCheckAction": "Choose another check",
+  "garageFinishCheckAction": "Finish the check",
+  "garageCheckOkay": "OK",
+  "garageCheckWatch": "Monitor",
+  "garageCheckFault": "Fault",
+  "garageCheckOneUnchecked": "1 item was not checked.",
+  "garageCheckUnchecked": "{value0} items were not checked.",
+  "@garageCheckUnchecked": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageCheckOdometerRecorded": "Odometer recorded: {value0} km",
+  "@garageCheckOdometerRecorded": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageCheckFixNow": "To address",
+  "garageCheckCanWait": "Can wait",
+  "garageBackToGarageAction": "Back to garage",
+  "garageViewPartsAction": "View parts",
+  "garageConsumptionValue": "Reference: {value} L/100 km",
+  "@garageConsumptionValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "garageFuelCostValue": "{value0} XOF/100 km",
+  "@garageFuelCostValue": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionMeasuredOn": "{count, plural, =1{measured over 1 interval} other{measured over {count} intervals}}",
+  "@garageConsumptionMeasuredOn": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "garageLitresValue": "{value0} l",
+  "@garageLitresValue": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageCurrencyValue": "{value0} XOF",
+  "@garageCurrencyValue": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageSinceFirstRefill": "since your first refill",
+  "garageNeedTwoFullRefills": "Record two full tanks — with the pump stopping automatically — to see your actual consumption here.",
+  "garageNeedOneFullRefill": "One more full tank and your actual consumption will appear here.",
+  "garageTrackConsumptionAction": "Track my consumption",
+  "garageTrackConsumptionBody": "Record your refills: the app calculates your actual fuel consumption.",
+  "garageConsumptionIncreased": "Your consumption has increased.",
+  "garageConsumptionIncreasedCompared": "Your consumption has increased: {value0} l/100 km compared with your usual {value1}.",
+  "@garageConsumptionIncreasedCompared": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      },
+      "value1": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionCommonCauses": "A dirty air filter and tyre pressure are the two most common causes.",
+  "garageOdometerReplacedExplanation": "Odometer replaced: earlier refills remain in your history but are no longer used in this calculation.",
+  "garageOfficialConsumptionUnknown": "Manufacturer consumption figure unknown",
+  "garageOfficialConsumptionValue": "Manufacturer figure {value0} l/100 km",
+  "@garageOfficialConsumptionValue": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageSpecifyEngineAction": "Specify",
+  "garageChangeAction": "Change",
+  "garageRecordRefillTitle": "Fuel refill",
+  "garageRefillHistoryCount": "History ({value0})",
+  "@garageRefillHistoryCount": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionQuestion": "What is my consumption?",
+  "garageOfficialCityHighway": "city {value0} · highway {value1}",
+  "@garageOfficialCityHighway": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      },
+      "value1": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionNoModel": "Consumption unavailable: this vehicle’s model is not in the catalogue yet.",
+  "garageEnginesUnavailable": "Engine list unavailable. Try again later.",
+  "garageNoOfficialConsumption": "No official consumption data for this model.",
+  "garageEngineSaved": "Engine saved.",
+  "garageEngineForVehicle": "Engine in your {value0}",
+  "@garageEngineForVehicle": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageChooseEngineExplanation": "Choose the engine under the bonnet. Trim does not change fuel consumption.",
+  "garageEngineSavedCompatibility": "Engine saved: matching parts are up to date.",
+  "garageFuelQuestion": "What fuel does this vehicle use?",
+  "garageRefillAmountPaid": "Amount paid",
+  "garageRefillPricePerLitre": "Price per litre",
+  "garageRefillLitres": "Litres purchased",
+  "garageRefillValueUnchanged": "Saved as entered.",
+  "garageRefillLitresCalculated": "Litres are calculated from the amount and price.",
+  "garageRefillCalculatedLitres": "That is {value0} l",
+  "@garageRefillCalculatedLitres": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageRefillEnterAmount": "Enter the amount paid",
+  "garageRefillKnowLitres": "I know the litres",
+  "garageRefillFullTankExplanation": "Full tank means the pump stopped automatically. Only a full tank allows consumption to be measured.",
+  "garageRefillMileageRequired": "Enter the odometer reading.",
+  "garageRefillLitresRange": "Litres must be between 1 and 200.",
+  "garageRefillImpossibleQuantity": "The amount and price per litre give an impossible quantity.",
+  "garageMileageRequired": "Enter a number of kilometres.",
+  "garageMileageOutOfRange": "This mileage is outside the allowed range.",
+  "garageMileageConfirmDecrease": "The odometer read {value0} km. Press again to save {value1} km.",
+  "@garageMileageConfirmDecrease": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      },
+      "value1": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConfirmAction": "Confirm",
+  "garageSaveMileageAction": "Save",
+  "needsMyNeedsTitle": "My requests",
+  "needsNewNeedAction": "New request",
+  "needsYearFromValue": "From {value0}",
+  "@needsYearFromValue": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "needsBudgetValue": "Budget: {value0}",
+  "@needsBudgetValue": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "needsToday": "Today",
+  "needsYesterday": "Yesterday",
+  "needsDaysAgo": "{value0} days ago",
+  "@needsDaysAgo": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "needsBodyHatchback": "Hatchback",
+  "needsBodyPickup": "Pick-up",
+  "needsBodyVan": "Van",
+  "needsBodyBus": "Bus",
+  "needsEmptyMineTitle": "No requests submitted",
+  "needsEmptyMineBody": "Tell us what you are looking for — we will\ncontact you when a matching offer is available.",
+  "needsStaffListTitle": "Customer requests",
+  "needsStatusPending": "Pending",
+  "needsStatusApproved": "Forwarded",
+  "needsStatusContacted": "Contacted",
+  "needsStatusFulfilled": "Fulfilled",
+  "needsStatusCancelled": "Cancelled",
+  "needsTypePart": "Part",
+  "needsTypeAccessory": "Accessory",
+  "needsFilterAll": "All",
+  "needsFilterAllTypes": "All types",
+  "needsMaximumBudgetValue": "Maximum budget: {value0}",
+  "@needsMaximumBudgetValue": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "needsNoContact": "No contact details provided",
+  "needsUpdateAction": "Update",
+  "needsTodayAtTime": "Today {value0}:{value1}",
+  "@needsTodayAtTime": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      },
+      "value1": {
+        "type": "String"
+      }
+    }
+  },
+  "needsUpdateStatusTitle": "Update status",
+  "needsStaffNotesLabel": "Internal notes (optional)",
+  "needsStaffNotesHint": "E.g. Customer called on 02/09, quote sent…",
+  "needsEmptyPendingTitle": "No pending requests",
+  "needsEmptyResultsTitle": "No requests found",
+  "needsEmptyStaffBody": "Requests submitted by customers\nwill appear here.",
+  "needsSubmittedTitle": "Request saved!",
+  "needsSubmittedBody": "We have received your request.\nOur team will contact you when a matching offer becomes available.",
+  "needsSubmittedConfirm": "Got it",
+  "needsSignInRequiredTitle": "Sign-in required",
+  "needsSignInRequiredBody": "You must sign in to submit a request.",
+  "needsSignInAction": "Sign in",
+  "needsIntroduction": "Cannot find what you are looking for? Submit your request — we will contact you when a matching offer becomes available.",
+  "needsTypeLabel": "What are you looking for?",
+  "needsDescriptionLabel": "Describe your request *",
+  "needsVehicleDescriptionHint": "Preferred colour, maximum mileage, desired options…",
+  "needsPartDescriptionHint": "Reference, vehicle compatibility, desired condition…",
+  "needsAccessoryDescriptionHint": "Dimensions, compatibility, colour…",
+  "needsDescriptionRequired": "Describe what you need (at least 10 characters).",
+  "needsBudgetLabel": "Maximum budget (optional)",
+  "needsBudgetInvalid": "Invalid amount",
+  "needsCallbackPhoneLabel": "Phone number to call you *",
+  "needsCallbackPhoneExplanation": "We cannot reply without a number. You can provide a second number from another network.",
+  "needsPrimaryPhoneLabel": "Primary number",
+  "needsSecondaryPhoneLabel": "Other number (optional)",
+  "needsPhoneRequired": "Enter a phone number.",
+  "needsPhoneTooShort": "Number is too short.",
+  "needsRemovePhoneAction": "Remove this number",
+  "needsAddPhoneAction": "Add a number",
+  "needsCustomerAccountNotice": "Signed in as {value0} — your request will be linked to your account.",
+  "@needsCustomerAccountNotice": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "needsStaffAccountNotice": "Entered by {value0} on behalf of a customer. The request will not be linked to an account: the number above is the only way to call them back.",
+  "@needsStaffAccountNotice": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "needsSubmitAction": "Submit my request",
+  "needsVehicleCriteriaTitle": "Vehicle requirements",
+  "needsBrandsLoadError": "Could not load makes.",
+  "needsAnyBrand": "All makes",
+  "needsModelsLoadError": "Could not load models.",
+  "needsNoModels": "No models available for this make.",
+  "needsAnyModel": "All models",
+  "needsAnyOption": "Any",
+  "needsYearFromLabel": "From",
+  "needsYearRangeInvalid": "Invalid year (1950–{value0})",
+  "@needsYearRangeInvalid": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "needsYearEndBeforeStart": "Must be at least the starting year",
+  "needsPartCriteriaTitle": "Part requirements",
+  "needsCategoriesLoadError": "Could not load categories.",
+  "needsAnyCategory": "All categories",
+  "needsManufacturerOptionalLabel": "Manufacturer (optional)",
+  "needsAnyManufacturer": "All manufacturers",
+  "needsOemOptionalLabel": "OEM reference (optional)",
+  "needsOemHint": "E.g. 90915-YZZD4",
+  "needsOemTooLong": "Reference is too long (maximum 100 characters)",
+  "needsAccessoryCriteriaTitle": "Accessory requirements",
+  "needsBrandManufacturerOptional": "Make / Manufacturer (optional)",
+  "needsCriteriaExplanation": "The more detail you provide, the better we can match offers.",
+  "garageEngineMissingTitle": "Engine not specified",
+  "garageEngineMissingBody": "Without it, we cannot determine which parts fit this vehicle.",
+  "garageCompleteAction": "Complete",
+  "garageTripCity": "In town",
+  "garageTripHundredKm": "About 100 km",
+  "garageTripOtherCity": "Another city",
+  "garageTripOtherRegion": "Another region",
+  "garageTripOtherCountry": "Another country",
+  "garageRecentlyLower": "recently",
+  "garageTodayLower": "today",
+  "garageYesterdayLower": "yesterday",
+  "garageNoInterval": "None",
+  "vehiclesUpdated": "Vehicle updated ✓",
+  "vehiclesCreated": "Vehicle saved — add some photos!",
+  "vehiclesSaveFailed": "Unable to save",
+  "vehiclesBuyerPriceLabel": "Price shown to the buyer",
+  "vehiclesBuyerRateLabel": "Rate shown to the buyer",
+  "vehiclesOk": "OK",
+  "vehiclesEditTitle": "Edit vehicle",
+  "vehiclesCreateTitle": "Register a vehicle",
+  "vehiclesPhotos": "Photos",
+  "vehiclesTypeTitle": "Vehicle type",
+  "vehiclesTypePassenger": "Passenger car",
+  "vehiclesTypeUtility": "Commercial vehicle",
+  "vehiclesTypeHeavy": "Heavy vehicle",
+  "vehiclesBodyStyleLabel": "Body style *",
+  "vehiclesBodyStyleHint": "Saloon, SUV, pickup…",
+  "vehiclesBodyStyleRequired": "Select a body style",
+  "vehiclesVinOptional": "VIN (optional)",
+  "vehiclesVinHelper": "17 characters — international vehicle identification number",
+  "vehiclesVinLengthError": "The VIN must contain exactly 17 characters.",
+  "vehiclesRegisteredLabel": "Registered vehicle",
+  "vehiclesRegisteredHint": "Already registered — the number plate can be added later.",
+  "vehiclesImportedHint": "Imported and not yet registered here.",
+  "vehiclesRegistrationRemovalWarning": "This vehicle is recorded as registered. Marking it as imported will delete its registration details. Enter the mileage again: registered-vehicle mileage and mileage at import are different readings.",
+  "vehiclesPlateOptional": "Number plate (optional)",
+  "vehiclesPlateHint": "e.g. AA 1234 BF",
+  "vehiclesIdentityTitle": "Identity",
+  "vehiclesBrandLabel": "Make *",
+  "vehiclesBrandRequired": "Make is required",
+  "vehiclesModelLabel": "Model *",
+  "vehiclesModelRequired": "Model is required",
+  "vehiclesManufactureYearLabel": "Year of manufacture *",
+  "vehiclesYearRequired": "Year is required",
+  "vehiclesTransmissionManualSummary": "manual",
+  "vehiclesTransmissionAutomaticSummary": "automatic",
+  "vehiclesOfferRentSummary": "rental",
+  "vehiclesOfferBothSummary": "sale and rental",
+  "vehiclesOfferSaleSummary": "sale",
+  "vehiclesTechnicalTitle": "Technical specifications",
+  "vehiclesEngineTypeLabel": "Powertrain type *",
+  "vehiclesEngineTypeRequired": "Powertrain is required",
+  "vehiclesTransmissionLabel": "Transmission",
+  "vehiclesDrivetrainLabel": "Drivetrain",
+  "vehiclesPowerLabel": "Power (hp)",
+  "vehiclesFeaturesTitle": "Equipment & options",
+  "vehiclesFeaturesHint": "Select the equipment fitted to this vehicle.",
+  "vehiclesCommercialTitle": "Sales information",
+  "vehiclesConditionLabel": "Vehicle condition",
+  "vehiclesConditionDamaged": "Damaged",
+  "vehiclesOriginCountryLabel": "Country of origin",
+  "vehiclesOriginCountryHint": "Origin of the imported vehicle",
+  "vehiclesAvailabilityLabel": "Available for",
+  "vehiclesForSale": "Sale",
+  "vehiclesForRent": "Rental",
+  "vehiclesForBoth": "Sale & rental",
+  "vehiclesDealLabel": "Promotion",
+  "vehiclesNoDeal": "None",
+  "vehiclesGoodDeal": "Good deal",
+  "vehiclesFlashSale": "Flash sale",
+  "vehiclesClearance": "Clearance",
+  "vehiclesSalePriceLabel": "Sale price *",
+  "vehiclesSalePriceRequired": "Sale price is required",
+  "vehiclesDailyRateLabel": "Daily rate",
+  "vehiclesMonthlyRateLabel": "Monthly rate",
+  "vehiclesRentalRateRequired": "Enter a daily or monthly rate",
+  "vehiclesRentalRateHint": "Enter at least one rate: daily or monthly.",
+  "vehiclesDepositLabel": "Deposit",
+  "vehiclesNegotiable": "Negotiable price",
+  "vehiclesBranchLabel": "Branch / showroom",
+  "vehiclesSiteLabel": "Site / branch",
+  "vehiclesSiteHint": "e.g. Ouagadougou North showroom",
+  "vehiclesSupplierLabel": "Supplier / source partner",
+  "vehiclesSupplierHint": "Vehicle source (importer, auction, partner dealership…)",
+  "vehiclesPartnersLoadFailed": "Unable to load partners.",
+  "vehiclesNoneOptional": "None (optional)",
+  "vehiclesNone": "None",
+  "vehiclesDescriptionHint": "Additional vehicle details…",
+  "vehiclesNext": "Next",
+  "vehiclesBack": "Back",
+  "vehiclesFeatureStandard": "Standard equipment",
+  "vehiclesFeatureComfort": "Comfort",
+  "vehiclesFeatureSafety": "Safety",
+  "vehiclesFeatureMultimedia": "Multimedia",
+  "vehiclesFeatureDriverAssistance": "Driver assistance",
+  "vehiclesFeatureOther": "Other",
+  "vehiclesFeatureStandardHint": "— tick the items fitted",
+  "vehiclesErrorNetworkTitle": "No connection",
+  "vehiclesErrorSessionTitle": "Session expired",
+  "vehiclesErrorForbiddenTitle": "Action not allowed",
+  "vehiclesErrorValidationTitle": "Incomplete form",
+  "vehiclesErrorTooLargeTitle": "Upload too large",
+  "vehiclesErrorThrottledTitle": "Too many attempts",
+  "vehiclesErrorServerTitle": "Server error",
+  "vehiclesFaultDeclare": "Report",
+  "vehiclesFaultResolve": "Resolve",
+  "vehiclesFaultDrivingAffected": "Driving affected",
+  "vehiclesFaultDisclosed": "Disclosed to buyer",
+  "vehiclesFaultDeleteTitle": "Delete this fault?",
+  "vehiclesFaultEmpty": "No faults reported",
+  "vehiclesFaultEmptyStaffHint": "Report known faults to inform buyers.",
+  "vehiclesFaultEmptyViewerHint": "This vehicle has no known faults.",
+  "vehiclesFaultCreateTitle": "Report a fault",
+  "vehiclesFaultTitleLabel": "Title *",
+  "vehiclesFaultTitleHint": "e.g. Engine oil leak",
+  "vehiclesFaultTitleRequired": "Title is required",
+  "vehiclesFaultCategoryLabel": "Category *",
+  "vehiclesFaultSeverityLabel": "Severity *",
+  "vehiclesFaultAffectsDriving": "Affects driving",
+  "vehiclesFaultDrivingHint": "The vehicle is difficult or unsafe to drive",
+  "vehiclesFaultSafetyCritical": "Safety-critical",
+  "vehiclesFaultDisclosureLabel": "Disclosed to the buyer",
+  "vehiclesFaultDisclosureHint": "This fault is mentioned in the listing",
+  "vehiclesFaultDescriptionLabel": "Description (optional)",
+  "vehiclesFaultDescriptionHint": "Fault details, symptoms, conditions…",
+  "vehiclesFaultObdLabel": "OBD code (optional)",
+  "vehiclesFaultObdHint": "e.g. P0301",
+  "vehiclesFaultDetectionDate": "Detection date (optional)",
+  "vehiclesDateHint": "YYYY-MM-DD",
+  "vehiclesFaultDetectionMileage": "Mileage at detection (optional)",
+  "vehiclesFaultEstimatedCost": "Estimated repair cost (optional)",
+  "vehiclesAmountInvalid": "Invalid amount",
+  "vehiclesFaultReportedBy": "Reported by (optional)",
+  "vehiclesFaultReporterHint": "Technician or customer name",
+  "vehiclesFaultSave": "Save fault",
+  "vehiclesFaultRepairDate": "Repair date",
+  "vehiclesFaultActualCost": "Actual repair cost (optional)",
+  "vehiclesFaultMarkRepaired": "Mark as repaired",
+  "vehiclesFaultCategoryEngine": "Engine",
+  "vehiclesFaultCategoryTransmission": "Transmission",
+  "vehiclesFaultCategoryElectrical": "Electrical",
+  "vehiclesFaultCategoryBraking": "Brakes",
+  "vehiclesFaultCategorySuspension": "Suspension",
+  "vehiclesFaultCategorySteering": "Steering",
+  "vehiclesFaultCategoryCooling": "Cooling",
+  "vehiclesFaultCategoryAirConditioning": "Air conditioning",
+  "vehiclesFaultCategoryBodywork": "Bodywork",
+  "vehiclesFaultCategoryInterior": "Interior",
+  "vehiclesFaultCategoryElectronics": "Electronics",
+  "vehiclesFaultCategoryTyres": "Tyres",
+  "vehiclesFaultCategoryOther": "Other",
+  "vehiclesFaultSeverityMinor": "Minor",
+  "vehiclesFaultSeverityModerate": "Moderate",
+  "vehiclesFaultSeverityMajor": "Major",
+  "vehiclesFaultSeverityCritical": "Critical",
+  "vehiclesFaultStatusDeclared": "Reported",
+  "vehiclesFaultStatusDiagnosed": "Diagnosed",
+  "vehiclesFaultStatusQuoted": "Quoted",
+  "vehiclesFaultStatusRepairing": "Being repaired",
+  "vehiclesFaultStatusRepaired": "Repaired",
+  "vehiclesFaultStatusWontFix": "No further action",
+  "vehiclesMissingStep": "Something is missing in step {step}.",
+  "@vehiclesMissingStep": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      }
+    }
+  },
+  "vehiclesYearRangeInvalid": "Invalid year (1950–{year})",
+  "@vehiclesYearRangeInvalid": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  "vehiclesPowerSummary": "{power} hp",
+  "@vehiclesPowerSummary": {
+    "placeholders": {
+      "power": {
+        "type": "String"
+      }
+    }
+  },
+  "vehiclesOfferSummary": "{offer} · {price} FCFA",
+  "@vehiclesOfferSummary": {
+    "placeholders": {
+      "offer": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "vehiclesReferencesLoadError": "Unable to load reference data:\n{error}",
+  "@vehiclesReferencesLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "vehiclesFaultEstimatedCostValue": "Estimated: {cost}",
+  "@vehiclesFaultEstimatedCostValue": {
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "vehiclesFaultActualCostValue": "Actual: {cost}",
+  "@vehiclesFaultActualCostValue": {
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "vehiclesFaultResolveTitle": "Resolve: {title}",
+  "@vehiclesFaultResolveTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogAdminSelectCategory": "Please select a category.",
+  "catalogAdminPartUpdated": "Part updated.",
+  "catalogAdminPartCreated": "Part saved — add some photos!",
+  "catalogAdminAccessoryUpdated": "Accessory updated.",
+  "catalogAdminAccessoryCreated": "Accessory saved — add some photos!",
+  "catalogAdminEditPart": "Edit part",
+  "catalogAdminNewPart": "New part",
+  "catalogAdminEditAccessory": "Edit accessory",
+  "catalogAdminNewAccessory": "New accessory",
+  "catalogAdminIdentification": "Identification",
+  "catalogAdminNameLabel": "Name *",
+  "catalogAdminRequired": "Required",
+  "catalogAdminSkuLabel": "SKU / internal reference",
+  "catalogAdminPartSkuHint": "e.g. PDT-BRQ-0042 (optional)",
+  "catalogAdminAccessorySkuHint": "e.g. ACC-EST-0012 (optional)",
+  "catalogAdminTypeLabel": "Type *",
+  "catalogAdminConditionLabel": "Condition *",
+  "catalogAdminConditionNew": "New",
+  "catalogAdminConditionRefurbished": "Refurbished",
+  "catalogAdminConditionUsed": "Used",
+  "catalogAdminClassification": "Classification",
+  "catalogAdminCategoryLabel": "Category *",
+  "catalogAdminManufacturerLabel": "Manufacturer / equipment supplier",
+  "catalogAdminPricing": "Pricing",
+  "catalogAdminSalePrice": "Sale price *",
+  "catalogAdminInvalidNumber": "Invalid number",
+  "catalogAdminPurchasePrice": "Purchase price",
+  "catalogAdminOptional": "Optional",
+  "catalogAdminStock": "Stock",
+  "catalogAdminInitialQuantity": "Initial quantity",
+  "catalogAdminAlertThreshold": "Alert threshold",
+  "catalogAdminPhysicalLocation": "Storage location",
+  "catalogAdminLocationHint": "e.g. Shelf B3, Drawer 12",
+  "catalogAdminBranch": "Branch / showroom",
+  "catalogAdminAllBranches": "— All branches —",
+  "catalogAdminFitments": "Vehicle compatibility",
+  "catalogAdminFitmentsHint": "Specify compatible vehicles to enable model-based searches, even without an OEM number.",
+  "catalogAdminNone": "— None —",
+  "catalogAdminModelsLoadError": "Unable to load models: {error}",
+  "@catalogAdminModelsLoadError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "mediaDeletePhotoTitle": "Delete this photo?",
+  "mediaDeletePhotoBody": "This action cannot be undone.",
+  "mediaFinish": "Done",
+  "mediaUploading": "Uploading…",
+  "mediaGallery": "Gallery",
+  "mediaCamera": "Camera",
+  "mediaCover": "Cover",
+  "mediaLoadFailed": "Photos not loaded",
+  "mediaEmpty": "No photos",
+  "mediaEmptyHint": "Tap Gallery to add photos.",
+  "mediaAddPhotos": "Add photos",
+  "mediaPhotosAdded": "{count, plural, one{1 photo added.} other{{count} photos added.}}",
+  "@mediaPhotosAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "catalogAdminAccessoryFitmentsHint": "Optional — specify compatible vehicles to make searching easier.",
+  "needsTypeSparePart": "Spare part",
+  "garageRefillMissing": "A refill was probably missed",
+  "garageRefillImplausible": "Implausible figure: a refill is missing",
+  "garageRefillTooLow": "Figure too low to be correct: an earlier refill was not recorded",
+  "garageDeadlineOverdue": "{days, plural, =1{1 day overdue} other{{days} days overdue}}",
+  "@garageDeadlineOverdue": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "garageDeadlineToday": "Expires today",
+  "garageDeadlineInDays": "{days, plural, =1{In 1 day} other{In {days} days}}",
+  "@garageDeadlineInDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "garageRefillDistanceSuffix": " over {value0} km",
+  "@garageRefillDistanceSuffix": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageRefillExcludedSuffix": " — excluded",
+  "needsYearToLabel": "To",
+  "garageGenericVehicle": "vehicle",
+  "garageCurrencyUnit": "XOF",
+  "garageCurrencyPerLitre": "XOF/l",
+  "garageRefillAmountSuffix": " · {value0} XOF",
+  "@garageRefillAmountSuffix": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "garageModelSinceYear": "since {value0}",
+  "@garageModelSinceYear": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogFitmentModelNumber": "Model no. {value}",
+  "@catalogFitmentModelNumber": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsChannelDescription": "Important AutoParc notifications",
+  "updateUnsupportedMessage": "This version of the app is no longer supported. Install the latest version to continue.",
+  "authErrorTokenMissing": "The server response did not include a session token.",
+  "authErrorGoogleTokenMissing": "Google did not provide an identity token.",
+  "authErrorGoogleInterrupted": "Google sign-in was interrupted. If you did not close the window, check your internet connection and try again.",
+  "authErrorGoogleInterruptedNetwork": "Google sign-in was interrupted. Check your internet connection and try again.",
+  "authErrorGoogleConfiguration": "Google sign-in is not configured correctly for this version of the app.",
+  "authErrorGoogleUnavailable": "Google sign-in is not available on this device.",
+  "authErrorGoogleWindow": "The Google sign-in window could not be opened.",
+  "authErrorGoogleCode": "Google sign-in failed ({value0}).",
+  "@authErrorGoogleCode": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "authErrorAccountMissing": "No account was found for this email address.",
+  "authErrorWrongPassword": "Incorrect password.",
+  "authErrorCredentials": "Incorrect email or password.",
+  "authErrorEmailInUse": "An account already exists for this email address.",
+  "authErrorWeakPassword": "The password is too weak (at least 6 characters required).",
+  "authErrorEmailInvalid": "Invalid email address.",
+  "authErrorNetwork": "Network error. Check your internet connection.",
+  "authErrorMethodDisabled": "This sign-in method is not enabled.",
+  "authErrorOtherMethod": "This account already uses a different sign-in method.",
+  "authErrorCode": "Sign-in error ({value0}).",
+  "@authErrorCode": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "authErrorUnavailable": "Sign-in is currently unavailable. Try again.",
+  "authErrorDeleteClientOnly": "Only customer accounts can be deleted here.",
+  "notificationsTitle": "Notifications",
+  "notificationsMarkAllRead": "Mark all as read",
+  "notificationsBroadcastTooltip": "Send a tip",
+  "notificationsMinutesAgo": "{value0} min ago",
+  "@notificationsMinutesAgo": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsHoursAgo": "{value0} h ago",
+  "@notificationsHoursAgo": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsYesterday": "Yesterday",
+  "notificationsDaysAgo": "{value0} days ago",
+  "@notificationsDaysAgo": {
+    "placeholders": {
+      "value0": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsEmptyTitle": "No notifications",
+  "notificationsEmptyBody": "Important activity will appear here.",
+  "notificationsTitleBodyRequired": "A title and message are required.",
+  "notificationsBroadcastSent": "Tip sent to all customers ✓",
+  "notificationsBroadcastTitle": "Tip for vehicle owners",
+  "notificationsBroadcastBody": "This message will be sent as a push notification to all app customers.",
+  "notificationsTitleField": "Title *",
+  "notificationsTitleHint": "e.g. Check your tyre pressure",
+  "notificationsBodyField": "Message *",
+  "notificationsBodyHint": "e.g. Correct tyre pressure can improve tyre life by 20%…",
+  "notificationsBroadcastAction": "Send to all customers",
+  "catalogFitmentEmptyTitle": "No declared fitments",
+  "catalogFitmentEmptyBody": "The part will only be searchable by SKU.",
+  "catalogFitmentUnverified": "Automatically suggested, not verified",
+  "catalogFitmentConfirmationHint": "When you save, the suggested rows you keep become declared fitments. They will no longer be recalculated, and you are responsible for confirming them. Remove any you cannot confirm.",
+  "catalogFitmentAdd": "Add a fitment",
+  "catalogFitmentModelRequired": "Please select a model.",
+  "catalogFitmentDialogTitle": "Vehicle fitment",
+  "catalogFitmentBrandRequired": "Brand *",
+  "catalogFitmentSelect": "Select…",
+  "catalogFitmentModelField": "Model *",
+  "catalogFitmentChooseBrand": "Choose a brand first",
+  "catalogFitmentTrimOptional": "Trim (optional)",
+  "catalogFitmentAllTrims": "All trims",
+  "catalogFitmentAllTrimsOption": "— All trims —",
+  "catalogFitmentYearFromField": "Year from",
+  "catalogFitmentYearToField": "Year to",
+  "catalogFitmentPositionField": "Position (optional)",
+  "catalogFitmentPositionHint": "e.g. Front left, engine side…",
+  "catalogFitmentConfirmAction": "Add this fitment",
+  "catalogFitmentUnavailableTitle": "Fitments could not be loaded",
+  "catalogFitmentUnavailableBody": "They could not be loaded and cannot be edited at the moment. They will be preserved unchanged when you save the other fields. Reopen this screen when your connection is restored to edit them.",
+  "vehiclesReferenceFuelPetrol": "Petrol",
+  "vehiclesReferenceFuelDiesel": "Diesel",
+  "vehiclesReferenceFuelElectric": "Electric",
+  "vehiclesReferenceFuelHybrid": "Hybrid",
+  "vehiclesReferenceDriveFrontWheel": "Front-wheel drive",
+  "vehiclesReferenceDriveRearWheel": "Rear-wheel drive",
+  "vehiclesReferenceDriveAllWheel": "All-wheel drive",
+  "vehiclesReferenceDriveFourWheel": "Selectable four-wheel drive",
+  "vehiclesReferenceColourWhite": "White",
+  "vehiclesReferenceColourPearlWhite": "Pearl white",
+  "vehiclesReferenceColourLightGrey": "Light grey",
+  "vehiclesReferenceColourAnthraciteGrey": "Anthracite grey",
+  "vehiclesReferenceColourTitaniumGrey": "Titanium grey",
+  "vehiclesReferenceColourSilver": "Silver",
+  "vehiclesReferenceColourBlack": "Black",
+  "vehiclesReferenceColourMetallicBlack": "Metallic black",
+  "vehiclesReferenceColourRed": "Red",
+  "vehiclesReferenceColourMetallicRed": "Metallic red",
+  "vehiclesReferenceColourBurgundy": "Burgundy",
+  "vehiclesReferenceColourNavyBlue": "Navy blue",
+  "vehiclesReferenceColourMetallicBlue": "Metallic blue",
+  "vehiclesReferenceColourSkyBlue": "Sky blue",
+  "vehiclesReferenceColourDarkGreen": "Dark green",
+  "vehiclesReferenceColourOliveGreen": "Olive green",
+  "vehiclesReferenceColourBeige": "Beige",
+  "vehiclesReferenceColourBrown": "Brown",
+  "vehiclesReferenceColourGoldChampagne": "Gold / Champagne",
+  "vehiclesReferenceColourOrange": "Orange",
+  "vehiclesReferenceColourYellow": "Yellow",
+  "vehiclesReferenceColourPurple": "Purple",
+  "vehiclesReferenceCountryBf": "Burkina Faso",
+  "vehiclesReferenceCountryCi": "Côte d’Ivoire",
+  "vehiclesReferenceCountrySn": "Senegal",
+  "vehiclesReferenceCountryMl": "Mali",
+  "vehiclesReferenceCountryNe": "Niger",
+  "vehiclesReferenceCountryTg": "Togo",
+  "vehiclesReferenceCountryBj": "Benin",
+  "vehiclesReferenceCountryGw": "Guinea-Bissau",
+  "vehiclesReferenceCountryGn": "Guinea",
+  "vehiclesReferenceCountryGh": "Ghana",
+  "vehiclesReferenceCountryNg": "Nigeria",
+  "vehiclesReferenceCountryLr": "Liberia",
+  "vehiclesReferenceCountrySl": "Sierra Leone",
+  "vehiclesReferenceCountryGm": "Gambia",
+  "vehiclesReferenceCountryCv": "Cape Verde",
+  "vehiclesReferenceCountryMr": "Mauritania",
+  "vehiclesReferenceCountryCm": "Cameroon",
+  "vehiclesReferenceCountryCf": "Central African Republic",
+  "vehiclesReferenceCountryTd": "Chad",
+  "vehiclesReferenceCountryCg": "Congo - Brazzaville",
+  "vehiclesReferenceCountryGa": "Gabon",
+  "vehiclesReferenceCountryGq": "Equatorial Guinea",
+  "vehiclesReferenceCountryCd": "Congo - Kinshasa",
+  "vehiclesReferenceCountryEt": "Ethiopia",
+  "vehiclesReferenceCountryKe": "Kenya",
+  "vehiclesReferenceCountryTz": "Tanzania",
+  "vehiclesReferenceCountryUg": "Uganda",
+  "vehiclesReferenceCountryRw": "Rwanda",
+  "vehiclesReferenceCountryZa": "South Africa",
+  "vehiclesReferenceCountryAo": "Angola",
+  "vehiclesReferenceCountryMz": "Mozambique",
+  "vehiclesReferenceCountryMa": "Morocco",
+  "vehiclesReferenceCountryDz": "Algeria",
+  "vehiclesReferenceCountryTn": "Tunisia",
+  "vehiclesReferenceCountryEg": "Egypt",
+  "vehiclesReferenceCountryLy": "Libya",
+  "vehiclesReferenceCountryJp": "Japan",
+  "vehiclesReferenceCountryKr": "South Korea",
+  "vehiclesReferenceCountryDe": "Germany",
+  "vehiclesReferenceCountryFr": "France",
+  "vehiclesReferenceCountryGb": "United Kingdom",
+  "vehiclesReferenceCountryNl": "Netherlands",
+  "vehiclesReferenceCountryBe": "Belgium",
+  "vehiclesReferenceCountryIt": "Italy",
+  "vehiclesReferenceCountryEs": "Spain",
+  "vehiclesReferenceCountrySe": "Sweden",
+  "vehiclesReferenceCountryCn": "China",
+  "vehiclesReferenceCountryIn": "India",
+  "vehiclesReferenceCountryUs": "United States",
+  "vehiclesReferenceCountryCa": "Canada",
+  "vehiclesReferenceCountryAu": "Australia",
+  "vehiclesReferenceCountryBr": "Brazil",
+  "vehiclesReferenceCountryMx": "Mexico",
+  "vehiclesReferenceCountryTr": "Türkiye",
+  "vehiclesReferenceCountryAe": "United Arab Emirates",
+  "vehiclesReferenceCountrySa": "Saudi Arabia",
+  "vehiclesReferenceCountryPk": "Pakistan",
+  "vehiclesReferenceCountryId": "Indonesia",
+  "vehiclesReferenceCountryTh": "Thailand",
+  "vehiclesReferenceCountryMy": "Malaysia",
+  "vehiclesReferenceCountrySg": "Singapore",
+  "vehiclesReferenceCountryZw": "Zimbabwe",
+  "vehiclesReferenceCountryLb": "Lebanon",
+  "vehiclesReferenceCountryPt": "Portugal",
+  "vehiclesReferenceCountryCh": "Switzerland",
+  "vehiclesReferenceCountryAt": "Austria",
+  "vehiclesReferenceCountryPl": "Poland",
+  "catalogPartCategoryEngine": "Engine",
+  "catalogPartCategoryFilters": "Filters",
+  "catalogPartCategoryOilFilter": "Oil filter",
+  "catalogPartCategoryAirFilter": "Air filter",
+  "catalogPartCategoryCabinFilter": "Cabin filter",
+  "catalogPartCategoryFuelFilter": "Fuel filter",
+  "catalogPartCategoryTimingSystem": "Timing system",
+  "catalogPartCategoryTimingBelt": "Timing belt",
+  "catalogPartCategoryTimingBeltKit": "Timing belt kit",
+  "catalogPartCategoryTimingChain": "Timing chain",
+  "catalogPartCategoryLubrication": "Lubrication",
+  "catalogPartCategoryEngineOil": "Engine oil",
+  "catalogPartCategoryCylinderHeadGasket": "Cylinder head gasket",
+  "catalogPartCategoryOilSump": "Oil sump",
+  "catalogPartCategoryCooling": "Cooling",
+  "catalogPartCategoryRadiator": "Radiator",
+  "catalogPartCategoryThermostat": "Thermostat",
+  "catalogPartCategoryWaterPump": "Water pump",
+  "catalogPartCategoryCoolant": "Coolant",
+  "catalogPartCategoryInjectionIgnition": "Injection & ignition",
+  "catalogPartCategorySparkPlugs": "Spark plugs",
+  "catalogPartCategoryInjectors": "Injectors",
+  "catalogPartCategoryIgnitionCoils": "Ignition coils",
+  "catalogPartCategoryBraking": "Braking",
+  "catalogPartCategoryDiscsPads": "Discs & pads",
+  "catalogPartCategoryFrontBrakeDiscs": "Front brake discs",
+  "catalogPartCategoryRearBrakeDiscs": "Rear brake discs",
+  "catalogPartCategoryFrontBrakePads": "Front brake pads",
+  "catalogPartCategoryRearBrakePads": "Rear brake pads",
+  "catalogPartCategoryBrakeCalipers": "Brake calipers",
+  "catalogPartCategoryBrakeMasterCylinder": "Brake master cylinder",
+  "catalogPartCategoryBrakeHoses": "Brake hoses",
+  "catalogPartCategoryBrakeFluid": "Brake fluid",
+  "catalogPartCategorySuspensionSteering": "Suspension & steering",
+  "catalogPartCategoryShockAbsorbers": "Shock absorbers",
+  "catalogPartCategoryFrontShockAbsorbers": "Front shock absorbers",
+  "catalogPartCategoryRearShockAbsorbers": "Rear shock absorbers",
+  "catalogPartCategorySprings": "Springs",
+  "catalogPartCategoryBallJointsLinks": "Ball joints & links",
+  "catalogPartCategoryTieRodEnd": "Tie rod end",
+  "catalogPartCategoryAntiRollBarLink": "Anti-roll bar link",
+  "catalogPartCategoryWheelBearingsHubs": "Wheel bearings & hubs",
+  "catalogPartCategoryCVBootsJoints": "CV boots & joints",
+  "catalogPartCategorySteering": "Steering",
+  "catalogPartCategorySteeringRack": "Steering rack",
+  "catalogPartCategorySteeringColumn": "Steering column",
+  "catalogPartCategoryTransmission": "Transmission",
+  "catalogPartCategoryGearbox": "Gearbox",
+  "catalogPartCategoryClutch": "Clutch",
+  "catalogPartCategoryClutchKit": "Clutch kit",
+  "catalogPartCategoryFlywheel": "Flywheel",
+  "catalogPartCategoryDriveShaftsHalfShafts": "Drive shafts & half-shafts",
+  "catalogPartCategoryDifferential": "Differential",
+  "catalogPartCategoryElectricalSystem": "Electrical system",
+  "catalogPartCategoryBatteryAlternator": "Battery & alternator",
+  "catalogPartCategory12VBattery": "12V battery",
+  "catalogPartCategoryAlternator": "Alternator",
+  "catalogPartCategoryStarterMotor": "Starter motor",
+  "catalogPartCategoryLighting": "Lighting",
+  "catalogPartCategoryHeadlights": "Headlights",
+  "catalogPartCategoryTailLights": "Tail lights",
+  "catalogPartCategoryBulbs": "Bulbs",
+  "catalogPartCategorySensors": "Sensors",
+  "catalogPartCategoryOxygenSensor": "Oxygen sensor",
+  "catalogPartCategoryABSSensor": "ABS sensor",
+  "catalogPartCategoryPressureSensor": "Pressure sensor",
+  "catalogPartCategoryBodywork": "Bodywork",
+  "catalogPartCategoryGlass": "Glass",
+  "catalogPartCategoryWindscreen": "Windscreen",
+  "catalogPartCategorySideWindow": "Side window",
+  "catalogPartCategoryRearWindow": "Rear window",
+  "catalogPartCategoryMirrors": "Mirrors",
+  "catalogPartCategoryBumpers": "Bumpers",
+  "catalogPartCategoryBonnetDoors": "Bonnet & doors",
+  "catalogPartCategorySeals": "Seals",
+  "catalogPartCategoryAirConditioning": "Air conditioning",
+  "catalogPartCategoryAirConditioningCompressor": "Air conditioning compressor",
+  "catalogPartCategoryCondenser": "Condenser",
+  "catalogPartCategoryExpansionValve": "Expansion valve",
+  "catalogPartCategoryRefrigerant": "Refrigerant",
+  "catalogPartCategoryTyresWheels": "Tyres & wheels",
+  "catalogPartCategoryTyres": "Tyres",
+  "catalogPartCategoryRims": "Rims",
+  "catalogPartCategoryValvesAccessories": "Valves & accessories",
+  "catalogPartCategoryExhaust": "Exhaust",
+  "catalogPartCategorySilencer": "Silencer",
+  "catalogPartCategoryExhaustManifold": "Exhaust manifold",
+  "catalogPartCategoryCatalyticConverter": "Catalytic converter",
+  "catalogPartCategoryDPF": "DPF",
+  "catalogEquipmentManualAirConditioning": "Manual air conditioning",
+  "catalogEquipmentAutomaticAirConditioning": "Automatic air conditioning",
+  "catalogEquipmentVentilatedSeats": "Ventilated seats",
+  "catalogEquipmentSunroof": "Sunroof",
+  "catalogEquipmentPanoramicRoof": "Panoramic roof",
+  "catalogEquipmentFrontElectricWindows": "Front electric windows",
+  "catalogEquipmentRearElectricWindows": "Rear electric windows",
+  "catalogEquipmentElectricMirrors": "Electric mirrors",
+  "catalogEquipmentPowerFoldingMirrors": "Power-folding mirrors",
+  "catalogEquipmentHeightAdjustableSteeringWheel": "Height-adjustable steering wheel",
+  "catalogEquipmentElectricDriverSSeat": "Electric driver's seat",
+  "catalogEquipmentKeylessEntryAndStart": "Keyless entry and start",
+  "catalogEquipmentElectricPowerSteering": "Electric power steering",
+  "catalogEquipmentABS": "ABS",
+  "catalogEquipmentESPStabilityControl": "ESP / stability control",
+  "catalogEquipmentEmergencyBrakeAssistBA": "Emergency brake assist (BA)",
+  "catalogEquipmentFrontAirbags": "Front airbags",
+  "catalogEquipmentSideAirbags": "Side airbags",
+  "catalogEquipmentCurtainAirbags": "Curtain airbags",
+  "catalogEquipmentTractionControlASR": "Traction control (ASR)",
+  "catalogEquipmentHillStartAssist": "Hill start assist",
+  "catalogEquipmentFrontDiscBrakes": "Front disc brakes",
+  "catalogEquipmentFourWheelDiscBrakes": "Four-wheel disc brakes",
+  "catalogEquipmentChildSeatAnchors": "Child seat anchors",
+  "catalogEquipmentCarRadio": "Car radio",
+  "catalogEquipmentTouchscreen": "Touchscreen",
+  "catalogEquipmentBluetooth": "Bluetooth",
+  "catalogEquipmentAndroidAuto": "Android Auto",
+  "catalogEquipmentAppleCarPlay": "Apple CarPlay",
+  "catalogEquipmentBuiltInGPS": "Built-in GPS",
+  "catalogEquipmentUSBPort": "USB port",
+  "catalogEquipmentPremiumSpeakers": "Premium speakers",
+  "catalogEquipmentWirelessCharger": "Wireless charger",
+  "catalogEquipmentWarningTriangle": "Warning triangle",
+  "catalogEquipmentSpareWheel": "Spare wheel",
+  "catalogEquipmentJack": "Jack",
+  "catalogEquipmentWheelWrench": "Wheel wrench",
+  "catalogEquipmentFirstAidKit": "First aid kit",
+  "catalogEquipmentReflectiveVest": "Reflective vest",
+  "catalogEquipmentJumpLeads": "Jump leads",
+  "catalogEquipmentOwnerSManual": "Owner's manual",
+  "catalogEquipmentServiceBook": "Service book",
+  "catalogEquipmentReversingCamera": "Reversing camera",
+  "catalogEquipment360Camera": "360° camera",
+  "catalogEquipmentRearParkingSensors": "Rear parking sensors",
+  "catalogEquipmentFrontParkingSensors": "Front parking sensors",
+  "catalogEquipmentCruiseControl": "Cruise control",
+  "catalogEquipmentAdaptiveCruiseControlACC": "Adaptive cruise control (ACC)",
+  "catalogEquipmentLaneDepartureWarning": "Lane departure warning",
+  "catalogEquipmentBlindSpotMonitor": "Blind spot monitor",
+  "catalogEquipmentAutomaticEmergencyBraking": "Automatic emergency braking",
+  "catalogEquipmentHeadUpDisplayHUD": "Head-up display (HUD)",
+  "catalogEquipmentTrafficSignRecognition": "Traffic sign recognition",
+  "garageConsumptionRange": "{min}–{max} L/100 km",
+  "@garageConsumptionRange": {
+    "placeholders": {
+      "min": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionSourceCanada": "Natural Resources Canada",
+  "garageConsumptionSourceEurope": "European Environment Agency",
+  "garageConsumptionCycleCanadianFive": "Canadian five-cycle equivalent protocol",
+  "garageConsumptionCycleCanadianTwo": "Canadian two-cycle test",
+  "garageConsumptionCycleWltp": "WLTP standard",
+  "garageConsumptionCycleNedc": "Former NEDC standard",
+  "garageEngineAutomatic": "automatic",
+  "garageEngineManual": "manual",
+  "garageEngineAutomatedManual": "automated manual",
+  "garageEngineCvt": "CVT",
+  "garageEngineTransmissionGears": "{gears}-speed {transmission}",
+  "@garageEngineTransmissionGears": {
+    "placeholders": {
+      "transmission": {
+        "type": "String"
+      },
+      "gears": {
+        "type": "int"
+      }
+    }
+  },
+  "garageConsumptionFuelRegularPetrol": "Regular petrol",
+  "garageConsumptionFuelPremiumPetrol": "Premium petrol",
+  "garageConsumptionFuelEthanol": "Ethanol (E85)",
+  "garageConsumptionFuelNaturalGas": "Natural gas",
+  "garageConsumptionFuelLpg": "LPG",
+  "garageConsumptionFuelPlugInHybrid": "Plug-in hybrid",
+  "garageMyVehicle": "my vehicle",
+  "vehiclesReferenceSelect": "Select…",
+  "vehiclesReferenceChoosePrevious": "Choose the previous value first",
+  "catalogEquipmentLeatherSeats": "Leather seats",
   "garageConsumptionCorresponding": "Reference for this version",
   "garageConsumptionApproximate": "Approximate reference",
   "garageConsumptionIncomplete": "Version needs clarification",
@@ -353,7 +2229,6 @@
   "garageConsumptionDetails": "Details and source",
   "garageConsumptionChoose": "Clarify the version",
   "garageConsumptionChange": "Change reference",
-  "garageConsumptionQuestion": "What is my consumption?",
   "garageConsumptionSelectionNotice": "Selecting a reference does not verify the vehicle against documentation.",
   "garageConsumptionNotVerified": "Documentary match not verified",
   "garageConsumptionMarketUnknown": "Original specification market unknown",
@@ -381,14 +2256,6 @@
   "garageConsumptionReasonIncomplete": "Some characteristics needed for matching remain unknown.",
   "garageConsumptionReasonContradiction": "The reference conflicts with the provided characteristics.",
   "garageConsumptionReasonUnverified": "The selected version has not been checked against a document.",
-  "garageConsumptionValue": "Reference: {value} L/100 km",
-  "@garageConsumptionValue": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
   "garageConsumptionSourceValue": "Source value: {value} L/100 km",
   "@garageConsumptionSourceValue": {
     "placeholders": {
@@ -517,7 +2384,6 @@
       }
     }
   },
-
   "garageConsumptionReasonRevision": "A newer revision is available; this selection keeps its original reference.",
   "garageConsumptionSourceRecord": "Source row/record: {record}",
   "@garageConsumptionSourceRecord": {
@@ -543,11 +2409,9 @@
       }
     }
   },
-
   "catalogDeclaredConsumption": "Consumption declared by the seller",
   "catalogConsumptionReferences": "Compare consumption references",
   "catalogConsumptionComparisonNotice": "These references describe distinct versions and protocols. None is attributed to this listing.",
-
   "garageConsumptionRetrieved": "Retrieved: {date}",
   "@garageConsumptionRetrieved": {
     "placeholders": {
@@ -571,5 +2435,29 @@
         "type": "String"
       }
     }
-  }
+  },
+  "garageConsumptionFuelHybridUnspecified": "Hybrid (type unspecified)",
+  "garageMeasuredConsumptionValue": "{value} L/100 km",
+  "@garageMeasuredConsumptionValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "privateSalesSubmitPhotosRequired": "Add at least one photo.",
+  "privateSalesSubmitConsentRequired": "Tick both boxes above.",
+  "privateSalesRejectReasonMinimumHint": "At least 5 characters.",
+  "privateSalesRejectReasonTooShort": "Use at least 5 characters so the seller knows what to correct.",
+  "settingsContactTitle": "AutoParc contact",
+  "settingsContactSaved": "AutoParc contact number saved.",
+  "settingsContactAccessDenied": "Only administrators and managers can access this page.",
+  "settingsContactPhoneTitle": "Phone number to contact AutoParc",
+  "settingsContactPhoneDescription": "The app uses this number for calls and WhatsApp.",
+  "settingsContactPhoneLabel": "Phone number with country code",
+  "settingsContactCountryCodeHelp": "Include + and the country code.",
+  "settingsContactPhoneInvalid": "Enter a valid international number, for example +226 75 57 04 84.",
+  "settingsContactSave": "Save phone number",
+  "settingsContactSaving": "Saving…",
+  "shellContactSettings": "Settings · AutoParc contact"
 }

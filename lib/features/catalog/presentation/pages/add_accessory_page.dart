@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -12,12 +13,34 @@ import '../../../../shared/presentation/pages/media_upload_page.dart';
 import '../../../../shared/data/media_repository.dart';
 import '../../../../core/api/api_exception.dart';
 
-const _categories = [
-  (value: 'esthetique',  label: 'Esthétique',   icon: Icons.auto_awesome),
-  (value: 'confort',     label: 'Confort',       icon: Icons.airline_seat_recline_normal),
-  (value: 'securite',    label: 'Sécurité',      icon: Icons.shield_outlined),
-  (value: 'multimedia',  label: 'Multimédia',    icon: Icons.speaker),
-  (value: 'utilitaire',  label: 'Utilitaire',    icon: Icons.build_outlined),
+List<({String value, String label, IconData icon})> _categories(
+  AppLocalizations l10n,
+) => [
+  (
+    value: 'esthetique',
+    label: l10n.catalogAccessoryCategoryStyling,
+    icon: Icons.auto_awesome,
+  ),
+  (
+    value: 'confort',
+    label: l10n.catalogAccessoryCategoryComfort,
+    icon: Icons.airline_seat_recline_normal,
+  ),
+  (
+    value: 'securite',
+    label: l10n.catalogAccessoryCategorySafety,
+    icon: Icons.shield_outlined,
+  ),
+  (
+    value: 'multimedia',
+    label: l10n.catalogAccessoryCategoryMultimedia,
+    icon: Icons.speaker,
+  ),
+  (
+    value: 'utilitaire',
+    label: l10n.catalogAccessoryCategoryUtility,
+    icon: Icons.build_outlined,
+  ),
 ];
 
 // ════════════════════════════════════════════════════════════════════
@@ -31,19 +54,20 @@ class AddAccessoryPage extends ConsumerStatefulWidget {
 }
 
 class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
   final _formKey = GlobalKey<FormState>();
 
-  final _nameCtrl     = TextEditingController();
-  final _skuCtrl      = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  final _skuCtrl = TextEditingController();
   String? _category;
   Manufacturer? _manufacturer;
   bool _mfgInitialized = false; // pré-sélection fabricant (mode édition)
 
-  final _priceCtrl    = TextEditingController();
-  final _costCtrl     = TextEditingController();
+  final _priceCtrl = TextEditingController();
+  final _costCtrl = TextEditingController();
 
-  final _stockCtrl    = TextEditingController(text: '0');
-  final _alertCtrl    = TextEditingController();
+  final _stockCtrl = TextEditingController(text: '0');
+  final _alertCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
   int? _selectedLocationId;
 
@@ -65,15 +89,14 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
       return;
     }
 
-    _nameCtrl.text  = e.name;
-    _skuCtrl.text   = e.sku ?? '';
-    _category       = e.categoryValue;
+    _nameCtrl.text = e.name;
+    _skuCtrl.text = e.sku ?? '';
+    _category = e.categoryValue;
     _priceCtrl.text = e.pricing.sellingPrice.toStringAsFixed(0);
     if (e.stock.quantity > 0) _stockCtrl.text = e.stock.quantity.toString();
     if (e.stock.alertThreshold > 0)
       _alertCtrl.text = e.stock.alertThreshold.toString();
-    if (e.stock.location != null)
-      _locationCtrl.text = e.stock.location!;
+    if (e.stock.location != null) _locationCtrl.text = e.stock.location!;
 
     _chargerCompatibilites(e);
   }
@@ -86,7 +109,9 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
     }
 
     try {
-      final complet = await ref.read(catalogRepositoryProvider).getAccessory(e.id);
+      final complet = await ref
+          .read(catalogRepositoryProvider)
+          .getAccessory(e.id);
       if (!mounted) return;
       setState(() => _fitments = _versEntrees(complet.fitments ?? const []));
     } catch (erreur) {
@@ -97,26 +122,31 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
 
   List<FitmentEntry> _versEntrees(List<Map<String, dynamic>> brutes) {
     final refs = ref.read(catalogRefsProvider).valueOrNull;
-    return brutes
-        .map((j) => FitmentEntry.depuisJson(j, refs: refs))
-        .toList();
+    return brutes.map((j) => FitmentEntry.depuisJson(j, refs: refs)).toList();
   }
 
   @override
   void dispose() {
     for (final c in [
-      _nameCtrl, _skuCtrl, _priceCtrl, _costCtrl,
-      _stockCtrl, _alertCtrl, _locationCtrl,
-    ]) { c.dispose(); }
+      _nameCtrl,
+      _skuCtrl,
+      _priceCtrl,
+      _costCtrl,
+      _stockCtrl,
+      _alertCtrl,
+      _locationCtrl,
+    ]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_category == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner une catégorie.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.catalogAdminSelectCategory)));
       return;
     }
 
@@ -128,16 +158,19 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
     setState(() => _saving = true);
 
     final payload = <String, dynamic>{
-      'name':     _nameCtrl.text.trim(),
+      'name': _nameCtrl.text.trim(),
       if (_skuCtrl.text.isNotEmpty) 'sku': _skuCtrl.text.trim(),
       'category': _category!,
       if (_manufacturer != null) 'manufacturer_id': _manufacturer!.id,
       'selling_price': double.parse(_priceCtrl.text.replaceAll(' ', '')),
       if (_costCtrl.text.isNotEmpty)
         'cost_price': double.parse(_costCtrl.text.replaceAll(' ', '')),
-      if (_stockCtrl.text.isNotEmpty) 'stock_quantity': int.parse(_stockCtrl.text),
-      if (_alertCtrl.text.isNotEmpty) 'stock_alert_threshold': int.parse(_alertCtrl.text),
-      if (_locationCtrl.text.isNotEmpty) 'storage_location': _locationCtrl.text.trim(),
+      if (_stockCtrl.text.isNotEmpty)
+        'stock_quantity': int.parse(_stockCtrl.text),
+      if (_alertCtrl.text.isNotEmpty)
+        'stock_alert_threshold': int.parse(_alertCtrl.text),
+      if (_locationCtrl.text.isNotEmpty)
+        'storage_location': _locationCtrl.text.trim(),
       if (_selectedLocationId != null) 'location_id': _selectedLocationId,
       'is_active': true,
       // Envoyée même vide quand elle est connue : sans quoi retirer la
@@ -163,9 +196,11 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
         ref.invalidate(categoriesAccessoiresOccupeesProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(existing != null
-                ? 'Accessoire mis à jour.'
-                : 'Accessoire enregistré — ajoutez des photos !'),
+            content: Text(
+              existing != null
+                  ? l10n.catalogAdminAccessoryUpdated
+                  : l10n.catalogAdminAccessoryCreated,
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -175,8 +210,8 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
           context.pushReplacement(
             '/media-upload',
             extra: MediaUploadConfig(
-              type:  MediaOwnerType.accessory,
-              id:    accessory.id,
+              type: MediaOwnerType.accessory,
+              id: accessory.id,
               title: accessory.name,
             ),
           );
@@ -197,7 +232,10 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(messageFor(e, l10n: l10n)),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -207,12 +245,17 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final manufacturersAsync = ref.watch(manufacturersProvider);
-    final refsAsync          = ref.watch(catalogRefsProvider);
+    final refsAsync = ref.watch(catalogRefsProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_existing != null ? 'Modifier l\'accessoire' : 'Nouvel accessoire'),
+        title: Text(
+          _existing != null
+              ? l10n.catalogAdminEditAccessory
+              : l10n.catalogAdminNewAccessory,
+        ),
         centerTitle: false,
         actions: [
           // En modification seulement : a la creation, l'accessoire n'a pas
@@ -220,12 +263,12 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
           if (_existing != null)
             IconButton(
               icon: const Icon(Icons.add_a_photo_outlined),
-              tooltip: 'Photos',
+              tooltip: l10n.catalogPhotosTooltip,
               onPressed: () => context.push(
                 '/media-upload',
                 extra: MediaUploadConfig(
-                  type:  MediaOwnerType.accessory,
-                  id:    _existing!.id,
+                  type: MediaOwnerType.accessory,
+                  id: _existing!.id,
                   title: _existing!.name,
                 ),
               ),
@@ -233,9 +276,15 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
           FilledButton(
             onPressed: _saving ? null : _submit,
             child: _saving
-                ? const SizedBox(width: 18, height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text('Enregistrer'),
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(l10n.catalogFeaturesSave),
           ),
           const SizedBox(width: 12),
         ],
@@ -245,34 +294,42 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-
             // ── Identification ──────────────────────────────────────
-            _SectionTitle('Identification'),
+            _SectionTitle(l10n.catalogAdminIdentification),
             _Field(
               ctrl: _nameCtrl,
-              label: 'Désignation *',
+              label: l10n.catalogAdminNameLabel,
               icon: Icons.label_outline,
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Requis' : null,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? l10n.catalogAdminRequired
+                  : null,
             ),
             _Field(
               ctrl: _skuCtrl,
-              label: 'SKU / Référence interne',
+              label: l10n.catalogAdminSkuLabel,
               icon: Icons.qr_code,
-              hint: 'Ex. ACC-EST-0012 (optionnel)',
+              hint: l10n.catalogAdminAccessorySkuHint,
             ),
 
             const SizedBox(height: 4),
-            Text('Catégorie *', style: Theme.of(context).textTheme.labelLarge),
+            Text(
+              l10n.catalogAdminCategoryLabel,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 4,
-              children: _categories.map((cat) => ChoiceChip(
-                avatar: Icon(cat.icon, size: 16),
-                label: Text(cat.label),
-                selected: _category == cat.value,
-                onSelected: (_) => setState(() => _category = cat.value),
-              )).toList(),
+              children: _categories(l10n)
+                  .map(
+                    (cat) => ChoiceChip(
+                      avatar: Icon(cat.icon, size: 16),
+                      label: Text(cat.label),
+                      selected: _category == cat.value,
+                      onSelected: (_) => setState(() => _category = cat.value),
+                    ),
+                  )
+                  .toList(),
             ),
             const SizedBox(height: 14),
 
@@ -281,17 +338,20 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
               error: (_, __) => const SizedBox(),
               data: (mfgs) {
                 if (!_mfgInitialized && _existing?.manufacturerId != null) {
-                  final match = mfgs.where((m) => m.id == _existing!.manufacturerId)
-                      .cast<Manufacturer?>().firstOrNull;
+                  final match = mfgs
+                      .where((m) => m.id == _existing!.manufacturerId)
+                      .cast<Manufacturer?>()
+                      .firstOrNull;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) setState(() {
-                      _manufacturer    = match;
-                      _mfgInitialized  = true;
-                    });
+                    if (mounted)
+                      setState(() {
+                        _manufacturer = match;
+                        _mfgInitialized = true;
+                      });
                   });
                 }
                 return _Dropdown<Manufacturer>(
-                  label: 'Fabricant',
+                  label: l10n.catalogFieldManufacturer,
                   icon: Icons.factory_outlined,
                   value: _manufacturer,
                   items: mfgs,
@@ -305,89 +365,113 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
             const SizedBox(height: 24),
 
             // ── Tarification ────────────────────────────────────────
-            _SectionTitle('Tarification'),
-            Row(children: [
-              Expanded(child: _Field(
-                ctrl: _priceCtrl,
-                label: 'Prix de vente *',
-                icon: Icons.sell_outlined,
-                keyboard: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Requis';
-                  if (double.tryParse(v.replaceAll(' ', '')) == null) return 'Nombre invalide';
-                  return null;
-                },
-              )),
-              const SizedBox(width: 12),
-              Expanded(child: _Field(
-                ctrl: _costCtrl,
-                label: "Prix d'achat",
-                icon: Icons.shopping_bag_outlined,
-                keyboard: TextInputType.number,
-                hint: 'Optionnel',
-              )),
-            ]),
+            _SectionTitle(l10n.catalogAdminPricing),
+            Row(
+              children: [
+                Expanded(
+                  child: _Field(
+                    ctrl: _priceCtrl,
+                    label: l10n.catalogAdminSalePrice,
+                    icon: Icons.sell_outlined,
+                    keyboard: TextInputType.number,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty)
+                        return l10n.catalogAdminRequired;
+                      if (double.tryParse(v.replaceAll(' ', '')) == null)
+                        return l10n.catalogAdminInvalidNumber;
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _Field(
+                    ctrl: _costCtrl,
+                    label: l10n.catalogAdminPurchasePrice,
+                    icon: Icons.shopping_bag_outlined,
+                    keyboard: TextInputType.number,
+                    hint: l10n.catalogAdminOptional,
+                  ),
+                ),
+              ],
+            ),
 
             const SizedBox(height: 24),
 
             // ── Stock ───────────────────────────────────────────────
-            _SectionTitle('Stock'),
-            Row(children: [
-              Expanded(child: _Field(
-                ctrl: _stockCtrl,
-                label: 'Quantité initiale',
-                icon: Icons.inventory_2_outlined,
-                keyboard: TextInputType.number,
-              )),
-              const SizedBox(width: 12),
-              Expanded(child: _Field(
-                ctrl: _alertCtrl,
-                label: 'Seuil d\'alerte',
-                icon: Icons.warning_amber_outlined,
-                keyboard: TextInputType.number,
-                hint: 'Optionnel',
-              )),
-            ]),
+            _SectionTitle(l10n.catalogAdminStock),
+            Row(
+              children: [
+                Expanded(
+                  child: _Field(
+                    ctrl: _stockCtrl,
+                    label: l10n.catalogAdminInitialQuantity,
+                    icon: Icons.inventory_2_outlined,
+                    keyboard: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _Field(
+                    ctrl: _alertCtrl,
+                    label: l10n.catalogAdminAlertThreshold,
+                    icon: Icons.warning_amber_outlined,
+                    keyboard: TextInputType.number,
+                    hint: l10n.catalogAdminOptional,
+                  ),
+                ),
+              ],
+            ),
             _Field(
               ctrl: _locationCtrl,
-              label: 'Emplacement physique',
+              label: l10n.catalogAdminPhysicalLocation,
               icon: Icons.place_outlined,
-              hint: 'Ex. Vitrine 2, Rayon A',
+              hint: l10n.catalogAdminLocationHint,
             ),
             // Agence / showroom (location structurée)
             refsAsync.when(
               loading: () => const SizedBox(),
               error: (_, __) => const SizedBox(),
-              data: (refs) => refs.locations.isEmpty ? const SizedBox() : Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: DropdownButtonFormField<int?>(
-                  value: _selectedLocationId,
-                  decoration: const InputDecoration(
-                    labelText: 'Agence / Showroom',
-                    prefixIcon: Icon(Icons.store_outlined),
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  isExpanded: true,
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('— Toutes agences —')),
-                    ...refs.locations.map((l) => DropdownMenuItem(
-                      value: l.id,
-                      child: Text(l.displayLabel, overflow: TextOverflow.ellipsis),
-                    )),
-                  ],
-                  onChanged: (v) => setState(() => _selectedLocationId = v),
-                ),
-              ),
+              data: (refs) => refs.locations.isEmpty
+                  ? const SizedBox()
+                  : Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: DropdownButtonFormField<int?>(
+                        value: _selectedLocationId,
+                        decoration: InputDecoration(
+                          labelText: l10n.catalogAdminBranch,
+                          prefixIcon: Icon(Icons.store_outlined),
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        isExpanded: true,
+                        items: [
+                          DropdownMenuItem(
+                            value: null,
+                            child: Text(l10n.catalogAdminAllBranches),
+                          ),
+                          ...refs.locations.map(
+                            (l) => DropdownMenuItem(
+                              value: l.id,
+                              child: Text(
+                                l.displayLabel,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
+                        onChanged: (v) =>
+                            setState(() => _selectedLocationId = v),
+                      ),
+                    ),
             ),
 
             const SizedBox(height: 24),
 
             // ── Compatibilités véhicules ────────────────────────────
-            _SectionTitle('Compatibilités véhicules'),
+            _SectionTitle(l10n.catalogAdminFitments),
             Text(
-              'Optionnel — déclarez les véhicules compatibles '
-              'pour faciliter la recherche.',
+              l10n.catalogAdminAccessoryFitmentsHint,
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
@@ -398,8 +482,10 @@ class _AddAccessoryPageState extends ConsumerState<AddAccessoryPage> {
             else
               refsAsync.when(
                 loading: () => const LinearProgressIndicator(),
-                error: (e, _) => Text('Impossible de charger les modèles : ${messageFor(e)}',
-                    style: const TextStyle(color: Colors.red)),
+                error: (e, _) => Text(
+                  l10n.catalogAdminModelsLoadError(messageFor(e, l10n: l10n)),
+                  style: const TextStyle(color: Colors.red),
+                ),
                 data: (refs) => FitmentsSection(
                   refs: refs,
                   showPosition: false,
@@ -428,7 +514,8 @@ class _SectionTitle extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(text,
+        Text(
+          text,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             color: Theme.of(context).colorScheme.primary,
             fontWeight: FontWeight.bold,
@@ -498,26 +585,31 @@ class _Dropdown<T> extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: DropdownButtonFormField<T>(
-      value: value,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-        border: const OutlineInputBorder(),
-        isDense: true,
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DropdownButtonFormField<T>(
+        value: value,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon),
+          border: const OutlineInputBorder(),
+          isDense: true,
+        ),
+        isExpanded: true,
+        items: [
+          if (nullable)
+            DropdownMenuItem(value: null, child: Text(l10n.catalogAdminNone)),
+          ...items.map(
+            (item) => DropdownMenuItem(
+              value: item,
+              child: Text(itemLabel(item), overflow: TextOverflow.ellipsis),
+            ),
+          ),
+        ],
+        onChanged: onChanged,
       ),
-      isExpanded: true,
-      items: [
-        if (nullable)
-          const DropdownMenuItem(value: null, child: Text('— Aucun —')),
-        ...items.map((item) => DropdownMenuItem(
-          value: item,
-          child: Text(itemLabel(item), overflow: TextOverflow.ellipsis),
-        )),
-      ],
-      onChanged: onChanged,
-    ),
-  );
+    );
+  }
 }

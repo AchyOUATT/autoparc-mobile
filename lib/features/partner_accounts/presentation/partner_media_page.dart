@@ -1,3 +1,4 @@
+import '../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -6,8 +7,15 @@ import '../../../core/api/api_exception.dart';
 import '../data/lecture_json.dart' as json;
 import '../data/partner_repository.dart';
 
+enum _PartnerMediaError { photoLimit }
+
 class PartnerMediaPage extends ConsumerStatefulWidget {
-  const PartnerMediaPage({super.key, required this.kind, required this.listingId, required this.title});
+  const PartnerMediaPage({
+    super.key,
+    required this.kind,
+    required this.listingId,
+    required this.title,
+  });
   final PartnerListingKind kind;
   final int listingId;
   final String title;
@@ -18,19 +26,48 @@ class PartnerMediaPage extends ConsumerStatefulWidget {
 class _PartnerMediaPageState extends ConsumerState<PartnerMediaPage> {
   List<Map<String, dynamic>> _photos = [];
   bool _busy = true;
-  String? _error;
+  Object? _error;
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    _load();
+  }
+
   Future<void> _load() async {
     try {
-      final photos = await ref.read(partnerRepositoryProvider).media(widget.kind, widget.listingId);
-      if (mounted) setState(() { _photos = photos; _error = null; _busy = false; });
-    } catch (error) { if (mounted) setState(() { _error = messageFor(error); _busy = false; }); }
+      final photos = await ref
+          .read(partnerRepositoryProvider)
+          .media(widget.kind, widget.listingId);
+      if (mounted)
+        setState(() {
+          _photos = photos;
+          _error = null;
+          _busy = false;
+        });
+    } catch (error) {
+      if (mounted)
+        setState(() {
+          _error = error;
+          _busy = false;
+        });
+    }
   }
+
   Future<void> _run(Future<void> Function() action) async {
-    setState(() { _busy = true; _error = null; });
-    try { await action(); await _load(); }
-    catch (error) { if (mounted) setState(() { _busy = false; _error = messageFor(error); }); }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await action();
+      await _load();
+    } catch (error) {
+      if (mounted)
+        setState(() {
+          _busy = false;
+          _error = error;
+        });
+    }
   }
 
   /// Les quatre réglages sont ceux du dépôt du personnel
@@ -60,29 +97,90 @@ class _PartnerMediaPageState extends ConsumerState<PartnerMediaPage> {
         limit: 10,
       );
       if (!mounted || files.isEmpty) return;
-      if (files.length > 10) { setState(() => _error = 'Sélectionnez au plus 10 photos par envoi.'); return; }
-      await _run(() => ref.read(partnerRepositoryProvider).uploadPhotos(widget.kind, widget.listingId, files));
-    } catch (error) { if (mounted) setState(() => _error = messageFor(error)); }
+      if (files.length > 10) {
+        setState(() => _error = _PartnerMediaError.photoLimit);
+        return;
+      }
+      await _run(
+        () => ref
+            .read(partnerRepositoryProvider)
+            .uploadPhotos(widget.kind, widget.listingId, files),
+      );
+    } catch (error) {
+      if (mounted) setState(() => _error = error);
+    }
   }
+
   Future<void> _move(int index, int offset) => _run(() {
-    final ids = _photos.map((photo) => json.entier(photo['id'])).whereType<int>().toList();
+    final ids = _photos
+        .map((photo) => json.entier(photo['id']))
+        .whereType<int>()
+        .toList();
     final id = ids.removeAt(index);
     ids.insert(index + offset, id);
-    return ref.read(partnerRepositoryProvider).reorderMedia(widget.kind, widget.listingId, ids);
+    return ref
+        .read(partnerRepositoryProvider)
+        .reorderMedia(widget.kind, widget.listingId, ids);
   });
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Photos de l’annonce')),
-    floatingActionButton: FloatingActionButton.extended(onPressed: _busy ? null : _upload, icon: const Icon(Icons.add_photo_alternate_outlined), label: const Text('Ajouter des photos')),
-    body: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), children: [
-      Text(widget.title, style: Theme.of(context).textTheme.titleLarge),
-      const SizedBox(height: 8), const Text('JPEG, PNG ou WebP. Choisissez une couverture et ordonnez votre galerie.'),
-      if (_busy) const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: LinearProgressIndicator()),
-      if (_error != null) Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)), TextButton(onPressed: _load, child: const Text('Réessayer'))]))),
-      if (!_busy && _photos.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 48), child: Center(child: Text('Ajoutez les premières photos de votre annonce.'))),
-      for (var index = 0; index < _photos.length; index++) _photo(index),
-    ]),
+    appBar: AppBar(
+      title: Text(AppLocalizations.of(context).partnerAccountsPhotosTitle),
+    ),
+    floatingActionButton: FloatingActionButton.extended(
+      onPressed: _busy ? null : _upload,
+      icon: const Icon(Icons.add_photo_alternate_outlined),
+      label: Text(AppLocalizations.of(context).partnerAccountsAddPhotos),
+    ),
+    body: ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      children: [
+        Text(widget.title, style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 8),
+        Text(AppLocalizations.of(context).partnerAccountsPhotosHelp),
+        if (_busy)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: LinearProgressIndicator(),
+          ),
+        if (_error != null)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Text(
+                    _error == _PartnerMediaError.photoLimit
+                        ? AppLocalizations.of(context).partnerAccountsPhotoLimit
+                        : messageFor(
+                            _error!,
+                            l10n: AppLocalizations.of(context),
+                          ),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _load,
+                    child: Text(AppLocalizations.of(context).commonRetry),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        if (!_busy && _photos.isEmpty)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 48),
+            child: Center(
+              child: Text(
+                AppLocalizations.of(context).partnerAccountsPhotosEmpty,
+              ),
+            ),
+          ),
+        for (var index = 0; index < _photos.length; index++) _photo(index),
+      ],
+    ),
   );
 
   /// Une photo de la galerie.
@@ -96,21 +194,98 @@ class _PartnerMediaPageState extends ConsumerState<PartnerMediaPage> {
   Widget _photo(int index) {
     final photo = _photos[index];
     final id = json.entier(photo['id']);
-    return Card(clipBehavior: Clip.antiAlias, child: Column(children: [
-      Image.network(photo['url'].toString(), height: 200, width: double.infinity, fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => const SizedBox(height: 120, child: Center(child: Icon(Icons.broken_image_outlined)))),
-      Row(children: [
-        Expanded(child: TextButton.icon(onPressed: _busy || id == null || photo['is_cover'] == true ? null : () => _run(() => ref.read(partnerRepositoryProvider).setCover(id)),
-          icon: Icon(photo['is_cover'] == true ? Icons.star : Icons.star_outline), label: Text(photo['is_cover'] == true ? 'Couverture' : 'En couverture'))),
-        IconButton(tooltip: 'Déplacer avant', onPressed: _busy || index == 0 ? null : () => _move(index, -1), icon: const Icon(Icons.arrow_upward)),
-        IconButton(tooltip: 'Déplacer après', onPressed: _busy || index == _photos.length - 1 ? null : () => _move(index, 1), icon: const Icon(Icons.arrow_downward)),
-        IconButton(tooltip: 'Supprimer la photo', onPressed: _busy || id == null ? null : () async {
-          final confirmed = await showDialog<bool>(context: context, builder: (context) => AlertDialog(title: const Text('Supprimer cette photo ?'),
-            actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
-              FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Supprimer'))]));
-          if (confirmed == true && mounted) await _run(() => ref.read(partnerRepositoryProvider).deleteMedia(id));
-        }, icon: const Icon(Icons.delete_outline)),
-      ]),
-    ]));
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Image.network(
+            photo['url'].toString(),
+            height: 200,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => const SizedBox(
+              height: 120,
+              child: Center(child: Icon(Icons.broken_image_outlined)),
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton.icon(
+                  onPressed: _busy || id == null || photo['is_cover'] == true
+                      ? null
+                      : () => _run(
+                          () =>
+                              ref.read(partnerRepositoryProvider).setCover(id),
+                        ),
+                  icon: Icon(
+                    photo['is_cover'] == true ? Icons.star : Icons.star_outline,
+                  ),
+                  label: Text(
+                    photo['is_cover'] == true
+                        ? AppLocalizations.of(context).partnerAccountsCover
+                        : AppLocalizations.of(context).partnerAccountsSetCover,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: AppLocalizations.of(context).partnerAccountsMoveBefore,
+                onPressed: _busy || index == 0 ? null : () => _move(index, -1),
+                icon: const Icon(Icons.arrow_upward),
+              ),
+              IconButton(
+                tooltip: AppLocalizations.of(context).partnerAccountsMoveAfter,
+                onPressed: _busy || index == _photos.length - 1
+                    ? null
+                    : () => _move(index, 1),
+                icon: const Icon(Icons.arrow_downward),
+              ),
+              IconButton(
+                tooltip: AppLocalizations.of(
+                  context,
+                ).partnerAccountsDeletePhoto,
+                onPressed: _busy || id == null
+                    ? null
+                    : () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text(
+                              AppLocalizations.of(
+                                context,
+                              ).partnerAccountsDeletePhotoQuestion,
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: Text(
+                                  AppLocalizations.of(context).commonCancel,
+                                ),
+                              ),
+                              FilledButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: Text(
+                                  AppLocalizations.of(
+                                    context,
+                                  ).partnerAccountsDelete,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed == true && mounted)
+                          await _run(
+                            () => ref
+                                .read(partnerRepositoryProvider)
+                                .deleteMedia(id),
+                          );
+                      },
+                icon: const Icon(Icons.delete_outline),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

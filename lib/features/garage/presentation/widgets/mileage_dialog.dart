@@ -1,3 +1,4 @@
+import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -24,7 +25,9 @@ Future<void> showMileageDialog(
 
   if (result == null || !context.mounted) return;
 
-  final erreur = await ref.read(garageProvider.notifier).updateVehicle(vehicle.id, result);
+  final erreur = await ref
+      .read(garageProvider.notifier)
+      .updateVehicle(vehicle.id, result);
 
   if (erreur != null && context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -108,7 +111,9 @@ class _MileageDialogState extends State<_MileageDialog> {
     final saisi = int.tryParse(_ctrl.text.replaceAll(RegExp(r'[\s ]'), ''));
 
     if (saisi == null) {
-      setState(() => _erreur = 'Entrez un nombre de kilomètres.');
+      setState(
+        () => _erreur = AppLocalizations.of(context).garageMileageRequired,
+      );
       return;
     }
 
@@ -116,7 +121,9 @@ class _MileageDialogState extends State<_MileageDialog> {
     // kilométrage d'un contrôle (StoreVehicleCheckRequest). Elle attrape le
     // zéro de trop, pas un véhicule réellement très usé.
     if (saisi > 2000000) {
-      setState(() => _erreur = 'Ce kilométrage est hors de portée.');
+      setState(
+        () => _erreur = AppLocalizations.of(context).garageMileageOutOfRange,
+      );
       return;
     }
 
@@ -125,8 +132,10 @@ class _MileageDialogState extends State<_MileageDialog> {
     if (ancien != null && saisi < ancien && !_reculSignale) {
       setState(() {
         _reculSignale = true;
-        _erreur = 'Le compteur affichait ${_km(ancien)} km. '
-            'Appuyez à nouveau pour enregistrer ${_km(saisi)} km.';
+        _erreur = AppLocalizations.of(context).garageMileageConfirmDecrease(
+          (_km(ancien)).toString(),
+          (_km(saisi)).toString(),
+        );
       });
       return;
     }
@@ -137,11 +146,11 @@ class _MileageDialogState extends State<_MileageDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Mettre à jour'),
+      title: Text(AppLocalizations.of(context).garageUpdateAction),
       content: TextField(
         controller: _ctrl,
         decoration: InputDecoration(
-          labelText: 'Kilométrage actuel',
+          labelText: AppLocalizations.of(context).garageCurrentMileage,
           suffixText: 'km',
           errorText: _erreur,
           // Le message de recul fait deux lignes : sans cela il est tronqué,
@@ -164,11 +173,15 @@ class _MileageDialogState extends State<_MileageDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Annuler'),
+          child: Text(AppLocalizations.of(context).commonCancel),
         ),
         FilledButton(
           onPressed: _valider,
-          child: Text(_reculSignale ? 'Confirmer' : 'Sauvegarder'),
+          child: Text(
+            _reculSignale
+                ? AppLocalizations.of(context).garageConfirmAction
+                : AppLocalizations.of(context).garageSaveMileageAction,
+          ),
         ),
       ],
     );

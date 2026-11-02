@@ -1,9 +1,12 @@
+import '../../../l10n/app_localizations.dart';
+import '../../../core/l10n/langue.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_exception.dart';
 import '../../notifications/data/models/app_notification.dart';
 import '../data/partner_repository.dart';
+import 'partner_localizations.dart';
 
 /// La boîte aux lettres du partenaire.
 ///
@@ -27,16 +30,20 @@ import '../data/partner_repository.dart';
 /// la boutique, qui rappelle le client.
 final partnerNotificationsProvider =
     FutureProvider.autoDispose<List<AppNotification>>((ref) async {
-  final page = await ref.watch(partnerRepositoryProvider).notifications();
+      ref.watch(langueProvider);
+      final page = await ref.watch(partnerRepositoryProvider).notifications();
 
-  return page
-      .map((brut) => AppNotification.fromJson(Map<String, dynamic>.from(brut)))
-      .toList();
-});
+      return page
+          .map(
+            (brut) => AppNotification.fromJson(Map<String, dynamic>.from(brut)),
+          )
+          .toList();
+    });
 
 /// Le compteur de non-lues, pour la pastille de l'espace partenaire.
-final partnerUnreadCountProvider = FutureProvider.autoDispose<int>((ref) =>
-    ref.watch(partnerRepositoryProvider).notificationsNonLues());
+final partnerUnreadCountProvider = FutureProvider.autoDispose<int>(
+  (ref) => ref.watch(partnerRepositoryProvider).notificationsNonLues(),
+);
 
 class PartnerNotificationsPage extends ConsumerWidget {
   const PartnerNotificationsPage({super.key});
@@ -47,7 +54,9 @@ class PartnerNotificationsPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Demandes clients'),
+        title: Text(
+          AppLocalizations.of(context).partnerAccountsCustomerRequests,
+        ),
         actions: [
           notifs.maybeWhen(
             data: (liste) => liste.any((n) => !n.isRead)
@@ -58,14 +67,16 @@ class PartnerNotificationsPage extends ConsumerWidget {
                       ref.invalidate(partnerNotificationsProvider);
                       ref.invalidate(partnerUnreadCountProvider);
                     },
-                    child: const Text('Tout lire'),
+                    child: Text(
+                      AppLocalizations.of(context).partnerAccountsMarkAllRead,
+                    ),
                   )
                 : const SizedBox.shrink(),
             orElse: () => const SizedBox.shrink(),
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Actualiser',
+            tooltip: AppLocalizations.of(context).partnerAccountsRefresh,
             onPressed: () {
               ref.invalidate(partnerNotificationsProvider);
               ref.invalidate(partnerUnreadCountProvider);
@@ -76,7 +87,7 @@ class PartnerNotificationsPage extends ConsumerWidget {
       body: notifs.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (erreur, _) => _Erreur(
-          message: messageFor(erreur),
+          message: messageFor(erreur, l10n: AppLocalizations.of(context)),
           onRetry: () => ref.invalidate(partnerNotificationsProvider),
         ),
         data: (liste) => liste.isEmpty
@@ -113,7 +124,10 @@ class _Ligne extends ConsumerWidget {
       key: ValueKey('partner-notif-${notification.id}'),
       leading: CircleAvatar(
         backgroundColor: Color(notification.iconColor).withValues(alpha: 0.15),
-        child: Icon(notification.iconData, color: Color(notification.iconColor)),
+        child: Icon(
+          notification.iconData,
+          color: Color(notification.iconColor),
+        ),
       ),
       title: Text(
         notification.title,
@@ -128,9 +142,10 @@ class _Ligne extends ConsumerWidget {
           if (besoin is Map) ...[
             const SizedBox(height: 4),
             Text(
-              _criteres(Map<String, dynamic>.from(besoin)),
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: couleurs.onSurfaceVariant),
+              _criteres(context, Map<String, dynamic>.from(besoin)),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: couleurs.onSurfaceVariant),
             ),
           ],
         ],
@@ -164,14 +179,18 @@ class _Ligne extends ConsumerWidget {
   /// Rien n'est inventé : un critère absent ne laisse pas de trace, pas même
   /// un séparateur orphelin — c'est le défaut que la ligne à trois valeurs des
   /// fiches véhicule avait payé.
-  String _criteres(Map<String, dynamic> besoin) => [
-        besoin['brand_name'],
-        besoin['vehicle_model_name'],
-        besoin['part_category_name'],
-        besoin['oem_number'],
-        besoin['need_manufacturer_name'],
-        besoin['accessory_category'],
-      ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' · ');
+  String _criteres(BuildContext context, Map<String, dynamic> besoin) => [
+    besoin['brand_name'],
+    besoin['vehicle_model_name'],
+    besoin['part_category_name'],
+    besoin['oem_number'],
+    besoin['need_manufacturer_name'],
+    if (besoin['accessory_category'] is String)
+      partnerAccessoryCategory(
+        AppLocalizations.of(context),
+        besoin['accessory_category'] as String,
+      ),
+  ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' · ');
 }
 
 class _Vide extends StatelessWidget {
@@ -179,32 +198,31 @@ class _Vide extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.inbox_outlined,
-                size: 48,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Aucune demande pour le moment.',
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Les demandes des clients vous parviennent ici dès que la '
-                'boutique les transmet.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.inbox_outlined,
+            size: 48,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
-        ),
-      );
+          const SizedBox(height: 12),
+          Text(
+            AppLocalizations.of(context).partnerAccountsNoRequests,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            AppLocalizations.of(context).partnerAccountsRequestsHelp,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _Erreur extends StatelessWidget {
@@ -215,20 +233,20 @@ class _Erreur extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(message, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Réessayer'),
-              ),
-            ],
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(message, textAlign: TextAlign.center),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: Text(AppLocalizations.of(context).commonRetry),
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 }

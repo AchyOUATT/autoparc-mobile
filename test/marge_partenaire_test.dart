@@ -26,6 +26,7 @@ import 'package:auto/features/vehicles/presentation/pages/vehicle_form_mode.dart
 import 'package:auto/features/vehicles/presentation/pages/vehicle_register_page.dart';
 import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provider.dart';
 import 'package:auto/shared/models/paginated_response.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 /// Ce que le vendeur lit avant d'enregistrer son prix.
 ///
@@ -106,6 +107,9 @@ Future<void> _ouvrirFormulaire(
       espace.partnerSessionProvider.overrideWith((_) => _Session(taux)),
     ],
     child: MaterialApp(
+      locale: const Locale('fr'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: VehicleRegisterPage(mode: mode, existing: _vehiculeAVendre()),
     ),
   ));
@@ -148,6 +152,9 @@ Future<void> _ouvrirAnnonces(
       espace.partnerSessionProvider.overrideWith((_) => _Session(10)),
     ],
     child: const MaterialApp(
+      locale: const Locale('fr'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: espace.PartnerListingsPage(kind: espace.PartnerListingKind.vehicles),
     ),
   ));
@@ -181,6 +188,9 @@ void main() {
 
   Future<void> montrer(WidgetTester tester, {num? prix, double taux = 10}) async {
     await tester.pumpWidget(MaterialApp(
+      locale: const Locale('fr'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: MargeRecapitulatif(prixPropose: prix, pourcentage: taux),
       ),
@@ -268,6 +278,9 @@ void main() {
         espace.partnerSessionProvider.overrideWith((_) => _Session(10)),
       ],
       child: const MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: espace.PartnerListingFormPage(
           kind: espace.PartnerListingKind.accessories,
         ),

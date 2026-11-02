@@ -1,4 +1,5 @@
 import 'dart:convert';
+import '../../l10n/app_localizations.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -31,6 +32,29 @@ class FcmAppService {
 
   final _messaging    = FirebaseMessaging.instance;
   final _localNotifs  = FlutterLocalNotificationsPlugin();
+  AndroidNotificationChannel _channel = _androidChannel;
+  String _languageCode = 'fr';
+  ApiClient? _apiClient;
+  bool _ready = false;
+
+  Future<void> updateLanguage(AppLocalizations l10n) async {
+    _languageCode = l10n.localeName.startsWith('en') ? 'en' : 'fr';
+    _channel = AndroidNotificationChannel(
+      _androidChannel.id,
+      'AutoParc — ${l10n.notificationsTitle}',
+      description: l10n.notificationsChannelDescription,
+      importance: Importance.high,
+    );
+    if (!_ready) return;
+    try {
+      await _localNotifs
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(_channel);
+      if (_apiClient != null) await _registerToken(_apiClient!);
+    } catch (error) {
+      debugPrint('[FCM] language update unavailable: $error');
+    }
+  }
 
   /// Callback appelé quand l'utilisateur tape une notification
   /// (reçue en background ou quand l'app était fermée).
@@ -41,9 +65,12 @@ class FcmAppService {
 
   Future<void> initialize({
     required ApiClient apiClient,
+    AppLocalizations? l10n,
     ValueChanged<Map<String, dynamic>>? onTap,
   }) async {
     onNotificationTap = onTap;
+    _apiClient = apiClient;
+    if (l10n != null) await updateLanguage(l10n);
 
     // 1. Handler background (doit être top-level)
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -62,7 +89,7 @@ class FcmAppService {
     await _localNotifs
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(_androidChannel);
+        ?.createNotificationChannel(_channel);
 
     // 4. Init flutter_local_notifications
     const initSettings = InitializationSettings(
@@ -104,6 +131,7 @@ class FcmAppService {
     _messaging.onTokenRefresh.listen(
       (token) => _saveToken(apiClient, token),
     );
+    _ready = true;
   }
 
   // ── Affichage local (foreground) ─────────────────────────────────
@@ -118,9 +146,9 @@ class FcmAppService {
       notif.body,
       NotificationDetails(
         android: AndroidNotificationDetails(
-          _androidChannel.id,
-          _androidChannel.name,
-          channelDescription: _androidChannel.description,
+          _channel.id,
+          _channel.name,
+          channelDescription: _channel.description,
           importance: Importance.high,
           priority:   Priority.high,
           icon: '@mipmap/ic_launcher',
@@ -148,12 +176,13 @@ class FcmAppService {
         await apiClient.post('/fcm-token/client', data: {
           'firebase_uid': user.uid,
           'fcm_token':    token,
+          'locale': _languageCode,
         });
       } else {
         // Staff connecté via Sanctum — le token Sanctum est déjà dans ApiClient
         // Essai silencieux ; si pas authentifié, 401 ignoré
         try {
-          await apiClient.post('/fcm-token', data: {'fcm_token': token});
+          await apiClient.post('/fcm-token', data: {'fcm_token': token, 'locale': _languageCode});
         } catch (_) {}
       }
 

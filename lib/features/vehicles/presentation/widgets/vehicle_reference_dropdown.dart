@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 
 /// Shared reference selector extracted from the vehicle registration form.
 class VehicleReferenceDropdown<T> extends StatelessWidget {
@@ -28,7 +29,9 @@ class VehicleReferenceDropdown<T> extends StatelessWidget {
     initialValue: value,
     decoration: InputDecoration(labelText: label),
     hint: Text(
-      enabled ? 'Sélectionner…' : 'Choisir d\'abord la valeur précédente',
+      enabled
+          ? AppLocalizations.of(context).vehiclesReferenceSelect
+          : AppLocalizations.of(context).vehiclesReferenceChoosePrevious,
     ),
     isExpanded: true,
     items: items.map((item) {

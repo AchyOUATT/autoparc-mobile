@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../utils/lien_externe.dart';
+import '../l10n/error_messages.dart';
 
 /// L'écran qui s'interpose quand la version installée est passée sous le
 /// plancher servi par l'API.
@@ -67,7 +68,7 @@ class EcranMiseAJour extends StatelessWidget {
                   // ici. C'est la vague serveur qui le traduira — le bouton
                   // ci-dessous, lui, est du texte de l'application.
                   Text(
-                    message,
+                    localizeExceptionMessage(message, AppLocalizations.of(context)),
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyLarge,
                   ),

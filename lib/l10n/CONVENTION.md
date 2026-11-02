@@ -1,115 +1,49 @@
-# Les clés `.arb` — la convention, et ce qu'elle coûte de changer
+# Convention des traductions
 
-Ce fichier existe parce que la convention de nommage est la décision du lot de
-fondation qui coûtera le plus cher à défaire : au dernier comptage, **91 des 94
-fichiers de `lib/` portent du français en dur**, pour un volume estimé entre
-1 200 et 1 500 chaînes. Une clé renommée après coup, c'est un renommage dans
-`app_fr.arb`, dans `app_en.arb`, dans le code appelant, et dans tout banc qui
-l'assertait.
+Les deux catalogues contiennent **1577 clés chacun** au 2 novembre 2026, avec les mêmes identifiants et les mêmes paramètres. Le français reste la langue par défaut. Le choix français/anglais est mémorisé par l’application.
 
-## La règle
+## Nommage
 
-    <zone><Rôle>        en lowerCamelCase, sans séparateur
+Utiliser `<zone><Role>` en lowerCamelCase, par exemple `catalogFieldEngine`, `garageOilChangeLabel` ou `privateSalesPublish`. La zone correspond à la fonctionnalité ; le rôle décrit l’usage. Conserver les identifiants existants. La clé historique `partageMentionBoutique` reste une exception.
 
-- **`<zone>`** est le dossier de `lib/features/` (ou `shell` / `common`), en
-  **anglais**, exactement comme le dossier : `home`, `catalog`, `garage`,
-  `cart`, `needs`, `auth`, `partners`, `notifications`, `onboarding`,
-  `vehicles`.
-- **`<Rôle>`** décrit la FONCTION de la chaîne dans l'écran, pas son texte :
-  `homeAddVehicleCta`, et non `homeAjouterMaVoiture`.
+Les textes de l’interface sont dans `app_fr.arb` et `app_en.arb`. Ajouter les paramètres dans les métadonnées du catalogue français, utiliser les pluriels ICU pour les quantités, puis régénérer avec `flutter gen-l10n`. Les fichiers Dart générés sont versionnés.
 
-Exemples tels qu'ils existent aujourd'hui :
+## Inventaire
 
-| clé | fr | en |
-|---|---|---|
-| `commonHome` | Accueil | Home |
-| `commonCancel` | Annuler | Cancel |
-| `shellExitTitle` | Quitter AutoParc ? | Quit AutoParc? |
-| `shellContactDialerTarget` | le composeur | the phone app |
-| `catalogPartListTitle` | Pièces détachées | Spare parts |
-| `homeDealsSection` | Bonnes affaires | Good deals |
-| `homeDeadlineOverdue` | {label} dépassée depuis {days, plural, …} | {label} overdue by {days, plural, …} |
-
-## L'inventaire, au comptage du jour
-
-Mesuré — pas estimé — en parsant les deux `.arb` et en comptant les clés hors
-`@métadonnées` : **376 clés de chaque côté, et exactement le même jeu** ;
-`app_fr.arb` moins `app_en.arb` est vide, et la différence inverse aussi.
-
-| zone | clés |
+| Zone | Clés |
 |---|---:|
-| `catalog` | 212 |
-| `cart` | 26 |
-| `shell` | 23 |
-| `home` | 16 |
-| `auth` | 14 |
-| `common` | 12 |
-| `onboarding` | 9 |
-| `update` | 2 |
-| `partage` | 1 |
-| `garage` | 61 |
-| **total** | **376** |
+| catalog | 417 |
+| garage | 316 |
+| vehicles | 256 |
+| partnerAccounts | 180 |
+| privateSales | 115 |
+| needs | 82 |
+| auth | 34 |
+| partners | 32 |
+| shell | 26 |
+| cart | 26 |
+| common | 23 |
+| notifications | 19 |
+| home | 16 |
+| media | 12 |
+| settings | 10 |
+| onboarding | 9 |
+| update | 3 |
+| partage | 1 |
+| **Total** | **1577** |
 
-Ce paragraphe annonçait « 51 clés chacun : 10 `common`, 22 `shell`, 16 `home`,
-2 `update`, 1 `catalog` » — le compte du lot de fondation, laissé tel quel
-pendant que deux vagues de traduction passaient dessus. **CE DOCUMENT SERT
-D'INVENTAIRE**, c'est à partir de lui qu'on juge si une zone est traitée : un
-inventaire faux ne se détecte pas, il se recopie. Il se remesure à chaque lot
-qui ajoute des clés.
+## Références et données du serveur
 
-`catalog` représente plus de la moitié du total parce que la zone couvre les trois
-fiches produit, leurs trois listes et leurs bandes de filtres — soit la plus
-grosse part du parcours client, et non parce que la règle du préfixe y serait
-mal appliquée.
+Les cartes d’articles, les fiches détaillées, les formulaires, le garage, les espaces partenaire et personnel lisent la langue active. Les caractéristiques contrôlées (carburant, roues motrices, couleur, pays, catégories de pièces et équipements) utilisent leurs codes stables ou un rapprochement exact avec les références livrées. Les valeurs inconnues restent lisibles telles quelles. Les anciens caches et les réponses sans nouveaux codes restent acceptés.
 
-`partage` est la seule entrée **hors convention** : sa zone n'est pas un
-dossier de `lib/features/`, elle vient du nom français du fichier
-`core/utils/partage.dart`. La clé unique `partageMentionBoutique` est
-antérieure à la règle ; la renommer coûterait les deux `.arb`, son site
-d'appel et les quatre assertions de `test/partage_test.dart` et
-`test/partage_bouton_test.dart`. Elle reste, et elle est signalée ici pour
-qu'elle ne fasse pas précédent : une chaîne de `lib/core/` prend la zone de
-l'écran qui l'affiche — c'est ce qu'a fait `commonShareUnavailable`, écrite
-dans le même fichier.
+Les noms de marques, modèles et finitions, les descriptions des vendeurs, les notes, les raisons de modération et les diffusions manuelles sont conservés dans leur langue d’origine. Les libellés calculés de consommation sont composés à partir des codes et nombres, sans modifier les valeurs stockées.
 
-## Pourquoi celle-là
+Chaque appel API transmet `Accept-Language: fr` ou `en`. Le serveur négocie aussi les variantes régionales et les priorités HTTP, retourne `Content-Language` et `Vary: Accept-Language`, et garde le français si le client ne choisit aucune langue prise en charge. Les erreurs, validations, contrôles du garage et notifications automatiques sont traduits au moment de la réponse ou de la livraison ; aucun contenu utilisateur n’est réécrit. Les notifications push utilisent la langue enregistrée pour chaque appareil.
 
-1. **La zone en préfixe, parce que le volume est le problème.** À 1 300 clés
-   dans un espace de noms PLAT — `gen-l10n` ne connaît pas les sous-objets —,
-   le préfixe est le seul mécanisme de cloisonnement disponible. Il donne
-   aussi la direction inverse, qui est celle dont on se sert vraiment : devant
-   `homeDealsSection` on sait ouvrir `lib/features/home/`, et un `grep '"home'`
-   sur l'`.arb` rend l'inventaire d'un écran.
+Le backend nécessite la migration `2026_10_30_000001_add_locale_to_client_fcm_tokens` avant livraison des nouveaux envois FCM. Les anciennes applications continuent de fonctionner en français. Une nouvelle version mobile est nécessaire pour disposer de tous les écrans anglais.
 
-2. **La zone calquée sur le dossier, et pas sur l'écran.** Un écran est
-   renommé, déplacé, scindé en deux ; le dossier de la fonctionnalité bouge
-   beaucoup moins. `catalogVehicleListTitle` survit à un fichier renommé,
-   `vehicleSearchPageTitle` ne survit pas à l'écran qui change de nom.
+## Vérification
 
-3. **Le rôle et jamais le texte.** C'est la règle qui rend la convention
-   utile plus tard : `commonCancel` reste juste le jour où le français passe
-   de « Annuler » à « Abandonner », alors qu'une clé `annuler` deviendrait un
-   mensonge — et une clé mensongère dans un `.arb` n'est signalée par aucun
-   outil.
+Les tests de widgets doivent nommer explicitement leur locale et installer les délégués d’`AppLocalizations`. Les coques françaises existantes restent françaises. Les tests anglais couvrent les références des cartes et fiches, la conservation des contenus libres, le parcours particulier, le garage, les espaces partenaire/personnel, les erreurs et la propagation de la langue vers l’API. Les tests HTTP vérifient aussi les réponses localisées et les livraisons FCM simulées.
 
-4. **`common` est un privilège, pas un fourre-tout.** Une chaîne n'y entre
-   qu'à **trois sites d'appel dans au moins deux zones**. La raison est le
-   chemin de sortie : le jour où l'« Annuler » d'une boîte de dialogue doit
-   devenir « Undo » et celui d'un formulaire rester « Cancel », scinder une clé
-   partagée par quarante sites veut dire les auditer tous. En dessous de trois
-   sites, la duplication coûte un doublon dans deux `.arb` ; au-dessus, elle
-   coûte quarante relectures.
-
-5. **Pas de `_` ni de `.`.** `gen-l10n` fabrique un getter Dart par clé :
-   `home_title` donnerait `l10n.home_title` et un avertissement
-   `non_constant_identifier_names` à chaque appel.
-
-## Ce qui n'est PAS dans les `.arb`, et ne doit pas y entrer
-
-Le serveur envoie du texte déjà libellé — `deal_label` (« Bonne affaire »),
-les libellés d'échéance (« Visite technique »), les intitulés de carburant
-(« Essence », « Électrique »), les noms de catégories. **Ces chaînes restent
-en français quelle que soit la langue choisie**, parce qu'elles n'existent pas
-dans l'application : c'est la vague serveur qui les traduira. Leur ajouter une
-clé `.arb` ici ne les traduirait pas, cela dupliquerait seulement un texte que
-le serveur continuerait d'écrire lui-même.
+Les nouvelles références de consommation conservent leur niveau de correspondance, leur méthode et leur provenance. Le code hybride `H` ne prouve pas que le véhicule est rechargeable ; le protocole cinq cycles ne prouve pas un nouvel essai. La mesure sur les pleins utilise une clé distincte de la référence. Le formulaire de contact distant et les obstacles à l’envoi d’une annonce suivent également la langue active.

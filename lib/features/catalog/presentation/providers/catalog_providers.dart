@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/catalog_repository.dart';
 import '../../data/models/vehicle.dart';
+import '../../data/models/catalog_vehicle_item.dart';
 import '../../data/models/accessory.dart';
 import '../../data/models/part.dart';
 import '../../data/models/part_category.dart';
@@ -208,17 +209,17 @@ final partFilterProvider = StateProvider<PartFilter>((ref) => const PartFilter()
 // ── Véhicules ────────────────────────────────────────────────────
 
 final vehicleListProvider =
-    AutoDisposeNotifierProvider<VehicleListNotifier, PagedState<Vehicle>>(
+    AutoDisposeNotifierProvider<VehicleListNotifier, PagedState<CatalogVehicleItem>>(
   VehicleListNotifier.new,
 );
 
-class VehicleListNotifier extends AutoDisposeNotifier<PagedState<Vehicle>> {
+class VehicleListNotifier extends AutoDisposeNotifier<PagedState<CatalogVehicleItem>> {
   static const _perPage = 20;
   int _page = 0;
   bool _fetching = false;
 
   @override
-  PagedState<Vehicle> build() {
+  PagedState<CatalogVehicleItem> build() {
     // Se reconstruit (reset) à chaque changement de filtre
     ref.watch(vehicleFilterProvider);
     _page = 0;
@@ -241,7 +242,7 @@ class VehicleListNotifier extends AutoDisposeNotifier<PagedState<Vehicle>> {
 
     try {
       final filter = ref.read(vehicleFilterProvider);
-      final resp   = await ref.read(catalogRepositoryProvider).getVehicles(
+      final resp   = await ref.read(catalogRepositoryProvider).getVehicleListings(
         page:         nextPage,
         perPage:      _perPage,
         search:       filter.search,
@@ -259,8 +260,14 @@ class VehicleListNotifier extends AutoDisposeNotifier<PagedState<Vehicle>> {
         deal:           filter.deal,
       );
       _page = nextPage;
+      // Offset pages can overlap when a new listing enters the feed. Keep
+      // each source/id once, preserving its position and taking its newest payload.
+      final itemsByKey = <String, CatalogVehicleItem>{
+        if (!isFirst) for (final item in state.items) item.key: item,
+        for (final item in resp.data) item.key: item,
+      };
       state = state.copyWith(
-        items:         isFirst ? resp.data : [...state.items, ...resp.data],
+        items:         itemsByKey.values.toList(growable: false),
         total:         resp.total,
         hasMore:       resp.hasNextPage,
         isLoading:     false,

@@ -1,3 +1,7 @@
+import '../../../../core/l10n/langue.dart';
+import 'package:intl/intl.dart';
+import '../needs_labels.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,11 +17,11 @@ final _needsFilterProvider = StateProvider<({String? type, String? status})>(
 );
 
 final _needsProvider = FutureProvider.autoDispose<List<CustomerNeed>>((ref) {
+  ref.watch(langueProvider);
   final filter = ref.watch(_needsFilterProvider);
-  return ref.read(needsRepositoryProvider).getNeeds(
-    type:   filter.type,
-    status: filter.status,
-  );
+  return ref
+      .read(needsRepositoryProvider)
+      .getNeeds(type: filter.type, status: filter.status);
 });
 
 // ════════════════════════════════════════════════════════════════════
@@ -28,11 +32,11 @@ class NeedsListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final needsAsync = ref.watch(_needsProvider);
-    final filter     = ref.watch(_needsFilterProvider);
+    final filter = ref.watch(_needsFilterProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Besoins clients'),
+        title: Text(AppLocalizations.of(context).needsStaffListTitle),
         centerTitle: false,
         actions: [
           IconButton(
@@ -53,11 +57,14 @@ class NeedsListPage extends ConsumerWidget {
                   children: [
                     const Icon(Icons.wifi_off, size: 48),
                     const SizedBox(height: 12),
-                    Text(messageFor(e), textAlign: TextAlign.center),
+                    Text(
+                      messageFor(e, l10n: AppLocalizations.of(context)),
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 16),
                     FilledButton(
                       onPressed: () => ref.invalidate(_needsProvider),
-                      child: const Text('Réessayer'),
+                      child: Text(AppLocalizations.of(context).commonRetry),
                     ),
                   ],
                 ),
@@ -67,8 +74,7 @@ class NeedsListPage extends ConsumerWidget {
                   : ListView.separated(
                       padding: const EdgeInsets.all(12),
                       itemCount: needs.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: 8),
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
                       itemBuilder: (_, i) => _NeedCard(
                         need: needs[i],
                         onUpdated: () => ref.invalidate(_needsProvider),
@@ -92,26 +98,53 @@ class _FilterBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     void setStatus(String? v) {
       final cur = ref.read(_needsFilterProvider);
-      ref.read(_needsFilterProvider.notifier).state = (type: cur.type, status: v);
+      ref.read(_needsFilterProvider.notifier).state = (
+        type: cur.type,
+        status: v,
+      );
     }
 
     void setType(String? v) {
       final cur = ref.read(_needsFilterProvider);
-      ref.read(_needsFilterProvider.notifier).state = (type: v, status: cur.status);
+      ref.read(_needsFilterProvider.notifier).state = (
+        type: v,
+        status: cur.status,
+      );
     }
 
-    const statuses = [
-      (value: 'pending',   label: 'En attente'),
-      (value: 'approved',  label: 'Transmise'),
-      (value: 'contacted', label: 'Contacté'),
-      (value: 'fulfilled', label: 'Satisfait'),
-      (value: 'cancelled', label: 'Annulé'),
+    final statuses = [
+      (
+        value: 'pending',
+        label: AppLocalizations.of(context).needsStatusPending,
+      ),
+      (
+        value: 'approved',
+        label: AppLocalizations.of(context).needsStatusApproved,
+      ),
+      (
+        value: 'contacted',
+        label: AppLocalizations.of(context).needsStatusContacted,
+      ),
+      (
+        value: 'fulfilled',
+        label: AppLocalizations.of(context).needsStatusFulfilled,
+      ),
+      (
+        value: 'cancelled',
+        label: AppLocalizations.of(context).needsStatusCancelled,
+      ),
     ];
 
-    const types = [
-      (value: 'vehicle',   label: 'Véhicule'),
-      (value: 'part',      label: 'Pièce'),
-      (value: 'accessory', label: 'Accessoire'),
+    final types = [
+      (
+        value: 'vehicle',
+        label: AppLocalizations.of(context).catalogSectionVehicle,
+      ),
+      (value: 'part', label: AppLocalizations.of(context).needsTypePart),
+      (
+        value: 'accessory',
+        label: AppLocalizations.of(context).needsTypeAccessory,
+      ),
     ];
 
     return Column(
@@ -124,20 +157,22 @@ class _FilterBar extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             children: [
               FilterChip(
-                label: const Text('Tous'),
+                label: Text(AppLocalizations.of(context).needsFilterAll),
                 selected: filter.status == null,
                 onSelected: (_) => setStatus(null),
               ),
               const SizedBox(width: 6),
-              ...statuses.map((s) => Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: FilterChip(
-                  label: Text(s.label),
-                  selected: filter.status == s.value,
-                  onSelected: (_) =>
-                      setStatus(filter.status == s.value ? null : s.value),
+              ...statuses.map(
+                (s) => Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: FilterChip(
+                    label: Text(s.label),
+                    selected: filter.status == s.value,
+                    onSelected: (_) =>
+                        setStatus(filter.status == s.value ? null : s.value),
+                  ),
                 ),
-              )),
+              ),
             ],
           ),
         ),
@@ -149,20 +184,22 @@ class _FilterBar extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             children: [
               FilterChip(
-                label: const Text('Tous types'),
+                label: Text(AppLocalizations.of(context).needsFilterAllTypes),
                 selected: filter.type == null,
                 onSelected: (_) => setType(null),
               ),
               const SizedBox(width: 6),
-              ...types.map((t) => Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: FilterChip(
-                  label: Text(t.label),
-                  selected: filter.type == t.value,
-                  onSelected: (_) =>
-                      setType(filter.type == t.value ? null : t.value),
+              ...types.map(
+                (t) => Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: FilterChip(
+                    label: Text(t.label),
+                    selected: filter.type == t.value,
+                    onSelected: (_) =>
+                        setType(filter.type == t.value ? null : t.value),
+                  ),
                 ),
-              )),
+              ),
             ],
           ),
         ),
@@ -194,40 +231,50 @@ class _NeedCard extends StatelessWidget {
               children: [
                 // Badge type
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.secondaryContainer,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    need.typeLabel,
+                    needTypeLabel(AppLocalizations.of(context), need.type),
                     style: const TextStyle(
-                        fontSize: 11, fontWeight: FontWeight.bold),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 // Badge statut
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withAlpha(30),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: statusColor.withAlpha(120)),
                   ),
                   child: Text(
-                    need.statusLabel,
+                    needStatusLabel(AppLocalizations.of(context), need.status),
                     style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: statusColor),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: statusColor,
+                    ),
                   ),
                 ),
                 const Spacer(),
                 if (need.createdAt != null)
                   Text(
-                    _formatDate(need.createdAt!),
-                    style: Theme.of(context).textTheme.bodySmall
-                        ?.copyWith(color: Theme.of(context).colorScheme.outline),
+                    _formatDate(context, need.createdAt!),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
                   ),
               ],
             ),
@@ -240,24 +287,31 @@ class _NeedCard extends StatelessWidget {
             // ── Budget ───────────────────────────────────────────────
             if (need.budgetMax != null) ...[
               const SizedBox(height: 8),
-              Row(children: [
-                Icon(Icons.account_balance_wallet_outlined,
+              Row(
+                children: [
+                  Icon(
+                    Icons.account_balance_wallet_outlined,
                     size: 14,
-                    color: Theme.of(context).colorScheme.outline),
-                const SizedBox(width: 4),
-                Text(
-                  'Budget max : ${formatXof(need.budgetMax!)}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.outline,
                   ),
-                ),
-              ]),
+                  const SizedBox(width: 4),
+                  Text(
+                    AppLocalizations.of(context).needsMaximumBudgetValue(
+                      (formatXof(need.budgetMax!)).toString(),
+                    ),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ],
 
             const SizedBox(height: 8),
 
             // ── Contact ───────────────────────────────────────────────
-            if (need.contactName != null || need.contactPhone != null ||
+            if (need.contactName != null ||
+                need.contactPhone != null ||
                 need.contactEmail != null) ...[
               const Divider(height: 16),
               if (need.contactName != null)
@@ -269,9 +323,10 @@ class _NeedCard extends StatelessWidget {
             ] else ...[
               const Divider(height: 16),
               Text(
-                'Aucun contact renseigné',
-                style: Theme.of(context).textTheme.bodySmall
-                    ?.copyWith(color: Theme.of(context).colorScheme.outline),
+                AppLocalizations.of(context).needsNoContact,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
               ),
             ],
 
@@ -299,7 +354,7 @@ class _NeedCard extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: () => _showUpdateSheet(context),
                 icon: const Icon(Icons.edit_outlined, size: 16),
-                label: const Text('Mettre à jour'),
+                label: Text(AppLocalizations.of(context).needsUpdateAction),
               ),
             ),
           ],
@@ -317,17 +372,26 @@ class _NeedCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime dt) {
+  String _formatDate(BuildContext context, DateTime dt) {
     final now = DateTime.now();
     final diff = now.difference(dt);
     if (diff.inDays == 0) {
-      return "Aujourd'hui ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+      return AppLocalizations.of(context).needsTodayAtTime(
+        (dt.hour.toString().padLeft(2, '0')).toString(),
+        (dt.minute.toString().padLeft(2, '0')).toString(),
+      );
     } else if (diff.inDays == 1) {
-      return 'Hier';
+      return AppLocalizations.of(context).needsYesterday;
     } else if (diff.inDays < 7) {
-      return 'Il y a ${diff.inDays} jours';
+      return AppLocalizations.of(
+        context,
+      ).needsDaysAgo((diff.inDays).toString());
     }
-    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+    return DateFormat(
+      AppLocalizations.of(context).localeName.startsWith('en')
+          ? 'MM/dd/yyyy'
+          : 'dd/MM/yyyy',
+    ).format(dt);
   }
 }
 
@@ -381,17 +445,24 @@ class _UpdateStatusSheetState extends ConsumerState<_UpdateStatusSheet> {
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      await ref.read(needsRepositoryProvider).updateStatus(
-        widget.need.id,
-        status:     _status,
-        staffNotes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-      );
+      await ref
+          .read(needsRepositoryProvider)
+          .updateStatus(
+            widget.need.id,
+            status: _status,
+            staffNotes: _notesCtrl.text.trim().isEmpty
+                ? null
+                : _notesCtrl.text.trim(),
+          );
       widget.onUpdated();
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(messageFor(e, l10n: AppLocalizations.of(context))),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -409,34 +480,62 @@ class _UpdateStatusSheetState extends ConsumerState<_UpdateStatusSheet> {
     //
     // Le contact du client ne part PAS avec : il s'est adresse a la
     // boutique, pas a quinze vendeurs.
-    const statuses = [
-      (value: 'pending',   label: 'En attente',  color: 0xFFFFA000),
-      (value: 'approved',  label: 'Transmise',   color: 0xFF00695C),
-      (value: 'contacted', label: 'Contacté',    color: 0xFF1565C0),
-      (value: 'fulfilled', label: 'Satisfait',   color: 0xFF2E7D32),
-      (value: 'cancelled', label: 'Annulé',      color: 0xFF757575),
+    final statuses = [
+      (
+        value: 'pending',
+        label: AppLocalizations.of(context).needsStatusPending,
+        color: 0xFFFFA000,
+      ),
+      (
+        value: 'approved',
+        label: AppLocalizations.of(context).needsStatusApproved,
+        color: 0xFF00695C,
+      ),
+      (
+        value: 'contacted',
+        label: AppLocalizations.of(context).needsStatusContacted,
+        color: 0xFF1565C0,
+      ),
+      (
+        value: 'fulfilled',
+        label: AppLocalizations.of(context).needsStatusFulfilled,
+        color: 0xFF2E7D32,
+      ),
+      (
+        value: 'cancelled',
+        label: AppLocalizations.of(context).needsStatusCancelled,
+        color: 0xFF757575,
+      ),
     ];
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        20, 16, 20,
+        20,
+        16,
+        20,
         MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(child: Container(
-            width: 40, height: 4,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.outlineVariant,
-              borderRadius: BorderRadius.circular(2),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          )),
+          ),
           const SizedBox(height: 16),
-          Text('Mettre à jour le statut',
-            style: Theme.of(context).textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold)),
+          Text(
+            AppLocalizations.of(context).needsUpdateStatusTitle,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 16),
 
           // Sélecteur de statut
@@ -463,19 +562,25 @@ class _UpdateStatusSheetState extends ConsumerState<_UpdateStatusSheet> {
           TextFormField(
             controller: _notesCtrl,
             maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Notes internes (optionnel)',
+            decoration: InputDecoration(
+              labelText: AppLocalizations.of(context).needsStaffNotesLabel,
               border: OutlineInputBorder(),
-              hintText: 'Ex. : Client rappelé le 02/09, devis envoyé…',
+              hintText: AppLocalizations.of(context).needsStaffNotesHint,
             ),
           ),
           const SizedBox(height: 16),
           FilledButton(
             onPressed: _saving ? null : _save,
             child: _saving
-                ? const SizedBox(width: 18, height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text('Enregistrer'),
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(AppLocalizations.of(context).catalogFeaturesSave),
           ),
         ],
       ),
@@ -494,18 +599,23 @@ class _EmptyView extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.inbox_outlined, size: 64,
-            color: Theme.of(context).colorScheme.outline),
+        Icon(
+          Icons.inbox_outlined,
+          size: 64,
+          color: Theme.of(context).colorScheme.outline,
+        ),
         const SizedBox(height: 16),
         Text(
           status == 'pending'
-              ? 'Aucun besoin en attente'
-              : 'Aucun besoin trouvé',
+              ? AppLocalizations.of(context).needsEmptyPendingTitle
+              : AppLocalizations.of(context).needsEmptyResultsTitle,
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
-        const Text('Les besoins soumis par les clients\napparaîtront ici.',
-            textAlign: TextAlign.center),
+        Text(
+          AppLocalizations.of(context).needsEmptyStaffBody,
+          textAlign: TextAlign.center,
+        ),
       ],
     ),
   );

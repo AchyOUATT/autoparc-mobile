@@ -5,6 +5,7 @@ import 'package:auto/features/garage/presentation/widgets/mileage_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 /// Le kilométrage qui reculait sans rien dire.
 ///
@@ -54,6 +55,9 @@ void main() {
       ProviderScope(
         overrides: [garageRepositoryProvider.overrideWithValue(depot)],
         child: MaterialApp(
+          locale: const Locale('fr'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: Consumer(
               builder: (context, ref, _) => ElevatedButton(

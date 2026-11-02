@@ -427,7 +427,9 @@ class VehicleIdentity extends Equatable {
   final String? generation;
   final String? trim;
   final String? engineType;
+  final String? engineTypeCode;
   final String? drivetrain;
+  final String? drivetrainCode;
   final String? color;
 
   /// Code hexadécimal de la teinte, ex. `#4A4A4A`. Sert à afficher une
@@ -447,28 +449,31 @@ class VehicleIdentity extends Equatable {
     this.generation,
     this.trim,
     this.engineType,
+    this.engineTypeCode,
     this.drivetrain,
+    this.drivetrainCode,
     this.color,
     this.colorHex,
     this.colorFinish,
     this.year,
   });
 
-  factory VehicleIdentity.fromJson(Map<String, dynamic> json) =>
-      VehicleIdentity(
-        brand: json['brand'] as String,
-        brandSlug: json['brand_slug'] as String?,
-        brandLogoPath: json['brand_logo_path'] as String?,
-        model: json['model'] as String,
-        generation: json['generation'] as String?,
-        trim: json['trim'] as String?,
-        engineType: json['engine_type'] as String?,
-        drivetrain: json['drivetrain'] as String?,
-        color: json['color'] as String?,
-        colorHex: json['color_hex'] as String?,
-        colorFinish: json['color_finish'] as String?,
-        year: json['year'] as int?,
-      );
+  factory VehicleIdentity.fromJson(Map<String, dynamic> json) => VehicleIdentity(
+    brand:         json['brand']           as String,
+    brandSlug:     json['brand_slug']      as String?,
+    brandLogoPath: json['brand_logo_path'] as String?,
+    model:       json['model']       as String,
+    generation:  json['generation']  as String?,
+    trim:        json['trim']        as String?,
+    engineType:  json['engine_type'] as String?,
+    engineTypeCode: json['engine_type_code'] as String?,
+    drivetrain:  json['drivetrain']  as String?,
+    drivetrainCode: json['drivetrain_code'] as String?,
+    color:       json['color']       as String?,
+    colorHex:    json['color_hex']    as String?,
+    colorFinish: json['color_finish'] as String?,
+    year:        json['year']        as int?,
+  );
 
   String get fullName =>
       year != null ? '$brand $model ($year)' : '$brand $model';
@@ -607,6 +612,7 @@ class VehicleCommercial extends Equatable {
 
 class VehicleImport extends Equatable {
   final String? originCountry;
+  final String? originCountryIso2;
   final bool customsCleared;
   final String? portOfEntry;
   final String? steeringside; // 'left' | 'right'
@@ -614,6 +620,7 @@ class VehicleImport extends Equatable {
 
   const VehicleImport({
     this.originCountry,
+    this.originCountryIso2,
     required this.customsCleared,
     this.portOfEntry,
     this.steeringside,
@@ -623,10 +630,11 @@ class VehicleImport extends Equatable {
   bool get isRightHandDrive => steeringside == 'right';
 
   factory VehicleImport.fromJson(Map<String, dynamic> json) => VehicleImport(
-    originCountry: json['origin_country'] as String?,
-    customsCleared: json['customs_cleared'] as bool? ?? false,
-    portOfEntry: json['port_of_entry'] as String?,
-    steeringside: json['steering_side'] as String?,
+    originCountry:      json['origin_country']       as String?,
+    originCountryIso2:   json['origin_country_iso2'] as String?,
+    customsCleared:     json['customs_cleared']      as bool? ?? false,
+    portOfEntry:        json['port_of_entry']         as String?,
+    steeringside:       json['steering_side']         as String?,
     odometerAtImportKm: json['odometer_at_import_km'] as int?,
   );
 
@@ -646,6 +654,8 @@ class OfficialConsumption {
   final int modelYear;
   final String source;
   final String cycle;
+  final String? sourceCode;
+  final String? cycleCode;
 
   const OfficialConsumption({
     required this.min,
@@ -654,6 +664,8 @@ class OfficialConsumption {
     required this.modelYear,
     required this.source,
     required this.cycle,
+    this.sourceCode,
+    this.cycleCode,
   });
 
   static OfficialConsumption? depuisJson(Object? json) {
@@ -667,9 +679,11 @@ class OfficialConsumption {
       min: min,
       max: max,
       motorisations: _asInt(json['motorisations']) ?? 1,
-      modelYear: _asInt(json['model_year']) ?? 0,
-      source: json['source'] as String? ?? '',
-      cycle: json['cycle'] as String? ?? '',
+      modelYear:     _asInt(json['model_year']) ?? 0,
+      source:        json['source'] as String? ?? '',
+      cycle:         json['cycle']  as String? ?? '',
+      sourceCode:    json['source_code'] as String?,
+      cycleCode:     json['cycle_code'] as String?,
     );
   }
 

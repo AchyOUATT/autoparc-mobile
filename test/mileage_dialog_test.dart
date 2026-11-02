@@ -3,6 +3,7 @@ import 'package:auto/features/garage/presentation/widgets/mileage_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 /// Le plantage intermittent, enfin reproduit.
 ///
@@ -51,6 +52,9 @@ void main() {
             return MediaQuery(
               data: MediaQueryData(viewInsets: insets),
               child: MaterialApp(
+                locale: const Locale('fr'),
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
                 home: Scaffold(
                   body: Consumer(
                     builder: (context, ref, _) => ElevatedButton(

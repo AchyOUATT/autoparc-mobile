@@ -1,3 +1,4 @@
+import 'package:auto/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,7 +15,7 @@ class NotificationIconButton extends ConsumerWidget {
     final unread = ref.watch(unreadCountProvider).valueOrNull ?? 0;
 
     return IconButton(
-      tooltip: 'Notifications',
+      tooltip: AppLocalizations.of(context).notificationsTitle,
       onPressed: () => context.push('/notifications'),
       icon: Badge(
         isLabelVisible: unread > 0,

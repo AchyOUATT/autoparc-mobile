@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 import 'package:auto/features/partner_accounts/data/partner_repository.dart'
     as espace;
@@ -79,7 +80,12 @@ void main() {
         espace.partnerRepositoryProvider.overrideWithValue(_Depot(annonces)),
         espace.partnerSessionProvider.overrideWith((_) => _Session()),
       ],
-      child: MaterialApp(home: ecran),
+      child: MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ecran,
+      ),
     ));
     await tester.pumpAndSettle();
   }

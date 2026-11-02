@@ -65,13 +65,13 @@ class HomePage extends ConsumerWidget {
             const _BrowseSection(),
             if (privateSalesEnabled) Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(
               crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Les voitures de particuliers', style: Theme.of(context).textTheme.titleLarge),
-                const Text('Vendez votre voiture depuis votre compte habituel. Une annonce en cours gratuite.'),
+                Text(AppLocalizations.of(context).privateSalesHomeTitle, style: Theme.of(context).textTheme.titleLarge),
+                 Text(AppLocalizations.of(context).privateSalesHomeBody),
                 const SizedBox(height: 8),
                 Wrap(spacing: 8, children: [
-                  if (!auth.isStaff) FilledButton.icon(onPressed: () => context.push('/sell'), icon: const Icon(Icons.sell_outlined), label: const Text('Vendre ma voiture')),
-                  OutlinedButton(onPressed: () => context.push('/private-listings'), child: const Text('Voir les annonces')),
-                  if (auth.canManageCatalog) TextButton(onPressed: () => context.push('/private-listing-reviews'), child: const Text('Valider les annonces')),
+                  if (!auth.isStaff) FilledButton.icon(onPressed: () => context.push('/sell'), icon: const Icon(Icons.sell_outlined), label:  Text(AppLocalizations.of(context).privateSalesSellTitle)),
+                  OutlinedButton(onPressed: () => context.push('/private-listings'), child:  Text(AppLocalizations.of(context).privateSalesBrowseAction)),
+                  if (auth.canManageCatalog) TextButton(onPressed: () => context.push('/private-listing-reviews'), child:  Text(AppLocalizations.of(context).privateSalesReviewTitle)),
                 ]),
               ],
             ))),
@@ -104,7 +104,7 @@ class _MyVehicleSection extends ConsumerWidget {
       // son propriétaire qu'il n'a pas de véhicule : on dit l'échec et on
       // propose de réessayer. La vitrine, elle, ne dépend d'aucun compte.
       error: (e, _) => _GarageUnavailable(
-        message: messageFor(e),
+        message: messageFor(e, l10n: AppLocalizations.of(context)),
         onRetry: () => ref.invalidate(garageProvider),
       ),
       data: (vehicles) {

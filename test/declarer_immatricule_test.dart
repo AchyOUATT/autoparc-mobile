@@ -8,6 +8,7 @@ import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provi
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 /// « Immatriculé » se déclare à l'enregistrement.
 ///
@@ -64,7 +65,11 @@ Widget _ecran({Vehicle? existant}) => ProviderScope(
       overrides: [
         catalogRefsProvider.overrideWith((_) async => _refs),
       ],
-      child: MaterialApp(home: VehicleRegisterPage(existing: existant)),
+      child: MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: VehicleRegisterPage(existing: existant)),
     );
 
 /// L'état du commutateur « Véhicule immatriculé », lu sur le widget rendu.

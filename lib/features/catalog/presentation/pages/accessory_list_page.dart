@@ -194,7 +194,7 @@ class _Body extends ConsumerWidget {
     }
     if (paged.hasError) {
       return _ErrorView(
-        error: messageFor(paged.error),
+        error: messageFor(paged.error, l10n: AppLocalizations.of(context)),
         onRetry: () => ref.read(accessoryListProvider.notifier).refresh(),
       );
     }

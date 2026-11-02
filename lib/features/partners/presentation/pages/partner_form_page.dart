@@ -1,3 +1,4 @@
+import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -34,12 +35,12 @@ class _PartnerFormPageState extends ConsumerState<PartnerFormPage> {
   @override
   void initState() {
     super.initState();
-    _company  = TextEditingController(text: widget.existing?.companyName);
-    _contact  = TextEditingController(text: widget.existing?.contactName);
-    _phone    = TextEditingController(text: widget.existing?.phone);
-    _wa       = TextEditingController(text: widget.existing?.whatsapp);
-    _email    = TextEditingController(text: widget.existing?.email);
-    _notes    = TextEditingController(text: widget.existing?.notes);
+    _company = TextEditingController(text: widget.existing?.companyName);
+    _contact = TextEditingController(text: widget.existing?.contactName);
+    _phone = TextEditingController(text: widget.existing?.phone);
+    _wa = TextEditingController(text: widget.existing?.whatsapp);
+    _email = TextEditingController(text: widget.existing?.email);
+    _notes = TextEditingController(text: widget.existing?.notes);
     _isActive = widget.existing?.isActive ?? true;
   }
 
@@ -64,10 +65,10 @@ class _PartnerFormPageState extends ConsumerState<PartnerFormPage> {
     final data = {
       'company_name': _company.text.trim(),
       if (_contact.text.trim().isNotEmpty) 'contact_name': _contact.text.trim(),
-      'phone':    _phone.text.trim(),
-      if (_wa.text.trim().isNotEmpty)    'whatsapp': _wa.text.trim(),
-      if (_email.text.trim().isNotEmpty) 'email':    _email.text.trim(),
-      if (_notes.text.trim().isNotEmpty) 'notes':    _notes.text.trim(),
+      'phone': _phone.text.trim(),
+      if (_wa.text.trim().isNotEmpty) 'whatsapp': _wa.text.trim(),
+      if (_email.text.trim().isNotEmpty) 'email': _email.text.trim(),
+      if (_notes.text.trim().isNotEmpty) 'notes': _notes.text.trim(),
       'is_active': _isActive,
     };
 
@@ -81,7 +82,10 @@ class _PartnerFormPageState extends ConsumerState<PartnerFormPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(messageFor(e, l10n: AppLocalizations.of(context))),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -92,7 +96,11 @@ class _PartnerFormPageState extends ConsumerState<PartnerFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEdit ? 'Modifier le partenaire' : 'Nouveau partenaire'),
+        title: Text(
+          _isEdit
+              ? AppLocalizations.of(context).partnersEditTitle
+              : AppLocalizations.of(context).partnersCreateTitle,
+        ),
         actions: [
           if (_saving)
             const Padding(
@@ -104,7 +112,10 @@ class _PartnerFormPageState extends ConsumerState<PartnerFormPage> {
               ),
             )
           else
-            TextButton(onPressed: _save, child: const Text('Enregistrer')),
+            TextButton(
+              onPressed: _save,
+              child: Text(AppLocalizations.of(context).partnersSave),
+            ),
         ],
       ),
       body: Form(
@@ -113,22 +124,23 @@ class _PartnerFormPageState extends ConsumerState<PartnerFormPage> {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
           children: [
             // ── Informations entreprise ─────────────────────────────
-            _SectionTitle('Entreprise'),
+            _SectionTitle(AppLocalizations.of(context).partnersCompanySection),
             TextFormField(
               controller: _company,
-              decoration: const InputDecoration(
-                labelText: 'Nom de l\'entreprise *',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).partnersCompanyName,
                 prefixIcon: Icon(Icons.business_outlined),
               ),
               textCapitalization: TextCapitalization.words,
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Champ requis' : null,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? AppLocalizations.of(context).partnersRequiredField
+                  : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _contact,
-              decoration: const InputDecoration(
-                labelText: 'Nom de l\'interlocuteur',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).partnersContactName,
                 prefixIcon: Icon(Icons.person_outline),
               ),
               textCapitalization: TextCapitalization.words,
@@ -136,23 +148,26 @@ class _PartnerFormPageState extends ConsumerState<PartnerFormPage> {
 
             const SizedBox(height: 24),
             // ── Contacts ────────────────────────────────────────────
-            _SectionTitle('Contacts'),
+            _SectionTitle(AppLocalizations.of(context).partnersContactsSection),
             TextFormField(
               controller: _phone,
-              decoration: const InputDecoration(
-                labelText: 'Téléphone *',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).partnersPhone,
                 prefixIcon: Icon(Icons.phone_outlined),
                 hintText: '+225 07 00 00 00 00',
               ),
               keyboardType: TextInputType.phone,
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Champ requis' : null,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? AppLocalizations.of(context).partnersRequiredField
+                  : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _wa,
-              decoration: const InputDecoration(
-                labelText: 'WhatsApp (si différent)',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(
+                  context,
+                ).partnersWhatsappDifferent,
                 prefixIcon: Icon(Icons.chat_outlined),
                 hintText: '+225 07 00 00 00 00',
               ),
@@ -161,27 +176,28 @@ class _PartnerFormPageState extends ConsumerState<PartnerFormPage> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _email,
-              decoration: const InputDecoration(
-                labelText: 'E-mail',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).partnersEmail,
                 prefixIcon: Icon(Icons.email_outlined),
               ),
               keyboardType: TextInputType.emailAddress,
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return null;
-                if (!v.contains('@')) return 'Adresse email invalide';
+                if (!v.contains('@'))
+                  return AppLocalizations.of(context).partnersInvalidEmail;
                 return null;
               },
             ),
 
             const SizedBox(height: 24),
             // ── Notes ───────────────────────────────────────────────
-            _SectionTitle('Notes'),
+            _SectionTitle(AppLocalizations.of(context).partnersNotesSection),
             TextFormField(
               controller: _notes,
-              decoration: const InputDecoration(
-                labelText: 'Notes internes',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).partnersInternalNotes,
                 prefixIcon: Icon(Icons.notes_outlined),
-                hintText: 'Spécialité, conditions, horaires…',
+                hintText: AppLocalizations.of(context).partnersNotesHint,
                 alignLabelWithHint: true,
               ),
               maxLines: 3,
@@ -192,8 +208,8 @@ class _PartnerFormPageState extends ConsumerState<PartnerFormPage> {
             SwitchListTile.adaptive(
               value: _isActive,
               onChanged: (v) => setState(() => _isActive = v),
-              title: const Text('Partenaire actif'),
-              subtitle: const Text('Inactif = masqué dans les listes'),
+              title: Text(AppLocalizations.of(context).partnersActive),
+              subtitle: Text(AppLocalizations.of(context).partnersInactiveHelp),
             ),
           ],
         ),
@@ -211,10 +227,9 @@ class _SectionTitle extends StatelessWidget {
     padding: const EdgeInsets.only(bottom: 8),
     child: Text(
       title,
-      style: Theme.of(context)
-          .textTheme
-          .labelLarge
-          ?.copyWith(color: Theme.of(context).colorScheme.primary),
+      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+        color: Theme.of(context).colorScheme.primary,
+      ),
     ),
   );
 }

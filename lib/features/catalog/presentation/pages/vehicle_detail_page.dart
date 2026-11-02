@@ -1,3 +1,5 @@
+import '../catalog_reference_labels.dart';
+import '../../../../core/l10n/reference_labels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/product_gallery.dart';
@@ -98,7 +100,9 @@ class VehicleDetailPage extends ConsumerWidget {
         appBar: AppBar(),
         body: detailAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text(messageFor(e))),
+          error: (e, _) => Center(
+            child: Text(messageFor(e, l10n: AppLocalizations.of(context))),
+          ),
           data: (_) => const SizedBox.shrink(),
         ),
       );
@@ -150,7 +154,10 @@ class _VehicleDetailView extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(messageFor(e)), backgroundColor: cs.error),
+            SnackBar(
+              content: Text(messageFor(e, l10n: AppLocalizations.of(context))),
+              backgroundColor: cs.error,
+            ),
           );
         }
       }
@@ -353,9 +360,23 @@ class _VehicleDetailView extends ConsumerWidget {
                     // les traduirait pas, elle dupliquerait un texte que le
                     // serveur continue d'écrire.
                     if (id.engineType != null)
-                      (l10n.catalogFieldEngine, id.engineType!),
+                      (
+                        l10n.catalogFieldEngine,
+                        referenceFuelLabel(
+                          id.engineTypeCode,
+                          id.engineType!,
+                          l10n,
+                        ),
+                      ),
                     if (id.drivetrain != null)
-                      (l10n.catalogFieldDrivetrain, id.drivetrain!),
+                      (
+                        l10n.catalogFieldDrivetrain,
+                        referenceDrivetrainLabel(
+                          id.drivetrainCode,
+                          id.drivetrain!,
+                          l10n,
+                        ),
+                      ),
                     // Tout ce que le formulaire demande et que la fiche
                     // n'affichait pas : le modele ne lisait du bloc technique
                     // que le kilometrage, et jetait le reste.
@@ -413,7 +434,7 @@ class _VehicleDetailView extends ConsumerWidget {
 
                   if (id.color != null)
                     _ColorRow(
-                      name: id.color!,
+                      name: referenceColourLabel(id.color!, l10n),
                       hex: id.colorHex,
                       finish: id.colorFinish,
                     ),
@@ -535,7 +556,10 @@ class _VehicleDetailView extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(messageFor(e, l10n: AppLocalizations.of(context))),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -779,7 +803,14 @@ class _ImportSection extends StatelessWidget {
     return Column(
       children: [
         if (import_.originCountry != null)
-          _InfoRow(l10n.catalogFieldOrigin, import_.originCountry!),
+          _InfoRow(
+            l10n.catalogFieldOrigin,
+            referenceCountryLabel(
+              import_.originCountryIso2,
+              import_.originCountry!,
+              l10n,
+            ),
+          ),
         if (import_.portOfEntry != null)
           _InfoRow(l10n.catalogFieldPortOfEntry, import_.portOfEntry!),
         // Le kilométrage d'import ne s'affiche plus ici : c'est deux fois le
@@ -984,7 +1015,12 @@ class _FeaturePickerSheetState extends State<_FeaturePickerSheet> {
                     CheckboxListTile(
                       dense: true,
                       value: _selected.contains(f.id),
-                      title: Text(f.name),
+                      title: Text(
+                        catalogFeatureLabel(
+                          f.name,
+                          AppLocalizations.of(context),
+                        ),
+                      ),
                       controlAffinity: ListTileControlAffinity.leading,
                       onChanged: (v) => setState(() {
                         if (v == true)
@@ -1133,7 +1169,7 @@ class _FeaturePills extends StatelessWidget {
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                f.name,
+                catalogFeatureLabel(f.name, AppLocalizations.of(context)),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: outlined ? cs.onSurfaceVariant : cs.onSurface,
                 ),

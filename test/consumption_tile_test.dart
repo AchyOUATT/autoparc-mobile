@@ -1,10 +1,10 @@
-import 'package:auto/l10n/app_localizations.dart';
 import 'package:auto/features/garage/data/models/motorisation.dart';
 import 'package:auto/features/garage/data/models/owned_vehicle.dart';
 import 'package:auto/features/garage/presentation/widgets/consumption_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 /// La consommation affichée au propriétaire.
 ///

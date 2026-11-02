@@ -1,3 +1,4 @@
+import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,14 +10,17 @@ import '../../../../core/api/api_exception.dart';
 
 // ── Providers ────────────────────────────────────────────────────────
 
-final _partPartnersProvider =
-    FutureProvider.autoDispose.family<List<Partner>, int>((ref, partId) =>
-        ref.read(partnerRepositoryProvider).getPartnersForPart(partId));
+final _partPartnersProvider = FutureProvider.autoDispose
+    .family<List<Partner>, int>(
+      (ref, partId) =>
+          ref.read(partnerRepositoryProvider).getPartnersForPart(partId),
+    );
 
-final _accessoryPartnersProvider =
-    FutureProvider.autoDispose.family<List<Partner>, int>((ref, accId) =>
-        ref.read(partnerRepositoryProvider).getPartnersForAccessory(accId));
-
+final _accessoryPartnersProvider = FutureProvider.autoDispose
+    .family<List<Partner>, int>(
+      (ref, accId) =>
+          ref.read(partnerRepositoryProvider).getPartnersForAccessory(accId),
+    );
 
 // ════════════════════════════════════════════════════════════════════
 // Section "Partenaires" pour la fiche d'une pièce (staff uniquement)
@@ -40,7 +44,9 @@ class PartPartnersSection extends ConsumerWidget {
         ref.invalidate(_partPartnersProvider(partId));
       },
       onAttach: (partnerId, role, notes) async {
-        await ref.read(partnerRepositoryProvider).attachToPart(
+        await ref
+            .read(partnerRepositoryProvider)
+            .attachToPart(
               partId: partId,
               partnerId: partnerId,
               role: role,
@@ -71,7 +77,9 @@ class AccessoryPartnersSection extends ConsumerWidget {
         ref.invalidate(_accessoryPartnersProvider(accessoryId));
       },
       onAttach: (partnerId, role, notes) async {
-        await ref.read(partnerRepositoryProvider).attachToAccessory(
+        await ref
+            .read(partnerRepositoryProvider)
+            .attachToAccessory(
               accessoryId: accessoryId,
               partnerId: partnerId,
               role: role,
@@ -85,7 +93,8 @@ class AccessoryPartnersSection extends ConsumerWidget {
 
 // ── Widget commun ────────────────────────────────────────────────────
 
-typedef _AttachFn = Future<void> Function(int partnerId, String? role, String? notes);
+typedef _AttachFn =
+    Future<void> Function(int partnerId, String? role, String? notes);
 typedef _DetachFn = Future<void> Function(int partnerId);
 
 class _PartnersSection extends ConsumerWidget {
@@ -120,19 +129,17 @@ class _PartnersSection extends ConsumerWidget {
               // et poussait le bouton hors de l'écran.
               Expanded(
                 child: Text(
-                  'Partenaires',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  AppLocalizations.of(context).shellPartners,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               if (canEdit)
                 TextButton.icon(
                   icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Associer'),
-                  onPressed: () =>
-                      _showAttachDialog(context, ref),
+                  label: Text(AppLocalizations.of(context).partnersAttach),
+                  onPressed: () => _showAttachDialog(context, ref),
                 ),
             ],
           ),
@@ -144,29 +151,32 @@ class _PartnersSection extends ConsumerWidget {
           ),
           error: (e, _) => Padding(
             padding: const EdgeInsets.all(16),
-            child: Text(messageFor(e),
-                style: TextStyle(color: cs.error)),
+            child: Text(
+              messageFor(e, l10n: AppLocalizations.of(context)),
+              style: TextStyle(color: cs.error),
+            ),
           ),
           data: (partners) {
             if (partners.isEmpty) {
               return Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: Text(
-                  'Aucun partenaire associé.',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: cs.outline),
+                  AppLocalizations.of(context).partnersNoLinkedPartners,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: cs.outline),
                 ),
               );
             }
             return Column(
               children: partners
-                  .map((p) => _PartnerRow(
-                        partner: p,
-                        onDetach: () => onDetach(p.id),
-                        canDetach: canEdit,
-                      ))
+                  .map(
+                    (p) => _PartnerRow(
+                      partner: p,
+                      onDetach: () => onDetach(p.id),
+                      canDetach: canEdit,
+                    ),
+                  )
                   .toList(),
             );
           },
@@ -178,15 +188,15 @@ class _PartnersSection extends ConsumerWidget {
 
   Future<void> _showAttachDialog(BuildContext context, WidgetRef ref) async {
     // Charger l'annuaire
-    final all = await ref.read(partnerRepositoryProvider).getPartners(perPage: 100);
+    final all = await ref
+        .read(partnerRepositoryProvider)
+        .getPartners(perPage: 100);
     if (!context.mounted) return;
 
     await showDialog<void>(
       context: context,
-      builder: (ctx) => _AttachPartnerDialog(
-        partenaires: all.data,
-        onAttach: onAttach,
-      ),
+      builder: (ctx) =>
+          _AttachPartnerDialog(partenaires: all.data, onAttach: onAttach),
     );
   }
 }
@@ -216,7 +226,7 @@ class _AttachPartnerDialog extends StatefulWidget {
 }
 
 class _AttachPartnerDialogState extends State<_AttachPartnerDialog> {
-  final _roleCtrl  = TextEditingController();
+  final _roleCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   Partner? _selected;
 
@@ -230,7 +240,7 @@ class _AttachPartnerDialogState extends State<_AttachPartnerDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Associer un partenaire'),
+      title: Text(AppLocalizations.of(context).partnersAttachTitle),
       content: SizedBox(
         width: 360,
         child: Column(
@@ -243,31 +253,36 @@ class _AttachPartnerDialogState extends State<_AttachPartnerDialog> {
               // dialogue. L'ellipse posee sur l'item ne s'applique qu'une fois
               // la largeur contrainte.
               isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Partenaire *',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).partnersPartnerRequired,
                 prefixIcon: Icon(Icons.handshake_outlined),
               ),
               items: widget.partenaires
-                  .map((p) => DropdownMenuItem(
-                        value: p,
-                        child: Text(p.displayName, overflow: TextOverflow.ellipsis),
-                      ))
+                  .map(
+                    (p) => DropdownMenuItem(
+                      value: p,
+                      child: Text(
+                        p.displayName,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  )
                   .toList(),
               onChanged: (p) => setState(() => _selected = p),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _roleCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Rôle (optionnel)',
-                hintText: 'fournisseur, importateur…',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).partnersRoleOptional,
+                hintText: AppLocalizations.of(context).partnersRoleHint,
               ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _notesCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Notes (optionnel)',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).partnersNotesOptional,
               ),
               maxLines: 2,
             ),
@@ -277,7 +292,7 @@ class _AttachPartnerDialogState extends State<_AttachPartnerDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Annuler'),
+          child: Text(AppLocalizations.of(context).commonCancel),
         ),
         FilledButton(
           onPressed: _selected == null
@@ -286,9 +301,9 @@ class _AttachPartnerDialogState extends State<_AttachPartnerDialog> {
                   // Le texte se lit avant de fermer : apres le pop, la boite
                   // s'anime encore mais son etat peut etre detruit a tout
                   // moment.
-                  final role  = _roleCtrl.text.trim();
+                  final role = _roleCtrl.text.trim();
                   final notes = _notesCtrl.text.trim();
-                  final id    = _selected!.id;
+                  final id = _selected!.id;
 
                   Navigator.pop(context);
                   widget.onAttach(
@@ -297,7 +312,7 @@ class _AttachPartnerDialogState extends State<_AttachPartnerDialog> {
                     notes.isEmpty ? null : notes,
                   );
                 },
-          child: const Text('Associer'),
+          child: Text(AppLocalizations.of(context).partnersAttach),
         ),
       ],
     );
@@ -331,15 +346,15 @@ class _PartnerRow extends StatelessWidget {
         child: Text(
           partner.companyName[0].toUpperCase(),
           style: TextStyle(
-              color: cs.onSecondaryContainer,
-              fontSize: 13,
-              fontWeight: FontWeight.bold),
+            color: cs.onSecondaryContainer,
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       title: Text(partner.companyName, style: const TextStyle(fontSize: 14)),
       subtitle: partner.role != null
-          ? Text(partner.role!,
-              style: Theme.of(context).textTheme.bodySmall)
+          ? Text(partner.role!, style: Theme.of(context).textTheme.bodySmall)
           : null,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -355,7 +370,7 @@ class _PartnerRow extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.phone_outlined, size: 18),
             color: cs.primary,
-            tooltip: 'Appeler',
+            tooltip: AppLocalizations.of(context).catalogCallAction,
             onPressed: () => _launchPhone(partner.phone),
           ),
           // Retirer
@@ -363,7 +378,7 @@ class _PartnerRow extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.link_off, size: 18),
               color: cs.error,
-              tooltip: 'Retirer',
+              tooltip: AppLocalizations.of(context).partnersRemove,
               onPressed: () => _confirmDetach(context),
             ),
         ],
@@ -375,17 +390,22 @@ class _PartnerRow extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Retirer ce partenaire ?'),
+        title: Text(AppLocalizations.of(context).partnersRemoveQuestion),
         content: Text(
-            'L\'association avec ${partner.companyName} sera supprimée.'),
+          AppLocalizations.of(
+            context,
+          ).partnersRemoveDescription(partner.companyName),
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuler')),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppLocalizations.of(context).commonCancel),
+          ),
           FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Retirer')),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(AppLocalizations.of(context).partnersRemove),
+          ),
         ],
       ),
     );

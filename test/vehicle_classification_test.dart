@@ -19,6 +19,7 @@ import 'package:auto/features/vehicles/data/vehicle_admin_repository.dart';
 import 'package:auto/features/vehicles/presentation/pages/vehicle_register_page.dart';
 import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provider.dart';
 import 'package:auto/shared/models/paginated_response.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 const toyota = BrandRef(id: 3, name: 'Toyota', isActive: true);
 const honda = BrandRef(id: 4, name: 'Honda', isActive: true);
@@ -168,7 +169,11 @@ void main() {
         vehicleAdminRepositoryProvider.overrideWithValue(repo),
         partnerRepositoryProvider.overrideWithValue(_PartnerRepository()),
       ],
-      child: MaterialApp(home: VehicleRegisterPage(existing: Vehicle.fromJson(existingJson ?? vehicleJson()))),
+      child: MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: VehicleRegisterPage(existing: Vehicle.fromJson(existingJson ?? vehicleJson()))),
     ));
     await tester.pumpAndSettle();
   }
@@ -255,7 +260,11 @@ void main() {
   testWidgets('changing brand in garage clears its previous model and fuel', (tester) async {
     await tester.pumpWidget(ProviderScope(
       overrides: [catalogRefsProvider.overrideWith((_) async => refs)],
-      child: const MaterialApp(home: AddVehicleToGaragePage()),
+      child: const MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AddVehicleToGaragePage()),
     ));
     await tester.pumpAndSettle();
     await choose<BrandRef>(tester, toyota);

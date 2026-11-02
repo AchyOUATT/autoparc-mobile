@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../../core/api/api_exception.dart';
 import '../../../core/api/endpoints.dart';
 import '../../../core/local/catalog_local_cache.dart';
 import '../../../shared/models/paginated_response.dart';
 import 'models/vehicle.dart';
+import 'models/catalog_vehicle_item.dart';
+import '../../private_sales/data/private_listing_repository.dart';
 import 'models/accessory.dart';
 import 'models/part.dart';
 import 'models/part_category.dart';
@@ -26,55 +29,177 @@ class CatalogRepository {
 
   // ── Véhicules ────────────────────────────────────────────────────
 
+  /// Public feed with one server-side pagination across stock and private
+  /// listings. A server without this route still serves the legacy stock
+  /// catalogue; other failures remain visible instead of hiding announcements.
+  Future<PaginatedResponse<CatalogVehicleItem>> getVehicleListings({
+    int page = 1,
+    int perPage = 20,
+    String? search,
+    String? availability,
+    String? vehicleType,
+    String? bodyStyle,
+    String? brandId,
+    int? yearMin,
+    int? yearMax,
+    double? priceMax,
+    String? condition,
+    String? originCountryId,
+    String? city,
+    int? locationId,
+    bool? customsCleared,
+    bool? deal,
+    String? registrationStatus,
+    bool includePrivate = privateSalesEnabled,
+  }) async {
+    final params = _vehicleParams(
+      page: page,
+      perPage: perPage,
+      search: search,
+      availability: availability,
+      vehicleType: vehicleType,
+      bodyStyle: bodyStyle,
+      brandId: brandId,
+      yearMin: yearMin,
+      yearMax: yearMax,
+      priceMax: priceMax,
+      condition: condition,
+      originCountryId: originCountryId,
+      city: city,
+      locationId: locationId,
+      customsCleared: customsCleared,
+      deal: deal,
+      registrationStatus: registrationStatus,
+    )..['include_private'] = includePrivate ? '1' : '0';
+
+    try {
+      final json = await _client.get(
+        Endpoints.catalogVehicleListings,
+        params: params,
+      );
+      return PaginatedResponse.fromJson(json, CatalogVehicleItem.fromJson);
+    } on ApiException catch (error) {
+      if (!error.isNotFound) rethrow;
+      final legacy = await getVehicles(
+        page: page,
+        perPage: perPage,
+        search: search,
+        availability: availability,
+        vehicleType: vehicleType,
+        bodyStyle: bodyStyle,
+        brandId: brandId,
+        yearMin: yearMin,
+        yearMax: yearMax,
+        priceMax: priceMax,
+        condition: condition,
+        originCountryId: originCountryId,
+        city: city,
+        locationId: locationId,
+        customsCleared: customsCleared,
+        deal: deal,
+        registrationStatus: registrationStatus,
+      );
+      return PaginatedResponse(
+        data: legacy.data
+            .map(CatalogVehicleItem.vehicle)
+            .toList(growable: false),
+        currentPage: legacy.currentPage,
+        lastPage: legacy.lastPage,
+        total: legacy.total,
+        perPage: legacy.perPage,
+        nextUrl: legacy.nextUrl,
+      );
+    }
+  }
+
   Future<PaginatedResponse<Vehicle>> getVehicles({
     int page = 1,
     int perPage = 20,
     String? search,
     String? availability, // 'sale' | 'rent' | null (tous)
-    String? vehicleType,  // 'passenger' | 'utility' | 'heavy' | null (tous)
-    String? bodyStyle,    // 'sedan' | 'suv' | 'pickup' | 'minibus' | 'bus' | … | null
+    String? vehicleType, // 'passenger' | 'utility' | 'heavy' | null (tous)
+    String?
+    bodyStyle, // 'sedan' | 'suv' | 'pickup' | 'minibus' | 'bus' | … | null
     String? brandId,
     int? yearMin,
     int? yearMax,
     double? priceMax,
     String? condition, // 'new' | 'used' | 'damaged'
     String? originCountryId,
-    String? city,       // filtre par ville
-    int? locationId,    // filtre par agence précise
+    String? city, // filtre par ville
+    int? locationId, // filtre par agence précise
     bool? customsCleared, // true = uniquement les importés dédouanés
-    bool? deal,           // true = uniquement les véhicules mis en avant
+    bool? deal, // true = uniquement les véhicules mis en avant
     String? registrationStatus, // null | 'registered' | 'unregistered'
   }) async {
-    final params = <String, dynamic>{
-      'page':     page,
-      'per_page': perPage,
-      if (search != null && search.isNotEmpty) 'q': search,
-      if (vehicleType != null) 'vehicle_type': vehicleType,
-      if (bodyStyle   != null) 'body_style':   bodyStyle,
-      if (brandId != null) 'brand_id': brandId,
-      if (yearMin != null) 'year_min': yearMin,
-      if (yearMax != null) 'year_max': yearMax,
-      if (priceMax != null) 'price_max': priceMax.toInt(),
-      if (condition != null) 'condition': condition,
-      if (originCountryId != null) 'origin_country_id': originCountryId,
-      if (city != null) 'city': city,
-      if (locationId != null) 'location_id': locationId,
-      // L'API n'applique ce filtre que lorsqu'il est vrai (request->boolean),
-      // d'où l'absence de cas « non dédouané ».
-      if (customsCleared == true) 'customs_cleared': '1',
-      if (deal == true) 'deal': '1',
-      // Celui-ci a deux valeurs utiles, contrairement au dédouanement :
-      // l'API filtre sur `filled()`, donc 'unregistered' est un filtre à part
-      // entière et pas seulement l'absence de 'registered'.
-      if (registrationStatus != null) 'registration_status': registrationStatus,
-      // 'availability' n'est pas un filtre direct dans l'API — on utilise available_for_rent
-      if (availability == 'rent') 'available_for_rent': '1',
-      if (availability == 'sale') 'availability': 'sale',
-    };
+    final params = _vehicleParams(
+      page: page,
+      perPage: perPage,
+      search: search,
+      availability: availability,
+      vehicleType: vehicleType,
+      bodyStyle: bodyStyle,
+      brandId: brandId,
+      yearMin: yearMin,
+      yearMax: yearMax,
+      priceMax: priceMax,
+      condition: condition,
+      originCountryId: originCountryId,
+      city: city,
+      locationId: locationId,
+      customsCleared: customsCleared,
+      deal: deal,
+      registrationStatus: registrationStatus,
+    );
 
     final json = await _client.get(Endpoints.catalogVehicles, params: params);
     return PaginatedResponse.fromJson(json, Vehicle.fromJson);
   }
+
+  Map<String, dynamic> _vehicleParams({
+    required int page,
+    required int perPage,
+    required String? search,
+    required String? availability,
+    required String? vehicleType,
+    required String? bodyStyle,
+    required String? brandId,
+    required int? yearMin,
+    required int? yearMax,
+    required double? priceMax,
+    required String? condition,
+    required String? originCountryId,
+    required String? city,
+    required int? locationId,
+    required bool? customsCleared,
+    required bool? deal,
+    required String? registrationStatus,
+  }) => <String, dynamic>{
+    'page': page,
+    'per_page': perPage,
+    if (search != null && search.isNotEmpty) 'q': search,
+    if (vehicleType != null) 'vehicle_type': vehicleType,
+    if (bodyStyle != null) 'body_style': bodyStyle,
+    if (brandId != null) 'brand_id': brandId,
+    if (yearMin != null) 'year_min': yearMin,
+    if (yearMax != null) 'year_max': yearMax,
+    if (priceMax != null) 'price_max': priceMax.toInt(),
+    if (condition != null) 'condition': condition,
+    if (originCountryId != null) 'origin_country_id': originCountryId,
+    if (city != null) 'city': city,
+    if (locationId != null) 'location_id': locationId,
+    // L'API n'applique ce filtre que lorsqu'il est vrai (request->boolean),
+    // d'où l'absence de cas « non dédouané ».
+    if (customsCleared == true) 'customs_cleared': '1',
+    if (deal == true) 'deal': '1',
+    // Celui-ci a deux valeurs utiles, contrairement au dédouanement :
+    // l'API filtre sur `filled()`, donc 'unregistered' est un filtre à part
+    // entière et pas seulement l'absence de 'registered'.
+    if (registrationStatus != null) 'registration_status': registrationStatus,
+    // 'availability' n'est pas un filtre direct dans l'API — on utilise available_for_rent
+    if (availability == 'rent') 'available_for_rent': '1',
+    if (availability == 'sale') 'availability': 'sale',
+  };
 
   Future<Vehicle> getVehicle(int id) async {
     final json = await _client.get('${Endpoints.catalogVehicles}/$id');

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/l10n/langue.dart';
 
 import '../../data/models/app_notification.dart';
 import '../../data/notifications_repository.dart';
@@ -7,6 +8,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 /// Liste complète des notifications (rechargée à la demande).
 final notificationsProvider =
     FutureProvider.autoDispose<List<AppNotification>>((ref) {
+  ref.watch(langueProvider);
   return ref.read(notificationsRepositoryProvider).getNotifications();
 });
 

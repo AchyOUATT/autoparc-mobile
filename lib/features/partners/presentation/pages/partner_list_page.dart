@@ -1,3 +1,4 @@
+import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,12 +12,14 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 
 // ── Provider ──────────────────────────────────────────────────────────
 
-final _partnerListProvider =
-    FutureProvider.autoDispose.family<List<Partner>, String>((ref, search) async {
-  final repo = ref.read(partnerRepositoryProvider);
-  final page = await repo.getPartners(search: search.isEmpty ? null : search);
-  return page.data;
-});
+final _partnerListProvider = FutureProvider.autoDispose
+    .family<List<Partner>, String>((ref, search) async {
+      final repo = ref.read(partnerRepositoryProvider);
+      final page = await repo.getPartners(
+        search: search.isEmpty ? null : search,
+      );
+      return page.data;
+    });
 
 // ════════════════════════════════════════════════════════════════════
 // Page principale (staff uniquement)
@@ -45,7 +48,7 @@ class _PartnerListPageState extends ConsumerState<PartnerListPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Partenaires'),
+        title: Text(AppLocalizations.of(context).shellPartners),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Padding(
@@ -56,7 +59,7 @@ class _PartnerListPageState extends ConsumerState<PartnerListPage> {
               // reduit ne ferait que la rogner.
               constraints: const BoxConstraints(minHeight: 40, maxHeight: 40),
               controller: _searchCtrl,
-              hintText: 'Nom, contact, téléphone…',
+              hintText: AppLocalizations.of(context).partnersSearchHint,
               leading: const Icon(Icons.search),
               trailing: [
                 if (_searchCtrl.text.isNotEmpty)
@@ -82,7 +85,7 @@ class _PartnerListPageState extends ConsumerState<PartnerListPage> {
                 if (created == true) ref.invalidate(_partnerListProvider);
               },
               icon: const Icon(Icons.person_add_alt_1_outlined),
-              label: const Text('Nouveau partenaire'),
+              label: Text(AppLocalizations.of(context).partnersCreateTitle),
             )
           : null,
       body: partners.when(
@@ -93,11 +96,14 @@ class _PartnerListPageState extends ConsumerState<PartnerListPage> {
             children: [
               const Icon(Icons.wifi_off, size: 48),
               const SizedBox(height: 12),
-              Text(messageFor(e), textAlign: TextAlign.center),
+              Text(
+                messageFor(e, l10n: AppLocalizations.of(context)),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => ref.invalidate(_partnerListProvider),
-                child: const Text('Réessayer'),
+                child: Text(AppLocalizations.of(context).commonRetry),
               ),
             ],
           ),
@@ -108,11 +114,13 @@ class _PartnerListPageState extends ConsumerState<PartnerListPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.handshake_outlined,
-                      size: 64,
-                      color: Theme.of(context).colorScheme.outline),
+                  Icon(
+                    Icons.handshake_outlined,
+                    size: 64,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                   const SizedBox(height: 12),
-                  const Text('Aucun partenaire trouvé'),
+                  Text(AppLocalizations.of(context).partnersNoResults),
                 ],
               ),
             );
@@ -122,8 +130,7 @@ class _PartnerListPageState extends ConsumerState<PartnerListPage> {
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(0, 8, 0, 100),
               itemCount: list.length,
-              separatorBuilder: (_, __) =>
-                  const Divider(height: 1, indent: 72),
+              separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
               itemBuilder: (_, i) => _PartnerTile(
                 partner: list[i],
                 onChanged: () => ref.invalidate(_partnerListProvider),
@@ -162,11 +169,17 @@ class _PartnerTile extends StatelessWidget {
         backgroundColor: cs.primaryContainer,
         child: Text(
           partner.companyName[0].toUpperCase(),
-          style: TextStyle(color: cs.onPrimaryContainer, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: cs.onPrimaryContainer,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
-      title: Text(partner.companyName,
-          maxLines: 1, overflow: TextOverflow.ellipsis),
+      title: Text(
+        partner.companyName,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
       subtitle: Text(
         [
           if (partner.contactName != null) partner.contactName!,
@@ -189,30 +202,37 @@ class _PartnerTile extends StatelessWidget {
           _ContactIcon(
             icon: Icons.phone_outlined,
             color: cs.primary,
-            tooltip: 'Appeler',
+            tooltip: AppLocalizations.of(context).catalogCallAction,
             onTap: () => _launchPhone(partner.phone),
           ),
           // Menu
           if (canEdit)
-          PopupMenuButton<String>(
-            itemBuilder: (_) => [
-              const PopupMenuItem(value: 'edit', child: Text('Modifier')),
-              const PopupMenuItem(
-                value: 'delete',
-                child: Text('Supprimer', style: TextStyle(color: Colors.red)),
-              ),
-            ],
-            onSelected: (v) async {
-              if (v == 'edit') {
-                final updated = await context.push<bool>(
+            PopupMenuButton<String>(
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'edit',
+                  child: Text(AppLocalizations.of(context).catalogEditTooltip),
+                ),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Text(
+                    AppLocalizations.of(context).partnersDelete,
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              ],
+              onSelected: (v) async {
+                if (v == 'edit') {
+                  final updated = await context.push<bool>(
                     '/partners/${partner.id}/edit',
-                    extra: partner);
-                if (updated == true) onChanged();
-              } else if (v == 'delete') {
-                _confirmDelete(context);
-              }
-            },
-          ),
+                    extra: partner,
+                  );
+                  if (updated == true) onChanged();
+                } else if (v == 'delete') {
+                  _confirmDelete(context);
+                }
+              },
+            ),
         ],
       ),
       onTap: () => context.push('/partners/${partner.id}', extra: partner),
@@ -223,17 +243,22 @@ class _PartnerTile extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Supprimer ce partenaire ?'),
-        content: Text('${partner.companyName} sera retiré de tous les produits.'),
+        title: Text(AppLocalizations.of(context).partnersDeleteQuestion),
+        content: Text(
+          AppLocalizations.of(
+            context,
+          ).partnersDeleteDescription(partner.companyName),
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuler')),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppLocalizations.of(context).commonCancel),
+          ),
           FilledButton(
-              style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Supprimer')),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(AppLocalizations.of(context).partnersDelete),
+          ),
         ],
       ),
     );

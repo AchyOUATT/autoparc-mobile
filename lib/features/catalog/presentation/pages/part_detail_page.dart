@@ -1,3 +1,4 @@
+import '../catalog_reference_labels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -77,7 +78,7 @@ class PartDetailPage extends ConsumerWidget {
         appBar: AppBar(),
         body: partAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text(messageFor(e))),
+          error: (e, _) => Center(child: Text(messageFor(e, l10n: AppLocalizations.of(context)))),
           data: (_) => const SizedBox.shrink(),
         ),
       );
@@ -119,7 +120,7 @@ class PartDetailPage extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(messageFor(e)), backgroundColor: cs.error),
+            SnackBar(content: Text(messageFor(e, l10n: AppLocalizations.of(context))), backgroundColor: cs.error),
           );
         }
       }
@@ -601,7 +602,7 @@ class _InfoCard extends StatelessWidget {
             // référentiel du serveur et restent en français jusqu'à la vague
             // serveur : seuls leurs libellés sont traduits.
             if (part.categoryName != null)
-              _InfoRow(l10n.catalogFieldCategory, part.categoryName!),
+              _InfoRow(l10n.catalogFieldCategory, catalogPartCategoryLabel(part.categoryName!, l10n)),
             if (part.manufacturer != null)
               _InfoRow(l10n.catalogFieldManufacturer, part.manufacturer!),
             // garantie désactivée temporairement

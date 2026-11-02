@@ -1,3 +1,4 @@
+import '../../../../core/l10n/reference_labels.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/vehicle.dart';
+import '../../data/models/catalog_vehicle_item.dart';
 import '../providers/catalog_providers.dart';
 import '../../../../shared/models/paged_state.dart';
 import '../libelles_vehicule.dart';
@@ -24,6 +26,8 @@ import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
 import '../../../../core/providers/shell_scaffold_provider.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../private_sales/data/private_listing_repository.dart';
+import '../../../private_sales/presentation/private_listing_detail.dart';
 
 class VehicleListPage extends ConsumerStatefulWidget {
   const VehicleListPage({super.key});
@@ -60,8 +64,18 @@ class _VehicleListPageState extends ConsumerState<VehicleListPage> {
   Widget build(BuildContext context) {
     final paged = ref.watch(vehicleListProvider);
     final filter = ref.watch(vehicleFilterProvider);
-    final cities =
-        ref.watch(catalogRefsProvider).valueOrNull?.cities ?? const <String>[];
+    final cities = <String>{
+      for (final city
+          in ref.watch(catalogRefsProvider).valueOrNull?.cities ??
+              const <String>[])
+        if (city.trim().isNotEmpty) city.trim(),
+      for (final item in paged.items)
+        if (item.privateListing case final listing?)
+          if (listing.text('city').trim().isNotEmpty)
+            listing.text('city').trim(),
+      // Keep the active city selectable even while its result page is empty.
+      if (filter.city?.trim() case final city? when city.isNotEmpty) city,
+    }.toList()..sort();
     final auth = ref.watch(authProvider);
     final isStaff = auth.isStaff;
 
@@ -146,10 +160,10 @@ class _VehicleListPageState extends ConsumerState<VehicleListPage> {
               // ce qui masquait le defaut : effacer d'un geste marchait,
               // effacer au CLAVIER ne marchait pas. Deux chemins pour la meme
               // intention, un seul correct.
-              onChanged: (q) => ref.read(vehicleFilterProvider.notifier).state =
-                  q.isEmpty
-                      ? filter.copyWith(clearSearch: true)
-                      : filter.copyWith(search: q),
+              onChanged: (q) =>
+                  ref.read(vehicleFilterProvider.notifier).state = q.isEmpty
+                  ? filter.copyWith(clearSearch: true)
+                  : filter.copyWith(search: q),
             ),
           ),
         ),
@@ -176,7 +190,7 @@ class _VehicleListPageState extends ConsumerState<VehicleListPage> {
 // ── Corps principal ─────────────────────────────────────────────
 
 class _Body extends ConsumerWidget {
-  final PagedState<Vehicle> paged;
+  final PagedState<CatalogVehicleItem> paged;
   final ScrollController scrollCtrl;
   const _Body({required this.paged, required this.scrollCtrl});
 
@@ -187,7 +201,7 @@ class _Body extends ConsumerWidget {
     }
     if (paged.hasError) {
       return _ErrorView(
-        error: messageFor(paged.error),
+        error: messageFor(paged.error, l10n: AppLocalizations.of(context)),
         onRetry: () => ref.read(vehicleListProvider.notifier).refresh(),
       );
     }
@@ -197,8 +211,8 @@ class _Body extends ConsumerWidget {
 
     return RefreshIndicator(
       onRefresh: () => ref.read(vehicleListProvider.notifier).refresh(),
-      child: VehicleGrid(
-        vehicles: paged.items,
+      child: VehicleGrid.catalog(
+        items: paged.items,
         total: paged.total,
         hasMore: paged.hasMore,
         isLoadingMore: paged.isLoadingMore,
@@ -659,6 +673,7 @@ const int _lignesDeLaCarte = 7;
 /// réellement reçue.
 class VehicleGrid extends StatelessWidget {
   final List<Vehicle> vehicles;
+  final List<CatalogVehicleItem>? catalogItems;
   final int total;
   final bool hasMore;
   final bool isLoadingMore;
@@ -670,7 +685,20 @@ class VehicleGrid extends StatelessWidget {
     required this.hasMore,
     required this.isLoadingMore,
     required this.scrollCtrl,
-  });
+  }) : catalogItems = null;
+
+  /// Public cards preserve their source; stock identifiers remain numeric.
+  const VehicleGrid.catalog({
+    super.key,
+    required List<CatalogVehicleItem> items,
+    required this.total,
+    required this.hasMore,
+    required this.isLoadingMore,
+    required this.scrollCtrl,
+  }) : catalogItems = items,
+       vehicles = const [];
+
+  int get _cardCount => catalogItems?.length ?? vehicles.length;
 
   @override
   Widget build(BuildContext context) {
@@ -706,13 +734,17 @@ class VehicleGrid extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  AppLocalizations.of(context).catalogPricesIncludeVat,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
+                // A private seller's price does not establish a VAT treatment.
+                if (!(catalogItems?.any((item) => item.isPrivate) ??
+                    false)) ...[
+                  const SizedBox(width: 12),
+                  Text(
+                    AppLocalizations.of(context).catalogPricesIncludeVat,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -727,7 +759,7 @@ class VehicleGrid extends StatelessWidget {
             ),
           ),
         // Message "tout chargé"
-        if (!hasMore && vehicles.isNotEmpty)
+        if (!hasMore && _cardCount > 0)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 20),
@@ -868,13 +900,144 @@ class VehicleGrid extends StatelessWidget {
         // des deux `CrossAxisAlignment` et la liste des montages déjà essayés
         // et retirés.
         child: MaconnerieColonnes(
-          nombre: vehicles.length,
+          nombre: _cardCount,
           ecartHorizontal: _ecartColonnes,
           // 10 points, la valeur que le pas de 2 en dur posait déjà entre deux
           // cartes d'une même colonne. La carte d'un véhicule n'a pas de marge
           // basse à elle, contrairement à celle d'une pièce.
           ecartVertical: 10,
-          carte: (_, i, _) => VehicleCard(vehicle: vehicles[i]),
+          carte: (_, i, _) {
+            final item = catalogItems?[i];
+            if (item == null) return VehicleCard(vehicle: vehicles[i]);
+            return item.isPrivate
+                ? PrivateCatalogVehicleCard(
+                    key: ValueKey(item.key),
+                    listing: item.privateListing!,
+                  )
+                : VehicleCard(key: ValueKey(item.key), vehicle: item.vehicle!);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// A public private-sale card uses the approved listing snapshot, without
+/// manufacturing a stock status, registration status or vehicle type.
+class PrivateCatalogVehicleCard extends StatelessWidget {
+  const PrivateCatalogVehicleCard({super.key, required this.listing});
+
+  final PrivateListing listing;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final photos = listing.photos
+        .map((photo) => photo['url']?.toString() ?? '')
+        .where((url) => url.isNotEmpty)
+        .toList(growable: false);
+    final cover = Container(
+      color: cs.surfaceContainerHighest,
+      alignment: Alignment.center,
+      child: Icon(Icons.directions_car_outlined, color: cs.onSurfaceVariant),
+    );
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => Navigator.push<void>(
+          context,
+          MaterialPageRoute<void>(
+            builder: (_) =>
+                PrivateListingDetail(listing: listing, publicListing: true),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AspectRatio(
+              aspectRatio: _ratioPhoto,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (photos.isEmpty)
+                    cover
+                  else
+                    CatalogImage(url: photos.first, fallback: cover),
+                  Positioned(
+                    left: 8,
+                    right: 8,
+                    top: 8,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: cs.primaryContainer,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          l10n.privateSalesPrivateSeller,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: cs.onPrimaryContainer,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (photos.length > 1)
+                    Positioned(
+                      right: 8,
+                      bottom: 8,
+                      child: _PhotoCount(count: photos.length),
+                    ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${listing.title} (${listing.number('year')})',
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    l10n.commonMileageKm(
+                      formatEntier(listing.number('mileage_km')),
+                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                  if (listing.text('city').isNotEmpty)
+                    Text(
+                      listing.text('city'),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                  _PrixAjuste(
+                    texte: formatXof(listing.number('price').toDouble()),
+                    style: theme.textTheme.titleSmall!.copyWith(
+                      color: cs.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -955,7 +1118,12 @@ String? _ligneSpecs(AppLocalizations l10n, Vehicle vehicle) {
     if (finition.isNotEmpty) finition,
     if (vehicle.mileageKm != null)
       l10n.commonMileageKm(formatEntier(vehicle.mileageKm!)),
-    if (vehicle.identity.engineType != null) vehicle.identity.engineType!,
+    if (vehicle.identity.engineType != null)
+      referenceFuelLabel(
+        vehicle.identity.engineTypeCode,
+        vehicle.identity.engineType!,
+        l10n,
+      ),
   ];
   return specs.isEmpty ? null : specs.join(' • ');
 }
@@ -1616,12 +1784,12 @@ class _PriceRow extends StatelessWidget {
     );
 
     final Widget prix;
-    final displayedPrice = vehicleHeadlinePrice(commercial, AppLocalizations.of(context));
+    final displayedPrice = vehicleHeadlinePrice(
+      commercial,
+      AppLocalizations.of(context),
+    );
     if (displayedPrice != null) {
-      prix = _PrixAjuste(
-        texte: displayedPrice,
-        style: style,
-      );
+      prix = _PrixAjuste(texte: displayedPrice, style: style);
     } else {
       // « Prix non communiqué » s'ellipse, lui, et ce n'est pas une
       // inconséquence : une phrase coupée en « Prix non communi… » se lit
@@ -1685,21 +1853,22 @@ class _PriceRow extends StatelessWidget {
         // rôles d'accent c'est le seul qui ne soit ni le `primary` du prix ni
         // le gris des lignes secondaires. Son contraste est mesuré dans les
         // deux modes — voir `vehicle_card_test.dart`.
-        if (affaire != null) Text(
-          affaire,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: cs.tertiary,
-            fontWeight: FontWeight.w600,
+        if (affaire != null)
+          Text(
+            affaire,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: cs.tertiary,
+              fontWeight: FontWeight.w600,
+            ),
+            // DEUX LIGNES, ET C'EST LA DERNIÈRE TRONCATURE QUE LE BANC AIT
+            // TROUVÉE DANS CE LOT. Elle était à `maxLines: 1` depuis l'origine,
+            // ce qui tenait quand la carte était large ; à 119,0 points
+            // « Bonne affaire » réclame 139,9 à l'échelle 2,0 et était COUPÉE à
+            // 320 comme à 360 points. Repliée en « Bonne » / « affaire », son
+            // plus long segment insécable fait 68,0 points et tient partout.
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-          // DEUX LIGNES, ET C'EST LA DERNIÈRE TRONCATURE QUE LE BANC AIT
-          // TROUVÉE DANS CE LOT. Elle était à `maxLines: 1` depuis l'origine,
-          // ce qui tenait quand la carte était large ; à 119,0 points
-          // « Bonne affaire » réclame 139,9 à l'échelle 2,0 et était COUPÉE à
-          // 320 comme à 360 points. Repliée en « Bonne » / « affaire », son
-          // plus long segment insécable fait 68,0 points et tient partout.
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
       ],
     );
   }

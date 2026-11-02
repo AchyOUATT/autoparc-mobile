@@ -6,6 +6,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/api/endpoints.dart';
+import '../../../core/l10n/langue.dart';
+import '../../../core/api/api_exception.dart';
 
 enum PartnerListingKind {
   vehicles('Véhicules', 'véhicule'),
@@ -65,7 +67,8 @@ class PartnerProfile {
   /// serveur pas encore déployé : le formulaire n'annonce alors aucun plafond
   /// plutôt qu'un chiffre inventé, et c'est le serveur qui tranchera.
   double get plafondRemisePourcentage =>
-      double.tryParse('${boutique['promotion_remise_max_pourcentage'] ?? 0}') ?? 0;
+      double.tryParse('${boutique['promotion_remise_max_pourcentage'] ?? 0}') ??
+      0;
 
   String get companyName => account['company_name']?.toString() ?? '';
   String get contactName => account['contact_name']?.toString() ?? '';
@@ -101,8 +104,15 @@ class PartnerProfile {
   };
 }
 
-class PartnerApiException implements Exception {
-  const PartnerApiException(this.message, {this.statusCode, this.fields = const {}, this.accountStatus, this.reviewReason, this.code});
+class PartnerApiException implements DisplayableException {
+  const PartnerApiException(
+    this.message, {
+    this.statusCode,
+    this.fields = const {},
+    this.accountStatus,
+    this.reviewReason,
+    this.code,
+  });
   final String message;
   final int? statusCode;
   final Map<String, String> fields;
@@ -173,7 +183,10 @@ class SecurePartnerTokenStore extends PartnerTokenStore {
   /// porte un jeton.
   static const version = 1;
   static const _storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true, resetOnError: true),
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+      resetOnError: true,
+    ),
   );
   @override
   Future<PartnerSessionStockee?> readSession() async {
@@ -214,7 +227,10 @@ class SecurePartnerTokenStore extends PartnerTokenStore {
   /// au coffre un jeton que le binaire publie ne lit pas et n'efface pas.
   /// L'ancienne cle est donc un MIROIR, que `clear()` nettoie comme l'autre.
   @override
-  Future<void> writeSession(String token, [Map<String, dynamic>? profile]) async {
+  Future<void> writeSession(
+    String token, [
+    Map<String, dynamic>? profile,
+  ]) async {
     await _storage.write(
       key: sessionKey,
       value: jsonEncode({'v': version, 'token': token, 'profile': ?profile}),
@@ -231,7 +247,12 @@ class SecurePartnerTokenStore extends PartnerTokenStore {
 }
 
 class PartnerListingPage {
-  const PartnerListingPage({required this.items, required this.page, required this.lastPage, required this.total});
+  const PartnerListingPage({
+    required this.items,
+    required this.page,
+    required this.lastPage,
+    required this.total,
+  });
   final List<Map<String, dynamic>> items;
   final int page;
   final int lastPage;
@@ -239,7 +260,13 @@ class PartnerListingPage {
 }
 
 class PartnerReferences {
-  const PartnerReferences({required this.brands, required this.models, required this.engineTypes, required this.partCategories, required this.manufacturers});
+  const PartnerReferences({
+    required this.brands,
+    required this.models,
+    required this.engineTypes,
+    required this.partCategories,
+    required this.manufacturers,
+  });
   final List<Map<String, dynamic>> brands;
   final List<Map<String, dynamic>> models;
   final List<Map<String, dynamic>> engineTypes;
@@ -247,43 +274,77 @@ class PartnerReferences {
   final List<Map<String, dynamic>> manufacturers;
 }
 
-List<Map<String, dynamic>> partnerMaps(dynamic data) => (data as List? ?? const [])
-    .map((item) => Map<String, dynamic>.from(item as Map)).toList();
+List<Map<String, dynamic>> partnerMaps(dynamic data) =>
+    (data as List? ?? const [])
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
 
-final partnerRepositoryProvider = Provider<PartnerRepository>((ref) => PartnerRepository());
+final partnerRepositoryProvider = Provider<PartnerRepository>(
+  (ref) {
+    final repository = PartnerRepository();
+    repository.setLanguage(ref.read(langueProvider).languageCode);
+    ref.listen(langueProvider, (_, locale) => repository.setLanguage(locale.languageCode));
+    return repository;
+  },
+);
 
 /// Own Dio and token key: a partner session never becomes a staff session.
 class PartnerRepository {
+  String _languageCode = 'fr';
+  void setLanguage(String value) => _languageCode = value == 'en' ? 'en' : 'fr';
   PartnerRepository({Dio? dio, PartnerTokenStore? tokenStore})
-      : _dio = dio ?? Dio(BaseOptions(
-          baseUrl: Endpoints.baseUrl,
-          connectTimeout: const Duration(seconds: 60),
-          receiveTimeout: const Duration(seconds: 60),
-          headers: {'Accept': 'application/json'},
-        )),
-        _tokens = tokenStore ?? SecurePartnerTokenStore();
+    : _dio =
+          dio ??
+          Dio(
+            BaseOptions(
+              baseUrl: Endpoints.baseUrl,
+              connectTimeout: const Duration(seconds: 60),
+              receiveTimeout: const Duration(seconds: 60),
+              headers: {'Accept': 'application/json'},
+            ),
+          ),
+      _tokens = tokenStore ?? SecurePartnerTokenStore();
 
   final Dio _dio;
   final PartnerTokenStore _tokens;
 
-  Future<dynamic> _request(String method, String path, {dynamic data, Map<String, dynamic>? query}) async {
-    final headers = <String, dynamic>{'Accept': 'application/json'};
-    if (path.startsWith('/partner/') && path != '/partner/login' && path != '/partner/register') {
+  Future<dynamic> _request(
+    String method,
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? query,
+  }) async {
+    final headers = <String, dynamic>{
+      'Accept': 'application/json',
+      'Accept-Language': _languageCode,
+    };
+    if (path.startsWith('/partner/') &&
+        path != '/partner/login' &&
+        path != '/partner/register') {
       final token = await _tokens.read();
-      if (token != null && token.isNotEmpty) headers['Authorization'] = 'Bearer $token';
+      if (token != null && token.isNotEmpty)
+        headers['Authorization'] = 'Bearer $token';
     }
     try {
-      final response = await _dio.request<dynamic>(path, data: data, queryParameters: query,
-        options: Options(method: method, headers: headers));
+      final response = await _dio.request<dynamic>(
+        path,
+        data: data,
+        queryParameters: query,
+        options: Options(method: method, headers: headers),
+      );
       return response.data;
     } on DioException catch (error) {
       final raw = error.response?.data;
-      final body = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+      final body = raw is Map
+          ? Map<String, dynamic>.from(raw)
+          : <String, dynamic>{};
       final fields = <String, String>{};
       if (body['errors'] is Map) {
         for (final entry in (body['errors'] as Map).entries) {
           final value = entry.value;
-          fields[entry.key.toString()] = value is List ? value.join('\n') : value.toString();
+          fields[entry.key.toString()] = value is List
+              ? value.join('\n')
+              : value.toString();
         }
       }
       // Transtypé défensivement, pas par `toString()` : un `code` numérique
@@ -292,7 +353,10 @@ class PartnerRepository {
       final code = body['code'];
 
       throw PartnerApiException(
-        fields.isNotEmpty ? fields.values.first : body['message']?.toString() ?? 'Connexion impossible. Vérifiez votre réseau et réessayez.',
+        fields.isNotEmpty
+            ? fields.values.first
+            : body['message']?.toString() ??
+                  'Connexion impossible. Vérifiez votre réseau et réessayez.',
         statusCode: error.response?.statusCode,
         fields: fields,
         accountStatus: body['status']?.toString(),
@@ -302,11 +366,20 @@ class PartnerRepository {
     }
   }
 
-  Future<PartnerProfile> _authenticate(String action, Map<String, dynamic> fields) async {
-    final response = Map<String, dynamic>.from(await _request('POST', '/partner/$action', data: fields));
+  Future<PartnerProfile> _authenticate(
+    String action,
+    Map<String, dynamic> fields,
+  ) async {
+    final response = Map<String, dynamic>.from(
+      await _request('POST', '/partner/$action', data: fields),
+    );
     final profile = PartnerProfile.fromJson(response);
-    if (profile.user['role'] != 'partner' || response['token'] is! String || (response['token'] as String).isEmpty) {
-      throw const PartnerApiException('La réponse ne correspond pas à une session partenaire.');
+    if (profile.user['role'] != 'partner' ||
+        response['token'] is! String ||
+        (response['token'] as String).isEmpty) {
+      throw const PartnerApiException(
+        'La réponse ne correspond pas à une session partenaire.',
+      );
     }
     // Le profil part au coffre avec le jeton : c'est lui qui permettra au
     // prochain démarrage d'ouvrir l'espace partenaire sans attendre le réseau.
@@ -325,12 +398,16 @@ class PartnerRepository {
   /// Le champ s'appelle `identifiant` et non `email` : le serveur accepte
   /// encore l'ancien nom, pour les téléphones qui n'ont pas mis à jour, mais
   /// cette version-ci n'a aucune raison de l'employer.
-  Future<PartnerProfile> login(String identifiant, String password) => _authenticate('login', {
-    'identifiant': identifiant.trim(), 'password': password, 'device_name': 'AutoParc partenaire',
-  });
-  Future<PartnerProfile> register(Map<String, dynamic> fields) => _authenticate('register', {
-    ...fields, 'device_name': 'AutoParc partenaire',
-  });
+  Future<PartnerProfile> login(String identifiant, String password) =>
+      _authenticate('login', {
+        'identifiant': identifiant.trim(),
+        'password': password,
+        'device_name': 'AutoParc partenaire',
+      });
+  Future<PartnerProfile> register(Map<String, dynamic> fields) => _authenticate(
+    'register',
+    {...fields, 'device_name': 'AutoParc partenaire'},
+  );
   // `restore()` a ete retire. Il faisait « pas de jeton -> null, sinon
   // getMe() », donc il ATTENDAIT le reseau avant de rendre quoi que ce soit —
   // exactement l'attente que le demarrage optimiste supprime. Le notifier lit
@@ -368,7 +445,10 @@ class PartnerRepository {
 
   /// Le nombre de non-lues, pour la pastille de l'espace partenaire.
   Future<int> notificationsNonLues() async {
-    final reponse = await _request('GET', '/partner/notifications/unread-count');
+    final reponse = await _request(
+      'GET',
+      '/partner/notifications/unread-count',
+    );
     final compte = reponse is Map ? reponse['count'] : null;
 
     return compte is int ? compte : int.tryParse('$compte') ?? 0;
@@ -384,10 +464,15 @@ class PartnerRepository {
 
   Future<PartnerProfile> getMe() async {
     try {
-      final result = PartnerProfile.fromJson(Map<String, dynamic>.from(await _request('GET', '/partner/me')));
+      final result = PartnerProfile.fromJson(
+        Map<String, dynamic>.from(await _request('GET', '/partner/me')),
+      );
       if (result.user['role'] != 'partner') {
         await _tokens.clear();
-        throw const PartnerApiException('Cette session partenaire est invalide.', statusCode: 401);
+        throw const PartnerApiException(
+          'Cette session partenaire est invalide.',
+          statusCode: 401,
+        );
       }
 
       // Le profil frais retourne au coffre. C'est ce qui répare, en une
@@ -404,30 +489,72 @@ class PartnerRepository {
       rethrow;
     }
   }
+
   Future<void> logout() async {
-    try { await _request('POST', '/partner/logout'); }
-    finally { await _tokens.clear(); }
+    try {
+      await _request('POST', '/partner/logout');
+    } finally {
+      await _tokens.clear();
+    }
   }
 
-  Future<PartnerListingPage> listListings(PartnerListingKind kind, {int page = 1, String? query}) async {
-    final response = Map<String, dynamic>.from(await _request('GET', kind.path, query: {
-      'page': page, 'per_page': 20, if (query?.trim().isNotEmpty == true) 'q': query!.trim(),
-    }));
+  Future<PartnerListingPage> listListings(
+    PartnerListingKind kind, {
+    int page = 1,
+    String? query,
+  }) async {
+    final response = Map<String, dynamic>.from(
+      await _request(
+        'GET',
+        kind.path,
+        query: {
+          'page': page,
+          'per_page': 20,
+          if (query?.trim().isNotEmpty == true) 'q': query!.trim(),
+        },
+      ),
+    );
     final meta = response['meta'] as Map? ?? const {};
-    return PartnerListingPage(items: partnerMaps(response['data']), page: (meta['current_page'] as num?)?.toInt() ?? page,
-      lastPage: (meta['last_page'] as num?)?.toInt() ?? page, total: (meta['total'] as num?)?.toInt() ?? 0);
+    return PartnerListingPage(
+      items: partnerMaps(response['data']),
+      page: (meta['current_page'] as num?)?.toInt() ?? page,
+      lastPage: (meta['last_page'] as num?)?.toInt() ?? page,
+      total: (meta['total'] as num?)?.toInt() ?? 0,
+    );
   }
+
   Future<Map<String, dynamic>> listing(PartnerListingKind kind, int id) async =>
-    Map<String, dynamic>.from((await _request('GET', '${kind.path}/$id'))['data'] as Map);
-  Future<Map<String, dynamic>> saveListing(PartnerListingKind kind, Map<String, dynamic> data, {int? id}) async =>
-    Map<String, dynamic>.from((await _request(id == null ? 'POST' : 'PATCH', id == null ? kind.path : '${kind.path}/$id', data: data))['data'] as Map);
+      Map<String, dynamic>.from(
+        (await _request('GET', '${kind.path}/$id'))['data'] as Map,
+      );
+  Future<Map<String, dynamic>> saveListing(
+    PartnerListingKind kind,
+    Map<String, dynamic> data, {
+    int? id,
+  }) async => Map<String, dynamic>.from(
+    (await _request(
+          id == null ? 'POST' : 'PATCH',
+          id == null ? kind.path : '${kind.path}/$id',
+          data: data,
+        ))['data']
+        as Map,
+  );
   Future<void> publish(PartnerListingKind kind, int id, bool publish) =>
-    _request('POST', '${kind.path}/$id/${publish ? 'publish' : 'unpublish'}');
-  Future<void> archive(PartnerListingKind kind, int id) => _request('DELETE', '${kind.path}/$id');
-  Future<void> setStock(PartnerListingKind kind, int id, int quantity) => _request('POST', '${kind.path}/$id/stock', data: {
-    'operation': 'set', 'quantity': quantity, 'reason': 'Inventaire partenaire',
-  });
-  Future<void> toggleAvailability(PartnerListingKind kind, int id) => _request('PATCH', '${kind.path}/$id/availability');
+      _request('POST', '${kind.path}/$id/${publish ? 'publish' : 'unpublish'}');
+  Future<void> archive(PartnerListingKind kind, int id) =>
+      _request('DELETE', '${kind.path}/$id');
+  Future<void> setStock(PartnerListingKind kind, int id, int quantity) =>
+      _request(
+        'POST',
+        '${kind.path}/$id/stock',
+        data: {
+          'operation': 'set',
+          'quantity': quantity,
+          'reason': 'Inventaire partenaire',
+        },
+      );
+  Future<void> toggleAvailability(PartnerListingKind kind, int id) =>
+      _request('PATCH', '${kind.path}/$id/availability');
 
   Future<PartnerReferences> references() async {
     final responses = await Future.wait([
@@ -436,23 +563,48 @@ class PartnerRepository {
       _request('GET', '/catalog/manufacturers'),
     ]);
     final sync = Map<String, dynamic>.from(responses[0]);
-    return PartnerReferences(brands: partnerMaps(sync['brands']), models: partnerMaps(sync['vehicle_models']),
+    return PartnerReferences(
+      brands: partnerMaps(sync['brands']),
+      models: partnerMaps(sync['vehicle_models']),
       engineTypes: partnerMaps(sync['engine_types']),
-      partCategories: partnerMaps(responses[1] is Map ? responses[1]['data'] : responses[1]),
-      manufacturers: partnerMaps(responses[2] is Map ? responses[2]['data'] : responses[2]));
+      partCategories: partnerMaps(
+        responses[1] is Map ? responses[1]['data'] : responses[1],
+      ),
+      manufacturers: partnerMaps(
+        responses[2] is Map ? responses[2]['data'] : responses[2],
+      ),
+    );
   }
 
-  Future<List<Map<String, dynamic>>> media(PartnerListingKind kind, int id) async =>
-    partnerMaps((await _request('GET', '${kind.path}/$id/media'))['data']);
-  Future<void> uploadPhotos(PartnerListingKind kind, int id, List<XFile> files) async {
+  Future<List<Map<String, dynamic>>> media(
+    PartnerListingKind kind,
+    int id,
+  ) async =>
+      partnerMaps((await _request('GET', '${kind.path}/$id/media'))['data']);
+  Future<void> uploadPhotos(
+    PartnerListingKind kind,
+    int id,
+    List<XFile> files,
+  ) async {
     final form = FormData();
     for (final file in files) {
-      form.files.add(MapEntry('photos[]', MultipartFile.fromBytes(await file.readAsBytes(), filename: file.name)));
+      form.files.add(
+        MapEntry(
+          'photos[]',
+          MultipartFile.fromBytes(
+            await file.readAsBytes(),
+            filename: file.name,
+          ),
+        ),
+      );
     }
     await _request('POST', '${kind.path}/$id/media', data: form);
   }
-  Future<void> setCover(int mediaId) => _request('PATCH', '/partner/media/$mediaId/cover');
-  Future<void> deleteMedia(int mediaId) => _request('DELETE', '/partner/media/$mediaId');
+
+  Future<void> setCover(int mediaId) =>
+      _request('PATCH', '/partner/media/$mediaId/cover');
+  Future<void> deleteMedia(int mediaId) =>
+      _request('DELETE', '/partner/media/$mediaId');
   Future<void> reorderMedia(PartnerListingKind kind, int id, List<int> ids) =>
-    _request('PATCH', '${kind.path}/$id/media/reorder', data: {'ids': ids});
+      _request('PATCH', '${kind.path}/$id/media/reorder', data: {'ids': ids});
 }

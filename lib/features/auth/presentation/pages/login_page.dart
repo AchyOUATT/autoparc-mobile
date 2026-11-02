@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/auth_provider.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../core/api/api_exception.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -123,7 +124,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  auth.error!,
+                                  messageFor(auth.error!, l10n: AppLocalizations.of(context)),
                                   style: TextStyle(
                                     color: Theme.of(
                                       context,

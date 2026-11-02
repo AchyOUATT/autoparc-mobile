@@ -3,6 +3,7 @@ import 'package:auto/features/partner_accounts/presentation/partner_listing_form
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 /// Le formulaire d'annonce de l'espace partenaire — PIECES ET ACCESSOIRES.
 ///
@@ -56,7 +57,11 @@ Future<void> _open(WidgetTester tester, _Repository repository,
     PartnerListingKind kind, {Map<String, dynamic>? listing}) async {
   await tester.pumpWidget(ProviderScope(
     overrides: [partnerRepositoryProvider.overrideWithValue(repository)],
-    child: MaterialApp(home: Builder(builder: (context) => Scaffold(
+    child: MaterialApp(
+      locale: const Locale('fr'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Builder(builder: (context) => Scaffold(
       body: TextButton(
         onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => PartnerListingFormPage(kind: kind, initialListing: listing),
@@ -103,6 +108,9 @@ void main() {
     await tester.pumpWidget(ProviderScope(
       overrides: [partnerRepositoryProvider.overrideWithValue(_Repository())],
       child: const MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: PartnerListingFormPage(kind: PartnerListingKind.vehicles),
       ),
     ));

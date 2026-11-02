@@ -1,6 +1,7 @@
 import 'package:auto/features/garage/data/models/owned_vehicle.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 /// Une échéance dépassée se lit en rouge, partout.
 ///
@@ -49,6 +50,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          locale: const Locale('fr'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (context) {
               cs = Theme.of(context).colorScheme;

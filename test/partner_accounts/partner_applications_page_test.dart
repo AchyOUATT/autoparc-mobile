@@ -6,6 +6,7 @@ import 'package:auto/features/partner_accounts/presentation/partner_applications
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 class _Auth extends StateNotifier<AuthState> implements AuthNotifier {
   _Auth(super.state);
@@ -61,7 +62,11 @@ Future<void> _open(WidgetTester tester, _Api api, {String role = 'manager'}) asy
     apiClientProvider.overrideWithValue(api),
     authProvider.overrideWith((_) => _Auth(AuthState(type: AuthType.staff,
       staffUser: StaffUser(id: 1, name: 'Responsable', email: 'staff@example.test', role: role)))),
-  ], child: const MaterialApp(home: PartnerApplicationsPage())));
+  ], child: const MaterialApp(
+    locale: const Locale('fr'),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: PartnerApplicationsPage())));
   await tester.pumpAndSettle();
 }
 
