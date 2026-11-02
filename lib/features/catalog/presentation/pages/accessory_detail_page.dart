@@ -1,3 +1,4 @@
+import '../catalog_reference_labels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -40,7 +41,7 @@ class AccessoryDetailPage extends ConsumerWidget {
         appBar: AppBar(),
         body: detailAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text(messageFor(e))),
+          error: (e, _) => Center(child: Text(messageFor(e, l10n: AppLocalizations.of(context)))),
           data: (_) => const SizedBox.shrink(),
         ),
       );
@@ -91,7 +92,7 @@ class _AccessoryDetailView extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(messageFor(e)), backgroundColor: cs.error),
+            SnackBar(content: Text(messageFor(e, l10n: AppLocalizations.of(context))), backgroundColor: cs.error),
           );
         }
       }
@@ -282,7 +283,7 @@ class _AccessoryDetailView extends ConsumerWidget {
           //
           // Avant le SKU parce qu'un accessoire a toujours une catégorie,
           // jamais forcément une référence.
-          _InfoRow(l10n.catalogFieldCategory, accessory.categoryLabel),
+          _InfoRow(l10n.catalogFieldCategory, catalogAccessoryCategoryLabel(accessory.categoryValue, accessory.categoryLabel, l10n)),
           if (accessory.sku != null)
             _InfoRow(l10n.catalogFieldSku, accessory.sku!),
           if (accessory.manufacturer != null)

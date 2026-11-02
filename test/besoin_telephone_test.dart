@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 /// Sans numéro, personne ne peut rappeler.
 ///
@@ -93,7 +94,11 @@ void main() {
         needsRepositoryProvider.overrideWithValue(depot),
         authProvider.overrideWith((_) => _Auth()),
       ],
-      child: const MaterialApp(home: SubmitNeedPage()),
+      child: const MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SubmitNeedPage()),
     ));
     await tester.pump(const Duration(milliseconds: 200));
   }
@@ -176,7 +181,11 @@ void main() {
           needsRepositoryProvider.overrideWithValue(depot),
           authProvider.overrideWith((_) => _AuthClient()),
         ],
-        child: const MaterialApp(home: SubmitNeedPage()),
+        child: const MaterialApp(
+          locale: const Locale('fr'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SubmitNeedPage()),
       ));
       await tester.pump(const Duration(milliseconds: 200));
 

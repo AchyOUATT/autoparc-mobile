@@ -184,6 +184,7 @@ class VehicleConsumption extends Equatable {
   final double? powerKw;
   final String? hybridType;
   final String? fuel;
+  final String? fuelCode;
   final double? cityL100km;
   final double? highwayL100km;
   final double? combinedL100km;
@@ -192,6 +193,8 @@ class VehicleConsumption extends Equatable {
   final double? referenceCombinedL100km;
   final String source;
   final String cycle;
+  final String? sourceCode;
+  final String? cycleCode;
   final String matchLevel;
   final List<String> matchReasons;
   final int? modelYear;
@@ -209,6 +212,7 @@ class VehicleConsumption extends Equatable {
     this.powerKw,
     this.hybridType,
     this.fuel,
+    this.fuelCode,
     this.cityL100km,
     this.highwayL100km,
     this.combinedL100km,
@@ -217,6 +221,8 @@ class VehicleConsumption extends Equatable {
     this.referenceCombinedL100km,
     required this.source,
     required this.cycle,
+    this.sourceCode,
+    this.cycleCode,
     this.matchLevel = 'incomplete',
     this.matchReasons = const [],
     this.modelYear,
@@ -240,6 +246,7 @@ class VehicleConsumption extends Equatable {
       powerKw: _double(json['power_kw']),
       hybridType: json['hybrid_type'] as String?,
       fuel: json['fuel'] as String?,
+      fuelCode: json['fuel_code'] as String?,
       cityL100km: _double(json['city_l_100km']),
       highwayL100km: _double(json['highway_l_100km']),
       combinedL100km: _double(json['combined_l_100km']),
@@ -256,6 +263,8 @@ class VehicleConsumption extends Equatable {
       ),
       source: json['source'] as String? ?? '',
       cycle: json['cycle'] as String? ?? '',
+      sourceCode: json['source_code'] as String?,
+      cycleCode: json['cycle_code'] as String?,
       matchLevel:
           const ['corresponding', 'approximate', 'incomplete'].contains(level)
           ? level as String
@@ -306,6 +315,7 @@ class VehicleConsumption extends Equatable {
     powerKw,
     hybridType,
     fuel,
+    fuelCode,
     cityL100km,
     highwayL100km,
     combinedL100km,
@@ -314,6 +324,8 @@ class VehicleConsumption extends Equatable {
     referenceCombinedL100km,
     source,
     cycle,
+    sourceCode,
+    cycleCode,
     matchLevel,
     matchReasons,
     modelYear,
@@ -394,7 +406,9 @@ class OwnedVehicleIdentity extends Equatable {
   final String? model;
   final String? trim;
   final String? engineType;
+  final String? engineTypeCode;
   final String? drivetrain;
+  final String? drivetrainCode;
   final String? color;
 
   const OwnedVehicleIdentity({
@@ -403,7 +417,9 @@ class OwnedVehicleIdentity extends Equatable {
     this.model,
     this.trim,
     this.engineType,
+    this.engineTypeCode,
     this.drivetrain,
+    this.drivetrainCode,
     this.color,
   });
 
@@ -414,7 +430,9 @@ class OwnedVehicleIdentity extends Equatable {
         model: json['model'] as String?,
         trim: json['trim'] as String?,
         engineType: json['engine_type'] as String?,
+        engineTypeCode: json['engine_type_code'] as String?,
         drivetrain: json['drivetrain'] as String?,
+        drivetrainCode: json['drivetrain_code'] as String?,
         color: json['color'] as String?,
       );
 

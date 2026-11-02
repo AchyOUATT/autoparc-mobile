@@ -8,6 +8,7 @@ import 'package:auto/features/auth/data/auth_repository.dart';
 import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
 import 'package:auto/features/catalog/data/catalog_repository.dart';
 import 'package:auto/features/catalog/data/models/vehicle.dart';
+import 'package:auto/features/catalog/data/models/catalog_vehicle_item.dart';
 import 'package:auto/features/catalog/presentation/pages/vehicle_list_page.dart';
 import 'package:auto/features/vehicles/data/models/catalog_refs.dart';
 import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provider.dart';
@@ -115,6 +116,7 @@ void main() {
       (jsonDecode(File('test/fixtures/vehicles_list.json').readAsStringSync())
               as Map<String, dynamic>)['data'][0]
           as Map<String, dynamic>;
+  var nextVehicleId = 1000;
 
   /// LE PIRE CONTENU QUE LE SERVEUR PUISSE RENDRE, et chaque valeur est tirée
   /// du référentiel du backend, pas inventée :
@@ -154,6 +156,7 @@ void main() {
     int photos = 0,
   }) {
     final json = jsonDecode(jsonEncode(gabarit)) as Map<String, dynamic>;
+    json['id'] = nextVehicleId++;
     final id = json['identity'] as Map<String, dynamic>;
     final tec = json['technical'] as Map<String, dynamic>;
     final com = json['commercial'] as Map<String, dynamic>;
@@ -2138,6 +2141,34 @@ void main() {
 class _Depot implements CatalogRepository {
   _Depot(this.liste);
   final List<Vehicle> liste;
+
+  @override
+  Future<PaginatedResponse<CatalogVehicleItem>> getVehicleListings({
+    int page = 1,
+    int perPage = 20,
+    String? search,
+    String? availability,
+    String? vehicleType,
+    String? bodyStyle,
+    String? brandId,
+    int? yearMin,
+    int? yearMax,
+    double? priceMax,
+    String? condition,
+    String? originCountryId,
+    String? city,
+    int? locationId,
+    bool? customsCleared,
+    bool? deal,
+    String? registrationStatus,
+    bool includePrivate = false,
+  }) async => PaginatedResponse<CatalogVehicleItem>(
+    data: liste.map(CatalogVehicleItem.vehicle).toList(),
+    currentPage: 1,
+    lastPage: 1,
+    total: liste.length,
+    perPage: perPage,
+  );
 
   @override
   Future<PaginatedResponse<Vehicle>> getVehicles({

@@ -8,6 +8,8 @@ class Motorisation extends Equatable {
   final String label;
   final int modelYear;
   final String? fuel;
+  final String? fuelCode;
+  final String? transmissionCode;
   final double? engineL;
   final int? cylinders;
 
@@ -19,6 +21,8 @@ class Motorisation extends Equatable {
     required this.label,
     required this.modelYear,
     this.fuel,
+    this.fuelCode,
+    this.transmissionCode,
     this.engineL,
     this.cylinders,
     required this.consumption,
@@ -37,6 +41,8 @@ class Motorisation extends Equatable {
       label: json['label'] as String? ?? '',
       modelYear: json['model_year'] as int? ?? 0,
       fuel: json['fuel'] as String?,
+      fuelCode: json['fuel_code'] as String?,
+      transmissionCode: json['transmission_code'] as String?,
       engineL: _double(json['engine_l']),
       cylinders: json['cylinders'] as int?,
       consumption: VehicleConsumption.fromJson({
@@ -46,6 +52,8 @@ class Motorisation extends Equatable {
         'fuel': json['fuel'],
         'source': source['label'],
         'cycle': source['cycle'],
+        'source_code': source['code'],
+        'cycle_code': source['cycle_code'],
       }),
     );
   }

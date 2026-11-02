@@ -1,4 +1,6 @@
+import '../catalog_reference_labels.dart';
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -15,17 +17,17 @@ import '../../../../core/api/api_exception.dart';
 
 // ── Constantes métier ─────────────────────────────────────────────────
 
-const _types = [
-  (value: 'oem',         label: 'OEM'),
-  (value: 'oes',         label: 'OES'),
-  (value: 'aftermarket', label: 'Aftermarket'),
-  (value: 'salvage',     label: 'Occasion'),
+List<({String value, String label})> _types(AppLocalizations l10n) => [
+  (value: 'oem', label: l10n.catalogPartTypeOem),
+  (value: 'oes', label: l10n.catalogPartTypeOes),
+  (value: 'aftermarket', label: l10n.catalogPartTypeAftermarket),
+  (value: 'salvage', label: l10n.catalogPartTypeSalvage),
 ];
 
-const _conditions = [
-  (value: 'new',         label: 'Neuve'),
-  (value: 'refurbished', label: 'Reconditionnée'),
-  (value: 'used',        label: 'D\'occasion'),
+List<({String value, String label})> _conditions(AppLocalizations l10n) => [
+  (value: 'new', label: l10n.catalogAdminConditionNew),
+  (value: 'refurbished', label: l10n.catalogAdminConditionRefurbished),
+  (value: 'used', label: l10n.catalogAdminConditionUsed),
 ];
 
 // ════════════════════════════════════════════════════════════════════
@@ -39,28 +41,31 @@ class AddPartPage extends ConsumerStatefulWidget {
 }
 
 class _AddPartPageState extends ConsumerState<AddPartPage> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
   final _formKey = GlobalKey<FormState>();
 
   // Identification
   final _nameCtrl = TextEditingController();
-  final _skuCtrl  = TextEditingController();
-  String _type      = 'aftermarket';
+  final _skuCtrl = TextEditingController();
+  String _type = 'aftermarket';
   String _condition = 'new';
 
   // Classification
   PartCategory? _category;
   Manufacturer? _manufacturer;
-  bool _dropdownsInitialized = false; // pré-remplissage dropdowns (mode édition)
+  bool _dropdownsInitialized =
+      false; // pré-remplissage dropdowns (mode édition)
 
   // Prix (sans TVA)
   final _priceCtrl = TextEditingController();
-  final _costCtrl  = TextEditingController();
+  final _costCtrl = TextEditingController();
 
   // Stock
-  final _stockCtrl    = TextEditingController(text: '0');
-  final _alertCtrl    = TextEditingController(text: '5');
-  final _locationCtrl = TextEditingController(); // emplacement physique (étagère, tiroir)
-  int? _selectedLocationId;                      // agence / showroom (FK)
+  final _stockCtrl = TextEditingController(text: '0');
+  final _alertCtrl = TextEditingController(text: '5');
+  final _locationCtrl =
+      TextEditingController(); // emplacement physique (étagère, tiroir)
+  int? _selectedLocationId; // agence / showroom (FK)
 
   // (description et garantie supprimées — gérées après création si besoin)
 
@@ -91,15 +96,14 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
     }
 
     _nameCtrl.text = e.name;
-    _skuCtrl.text  = e.sku ?? '';
-    _type          = e.type;
-    _condition     = e.condition;
+    _skuCtrl.text = e.sku ?? '';
+    _type = e.type;
+    _condition = e.condition;
     _priceCtrl.text = e.pricing.sellingPrice.toStringAsFixed(0);
     if (e.stock.quantity > 0) _stockCtrl.text = e.stock.quantity.toString();
     if (e.stock.alertThreshold > 0)
       _alertCtrl.text = e.stock.alertThreshold.toString();
-    if (e.stock.location != null)
-      _locationCtrl.text = e.stock.location!;
+    if (e.stock.location != null) _locationCtrl.text = e.stock.location!;
 
     _chargerCompatibilites(e);
   }
@@ -127,26 +131,31 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
 
   List<FitmentEntry> _versEntrees(List<Map<String, dynamic>> brutes) {
     final refs = ref.read(catalogRefsProvider).valueOrNull;
-    return brutes
-        .map((j) => FitmentEntry.depuisJson(j, refs: refs))
-        .toList();
+    return brutes.map((j) => FitmentEntry.depuisJson(j, refs: refs)).toList();
   }
 
   @override
   void dispose() {
     for (final c in [
-      _nameCtrl, _skuCtrl, _priceCtrl, _costCtrl,
-      _stockCtrl, _alertCtrl, _locationCtrl,
-    ]) { c.dispose(); }
+      _nameCtrl,
+      _skuCtrl,
+      _priceCtrl,
+      _costCtrl,
+      _stockCtrl,
+      _alertCtrl,
+      _locationCtrl,
+    ]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_category == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner une catégorie.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.catalogAdminSelectCategory)));
       return;
     }
 
@@ -162,18 +171,21 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
     setState(() => _saving = true);
 
     final payload = <String, dynamic>{
-      'name':             _nameCtrl.text.trim(),
+      'name': _nameCtrl.text.trim(),
       if (_skuCtrl.text.isNotEmpty) 'sku': _skuCtrl.text.trim(),
-      'type':             _type,
-      'condition':        _condition,
+      'type': _type,
+      'condition': _condition,
       'part_category_id': _category!.id,
       if (_manufacturer != null) 'manufacturer_id': _manufacturer!.id,
       'selling_price': double.parse(_priceCtrl.text.replaceAll(' ', '')),
       if (_costCtrl.text.isNotEmpty)
         'cost_price': double.parse(_costCtrl.text.replaceAll(' ', '')),
-      if (_stockCtrl.text.isNotEmpty) 'stock_quantity': int.parse(_stockCtrl.text),
-      if (_alertCtrl.text.isNotEmpty) 'stock_alert_threshold': int.parse(_alertCtrl.text),
-      if (_locationCtrl.text.isNotEmpty) 'storage_location': _locationCtrl.text.trim(),
+      if (_stockCtrl.text.isNotEmpty)
+        'stock_quantity': int.parse(_stockCtrl.text),
+      if (_alertCtrl.text.isNotEmpty)
+        'stock_alert_threshold': int.parse(_alertCtrl.text),
+      if (_locationCtrl.text.isNotEmpty)
+        'storage_location': _locationCtrl.text.trim(),
       if (_selectedLocationId != null) 'location_id': _selectedLocationId,
       'is_active': true,
       // Envoyée même vide quand elle est connue : c'est la liste complète et
@@ -202,9 +214,11 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
         ref.invalidate(categoriesAvecPiecesProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(existing != null
-                ? 'Pièce mise à jour.'
-                : 'Pièce enregistrée — ajoutez des photos !'),
+            content: Text(
+              existing != null
+                  ? l10n.catalogAdminPartUpdated
+                  : l10n.catalogAdminPartCreated,
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -214,8 +228,8 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
           context.pushReplacement(
             '/media-upload',
             extra: MediaUploadConfig(
-              type:  MediaOwnerType.part,
-              id:    part.id,
+              type: MediaOwnerType.part,
+              id: part.id,
               title: part.name,
             ),
           );
@@ -224,7 +238,10 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(messageFor(e, l10n: l10n)),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -234,13 +251,18 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
 
   @override
   Widget build(BuildContext context) {
-    final categoriesAsync    = ref.watch(partCategoriesProvider);
+    final l10n = AppLocalizations.of(context);
+    final categoriesAsync = ref.watch(partCategoriesProvider);
     final manufacturersAsync = ref.watch(manufacturersProvider);
-    final refsAsync          = ref.watch(catalogRefsProvider);
+    final refsAsync = ref.watch(catalogRefsProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_existing != null ? 'Modifier la pièce' : 'Nouvelle pièce'),
+        title: Text(
+          _existing != null
+              ? l10n.catalogAdminEditPart
+              : l10n.catalogAdminNewPart,
+        ),
         centerTitle: false,
         actions: [
           // En modification seulement : a la creation, la piece n'a pas encore
@@ -249,12 +271,12 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
           if (_existing != null)
             IconButton(
               icon: const Icon(Icons.add_a_photo_outlined),
-              tooltip: 'Photos',
+              tooltip: l10n.catalogPhotosTooltip,
               onPressed: () => context.push(
                 '/media-upload',
                 extra: MediaUploadConfig(
-                  type:  MediaOwnerType.part,
-                  id:    _existing!.id,
+                  type: MediaOwnerType.part,
+                  id: _existing!.id,
                   title: _existing!.name,
                 ),
               ),
@@ -262,9 +284,15 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
           FilledButton(
             onPressed: _saving ? null : _submit,
             child: _saving
-                ? const SizedBox(width: 18, height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text('Enregistrer'),
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(l10n.catalogFeaturesSave),
           ),
           const SizedBox(width: 12),
         ],
@@ -274,60 +302,79 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-
             // ── Identification ──────────────────────────────────────
-            _SectionTitle('Identification'),
+            _SectionTitle(l10n.catalogAdminIdentification),
             _Field(
               ctrl: _nameCtrl,
-              label: 'Désignation *',
+              label: l10n.catalogAdminNameLabel,
               icon: Icons.label_outline,
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Requis' : null,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? l10n.catalogAdminRequired
+                  : null,
             ),
             _Field(
               ctrl: _skuCtrl,
-              label: 'SKU / Référence interne',
+              label: l10n.catalogAdminSkuLabel,
               icon: Icons.qr_code,
-              hint: 'Ex. PDT-BRQ-0042 (optionnel)',
+              hint: l10n.catalogAdminPartSkuHint,
             ),
 
             // Type
             const SizedBox(height: 4),
-            Text('Type *', style: Theme.of(context).textTheme.labelLarge),
+            Text(
+              l10n.catalogAdminTypeLabel,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
             const SizedBox(height: 6),
             Wrap(
               spacing: 8,
-              children: _types.map((t) => ChoiceChip(
-                label: Text(t.label),
-                selected: _type == t.value,
-                onSelected: (_) => setState(() => _type = t.value),
-              )).toList(),
+              children: _types(l10n)
+                  .map(
+                    (t) => ChoiceChip(
+                      label: Text(t.label),
+                      selected: _type == t.value,
+                      onSelected: (_) => setState(() => _type = t.value),
+                    ),
+                  )
+                  .toList(),
             ),
 
             const SizedBox(height: 14),
-            Text('État *', style: Theme.of(context).textTheme.labelLarge),
+            Text(
+              l10n.catalogAdminConditionLabel,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
             const SizedBox(height: 6),
             Wrap(
               spacing: 8,
-              children: _conditions.map((c) => ChoiceChip(
-                label: Text(c.label),
-                selected: _condition == c.value,
-                onSelected: (_) => setState(() => _condition = c.value),
-              )).toList(),
+              children: _conditions(l10n)
+                  .map(
+                    (c) => ChoiceChip(
+                      label: Text(c.label),
+                      selected: _condition == c.value,
+                      onSelected: (_) => setState(() => _condition = c.value),
+                    ),
+                  )
+                  .toList(),
             ),
 
             const SizedBox(height: 24),
 
             // ── Classification ──────────────────────────────────────
-            _SectionTitle('Classification'),
+            _SectionTitle(l10n.catalogAdminClassification),
             categoriesAsync.when(
               loading: () => const LinearProgressIndicator(),
-              error: (e, _) => Text(messageFor(e),
-                  style: const TextStyle(color: Colors.red)),
+              error: (e, _) => Text(
+                messageFor(e, l10n: l10n),
+                style: const TextStyle(color: Colors.red),
+              ),
               data: (cats) {
                 // Pré-sélection en mode édition (une seule fois)
                 if (!_dropdownsInitialized && _existing?.categoryId != null) {
-                  final match = cats.where((c) => c.id == _existing!.categoryId)
-                      .cast<PartCategory?>().firstOrNull;
+                  final match = cats
+                      .where((c) => c.id == _existing!.categoryId)
+                      .cast<PartCategory?>()
+                      .firstOrNull;
                   if (match != null) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted) setState(() => _category = match);
@@ -335,12 +382,12 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
                   }
                 }
                 return _Dropdown<PartCategory>(
-                  label: 'Catégorie *',
+                  label: l10n.catalogAdminCategoryLabel,
                   icon: Icons.category_outlined,
                   value: _category,
                   items: cats,
                   onChanged: (v) => setState(() => _category = v),
-                  itemLabel: (c) => c.name,
+                  itemLabel: (c) => catalogPartCategoryLabel(c.name, l10n),
                 );
               },
             ),
@@ -350,22 +397,26 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
               error: (_, __) => const SizedBox(),
               data: (mfgs) {
                 // Pré-sélection en mode édition (une seule fois)
-                if (!_dropdownsInitialized && _existing?.manufacturerId != null) {
-                  final match = mfgs.where((m) => m.id == _existing!.manufacturerId)
-                      .cast<Manufacturer?>().firstOrNull;
+                if (!_dropdownsInitialized &&
+                    _existing?.manufacturerId != null) {
+                  final match = mfgs
+                      .where((m) => m.id == _existing!.manufacturerId)
+                      .cast<Manufacturer?>()
+                      .firstOrNull;
                   if (match != null) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) setState(() {
-                        _manufacturer = match;
-                        _dropdownsInitialized = true;
-                      });
+                      if (mounted)
+                        setState(() {
+                          _manufacturer = match;
+                          _dropdownsInitialized = true;
+                        });
                     });
                   } else {
                     _dropdownsInitialized = true;
                   }
                 }
                 return _Dropdown<Manufacturer>(
-                  label: 'Fabricant / Équipementier',
+                  label: l10n.catalogAdminManufacturerLabel,
                   icon: Icons.factory_outlined,
                   value: _manufacturer,
                   items: mfgs,
@@ -379,88 +430,112 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
             const SizedBox(height: 24),
 
             // ── Tarification ────────────────────────────────────────
-            _SectionTitle('Tarification'),
-            Row(children: [
-              Expanded(child: _Field(
-                ctrl: _priceCtrl,
-                label: 'Prix de vente *',
-                icon: Icons.sell_outlined,
-                keyboard: TextInputType.number,
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Requis';
-                  if (double.tryParse(v.replaceAll(' ', '')) == null) return 'Nombre invalide';
-                  return null;
-                },
-              )),
-              const SizedBox(width: 12),
-              Expanded(child: _Field(
-                ctrl: _costCtrl,
-                label: "Prix d'achat",
-                icon: Icons.shopping_bag_outlined,
-                keyboard: TextInputType.number,
-                hint: 'Optionnel',
-              )),
-            ]),
+            _SectionTitle(l10n.catalogAdminPricing),
+            Row(
+              children: [
+                Expanded(
+                  child: _Field(
+                    ctrl: _priceCtrl,
+                    label: l10n.catalogAdminSalePrice,
+                    icon: Icons.sell_outlined,
+                    keyboard: TextInputType.number,
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty)
+                        return l10n.catalogAdminRequired;
+                      if (double.tryParse(v.replaceAll(' ', '')) == null)
+                        return l10n.catalogAdminInvalidNumber;
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _Field(
+                    ctrl: _costCtrl,
+                    label: l10n.catalogAdminPurchasePrice,
+                    icon: Icons.shopping_bag_outlined,
+                    keyboard: TextInputType.number,
+                    hint: l10n.catalogAdminOptional,
+                  ),
+                ),
+              ],
+            ),
 
             const SizedBox(height: 24),
 
             // ── Stock ───────────────────────────────────────────────
-            _SectionTitle('Stock'),
-            Row(children: [
-              Expanded(child: _Field(
-                ctrl: _stockCtrl,
-                label: 'Quantité initiale',
-                icon: Icons.inventory_2_outlined,
-                keyboard: TextInputType.number,
-              )),
-              const SizedBox(width: 12),
-              Expanded(child: _Field(
-                ctrl: _alertCtrl,
-                label: 'Seuil d\'alerte',
-                icon: Icons.warning_amber_outlined,
-                keyboard: TextInputType.number,
-              )),
-            ]),
+            _SectionTitle(l10n.catalogAdminStock),
+            Row(
+              children: [
+                Expanded(
+                  child: _Field(
+                    ctrl: _stockCtrl,
+                    label: l10n.catalogAdminInitialQuantity,
+                    icon: Icons.inventory_2_outlined,
+                    keyboard: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _Field(
+                    ctrl: _alertCtrl,
+                    label: l10n.catalogAdminAlertThreshold,
+                    icon: Icons.warning_amber_outlined,
+                    keyboard: TextInputType.number,
+                  ),
+                ),
+              ],
+            ),
             _Field(
               ctrl: _locationCtrl,
-              label: 'Emplacement physique',
+              label: l10n.catalogAdminPhysicalLocation,
               icon: Icons.place_outlined,
-              hint: 'Ex. Étagère B3, Tiroir 12',
+              hint: l10n.catalogAdminLocationHint,
             ),
             // Agence / showroom (location structurée)
             refsAsync.when(
               loading: () => const SizedBox(),
               error: (_, __) => const SizedBox(),
-              data: (refs) => refs.locations.isEmpty ? const SizedBox() : Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: DropdownButtonFormField<int?>(
-                  value: _selectedLocationId,
-                  decoration: const InputDecoration(
-                    labelText: 'Agence / Showroom',
-                    prefixIcon: Icon(Icons.store_outlined),
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  isExpanded: true,
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('— Toutes agences —')),
-                    ...refs.locations.map((l) => DropdownMenuItem(
-                      value: l.id,
-                      child: Text(l.displayLabel, overflow: TextOverflow.ellipsis),
-                    )),
-                  ],
-                  onChanged: (v) => setState(() => _selectedLocationId = v),
-                ),
-              ),
+              data: (refs) => refs.locations.isEmpty
+                  ? const SizedBox()
+                  : Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: DropdownButtonFormField<int?>(
+                        value: _selectedLocationId,
+                        decoration: InputDecoration(
+                          labelText: l10n.catalogAdminBranch,
+                          prefixIcon: Icon(Icons.store_outlined),
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        isExpanded: true,
+                        items: [
+                          DropdownMenuItem(
+                            value: null,
+                            child: Text(l10n.catalogAdminAllBranches),
+                          ),
+                          ...refs.locations.map(
+                            (l) => DropdownMenuItem(
+                              value: l.id,
+                              child: Text(
+                                l.displayLabel,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
+                        onChanged: (v) =>
+                            setState(() => _selectedLocationId = v),
+                      ),
+                    ),
             ),
 
             const SizedBox(height: 24),
 
             // ── Compatibilités véhicules ────────────────────────────
-            _SectionTitle('Compatibilités véhicules'),
+            _SectionTitle(l10n.catalogAdminFitments),
             Text(
-              'Déclarez les véhicules compatibles pour permettre '
-              'la recherche par modèle — même sans numéro OEM.',
+              l10n.catalogAdminFitmentsHint,
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
@@ -471,8 +546,10 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
             else
               refsAsync.when(
                 loading: () => const LinearProgressIndicator(),
-                error: (e, _) => Text('Impossible de charger les modèles : ${messageFor(e)}',
-                    style: const TextStyle(color: Colors.red)),
+                error: (e, _) => Text(
+                  l10n.catalogAdminModelsLoadError(messageFor(e, l10n: l10n)),
+                  style: const TextStyle(color: Colors.red),
+                ),
                 data: (refs) => FitmentsSection(
                   refs: refs,
                   showPosition: true,
@@ -501,7 +578,8 @@ class _SectionTitle extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(text,
+        Text(
+          text,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             color: Theme.of(context).colorScheme.primary,
             fontWeight: FontWeight.bold,
@@ -571,26 +649,31 @@ class _Dropdown<T> extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: DropdownButtonFormField<T>(
-      value: value,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-        border: const OutlineInputBorder(),
-        isDense: true,
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DropdownButtonFormField<T>(
+        value: value,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon),
+          border: const OutlineInputBorder(),
+          isDense: true,
+        ),
+        isExpanded: true,
+        items: [
+          if (nullable)
+            DropdownMenuItem(value: null, child: Text(l10n.catalogAdminNone)),
+          ...items.map(
+            (item) => DropdownMenuItem(
+              value: item,
+              child: Text(itemLabel(item), overflow: TextOverflow.ellipsis),
+            ),
+          ),
+        ],
+        onChanged: onChanged,
       ),
-      isExpanded: true,
-      items: [
-        if (nullable)
-          const DropdownMenuItem(value: null, child: Text('— Aucun —')),
-        ...items.map((item) => DropdownMenuItem(
-          value: item,
-          child: Text(itemLabel(item), overflow: TextOverflow.ellipsis),
-        )),
-      ],
-      onChanged: onChanged,
-    ),
-  );
+    );
+  }
 }

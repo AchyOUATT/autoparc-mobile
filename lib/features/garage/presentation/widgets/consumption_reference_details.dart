@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../core/utils/lien_externe.dart';
-import '../../../../../l10n/app_localizations.dart';
+import '../../../../core/l10n/consumption_labels.dart';
+import '../../../../core/utils/lien_externe.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../data/models/owned_vehicle.dart';
 
 /// A reference is separate from the consumption measured at the fuel pump.
@@ -160,7 +161,8 @@ Future<void> showConsumptionReferenceDetails(
   final lines = <String>[
     consumptionMatchLabel(l10n, reference),
     if (reference.sourceModel?.isNotEmpty == true) reference.sourceModel!,
-    if (reference.label.isNotEmpty) reference.label,
+    if (reference.label.isNotEmpty)
+      consumptionEngineLabel(reference.label, l10n),
     if (reference.powerKw != null) '${reference.powerKw} kW',
     l10n.garageConsumptionSelectionNotice,
     if (vehicleYear != null && vehicleYear > 0)
@@ -169,10 +171,22 @@ Future<void> showConsumptionReferenceDetails(
     _marketLabel(l10n, reference),
     reference.source.isEmpty
         ? l10n.garageConsumptionSourceUnknown
-        : l10n.garageConsumptionSource(reference.source),
+        : l10n.garageConsumptionSource(
+            consumptionSourceLabel(
+              reference.source,
+              l10n,
+              code: reference.sourceCode,
+            ),
+          ),
     reference.cycle.isEmpty
         ? l10n.garageConsumptionCycleUnknown
-        : l10n.garageConsumptionProtocol(reference.cycle),
+        : l10n.garageConsumptionProtocol(
+            consumptionCycleLabel(
+              reference.cycle,
+              l10n,
+              code: reference.cycleCode,
+            ),
+          ),
     _methodLabel(l10n, reference.method),
     if (sourceValue != null)
       l10n.garageConsumptionSourceValue(_number(context, sourceValue)),
@@ -291,7 +305,7 @@ class ConsumptionReferenceCandidates extends StatelessWidget {
                   [
                     if (reference.sourceModel?.isNotEmpty == true)
                       reference.sourceModel!,
-                    reference.label,
+                    consumptionEngineLabel(reference.label, l10n),
                     if (reference.powerKw != null) '${reference.powerKw} kW',
                   ].join(' · '),
                 ),
@@ -300,9 +314,24 @@ class ConsumptionReferenceCandidates extends StatelessWidget {
                     consumptionMatchLabel(l10n, reference),
                     consumptionYearLabel(l10n, reference),
                     _marketLabel(l10n, reference),
-                    if (reference.fuel != null) reference.fuel!,
-                    if (reference.source.isNotEmpty) reference.source,
-                    if (reference.cycle.isNotEmpty) reference.cycle,
+                    if (reference.fuel != null)
+                      consumptionFuelLabel(
+                        reference.fuel!,
+                        l10n,
+                        code: reference.fuelCode,
+                      ),
+                    if (reference.source.isNotEmpty)
+                      consumptionSourceLabel(
+                        reference.source,
+                        l10n,
+                        code: reference.sourceCode,
+                      ),
+                    if (reference.cycle.isNotEmpty)
+                      consumptionCycleLabel(
+                        reference.cycle,
+                        l10n,
+                        code: reference.cycleCode,
+                      ),
                     if (value != null)
                       l10n.garageConsumptionSourceValue(
                         _number(context, value),

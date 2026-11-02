@@ -1,3 +1,5 @@
+import '../../../../l10n/app_localizations.dart';
+import '../../../../core/l10n/reference_labels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -105,10 +107,6 @@ class MissingEngineBanner extends ConsumerWidget {
   /// le `Text` divergeraient au premier changement de libellé, et le seuil
   /// deviendrait faux sans que rien ne le dise — c'est exactement le défaut que
   /// `test/support/polices.dart` raconte : une mesure fausse et verte.
-  static const String _titre = 'Motorisation non renseignée';
-  static const String _phrase =
-      'Sans elle, impossible de savoir quelles pièces vont sur ce véhicule.';
-  static const String _action = 'Compléter';
 
   static const double _icone = 18.0;
   static const double _ecartIcone = 10.0;
@@ -158,6 +156,9 @@ class MissingEngineBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (vehicle.compatibilityReady) return const SizedBox.shrink();
+    final _titre = AppLocalizations.of(context).garageEngineMissingTitle;
+    final _phrase = AppLocalizations.of(context).garageEngineMissingBody;
+    final _action = AppLocalizations.of(context).garageCompleteAction;
 
     final cs = Theme.of(context).colorScheme;
 
@@ -187,9 +188,9 @@ class MissingEngineBanner extends ConsumerWidget {
             ),
           );
           final stylePhrase = ambiant.merge(
-            Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF8A5A00),
-            ),
+            Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: const Color(0xFF8A5A00)),
           );
           final styleAction = ambiant.merge(
             Theme.of(context).textTheme.labelLarge,
@@ -224,8 +225,7 @@ class MissingEngineBanner extends ConsumerWidget {
           ].reduce((a, b) => a > b ? a : b);
 
           final libelle = motLePlusLarge(_action, styleAction);
-          final besoinBouton =
-              libelle + _remplissageBouton > _largeurMiniBouton
+          final besoinBouton = libelle + _remplissageBouton > _largeurMiniBouton
               ? libelle + _remplissageBouton
               : _largeurMiniBouton;
 
@@ -251,9 +251,11 @@ class MissingEngineBanner extends ConsumerWidget {
           // la seconde n'est jamais évaluée.
           final coteACote =
               besoinTexte <= resteAuTexte &&
-              poser(_titre, styleTitre, resteAuTexte)
-                      .computeLineMetrics()
-                      .length <=
+              poser(
+                    _titre,
+                    styleTitre,
+                    resteAuTexte,
+                  ).computeLineMetrics().length <=
                   _lignesTitreCoteACote;
 
           // `MainAxisSize.min`, ET C'EST UNE CORRECTION VUE SUR UNE CAPTURE.
@@ -278,7 +280,7 @@ class MissingEngineBanner extends ConsumerWidget {
           final bouton = TextButton(
             onPressed: () => showEngineTypeDialog(context, ref, vehicle),
             style: TextButton.styleFrom(foregroundColor: cs.primary),
-            child: const Text(_action),
+            child: Text(_action),
           );
 
           if (coteACote) {
@@ -335,38 +337,39 @@ Future<void> showEngineTypeDialog(
   WidgetRef ref,
   OwnedVehicle vehicle,
 ) async {
-  final refs = await ref.read(catalogRefsProvider.future).then<CatalogRefs?>(
-        (r) => r,
-        onError: (_, __) => null,
-      );
+  final refs = await ref
+      .read(catalogRefsProvider.future)
+      .then<CatalogRefs?>((r) => r, onError: (_, __) => null);
 
   if (!context.mounted) return;
 
   if (refs == null || refs.engineTypes.isEmpty) {
-    _dire(context, 'Liste des motorisations indisponible. Réessayez plus tard.',
-        erreur: true);
+    _dire(
+      context,
+      AppLocalizations.of(context).garageEnginesUnavailable,
+      erreur: true,
+    );
     return;
   }
 
   final choix = await showDialog<EngineTypeRef>(
     context: context,
-    builder: (ctx) => _EngineTypeDialog(
-      vehicle: vehicle,
-      engineTypes: refs.engineTypes,
-    ),
+    builder: (ctx) =>
+        _EngineTypeDialog(vehicle: vehicle, engineTypes: refs.engineTypes),
   );
 
   if (choix == null || !context.mounted) return;
 
-  final erreur = await ref
-      .read(garageProvider.notifier)
-      .updateVehicle(vehicle.id, {'engine_type_id': choix.id});
+  final erreur = await ref.read(garageProvider.notifier).updateVehicle(
+    vehicle.id,
+    {'engine_type_id': choix.id},
+  );
 
   if (!context.mounted) return;
 
   _dire(
     context,
-    erreur ?? 'Motorisation enregistrée : les pièces compatibles sont à jour.',
+    erreur ?? AppLocalizations.of(context).garageEngineSavedCompatibility,
     erreur: erreur != null,
   );
 }
@@ -375,8 +378,7 @@ void _dire(BuildContext context, String message, {required bool erreur}) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(message),
-      backgroundColor:
-          erreur ? Theme.of(context).colorScheme.error : null,
+      backgroundColor: erreur ? Theme.of(context).colorScheme.error : null,
     ),
   );
 }
@@ -397,7 +399,7 @@ class _EngineTypeDialogState extends State<_EngineTypeDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Motorisation'),
+      title: Text(AppLocalizations.of(context).catalogFieldEngine),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -405,22 +407,33 @@ class _EngineTypeDialogState extends State<_EngineTypeDialog> {
           Text(
             '${widget.vehicle.identity.fullName} · ${widget.vehicle.year}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 16),
           // Une question qu'on peut se poser sans document sous les yeux :
           // « je fais le plein de quoi ? ». La formuler en jargon reviendrait
           // à demander d'aller chercher la carte grise.
-          const Text('Avec quel carburant roule ce véhicule ?'),
+          Text(AppLocalizations.of(context).garageFuelQuestion),
           const SizedBox(height: 12),
           DropdownButtonFormField<EngineTypeRef>(
             value: _choix,
             isExpanded: true,
             decoration: const InputDecoration(border: OutlineInputBorder()),
-            hint: const Text('Sélectionner…'),
+            hint: Text(AppLocalizations.of(context).garageSelectPlaceholder),
             items: widget.engineTypes
-                .map((e) => DropdownMenuItem(value: e, child: Text(e.label)))
+                .map(
+                  (e) => DropdownMenuItem(
+                    value: e,
+                    child: Text(
+                      referenceFuelLabel(
+                        e.code,
+                        e.label,
+                        AppLocalizations.of(context),
+                      ),
+                    ),
+                  ),
+                )
                 .toList(),
             onChanged: (e) => setState(() => _choix = e),
           ),
@@ -429,12 +442,14 @@ class _EngineTypeDialogState extends State<_EngineTypeDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Annuler'),
+          child: Text(AppLocalizations.of(context).commonCancel),
         ),
         FilledButton(
           // Tant que rien n'est choisi, enregistrer n'aurait rien à écrire.
-          onPressed: _choix == null ? null : () => Navigator.pop(context, _choix),
-          child: const Text('Enregistrer'),
+          onPressed: _choix == null
+              ? null
+              : () => Navigator.pop(context, _choix),
+          child: Text(AppLocalizations.of(context).catalogFeaturesSave),
         ),
       ],
     );

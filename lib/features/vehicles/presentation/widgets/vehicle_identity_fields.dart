@@ -1,4 +1,6 @@
+import '../../../../core/l10n/reference_labels.dart';
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 
 import '../../data/models/catalog_refs.dart';
@@ -41,6 +43,7 @@ class VehicleIdentityFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final brand = selection.brand;
     final model = selection.model;
     final models = brand == null ? <ModelRef>[] : refs.modelsForBrand(brand.id);
@@ -57,14 +60,15 @@ class VehicleIdentityFields extends StatelessWidget {
       children: [
         VehicleReferenceDropdown<BrandRef>(
           key: const ValueKey('private-sale-brand'),
-          label: 'Marque *',
+          label: l10n.privateSalesBrandRequiredLabel,
           items: refs.brands
               .where((entry) => entry.isActive || entry.id == brand?.id)
               .toList(),
           value: brand,
           itemLabel: (entry) => entry.name,
           enabled: enabled,
-          validator: (value) => value == null ? 'Marque obligatoire' : null,
+          validator: (value) =>
+              value == null ? l10n.privateSalesBrandRequiredError : null,
           onChanged: (value) {
             if (value?.id == brand?.id) return;
             selection.selectBrand(value);
@@ -77,14 +81,13 @@ class VehicleIdentityFields extends StatelessWidget {
         if (!freeModel)
           VehicleReferenceDropdown<ModelRef>(
             key: ValueKey('private-sale-model-${brand?.id}'),
-            label: 'Modèle *',
+            label: l10n.privateSalesModelRequiredLabel,
             items: models,
             value: model,
-            itemLabel: (entry) => entry.displayName,
+            itemLabel: (entry) => referenceModelDisplayName(entry, l10n),
             enabled: enabled && brand != null,
-            validator: (value) => value == null
-                ? 'Sélectionnez un modèle ou saisissez le vôtre.'
-                : null,
+            validator: (value) =>
+                value == null ? l10n.privateSalesModelSelectionError : null,
             onChanged: (value) {
               if (value?.id == model?.id) return;
               selection.selectModel(value);
@@ -96,14 +99,14 @@ class VehicleIdentityFields extends StatelessWidget {
             key: const ValueKey('private-sale-model-libre'),
             controller: freeModelController,
             enabled: enabled && brand != null,
-            decoration: const InputDecoration(
-              labelText: 'Modèle *',
-              hintText: 'Saisissez le nom de votre modèle',
+            decoration: InputDecoration(
+              labelText: l10n.privateSalesModelRequiredLabel,
+              hintText: l10n.privateSalesFreeModelHint,
             ),
             maxLength: 80,
             onChanged: (_) => onChanged(),
             validator: (value) => value == null || value.trim().isEmpty
-                ? 'Renseignez le modèle.'
+                ? l10n.privateSalesFreeModelRequired
                 : null,
           ),
         Align(
@@ -124,8 +127,8 @@ class VehicleIdentityFields extends StatelessWidget {
             ),
             label: Text(
               freeModel
-                  ? 'Revenir à la liste des modèles'
-                  : 'Mon modèle n’est pas dans la liste',
+                  ? l10n.privateSalesModelListAction
+                  : l10n.privateSalesFreeModelAction,
             ),
           ),
         ),
@@ -133,8 +136,8 @@ class VehicleIdentityFields extends StatelessWidget {
           key: const ValueKey('private-sale-year'),
           controller: yearController,
           enabled: enabled,
-          decoration: const InputDecoration(
-            labelText: 'Année de fabrication *',
+          decoration: InputDecoration(
+            labelText: l10n.privateSalesManufactureYearLabel,
             prefixIcon: Icon(Icons.calendar_today),
           ),
           keyboardType: TextInputType.number,
@@ -148,7 +151,7 @@ class VehicleIdentityFields extends StatelessWidget {
             return parsed == null ||
                     parsed < 1900 ||
                     parsed > DateTime.now().year + 1
-                ? 'Vérifiez l’année de fabrication.'
+                ? l10n.privateSalesManufactureYearInvalid
                 : null;
           },
         ),
@@ -156,7 +159,7 @@ class VehicleIdentityFields extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
-              'Cette génération est indiquée ${model.yearsLabel ?? ''}. Vérifiez le modèle et l’année.',
+              l10n.privateSalesGenerationWarning(referenceModelYears(model, l10n) ?? ''),
             ),
           ),
         const SizedBox(height: 12),
@@ -164,8 +167,8 @@ class VehicleIdentityFields extends StatelessWidget {
           key: const ValueKey('private-sale-mileage'),
           controller: mileageController,
           enabled: enabled,
-          decoration: const InputDecoration(
-            labelText: 'Kilométrage',
+          decoration: InputDecoration(
+            labelText: l10n.catalogFieldMileage,
             prefixIcon: Icon(Icons.speed),
           ),
           keyboardType: TextInputType.number,
@@ -174,7 +177,7 @@ class VehicleIdentityFields extends StatelessWidget {
           validator: (value) {
             final parsed = int.tryParse(value?.trim() ?? '');
             return parsed == null || parsed < 0 || parsed > 3000000
-                ? 'Saisissez un kilométrage valide.'
+                ? l10n.privateSalesMileageInvalid
                 : null;
           },
         ),
@@ -182,7 +185,7 @@ class VehicleIdentityFields extends StatelessWidget {
         if (trims.isNotEmpty) ...[
           VehicleReferenceDropdown<TrimRef>(
             key: ValueKey('private-sale-trim-${model?.id}'),
-            label: 'Finition',
+            label: l10n.catalogFieldTrim,
             items: trims,
             value: selection.trim,
             itemLabel: (entry) => entry.name,
@@ -193,7 +196,7 @@ class VehicleIdentityFields extends StatelessWidget {
             },
           ),
           if (selection.trim != null)
-            _clear('Effacer la finition', () {
+            _clear(l10n.privateSalesClearTrim, () {
               selection.trim = null;
               onChanged();
             }),
@@ -201,10 +204,10 @@ class VehicleIdentityFields extends StatelessWidget {
         ],
         VehicleReferenceDropdown<EngineTypeRef>(
           key: ValueKey('private-sale-engine-${model?.id}-$freeModel'),
-          label: 'Carburant',
+          label: l10n.privateSalesFuel,
           items: refs.engineTypes,
           value: selection.engineType,
-          itemLabel: (entry) => entry.label,
+          itemLabel: (entry) => referenceFuelLabel(entry.code, entry.label, l10n),
           enabled: enabled,
           onChanged: (value) {
             selection.engineType = value;
@@ -212,17 +215,17 @@ class VehicleIdentityFields extends StatelessWidget {
           },
         ),
         if (selection.engineType != null)
-          _clear('Effacer le carburant', () {
+          _clear(l10n.privateSalesClearFuel, () {
             selection.engineType = null;
             onChanged();
           }),
         const SizedBox(height: 12),
         VehicleReferenceDropdown<DrivetrainRef>(
           key: ValueKey('private-sale-drivetrain-${model?.id}-$freeModel'),
-          label: 'Motricité',
+          label: l10n.privateSalesDrivetrain,
           items: refs.drivetrains,
           value: selection.drivetrain,
-          itemLabel: (entry) => entry.label,
+          itemLabel: (entry) => referenceDrivetrainLabel(entry.code, entry.label, l10n),
           enabled: enabled,
           onChanged: (value) {
             selection.drivetrain = value;
@@ -230,44 +233,58 @@ class VehicleIdentityFields extends StatelessWidget {
           },
         ),
         if (selection.drivetrain != null)
-          _clear('Effacer la motricité', () {
+          _clear(l10n.privateSalesClearDrivetrain, () {
             selection.drivetrain = null;
             onChanged();
           }),
         const SizedBox(height: 12),
         VehicleReferenceDropdown<ColorRef>(
-          label: 'Couleur',
+          label: l10n.catalogFieldColour,
           items: refs.colors,
           value: color,
-          itemLabel: (entry) => entry.name,
+          itemLabel: (entry) => referenceColourLabel(entry.name, l10n),
           enabled: enabled,
           onChanged: onColorChanged,
         ),
         if (color != null)
-          _clear('Effacer la couleur', () => onColorChanged(null)),
+          _clear(l10n.privateSalesClearColour, () => onColorChanged(null)),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
           key: ValueKey('private-sale-transmission-${transmission ?? 'none'}'),
           initialValue: transmission,
           isExpanded: true,
-          decoration: const InputDecoration(labelText: 'Boîte (facultatif)'),
-          items: const [
-            DropdownMenuItem(value: 'manual', child: Text('Manuelle')),
-            DropdownMenuItem(value: 'automatic', child: Text('Automatique')),
-            DropdownMenuItem(value: 'cvt', child: Text('CVT')),
+          decoration: InputDecoration(
+            labelText: l10n.privateSalesTransmissionOptional,
+          ),
+          items: [
+            DropdownMenuItem(
+              value: 'manual',
+              child: Text(l10n.catalogTransmissionManual),
+            ),
+            DropdownMenuItem(
+              value: 'automatic',
+              child: Text(l10n.catalogTransmissionAutomatic),
+            ),
+            DropdownMenuItem(
+              value: 'cvt',
+              child: Text(l10n.catalogTransmissionCvt),
+            ),
             DropdownMenuItem(
               value: 'dual_clutch',
-              child: Text('Double embrayage'),
+              child: Text(l10n.privateSalesTransmissionDualClutch),
             ),
             DropdownMenuItem(
               value: 'single_speed',
-              child: Text('Rapport unique'),
+              child: Text(l10n.privateSalesTransmissionSingleSpeed),
             ),
           ],
           onChanged: enabled ? onTransmissionChanged : null,
         ),
         if (transmission != null)
-          _clear('Effacer la boîte', () => onTransmissionChanged(null)),
+          _clear(
+            l10n.privateSalesClearTransmission,
+            () => onTransmissionChanged(null),
+          ),
         const SizedBox(height: 16),
       ],
     );

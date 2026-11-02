@@ -1,3 +1,4 @@
+import '../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 /// Ce que le vendeur touchera, ce que la boutique ajoute, et ce que l'acheteur
@@ -25,7 +26,7 @@ class MargeRecapitulatif extends StatelessWidget {
     super.key,
     required this.prixPropose,
     required this.pourcentage,
-    this.libelle = 'Prix affiché à l’acheteur',
+    this.libelle,
   });
 
   /// Le prix que le vendeur vient de taper, ou null tant qu'il n'a rien tapé.
@@ -35,7 +36,7 @@ class MargeRecapitulatif extends StatelessWidget {
   final double pourcentage;
 
   /// Ce que le total représente, pour distinguer une vente d'une location.
-  final String libelle;
+  final String? libelle;
 
   /// Le total, arrondi comme le serveur l'arrondit.
   ///
@@ -66,8 +67,8 @@ class MargeRecapitulatif extends StatelessWidget {
   /// Le taux sans décimale inutile : « 10 % » et non « 10.0 % ».
   static String _taux(double pourcentage) =>
       pourcentage == pourcentage.roundToDouble()
-          ? '${pourcentage.round()}'
-          : pourcentage.toString();
+      ? '${pourcentage.round()}'
+      : pourcentage.toString();
 
   @override
   Widget build(BuildContext context) {
@@ -90,23 +91,30 @@ class MargeRecapitulatif extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _ligne(context, 'Votre prix', '${formaterMontant(prix)} FCFA'),
+          _ligne(
+            context,
+            AppLocalizations.of(context).partnerAccountsMarginYourPrice,
+            '${formaterMontant(prix)} FCFA',
+          ),
           const SizedBox(height: 4),
           _ligne(
             context,
-            'Marge boutique (${_taux(pourcentage)} %)',
+            AppLocalizations.of(
+              context,
+            ).partnerAccountsMarginRate(_taux(pourcentage)),
             '+ ${formaterMontant(total(prix, pourcentage) - prix)} FCFA',
           ),
           const Divider(height: 14),
           _ligne(
             context,
-            libelle,
+            libelle ??
+                AppLocalizations.of(context).partnerAccountsMarginPublicPrice,
             '${formaterMontant(total(prix, pourcentage))} FCFA',
             gras: true,
           ),
           const SizedBox(height: 6),
           Text(
-            'Ce total est figé au moment où vous enregistrez.',
+            AppLocalizations.of(context).partnerAccountsMarginLockedHelp,
             style: textes.bodySmall?.copyWith(color: couleurs.onSurfaceVariant),
           ),
         ],
@@ -119,11 +127,15 @@ class MargeRecapitulatif extends StatelessWidget {
   /// `Wrap` et non `Row` : à 320 points et au texte agrandi, « Marge boutique
   /// (7.5 %) » et le montant ne tiennent plus côte à côte, et un `Row` déborde
   /// au lieu de se replier.
-  Widget _ligne(BuildContext context, String libelle, String montant,
-      {bool gras = false}) {
+  Widget _ligne(
+    BuildContext context,
+    String libelle,
+    String montant, {
+    bool gras = false,
+  }) {
     final style = Theme.of(context).textTheme.bodyMedium?.copyWith(
-          fontWeight: gras ? FontWeight.w700 : FontWeight.w400,
-        );
+      fontWeight: gras ? FontWeight.w700 : FontWeight.w400,
+    );
 
     return Wrap(
       alignment: WrapAlignment.spaceBetween,

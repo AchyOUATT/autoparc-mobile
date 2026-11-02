@@ -1,3 +1,4 @@
+import '../../../../core/l10n/reference_labels.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/api/api_exception.dart';
 import 'package:flutter/services.dart';
@@ -40,6 +41,7 @@ class FitmentEntry {
   final int? brandId;
   final String brandName;
   final String modelName;
+  final ModelRef? referenceModel;
   final int? trimId;
   final String? trimName;
   final int? engineTypeId;
@@ -55,6 +57,7 @@ class FitmentEntry {
     required this.vehicleModelId,
     required this.brandName,
     required this.modelName,
+    this.referenceModel,
     this.brandId,
     this.trimId,
     this.trimName,
@@ -81,6 +84,7 @@ class FitmentEntry {
     brandId: brand.id,
     brandName: brand.name,
     modelName: model.displayName,
+    referenceModel: model,
     trimId: trim?.id,
     trimName: trim?.name,
     yearFrom: yearFrom,
@@ -111,6 +115,7 @@ class FitmentEntry {
       vehicleModelId: modelId,
       brandId: brandId ?? modele?.brandId,
       brandName: marque?.name ?? '',
+      referenceModel: modele,
       modelName:
           modele?.displayName ??
           json['vehicle_model'] as String? ??
@@ -148,8 +153,13 @@ class FitmentEntry {
   /// du référentiel du serveur ou de la saisie du personnel : ils restent tels
   /// quels. Seuls les connecteurs sont à nous.
   String labelDans(AppLocalizations l10n) {
+    final modelLabel = referenceModel != null
+        ? referenceModelDisplayName(referenceModel!, l10n)
+        : modelName == 'Modèle n° $vehicleModelId'
+        ? l10n.catalogFitmentModelNumber(vehicleModelId.toString())
+        : modelName;
     final buf = StringBuffer(
-      brandName.isEmpty ? modelName : '$brandName $modelName',
+      brandName.isEmpty ? modelLabel : '$brandName $modelLabel',
     );
     if (trimName != null) {
       buf.write('${l10n.catalogFitmentSeparator}$trimName');
@@ -272,12 +282,12 @@ class _FitmentsSectionState extends State<FitmentsSection> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Aucune compatibilité déclarée',
+                  AppLocalizations.of(context).catalogFitmentEmptyTitle,
                   style: TextStyle(color: cs.outline),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'La pièce sera trouvable uniquement par SKU.',
+                  AppLocalizations.of(context).catalogFitmentEmptyBody,
                   style: Theme.of(
                     context,
                   ).textTheme.bodySmall?.copyWith(color: cs.outline),
@@ -319,7 +329,7 @@ class _FitmentsSectionState extends State<FitmentsSection> {
                   // en enregistrant, c'est en répondre.
                   subtitle: e.origin == FitmentOrigin.proposee
                       ? Text(
-                          'Proposée automatiquement, non vérifiée',
+                          AppLocalizations.of(context).catalogFitmentUnverified,
                           style: Theme.of(
                             context,
                           ).textTheme.bodySmall?.copyWith(color: cs.outline),
@@ -344,10 +354,7 @@ class _FitmentsSectionState extends State<FitmentsSection> {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              'En enregistrant, les lignes proposées que vous laissez ici '
-              'deviennent des compatibilités déclarées : elles ne seront plus '
-              'recalculées, et vous en répondez. Retirez celles que vous ne '
-              'pouvez pas confirmer.',
+              AppLocalizations.of(context).catalogFitmentConfirmationHint,
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: cs.outline),
@@ -360,7 +367,7 @@ class _FitmentsSectionState extends State<FitmentsSection> {
         OutlinedButton.icon(
           onPressed: _openAddSheet,
           icon: const Icon(Icons.add, size: 18),
-          label: const Text('Ajouter une compatibilité'),
+          label:  Text(AppLocalizations.of(context).catalogFitmentAdd),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size.fromHeight(44),
           ),
@@ -409,7 +416,7 @@ class _FitmentSheetState extends State<_FitmentSheet> {
   void _confirm() {
     if (_model == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner un modèle.')),
+         SnackBar(content: Text(AppLocalizations.of(context).catalogFitmentModelRequired)),
       );
       return;
     }
@@ -454,7 +461,7 @@ class _FitmentSheetState extends State<_FitmentSheet> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Compatibilité véhicule',
+            AppLocalizations.of(context).catalogFitmentDialogTitle,
             style: Theme.of(
               context,
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -464,14 +471,14 @@ class _FitmentSheetState extends State<_FitmentSheet> {
           // ── Marque ───────────────────────────────────────────────
           DropdownButtonFormField<BrandRef>(
             value: _brand,
-            decoration: const InputDecoration(
-              labelText: 'Marque *',
+            decoration:  InputDecoration(
+              labelText: AppLocalizations.of(context).catalogFitmentBrandRequired,
               prefixIcon: Icon(Icons.directions_car_outlined),
               border: OutlineInputBorder(),
               isDense: true,
             ),
             isExpanded: true,
-            hint: const Text('Sélectionner…'),
+            hint:  Text(AppLocalizations.of(context).catalogFitmentSelect),
             items: brands
                 .map((b) => DropdownMenuItem(value: b, child: Text(b.name)))
                 .toList(),
@@ -487,17 +494,17 @@ class _FitmentSheetState extends State<_FitmentSheet> {
           DropdownButtonFormField<ModelRef>(
             value: _model,
             decoration: InputDecoration(
-              labelText: 'Modèle *',
+              labelText: AppLocalizations.of(context).catalogFitmentModelField,
               prefixIcon: const Icon(Icons.car_repair),
               border: const OutlineInputBorder(),
               isDense: true,
-              helperText: _brand == null ? 'Choisir d\'abord une marque' : null,
+              helperText: _brand == null ? AppLocalizations.of(context).catalogFitmentChooseBrand : null,
             ),
             isExpanded: true,
-            hint: const Text('Sélectionner…'),
+            hint:  Text(AppLocalizations.of(context).catalogFitmentSelect),
             items: _models
                 .map(
-                  (m) => DropdownMenuItem(value: m, child: Text(m.displayName)),
+                  (m) => DropdownMenuItem(value: m, child: Text(referenceModelDisplayName(m, AppLocalizations.of(context)))),
                 )
                 .toList(),
             onChanged: _brand == null
@@ -513,18 +520,18 @@ class _FitmentSheetState extends State<_FitmentSheet> {
           if (_trims.isNotEmpty) ...[
             DropdownButtonFormField<TrimRef>(
               value: _trim,
-              decoration: const InputDecoration(
-                labelText: 'Finition (optionnel)',
+              decoration:  InputDecoration(
+                labelText: AppLocalizations.of(context).catalogFitmentTrimOptional,
                 prefixIcon: Icon(Icons.tune),
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
               isExpanded: true,
-              hint: const Text('Toutes finitions'),
+              hint:  Text(AppLocalizations.of(context).catalogFitmentAllTrims),
               items: [
-                const DropdownMenuItem(
+                 DropdownMenuItem(
                   value: null,
-                  child: Text('— Toutes finitions —'),
+                  child: Text(AppLocalizations.of(context).catalogFitmentAllTrimsOption),
                 ),
                 ..._trims.map(
                   (t) => DropdownMenuItem(value: t, child: Text(t.name)),
@@ -541,8 +548,8 @@ class _FitmentSheetState extends State<_FitmentSheet> {
               Expanded(
                 child: TextFormField(
                   controller: _yearFromCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Année de',
+                  decoration:  InputDecoration(
+                    labelText: AppLocalizations.of(context).catalogFitmentYearFromField,
                     prefixIcon: Icon(Icons.calendar_today),
                     border: OutlineInputBorder(),
                     isDense: true,
@@ -558,8 +565,8 @@ class _FitmentSheetState extends State<_FitmentSheet> {
               Expanded(
                 child: TextFormField(
                   controller: _yearToCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Année à',
+                  decoration:  InputDecoration(
+                    labelText: AppLocalizations.of(context).catalogFitmentYearToField,
                     prefixIcon: Icon(Icons.calendar_today),
                     border: OutlineInputBorder(),
                     isDense: true,
@@ -579,12 +586,12 @@ class _FitmentSheetState extends State<_FitmentSheet> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _posCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Position (optionnel)',
+              decoration:  InputDecoration(
+                labelText: AppLocalizations.of(context).catalogFitmentPositionField,
                 prefixIcon: Icon(Icons.location_searching),
                 border: OutlineInputBorder(),
                 isDense: true,
-                hintText: 'Ex. Avant gauche, Côté moteur…',
+                hintText: AppLocalizations.of(context).catalogFitmentPositionHint,
               ),
             ),
           ],
@@ -594,7 +601,7 @@ class _FitmentSheetState extends State<_FitmentSheet> {
           FilledButton.icon(
             onPressed: _confirm,
             icon: const Icon(Icons.add),
-            label: const Text('Ajouter cette compatibilité'),
+            label:  Text(AppLocalizations.of(context).catalogFitmentConfirmAction),
           ),
         ],
       ),
@@ -640,7 +647,7 @@ class CompatibilitesIllisibles extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Compatibilités non relues',
+                  AppLocalizations.of(context).catalogFitmentUnavailableTitle,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: cs.onErrorContainer,
@@ -651,17 +658,14 @@ class CompatibilitesIllisibles extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Elles n\'ont pas pu être chargées et ne sont donc pas modifiables '
-            'pour l\'instant. Elles seront conservées telles quelles : '
-            'enregistrer les autres champs ne leur fera rien. Rouvrez cet '
-            'écran une fois la connexion revenue pour y toucher.',
+            AppLocalizations.of(context).catalogFitmentUnavailableBody,
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(color: cs.onErrorContainer),
           ),
           const SizedBox(height: 6),
           Text(
-            messageFor(erreur),
+            messageFor(erreur, l10n: AppLocalizations.of(context)),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: cs.onErrorContainer.withValues(alpha: 0.75),
             ),

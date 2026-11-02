@@ -1,10 +1,13 @@
+import '../../../core/l10n/reference_labels.dart';
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../core/utils/currency_format.dart';
 import '../../../core/utils/lien_externe.dart';
 import '../data/private_listing_repository.dart';
+import 'private_listing_labels.dart';
 
 class PrivateListingDetail extends StatelessWidget {
   const PrivateListingDetail({
@@ -16,85 +19,111 @@ class PrivateListingDetail extends StatelessWidget {
   final bool publicListing;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('Annonce de particulier'),
-      actions: [
-        if (publicListing)
-          IconButton(
-            tooltip: 'Partager l’annonce',
-            icon: const Icon(Icons.share_outlined),
-            onPressed: () async {
-              final box = context.findRenderObject() as RenderBox?;
-              await SharePlus.instance.share(
-                ShareParams(
-                  text: '${listing.title}\n${listing.text('share_url')}',
-                  sharePositionOrigin: box == null
-                      ? null
-                      : box.localToGlobal(Offset.zero) & box.size,
-                ),
-              );
-            },
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.privateSalesDetailTitle),
+        actions: [
+          if (publicListing)
+            IconButton(
+              tooltip: l10n.privateSalesShare,
+              icon: const Icon(Icons.share_outlined),
+              onPressed: () async {
+                final box = context.findRenderObject() as RenderBox?;
+                await SharePlus.instance.share(
+                  ShareParams(
+                    text: '${listing.title}\n${listing.text('share_url')}',
+                    sharePositionOrigin: box == null
+                        ? null
+                        : box.localToGlobal(Offset.zero) & box.size,
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Chip(label: Text(l10n.privateSalesPrivateSeller)),
           ),
-      ],
-    ),
-    body: ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        const Align(
-          alignment: Alignment.centerLeft,
-          child: Chip(label: Text('Particulier')),
-        ),
-        Text(listing.title, style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 8),
-        Text(
-          formatXof(listing.number('price').toDouble()),
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        Text(
-          '${listing.number('year')} · ${listing.number('mileage_km')} km · ${listing.text('city')}',
-        ),
-        const SizedBox(height: 16),
-        for (final entry in const {
-          'engine_type': 'Carburant',
-          'drivetrain': 'Motricité',
-          'color': 'Couleur',
-        }.entries)
-          if (listing.identityText(entry.key).isNotEmpty)
-            Text('${entry.value} : ${listing.identityText(entry.key)}'),
-        if (listing.text('transmission').isNotEmpty)
+          Text(listing.title, style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 8),
           Text(
-            'Boîte : ${const {'manual': 'Manuelle', 'automatic': 'Automatique', 'cvt': 'CVT', 'dual_clutch': 'Double embrayage', 'single_speed': 'Rapport unique'}[listing.text('transmission')] ?? listing.text('transmission')}',
+            formatXof(listing.number('price').toDouble()),
+            style: Theme.of(context).textTheme.titleLarge,
           ),
-        const SizedBox(height: 12),
-        for (final photo in listing.photos)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.network(
-                '${photo['url']}',
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const SizedBox(
-                  height: 160,
-                  child: Center(child: Icon(Icons.broken_image_outlined)),
+          Text(
+            l10n.privateSalesVehicleSummary(
+              listing.number('year'),
+              listing.number('mileage_km'),
+              listing.text('city'),
+            ),
+          ),
+          const SizedBox(height: 16),
+          for (final entry in {
+            'engine_type': l10n.privateSalesFuel,
+            'drivetrain': l10n.privateSalesDrivetrain,
+            'color': l10n.catalogFieldColour,
+          }.entries)
+            if (listing.identityText(entry.key).isNotEmpty)
+              Text(
+                l10n.privateSalesFieldValue(
+                  entry.value,
+                  switch (entry.key) {
+                    'engine_type' => referenceFuelLabel(null, listing.identityText(entry.key), l10n),
+                    'drivetrain' => referenceDrivetrainLabel(null, listing.identityText(entry.key), l10n),
+                    'color' => referenceColourLabel(listing.identityText(entry.key), l10n),
+                    _ => listing.identityText(entry.key),
+                  },
+                ),
+              ),
+          if (listing.text('transmission').isNotEmpty)
+            Text(
+              l10n.privateSalesFieldValue(
+                l10n.catalogFieldTransmission,
+                privateListingTransmissionLabel(
+                  listing.text('transmission'),
+                  l10n,
                 ),
               ),
             ),
+          const SizedBox(height: 12),
+          for (final photo in listing.photos)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Image.network(
+                  '${photo['url']}',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const SizedBox(
+                    height: 160,
+                    child: Center(child: Icon(Icons.broken_image_outlined)),
+                  ),
+                ),
+              ),
+            ),
+          Text(listing.text('description')),
+          const Divider(height: 32),
+          Text(
+            listing.text('seller_name'),
+            style: Theme.of(context).textTheme.titleMedium,
           ),
-        Text(listing.text('description')),
-        const Divider(height: 32),
-        Text(
-          listing.text('seller_name'),
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        if (listing.fields['phone_verified'] == true)
-          const Text('Téléphone vérifié'),
-        const Text('Le véhicule n’a pas été inspecté par AutoParc.'),
-        _BlocDeContact(listing: listing, depuisLaListePublique: publicListing),
-      ],
-    ),
-  );
+          if (listing.fields['phone_verified'] == true)
+            Text(l10n.privateSalesPhoneVerified),
+          Text(l10n.privateSalesNotInspected),
+          _BlocDeContact(
+            listing: listing,
+            depuisLaListePublique: publicListing,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Les boutons pour joindre le vendeur, et d'où leur numéro vient.
@@ -128,6 +157,8 @@ class _BlocDeContact extends ConsumerStatefulWidget {
 }
 
 class _BlocDeContactState extends ConsumerState<_BlocDeContact> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   PrivateListing? _fiche;
 
   @override
@@ -160,24 +191,21 @@ class _BlocDeContactState extends ConsumerState<_BlocDeContact> {
         const SizedBox(height: 16),
         FilledButton.icon(
           icon: const Icon(Icons.call_outlined),
-          label: const Text('Appeler le vendeur'),
+          label: Text(l10n.privateSalesCallSeller),
           onPressed: () => ouvrirLien(
             context,
             Uri(scheme: 'tel', path: numero),
             valeurACopier: numero,
-            ceQuiNePeutPasSOuvrir: 'le composeur',
+            ceQuiNePeutPasSOuvrir: l10n.shellContactDialerTarget,
           ),
         ),
         if (_fiche?.fields['whatsapp_enabled'] == true)
           OutlinedButton.icon(
             icon: const Icon(Icons.chat_outlined),
-            label: const Text('Contacter sur WhatsApp'),
+            label: Text(l10n.privateSalesContactWhatsapp),
             onPressed: () => ouvrirLien(
               context,
-              Uri.https(
-                'wa.me',
-                '/${numero.replaceAll(RegExp(r'\D'), '')}',
-              ),
+              Uri.https('wa.me', '/${numero.replaceAll(RegExp(r'\D'), '')}'),
               valeurACopier: numero,
               ceQuiNePeutPasSOuvrir: 'WhatsApp',
             ),

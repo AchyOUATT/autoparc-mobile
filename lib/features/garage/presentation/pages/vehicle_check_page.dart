@@ -1,3 +1,4 @@
+import '../../../../l10n/app_localizations.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -250,7 +251,9 @@ class _VehicleCheckPageState extends ConsumerState<VehicleCheckPage> {
     });
 
     try {
-      final liste = await ref.read(garageRepositoryProvider).checkTemplate(
+      final liste = await ref
+          .read(garageRepositoryProvider)
+          .checkTemplate(
             widget.ownedVehicleId,
             tripDistanceKm: _motif == 'trip' ? _distanceKm : null,
             reason: _motif,
@@ -297,7 +300,7 @@ class _VehicleCheckPageState extends ConsumerState<VehicleCheckPage> {
       if (!mounted) return;
       setState(() {
         _chargement = false;
-        _erreur = messageFor(e);
+        _erreur = messageFor(e, l10n: AppLocalizations.of(context));
       });
     }
   }
@@ -307,7 +310,8 @@ class _VehicleCheckPageState extends ConsumerState<VehicleCheckPage> {
   Map<String, dynamic> _charge() => {
     'client_reference': _reference,
     'reason': _motif,
-    if (_motif == 'trip' && _distanceKm != null) 'trip_distance_km': _distanceKm,
+    if (_motif == 'trip' && _distanceKm != null)
+      'trip_distance_km': _distanceKm,
     if (_kilometrageSaisi != null) 'mileage_km': _kilometrageSaisi,
 
     // La date du contrôle, et non celle de l'envoi : un contrôle rempli hier
@@ -367,7 +371,8 @@ class _VehicleCheckPageState extends ConsumerState<VehicleCheckPage> {
       // garder en attente le ferait rejouer à chaque ouverture de l'écran, avec
       // un message promettant un envoi qui n'aboutira pas. Seule une panne de
       // transport mérite d'être gardée.
-      final definitif = e is ApiException &&
+      final definitif =
+          e is ApiException &&
           !e.isNetworkFailure &&
           (e.isValidation || e.isForbidden || e.isNotFound);
 
@@ -387,10 +392,12 @@ class _VehicleCheckPageState extends ConsumerState<VehicleCheckPage> {
         // Quelqu'un qui croit avoir perdu un quart d'heure de travail ne
         // recommence pas.
         _erreur = definitif
-            ? "Le contrôle n'a pas été accepté : ${messageFor(e)}\n"
-                'Corrige la saisie, puis termine à nouveau.'
-            : 'Envoi impossible pour le moment : ${messageFor(e)}\n'
-                'Le contrôle est gardé sur ce téléphone et repartira dès que le réseau revient.';
+            ? AppLocalizations.of(context).garageCheckRejected(
+                (messageFor(e, l10n: AppLocalizations.of(context))).toString(),
+              )
+            : AppLocalizations.of(context).garageCheckDeferred(
+                (messageFor(e, l10n: AppLocalizations.of(context))).toString(),
+              );
 
         // Le champ du kilométrage n'est atteignable qu'à l'étape de départ, et
         // c'est la saisie la plus probablement en cause.
@@ -403,7 +410,9 @@ class _VehicleCheckPageState extends ConsumerState<VehicleCheckPage> {
 
   @override
   Widget build(BuildContext context) {
-    final nom = widget.vehicle?.displayName ?? 'Mon véhicule';
+    final nom =
+        widget.vehicle?.displayName ??
+        AppLocalizations.of(context).garageVehicleFallback;
 
     return Scaffold(
       appBar: AppBar(
@@ -414,9 +423,13 @@ class _VehicleCheckPageState extends ConsumerState<VehicleCheckPage> {
           // Une fois la liste composée, le titre vient du serveur — il dépend
           // de la saison, donc d'un calendrier qui n'est pas découpé ici.
           switch (_etape) {
-            _Etape.depart => 'Contrôler mon véhicule',
+            _Etape.depart => AppLocalizations.of(
+              context,
+            ).garageCheckVehicleAction,
             _Etape.liste => _titre,
-            _Etape.verdict => 'Contrôle terminé',
+            _Etape.verdict => AppLocalizations.of(
+              context,
+            ).garageCheckFinishedTitle,
           },
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -437,45 +450,45 @@ class _VehicleCheckPageState extends ConsumerState<VehicleCheckPage> {
       ),
       body: switch (_etape) {
         _Etape.depart => _Depart(
-            nom: nom,
-            types: _types,
-            typesEnCours: _typesEnCours,
-            motif: _motif,
-            onMotif: (motif) => setState(() => _motif = motif),
-            distanceKm: _distanceKm,
-            kilometrage: _kilometrage,
-            chargement: _chargement,
-            erreur: _erreur,
-            // La bannière ne s'affiche que faute de message : les deux disent la
-            // même chose, et un écran qui se répète se lit moins bien qu'un
-            // écran qui dit une fois.
-            enAttente: _enAttente && _erreur == null,
-            onDistance: (km) => setState(() => _distanceKm = km),
-            onComposer: _composer,
-          ),
+          nom: nom,
+          types: _types,
+          typesEnCours: _typesEnCours,
+          motif: _motif,
+          onMotif: (motif) => setState(() => _motif = motif),
+          distanceKm: _distanceKm,
+          kilometrage: _kilometrage,
+          chargement: _chargement,
+          erreur: _erreur,
+          // La bannière ne s'affiche que faute de message : les deux disent la
+          // même chose, et un écran qui se répète se lit moins bien qu'un
+          // écran qui dit une fois.
+          enAttente: _enAttente && _erreur == null,
+          onDistance: (km) => setState(() => _distanceKm = km),
+          onComposer: _composer,
+        ),
         _Etape.liste => _Liste(
-            liste: _liste!,
-            motif: _motif,
-            distanceKm: _distanceKm,
-            reponses: _reponses,
-            envoi: _envoi,
-            erreur: _erreur,
-            onReponse: (code, etat) {
-              setState(() => _reponses[code] = etat);
-              _sauverBrouillon();
-            },
-            // Un brouillon repris ramène directement à la liste : sans ce
-            // retour, le trajet choisi la veille serait définitif, et la liste
-            // resterait composée pour un voyage qu'on ne fait plus.
-            onModifierTrajet: () => setState(() => _etape = _Etape.depart),
-            onTerminer: _envoyer,
-          ),
+          liste: _liste!,
+          motif: _motif,
+          distanceKm: _distanceKm,
+          reponses: _reponses,
+          envoi: _envoi,
+          erreur: _erreur,
+          onReponse: (code, etat) {
+            setState(() => _reponses[code] = etat);
+            _sauverBrouillon();
+          },
+          // Un brouillon repris ramène directement à la liste : sans ce
+          // retour, le trajet choisi la veille serait définitif, et la liste
+          // resterait composée pour un voyage qu'on ne fait plus.
+          onModifierTrajet: () => setState(() => _etape = _Etape.depart),
+          onTerminer: _envoyer,
+        ),
         _Etape.verdict => _Verdict(
-            resultat: _resultat!,
-            total: _totalPoints,
-            ownedVehicleId: widget.ownedVehicleId,
-            vehicle: widget.vehicle,
-          ),
+          resultat: _resultat!,
+          total: _totalPoints,
+          ownedVehicleId: widget.ownedVehicleId,
+          vehicle: widget.vehicle,
+        ),
       },
     );
   }
@@ -533,12 +546,12 @@ class _Depart extends StatelessWidget {
 
   /// Des distances qui parlent plutôt que des paliers ronds : « la ville » et
   /// « une autre région » se choisissent sans calculer.
-  static const List<({String libelle, int km})> _trajets = [
-    (libelle: 'En ville', km: 30),
-    (libelle: 'Une centaine de km', km: 100),
-    (libelle: 'Une autre ville', km: 250),
-    (libelle: 'Une autre région', km: 400),
-    (libelle: 'Un autre pays', km: 800),
+  static List<({String libelle, int km})> _trajets(BuildContext context) => [
+    (libelle: AppLocalizations.of(context).garageTripCity, km: 30),
+    (libelle: AppLocalizations.of(context).garageTripHundredKm, km: 100),
+    (libelle: AppLocalizations.of(context).garageTripOtherCity, km: 250),
+    (libelle: AppLocalizations.of(context).garageTripOtherRegion, km: 400),
+    (libelle: AppLocalizations.of(context).garageTripOtherCountry, km: 800),
   ];
 
   @override
@@ -560,7 +573,7 @@ class _Depart extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      "Un contrôle rempli n'est pas encore parti. Il repartira dès que le réseau revient.",
+                      AppLocalizations.of(context).garageCheckWaitingToSend,
                       style: tt.bodySmall?.copyWith(color: cs.onErrorContainer),
                     ),
                   ),
@@ -606,15 +619,23 @@ class _Depart extends StatelessWidget {
         // Un contrôle de saison ne va nulle part : lui demander une distance
         // n'aurait aucun sens, et le bouton ne l'attend donc pas.
         if (_voyage) ...[
-          Text('Où vas-tu ?', style: tt.titleSmall),
+          Text(
+            AppLocalizations.of(context).garageTripDestinationQuestion,
+            style: tt.titleSmall,
+          ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final trajet in _trajets)
+              for (final trajet in _trajets(context))
                 ChoiceChip(
-                  label: Text('${trajet.libelle} · ${trajet.km} km'),
+                  label: Text(
+                    AppLocalizations.of(context).garageTripOptionDistance(
+                      (trajet.libelle).toString(),
+                      (trajet.km).toString(),
+                    ),
+                  ),
                   selected: distanceKm == trajet.km,
                   onSelected: (_) => onDistance(trajet.km),
                 ),
@@ -623,10 +644,13 @@ class _Depart extends StatelessWidget {
           const SizedBox(height: 24),
         ],
 
-        Text('Kilométrage au compteur', style: tt.titleSmall),
+        Text(
+          AppLocalizations.of(context).garageOdometerLabel,
+          style: tt.titleSmall,
+        ),
         const SizedBox(height: 4),
         Text(
-          "Tu es devant le tableau de bord : c'est le moment. Sans ce relevé, le rappel de vidange ne peut pas partir.",
+          AppLocalizations.of(context).garageOdometerExplanation,
           style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
         ),
         const SizedBox(height: 8),
@@ -669,7 +693,8 @@ class _Depart extends StatelessWidget {
           // Il attend aussi de savoir ce qui est proposé : lancer un contrôle
           // avant voyage pendant que l'option saisonnière est encore en vol,
           // c'est choisir sans avoir vu le choix.
-          onPressed: (_voyage && distanceKm == null) || chargement || typesEnCours
+          onPressed:
+              (_voyage && distanceKm == null) || chargement || typesEnCours
               ? null
               : onComposer,
           icon: chargement
@@ -679,7 +704,11 @@ class _Depart extends StatelessWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.checklist_rtl),
-          label: Text(chargement ? 'Composition…' : 'Voir ce qu\'il faut vérifier'),
+          label: Text(
+            chargement
+                ? AppLocalizations.of(context).garageCheckComposing
+                : AppLocalizations.of(context).garageViewCheckItems,
+          ),
         ),
       ],
     );
@@ -743,8 +772,16 @@ class _Liste extends StatelessWidget {
               // c'est la saison qui les commande, et le titre l'annonce déjà.
               Text(
                 motif == 'trip'
-                    ? '${liste.items.length} points pour ce véhicule et ce trajet. Ils ne sont pas les mêmes pour tous : chacun dit pourquoi il est là.'
-                    : '${liste.items.length} points à vérifier une fois avant la saison, pas à chaque trajet.',
+                    ? AppLocalizations.of(
+                        context,
+                      ).garageTripCheckItemsExplanation(
+                        (liste.items.length).toString(),
+                      )
+                    : AppLocalizations.of(
+                        context,
+                      ).garageSeasonCheckItemsExplanation(
+                        (liste.items.length).toString(),
+                      ),
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               Align(
@@ -756,9 +793,13 @@ class _Liste extends StatelessWidget {
                     size: 16,
                   ),
                   label: Text(switch ((motif, distanceKm)) {
-                    ('trip', null) => 'Choisir le trajet',
-                    ('trip', final km) => 'Trajet de $km km · Modifier',
-                    _ => 'Changer de contrôle',
+                    ('trip', null) => AppLocalizations.of(
+                      context,
+                    ).garageChooseTripAction,
+                    ('trip', final km) => AppLocalizations.of(
+                      context,
+                    ).garageChangeTripDistance((km).toString()),
+                    _ => AppLocalizations.of(context).garageChangeCheckAction,
                   }),
                 ),
               ),
@@ -800,7 +841,11 @@ class _Liste extends StatelessWidget {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.done_all),
-            label: Text(envoi ? 'Enregistrement…' : 'Terminer le contrôle'),
+            label: Text(
+              envoi
+                  ? AppLocalizations.of(context).garageSaving
+                  : AppLocalizations.of(context).garageFinishCheckAction,
+            ),
           ),
         ),
       ],
@@ -860,8 +905,11 @@ class _PointDeControle extends StatelessWidget {
                 runSpacing: 4,
                 children: [
                   for (final raison in item.reasons)
-                    _Etiquette(texte: raison, couleur: cs.secondaryContainer,
-                        surCouleur: cs.onSecondaryContainer),
+                    _Etiquette(
+                      texte: raison,
+                      couleur: cs.secondaryContainer,
+                      surCouleur: cs.onSecondaryContainer,
+                    ),
                 ],
               ),
             ],
@@ -875,7 +923,9 @@ class _PointDeControle extends StatelessWidget {
                         ? Icons.error_outline
                         : Icons.info_outline,
                     size: 15,
-                    color: item.prefillStatus == 'bad' ? cs.error : cs.onSurfaceVariant,
+                    color: item.prefillStatus == 'bad'
+                        ? cs.error
+                        : cs.onSurfaceVariant,
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -907,10 +957,25 @@ class _PointDeControle extends StatelessWidget {
                 // police plus large ou un texte agrandi les dépasserait — un
                 // libellé tronqué proprement se lit encore, un libellé coupé en
                 // deux ne se lit plus.
-                segments: const [
-                  ButtonSegment(value: 'ok', label: _Segment('Correct')),
-                  ButtonSegment(value: 'watch', label: _Segment('À surveiller')),
-                  ButtonSegment(value: 'bad', label: _Segment('Défaut')),
+                segments: [
+                  ButtonSegment(
+                    value: 'ok',
+                    label: _Segment(
+                      AppLocalizations.of(context).garageCheckOkay,
+                    ),
+                  ),
+                  ButtonSegment(
+                    value: 'watch',
+                    label: _Segment(
+                      AppLocalizations.of(context).garageCheckWatch,
+                    ),
+                  ),
+                  ButtonSegment(
+                    value: 'bad',
+                    label: _Segment(
+                      AppLocalizations.of(context).garageCheckFault,
+                    ),
+                  ),
                 ],
                 selected: etat == null ? const <String>{} : {etat!},
                 emptySelectionAllowed: true,
@@ -986,7 +1051,9 @@ class _ChoixMotif extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              choisi ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              choisi
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
               size: 20,
               color: choisi ? cs.secondary : cs.onSurfaceVariant,
             ),
@@ -1006,7 +1073,9 @@ class _ChoixMotif extends StatelessWidget {
                     Text(
                       type.hint,
                       style: tt.bodySmall?.copyWith(
-                        color: choisi ? cs.onSecondaryContainer : cs.onSurfaceVariant,
+                        color: choisi
+                            ? cs.onSecondaryContainer
+                            : cs.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -1069,7 +1138,9 @@ class _Etiquette extends StatelessWidget {
     ),
     child: Text(
       texte,
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: surCouleur),
+      style: Theme.of(
+        context,
+      ).textTheme.labelSmall?.copyWith(color: surCouleur),
     ),
   );
 }
@@ -1099,9 +1170,21 @@ class _Verdict extends StatelessWidget {
 
     final nonVerifies = total == null ? 0 : total! - resultat.checkedCount;
 
-    final (Color fond, Color surFond, IconData icone) = switch (resultat.verdict.value) {
-      'blocked' => (cs.errorContainer, cs.onErrorContainer, Icons.report_outlined),
-      'clear' => (cs.secondaryContainer, cs.onSecondaryContainer, Icons.check_circle_outline),
+    final (
+      Color fond,
+      Color surFond,
+      IconData icone,
+    ) = switch (resultat.verdict.value) {
+      'blocked' => (
+        cs.errorContainer,
+        cs.onErrorContainer,
+        Icons.report_outlined,
+      ),
+      'clear' => (
+        cs.secondaryContainer,
+        cs.onSecondaryContainer,
+        Icons.check_circle_outline,
+      ),
       _ => (cs.tertiaryContainer, cs.onTertiaryContainer, Icons.info_outline),
     };
 
@@ -1146,8 +1229,10 @@ class _Verdict extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             nonVerifies == 1
-                ? "1 point n'a pas été vérifié."
-                : "$nonVerifies points n'ont pas été vérifiés.",
+                ? AppLocalizations.of(context).garageCheckOneUnchecked
+                : AppLocalizations.of(
+                    context,
+                  ).garageCheckUnchecked((nonVerifies).toString()),
             style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
           ),
         ],
@@ -1159,7 +1244,9 @@ class _Verdict extends StatelessWidget {
               Icon(Icons.speed, size: 15, color: cs.onSurfaceVariant),
               const SizedBox(width: 6),
               Text(
-                'Compteur relevé : ${_kilometres(resultat.mileageKm!)} km',
+                AppLocalizations.of(context).garageCheckOdometerRecorded(
+                  (_kilometres(resultat.mileageKm!)).toString(),
+                ),
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
             ],
@@ -1170,7 +1257,10 @@ class _Verdict extends StatelessWidget {
           const SizedBox(height: 20),
           // « À régler » et non « À régler avant de partir » : la carte du
           // verdict vient de le dire, et l'écran le répétait trois fois.
-          _Titre(texte: 'À régler', couleur: cs.error),
+          _Titre(
+            texte: AppLocalizations.of(context).garageCheckFixNow,
+            couleur: cs.error,
+          ),
           for (final point in bloquants)
             _PointAReprendre(
               point: point,
@@ -1181,7 +1271,10 @@ class _Verdict extends StatelessWidget {
 
         if (aSurveiller.isNotEmpty) ...[
           const SizedBox(height: 20),
-          _Titre(texte: 'Peut attendre', couleur: cs.primary),
+          _Titre(
+            texte: AppLocalizations.of(context).garageCheckCanWait,
+            couleur: cs.primary,
+          ),
           for (final point in aSurveiller)
             _PointAReprendre(
               point: point,
@@ -1193,7 +1286,7 @@ class _Verdict extends StatelessWidget {
         const SizedBox(height: 28),
         FilledButton(
           onPressed: () => context.pop(),
-          child: const Text('Revenir au garage'),
+          child: Text(AppLocalizations.of(context).garageBackToGarageAction),
         ),
       ],
     );
@@ -1211,10 +1304,9 @@ class _Titre extends StatelessWidget {
     padding: const EdgeInsets.only(bottom: 8),
     child: Text(
       texte.toUpperCase(),
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: couleur,
-        letterSpacing: 0.8,
-      ),
+      style: Theme.of(
+        context,
+      ).textTheme.labelSmall?.copyWith(color: couleur, letterSpacing: 0.8),
     ),
   );
 }
@@ -1263,7 +1355,9 @@ class _PointAReprendre extends StatelessWidget {
                     extra: vehicle,
                   ),
                   icon: const Icon(Icons.shopping_bag_outlined, size: 18),
-                  label: const Text('Voir les pièces'),
+                  label: Text(
+                    AppLocalizations.of(context).garageViewPartsAction,
+                  ),
                 ),
               ),
           ],

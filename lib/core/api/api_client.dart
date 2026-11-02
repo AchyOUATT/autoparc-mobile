@@ -8,6 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'api_exception.dart';
 import 'endpoints.dart';
+import '../l10n/langue.dart';
 
 /// L'ANCIENNE clé. Elle ne portait que le jeton, et on la lit encore.
 ///
@@ -80,8 +81,21 @@ const _kStorage = FlutterSecureStorage(
   ),
 );
 
+/// Adapter injectable pour éprouver les requêtes sans joindre le serveur.
+final apiHttpClientAdapterProvider = Provider<HttpClientAdapter?>((_) => null);
+
 /// Provider global — un seul client Dio partagé dans toute l'app.
-final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
+final apiClientProvider = Provider<ApiClient>((ref) {
+  final client = ApiClient(
+    languageCode: ref.read(langueProvider).languageCode,
+    httpClientAdapter: ref.read(apiHttpClientAdapterProvider),
+  );
+  ref.listen(
+    langueProvider,
+    (_, locale) => client.setLanguage(locale.languageCode),
+  );
+  return client;
+});
 
 /// Client HTTP configuré pour l'API AutoParc.
 ///
@@ -92,39 +106,50 @@ final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
 class ApiClient {
   late final Dio _dio;
 
-  ApiClient() {
-    _dio = Dio(BaseOptions(
-      baseUrl:        Endpoints.baseUrl,
-      // 60 s et non 30 : le service Render est sur le plan gratuit, il s'endort
-      // après inactivité et son réveil est lent. Mesuré le 2026-10-15 depuis un
-      // poste : 34,8 s sur /up à froid — soit au-delà des 30 s précédentes. Le
-      // 11 octobre, aucune réponse en 180 s. À 30 s, tout utilisateur ouvrant
-      // l'application alors que le service dormait dépassait le délai, sans
-      // aucun moyen de comprendre pourquoi.
-      //
-      // Il n'y a volontairement pas de sendTimeout : l'envoi de photos sur un
-      // réseau mobile lent le dépasserait. Son absence a un coût connu — un
-      // envoi vers un serveur muet reste suspendu indéfiniment.
-      connectTimeout: const Duration(seconds: 60),
-      receiveTimeout: const Duration(seconds: 60),
-      headers: {
-        'Accept':       'application/json',
-        'Content-Type': 'application/json',
-        // Bypass l'interstitiel ngrok sur les URLs *.ngrok-free.dev / *.ngrok.io
-        if (Endpoints.baseUrl.contains('ngrok'))
-          'ngrok-skip-browser-warning': 'true',
-      },
-    ));
+  ApiClient({
+    String languageCode = 'fr',
+    HttpClientAdapter? httpClientAdapter,
+  }) {
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: Endpoints.baseUrl,
+        // 60 s et non 30 : le service Render est sur le plan gratuit, il s'endort
+        // après inactivité et son réveil est lent. Mesuré le 2026-10-15 depuis un
+        // poste : 34,8 s sur /up à froid — soit au-delà des 30 s précédentes. Le
+        // 11 octobre, aucune réponse en 180 s. À 30 s, tout utilisateur ouvrant
+        // l'application alors que le service dormait dépassait le délai, sans
+        // aucun moyen de comprendre pourquoi.
+        //
+        // Il n'y a volontairement pas de sendTimeout : l'envoi de photos sur un
+        // réseau mobile lent le dépasserait. Son absence a un coût connu — un
+        // envoi vers un serveur muet reste suspendu indéfiniment.
+        connectTimeout: const Duration(seconds: 60),
+        receiveTimeout: const Duration(seconds: 60),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Accept-Language': languageCode == 'en' ? 'en' : 'fr',
+          // Bypass l'interstitiel ngrok sur les URLs *.ngrok-free.dev / *.ngrok.io
+          if (Endpoints.baseUrl.contains('ngrok'))
+            'ngrok-skip-browser-warning': 'true',
+        },
+      ),
+    );
+
+    if (httpClientAdapter != null) _dio.httpClientAdapter = httpClientAdapter;
 
     _dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: _attachToken,
-        onError:   _handleError,
-      ),
+      InterceptorsWrapper(onRequest: _attachToken, onError: _handleError),
     );
   }
 
   // ── Intercepteurs ─────────────────────────────────────────────────
+
+  void setLanguage(String languageCode) {
+    _dio.options.headers['Accept-Language'] = languageCode == 'en'
+        ? 'en'
+        : 'fr';
+  }
 
   Future<void> _attachToken(
     RequestOptions options,
@@ -170,8 +195,10 @@ class ApiClient {
   }
 
   void _handleError(DioException e, ErrorInterceptorHandler handler) {
-    debugPrint('[API] type=${e.type} status=${e.response?.statusCode} '
-        'msg=${e.message} url=${e.requestOptions.uri}');
+    debugPrint(
+      '[API] type=${e.type} status=${e.response?.statusCode} '
+      'msg=${e.message} url=${e.requestOptions.uri}',
+    );
     // Ne pas convertir ici : on laisse le DioException original se propager
     // avec sa réponse intacte. Chaque méthode (post/get/…) le convertit en
     // ApiException via fromDioError, qui peut alors lire e.response?.data.
@@ -292,15 +319,24 @@ class ApiClient {
   // ── Session Sanctum (staff) ───────────────────────────────────────
   /// Byte uploads also work on the web preview, where XFile.path is a blob URL.
   Future<Map<String, dynamic>> uploadBytes(
-    String path, {required List<MapEntry<String, List<int>>> photos}
-  ) async {
+    String path, {
+    required List<MapEntry<String, List<int>>> photos,
+  }) async {
     try {
       final form = FormData();
       for (final photo in photos) {
-        form.files.add(MapEntry('photos[]', MultipartFile.fromBytes(photo.value, filename: photo.key)));
+        form.files.add(
+          MapEntry(
+            'photos[]',
+            MultipartFile.fromBytes(photo.value, filename: photo.key),
+          ),
+        );
       }
-      final result = await _dio.post<Map<String, dynamic>>(path, data: form,
-          options: Options(contentType: 'multipart/form-data'));
+      final result = await _dio.post<Map<String, dynamic>>(
+        path,
+        data: form,
+        options: Options(contentType: 'multipart/form-data'),
+      );
       return result.data!;
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);

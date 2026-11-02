@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../../core/api/api_exception.dart';
 import '../../../core/contact/autoparc_contact_provider.dart';
+import '../../../l10n/app_localizations.dart';
 
 class ContactSettingsPage extends ConsumerStatefulWidget {
   const ContactSettingsPage({super.key});
@@ -14,6 +15,7 @@ class ContactSettingsPage extends ConsumerStatefulWidget {
 }
 
 class _ContactSettingsPageState extends ConsumerState<ContactSettingsPage> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
   final _form = GlobalKey<FormState>();
   final _phone = TextEditingController();
   bool _loading = true;
@@ -48,7 +50,7 @@ class _ContactSettingsPageState extends ConsumerState<ContactSettingsPage> {
       _phone.text = contact.phoneDisplay;
       _loaded = true;
     } catch (error) {
-      if (mounted) setState(() => _error = messageFor(error));
+      if (mounted) setState(() => _error = messageFor(error, l10n: l10n));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -71,11 +73,11 @@ class _ContactSettingsPageState extends ConsumerState<ContactSettingsPage> {
           .save(_phone.text);
       if (!mounted) return;
       _phone.text = contact.phoneDisplay;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Numéro de contact AutoParc enregistré.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.settingsContactSaved)));
     } catch (error) {
-      if (mounted) setState(() => _error = messageFor(error));
+      if (mounted) setState(() => _error = messageFor(error, l10n: l10n));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -90,13 +92,11 @@ class _ContactSettingsPageState extends ConsumerState<ContactSettingsPage> {
       }
     });
     return Scaffold(
-      appBar: AppBar(title: const Text('Contact AutoParc')),
+      appBar: AppBar(title: Text(l10n.settingsContactTitle)),
       body: auth.isLoading
           ? const Center(child: CircularProgressIndicator())
           : !auth.canManageSettings
-          ? const Center(
-              child: Text('Accès réservé aux administrateurs et responsables.'),
-            )
+          ? Center(child: Text(l10n.settingsContactAccessDenied))
           : _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null && !_loaded
@@ -108,10 +108,7 @@ class _ContactSettingsPageState extends ConsumerState<ContactSettingsPage> {
                   children: [
                     Text(_error!, textAlign: TextAlign.center),
                     const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: _load,
-                      child: const Text('Réessayer'),
-                    ),
+                    TextButton(onPressed: _load, child: Text(l10n.commonRetry)),
                   ],
                 ),
               ),
@@ -121,14 +118,15 @@ class _ContactSettingsPageState extends ConsumerState<ContactSettingsPage> {
               child: ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
-                  const Text(
-                    'Numéro pour joindre AutoParc',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                  Text(
+                    l10n.settingsContactPhoneTitle,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Ce numéro est utilisé pour les appels et WhatsApp dans l’application.',
-                  ),
+                  Text(l10n.settingsContactPhoneDescription),
                   const SizedBox(height: 24),
                   TextFormField(
                     key: const Key('autoparc-contact-phone'),
@@ -137,15 +135,15 @@ class _ContactSettingsPageState extends ConsumerState<ContactSettingsPage> {
                     keyboardType: TextInputType.phone,
                     textInputAction: TextInputAction.done,
                     autofillHints: const [AutofillHints.telephoneNumber],
-                    decoration: const InputDecoration(
-                      labelText: 'Téléphone avec indicatif international',
+                    decoration: InputDecoration(
+                      labelText: l10n.settingsContactPhoneLabel,
                       hintText: '+226 75 57 04 84',
-                      helperText: 'Incluez + et l’indicatif du pays.',
-                      prefixIcon: Icon(Icons.phone_outlined),
+                      helperText: l10n.settingsContactCountryCodeHelp,
+                      prefixIcon: const Icon(Icons.phone_outlined),
                     ),
                     validator: (value) => AutoParcContact.isValid(value ?? '')
                         ? null
-                        : 'Saisissez un numéro international valide, par exemple +226 75 57 04 84.',
+                        : l10n.settingsContactPhoneInvalid,
                     onFieldSubmitted: (_) {
                       if (!_saving) _save();
                     },
@@ -172,7 +170,9 @@ class _ContactSettingsPageState extends ConsumerState<ContactSettingsPage> {
                           )
                         : const Icon(Icons.save_outlined),
                     label: Text(
-                      _saving ? 'Enregistrement…' : 'Enregistrer le numéro',
+                      _saving
+                          ? l10n.settingsContactSaving
+                          : l10n.settingsContactSave,
                     ),
                   ),
                 ],

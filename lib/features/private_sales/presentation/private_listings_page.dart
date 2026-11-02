@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,6 +10,7 @@ import '../../auth/presentation/providers/auth_provider.dart';
 import '../data/private_listing_repository.dart';
 import 'private_listing_detail.dart';
 import 'private_listing_form.dart';
+import 'private_listing_labels.dart';
 
 class PrivateListingsPage extends ConsumerStatefulWidget {
   const PrivateListingsPage({super.key, this.mode = PrivateListingMode.browse});
@@ -19,6 +21,8 @@ class PrivateListingsPage extends ConsumerStatefulWidget {
 }
 
 class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
+
   PrivateListingPage? _results;
   String? _error;
   String _search = '', _status = 'pending';
@@ -67,7 +71,7 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
       if (mounted &&
           generation == _generation &&
           session == _session(ref.read(authProvider))) {
-        setState(() => _error = messageFor(error));
+        setState(() => _error = messageFor(error, l10n: l10n));
       }
     } finally {
       if (mounted && generation == _generation) setState(() => _busy = false);
@@ -88,17 +92,15 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
         context: context,
         builder: (context) => AlertDialog(
           title: Text(title),
-          content: const Text(
-            'L’annonce ne sera plus visible par les acheteurs.',
-          ),
+          content: Text(l10n.privateSalesConfirmRemovalBody),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuler'),
+              child: Text(l10n.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Confirmer'),
+              child: Text(l10n.privateSalesConfirm),
             ),
           ],
         ),
@@ -116,7 +118,7 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
     } catch (error) {
       if (mounted) {
         setState(() {
-          _error = messageFor(error);
+          _error = messageFor(error, l10n: l10n);
           _busy = false;
         });
       }
@@ -142,27 +144,27 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
     final reason = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Motif à communiquer au vendeur'),
+        title: Text(l10n.privateSalesRejectReasonTitle),
         content: Form(
           key: form,
           child: TextFormField(
             onChanged: (value) => draft = value,
             maxLength: 2000,
             maxLines: 4,
-            decoration: const InputDecoration(
-              hintText: 'Expliquez ce qui doit être corrigé.',
-              helperText: 'Au moins 5 caractères.',
+            decoration: InputDecoration(
+              hintText: l10n.privateSalesRejectReasonHint,
+              helperText: l10n.privateSalesRejectReasonMinimumHint,
               counterText: '',
             ),
             validator: (value) => (value ?? '').trim().length < 5
-                ? 'Au moins 5 caractères : le vendeur doit comprendre quoi corriger.'
+                ? l10n.privateSalesRejectReasonTooShort
                 : null,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () {
@@ -170,7 +172,7 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
                 Navigator.pop(context, draft.trim());
               }
             },
-            child: const Text('Refuser / retirer'),
+            child: Text(l10n.privateSalesRejectAction),
           ),
         ],
       ),
@@ -203,7 +205,8 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
   /// ses photos, et rappeler la meme personne a chaque retouche userait vite
   /// la file de moderation.
   Future<void> _publier(PrivateListing listing) async {
-    if (listing.phoneVerified && listing.verifiedPhone == listing.phoneClaimed) {
+    if (listing.phoneVerified &&
+        listing.verifiedPhone == listing.phoneClaimed) {
       await _run(
         () => _repo.review(listing.id, revision: listing.number('revision')),
       );
@@ -213,11 +216,7 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
 
     final numero = listing.phoneClaimed;
     if (numero.isEmpty) {
-      setState(
-        () => _error =
-            'Cette annonce n’indique aucun numéro : elle ne peut pas être '
-            'publiée. Refusez-la en demandant au vendeur de le renseigner.',
-      );
+      setState(() => _error = l10n.privateSalesMissingPhonePublication);
 
       return;
     }
@@ -227,26 +226,23 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Appeler le vendeur'),
+          title: Text(l10n.privateSalesCallSeller),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(numero, style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 8),
-              const Text(
-                'Demandez-lui si c’est bien LUI qui a déposé cette annonce — '
-                'pas seulement si le numéro est le sien.',
-              ),
+              Text(l10n.privateSalesCallCheckInstructions),
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 icon: const Icon(Icons.call_outlined),
-                label: const Text('Composer'),
+                label: Text(l10n.privateSalesDial),
                 onPressed: () => ouvrirLien(
                   context,
                   Uri(scheme: 'tel', path: numero),
                   valeurACopier: numero,
-                  ceQuiNePeutPasSOuvrir: 'le composeur',
+                  ceQuiNePeutPasSOuvrir: l10n.shellContactDialerTarget,
                 ),
               ),
               CheckboxListTile(
@@ -255,23 +251,20 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
                 value: confirme,
                 onChanged: (value) =>
                     setDialogState(() => confirme = value ?? false),
-                title: const Text(
-                  'J’ai appelé ce numéro et le vendeur a confirmé avoir '
-                  'déposé cette annonce.',
-                ),
+                title: Text(l10n.privateSalesCallConfirmed),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Annuler'),
+              child: Text(l10n.commonCancel),
             ),
             FilledButton(
               onPressed: confirme
                   ? () => Navigator.of(context).pop(true)
                   : null,
-              child: const Text('Publier'),
+              child: Text(l10n.privateSalesPublish),
             ),
           ],
         ),
@@ -304,19 +297,19 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
       }
     });
     final title = _review
-        ? 'Valider les annonces'
+        ? l10n.privateSalesReviewTitle
         : _mine
-        ? 'Mes annonces'
-        : 'Voitures de particuliers';
+        ? l10n.privateSalesMineTitle
+        : l10n.privateSalesBrowseTitle;
     if (!_allowed(auth)) {
       return Scaffold(
         appBar: AppBar(title: Text(title)),
         body: Center(
           child: _review
-              ? const Text('Accès réservé au personnel chargé du catalogue.')
+              ? Text(l10n.privateSalesReviewAccessDenied)
               : FilledButton(
                   onPressed: () => context.push('/login'),
-                  child: const Text('Se connecter pour gérer mes annonces'),
+                  child: Text(l10n.privateSalesSignInManage),
                 ),
         ),
       );
@@ -326,13 +319,13 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
         title: Text(title),
         actions: [
           IconButton(
-            tooltip: 'Actualiser',
+            tooltip: l10n.privateSalesRefresh,
             onPressed: _busy ? null : _load,
             icon: const Icon(Icons.refresh),
           ),
           if (!_mine && !_review && auth.isClient)
             IconButton(
-              tooltip: 'Mes annonces',
+              tooltip: l10n.privateSalesMineTitle,
               icon: const Icon(Icons.list_alt),
               onPressed: () => context.push('/my-listings'),
             ),
@@ -343,7 +336,7 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
           : FloatingActionButton.extended(
               onPressed: _busy ? null : () => _edit(),
               icon: const Icon(Icons.sell_outlined),
-              label: const Text('Vendre ma voiture'),
+              label: Text(l10n.privateSalesSellTitle),
             ),
       body: RefreshIndicator(
         onRefresh: _load,
@@ -352,8 +345,8 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
           children: [
             if (!_review && !_mine)
               TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Chercher une voiture ou une ville',
+                decoration: InputDecoration(
+                  labelText: l10n.privateSalesSearchHint,
                   prefixIcon: Icon(Icons.search),
                 ),
                 onSubmitted: (value) {
@@ -365,15 +358,21 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
             if (_review)
               DropdownButtonFormField<String>(
                 initialValue: _status,
-                decoration: const InputDecoration(
-                  labelText: 'État des annonces',
+                decoration: InputDecoration(
+                  labelText: l10n.privateSalesReviewFilterLabel,
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'pending', child: Text('En attente')),
-                  DropdownMenuItem(value: 'published', child: Text('Publiées')),
+                items: [
+                  DropdownMenuItem(
+                    value: 'pending',
+                    child: Text(l10n.privateSalesReviewFilterPending),
+                  ),
+                  DropdownMenuItem(
+                    value: 'published',
+                    child: Text(l10n.privateSalesReviewFilterPublished),
+                  ),
                   DropdownMenuItem(
                     value: 'rejected',
-                    child: Text('À corriger'),
+                    child: Text(l10n.privateSalesStatusRejected),
                   ),
                 ],
                 onChanged: _busy
@@ -385,11 +384,9 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
                       },
               ),
             if (_mine)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 12),
-                child: Text(
-                  'Une annonce en cours gratuite. Retirez-la ou marquez-la vendue pour en créer une autre.',
-                ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(l10n.privateSalesOneActiveListingHint),
               ),
             if (_busy) const LinearProgressIndicator(),
             if (_error != null)
@@ -401,7 +398,7 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
                       Text(_error!),
                       TextButton(
                         onPressed: _load,
-                        child: const Text('Réessayer'),
+                        child: Text(l10n.commonRetry),
                       ),
                     ],
                   ),
@@ -412,10 +409,10 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
                 padding: const EdgeInsets.symmetric(vertical: 48),
                 child: Text(
                   _mine
-                      ? 'Votre première annonce commence ici.'
+                      ? l10n.privateSalesEmptyMine
                       : _review
-                      ? 'Aucune annonce à examiner.'
-                      : 'Aucune annonce pour le moment.',
+                      ? l10n.privateSalesEmptyReview
+                      : l10n.privateSalesEmptyBrowse,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -432,9 +429,9 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
                             _page--;
                             _load();
                           },
-                    child: const Text('Précédent'),
+                    child: Text(l10n.privateSalesPrevious),
                   ),
-                  Text('$_page / ${_results!.lastPage}'),
+                  Text(l10n.privateSalesPagination(_page, _results!.lastPage)),
                   TextButton(
                     onPressed: _busy || _page >= _results!.lastPage
                         ? null
@@ -442,7 +439,7 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
                             _page++;
                             _load();
                           },
-                    child: const Text('Suivant'),
+                    child: Text(l10n.privateSalesNext),
                   ),
                 ],
               ),
@@ -474,7 +471,9 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
             alignment: Alignment.centerLeft,
             child: Chip(
               label: Text(
-                _mine || _review ? listing.statusLabel : 'Particulier',
+                _mine || _review
+                    ? privateListingStatusLabel(listing, l10n)
+                    : l10n.privateSalesPrivateSeller,
               ),
             ),
           ),
@@ -498,7 +497,9 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
         if (listing.text('review_reason').isNotEmpty)
           Padding(
             padding: const EdgeInsets.all(12),
-            child: Text('À corriger : ${listing.text('review_reason')}'),
+            child: Text(
+              l10n.privateSalesReviewReason(listing.text('review_reason')),
+            ),
           ),
         if (_mine && listing.editable)
           Padding(
@@ -508,34 +509,38 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
               children: [
                 TextButton(
                   onPressed: _busy ? null : () => _edit(listing),
-                  child: const Text('Modifier / compléter'),
+                  child: Text(l10n.privateSalesEdit),
                 ),
                 if (listing.status == 'published')
                   TextButton(
                     onPressed: _busy
                         ? null
                         : () async {
-                            if (await _confirm('Marquer ce véhicule vendu ?') &&
+                            if (await _confirm(
+                                  l10n.privateSalesConfirmSoldTitle,
+                                ) &&
                                 mounted) {
                               await _run(() async {
                                 await _repo.action(listing.id, 'sold');
                               });
                             }
                           },
-                    child: const Text('Marquer vendu'),
+                    child: Text(l10n.privateSalesMarkSold),
                   ),
                 TextButton(
                   onPressed: _busy
                       ? null
                       : () async {
-                          if (await _confirm('Retirer cette annonce ?') &&
+                          if (await _confirm(
+                                l10n.privateSalesConfirmWithdrawTitle,
+                              ) &&
                               mounted) {
                             await _run(() async {
                               await _repo.action(listing.id, 'withdraw');
                             });
                           }
                         },
-                  child: const Text('Retirer'),
+                  child: Text(l10n.privateSalesWithdraw),
                 ),
               ],
             ),
@@ -549,12 +554,12 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
                 if (listing.status == 'pending')
                   FilledButton(
                     onPressed: _busy ? null : () => _publier(listing),
-                    child: const Text('Publier'),
+                    child: Text(l10n.privateSalesPublish),
                   ),
                 if (const ['pending', 'published'].contains(listing.status))
                   OutlinedButton(
                     onPressed: _busy ? null : () => _reject(listing),
-                    child: const Text('Refuser / retirer'),
+                    child: Text(l10n.privateSalesRejectAction),
                   ),
               ],
             ),

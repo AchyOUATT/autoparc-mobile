@@ -130,6 +130,9 @@ void main() {
         espace.partnerSessionProvider.overrideWith((_) => _Session()),
       ],
       child: const MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: espace.PartnerListingFormPage(
           kind: espace.PartnerListingKind.accessories,
         ),
@@ -167,6 +170,9 @@ void main() {
         espace.partnerSessionProvider.overrideWith((_) => _Session()),
       ],
       child: const MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: espace.PartnerListingFormPage(
           kind: espace.PartnerListingKind.accessories,
         ),

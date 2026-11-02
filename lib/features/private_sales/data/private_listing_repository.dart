@@ -37,16 +37,6 @@ class PrivateListing {
       .whereType<Map>()
       .map((photo) => Map<String, dynamic>.from(photo))
       .toList();
-  String get statusLabel =>
-      const {
-        'draft': 'Brouillon',
-        'pending': 'En cours de validation',
-        'published': 'En ligne',
-        'rejected': 'À corriger',
-        'withdrawn': 'Retirée',
-        'sold': 'Vendue',
-      }[status] ??
-      'Particulier';
 }
 
 class PrivateListingPage {
@@ -128,6 +118,7 @@ class PrivateListingRepository {
 
   Future<void> deletePhoto(int id, int photo) =>
       client.delete('$minePath/$id/photos/$photo');
+
   /// Publie ou refuse une annonce.
   ///
   /// `phoneVerified` est l'affirmation du moderateur : « j'ai appele ce numero

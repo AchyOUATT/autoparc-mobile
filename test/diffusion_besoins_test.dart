@@ -7,6 +7,7 @@ import 'package:auto/features/partner_accounts/data/partner_repository.dart';
 import 'package:auto/features/partner_accounts/presentation/partner_account_page.dart';
 import 'package:auto/features/partner_accounts/presentation/partner_notifications_page.dart';
 import 'package:auto/features/partner_accounts/presentation/partner_session.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 /// La boîte aux lettres du partenaire, où arrivent les demandes clients.
 ///
@@ -99,7 +100,11 @@ Future<void> _jusquALaTuile(WidgetTester tester) async {
 Future<void> _ouvrir(WidgetTester tester, _Depot depot) async {
   await tester.pumpWidget(ProviderScope(
     overrides: [partnerRepositoryProvider.overrideWithValue(depot)],
-    child: const MaterialApp(home: PartnerNotificationsPage()),
+    child: const MaterialApp(
+      locale: const Locale('fr'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: PartnerNotificationsPage()),
   ));
   await tester.pumpAndSettle();
 }
@@ -127,7 +132,7 @@ void main() {
       }),
     ]));
 
-    expect(find.text('confort'), findsOneWidget);
+    expect(find.text('Confort'), findsOneWidget);
     expect(find.textContaining(' ·  · '), findsNothing);
   });
 
@@ -216,7 +221,11 @@ void main() {
         ])),
         partnerSessionProvider.overrideWith((_) => _SessionApprouvee()),
       ],
-      child: const MaterialApp(home: PartnerAccountPage()),
+      child: const MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PartnerAccountPage()),
     ));
     await tester.pumpAndSettle();
 
@@ -234,7 +243,11 @@ void main() {
         partnerRepositoryProvider.overrideWithValue(_Depot([_diffusion(lue: true)])),
         partnerSessionProvider.overrideWith((_) => _SessionApprouvee()),
       ],
-      child: const MaterialApp(home: PartnerAccountPage()),
+      child: const MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PartnerAccountPage()),
     ));
     await tester.pumpAndSettle();
 

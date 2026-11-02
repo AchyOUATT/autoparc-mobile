@@ -1,3 +1,5 @@
+import '../../../../core/l10n/langue.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/api/api_exception.dart';
@@ -10,12 +12,15 @@ import 'garage_provider.dart';
 /// Une famille par véhicule, et en `autoDispose` : l'historique n'est consulté
 /// que depuis la fiche, et le garder en mémoire pour chaque voiture du parc
 /// n'apporterait qu'un risque d'afficher des chiffres périmés.
-class FuelFillsNotifier extends AutoDisposeFamilyAsyncNotifier<List<FuelFill>, int> {
+class FuelFillsNotifier
+    extends AutoDisposeFamilyAsyncNotifier<List<FuelFill>, int> {
   GarageRepository get _repo => ref.read(garageRepositoryProvider);
 
   @override
-  Future<List<FuelFill>> build(int ownedVehicleId) =>
-      _repo.fuelFills(ownedVehicleId);
+  Future<List<FuelFill>> build(int ownedVehicleId) {
+    ref.watch(langueProvider);
+    return _repo.fuelFills(ownedVehicleId);
+  }
 
   /// Enregistre un passage, puis recharge tout.
   ///
@@ -30,7 +35,10 @@ class FuelFillsNotifier extends AutoDisposeFamilyAsyncNotifier<List<FuelFill>, i
       await _rechargerToutLeGarage();
       return null;
     } catch (e) {
-      return messageFor(e);
+      return messageFor(
+        e,
+        l10n: lookupAppLocalizations(ref.read(langueProvider)),
+      );
     }
   }
 
@@ -42,7 +50,10 @@ class FuelFillsNotifier extends AutoDisposeFamilyAsyncNotifier<List<FuelFill>, i
       await _rechargerToutLeGarage();
       return null;
     } catch (e) {
-      return messageFor(e);
+      return messageFor(
+        e,
+        l10n: lookupAppLocalizations(ref.read(langueProvider)),
+      );
     }
   }
 

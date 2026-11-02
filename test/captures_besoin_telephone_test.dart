@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/polices.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 /// Captures du formulaire de besoin, avec ses champs téléphone.
 ///
@@ -109,7 +110,11 @@ void main() {
               (id: 21, name: 'Denso'),
             ]),
       ],
-      child: const MaterialApp(home: SubmitNeedPage()),
+      child: const MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: SubmitNeedPage()),
     ));
 
     // On pompe par duree : les referentiels de la page restent en attente en

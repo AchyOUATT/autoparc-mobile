@@ -11,22 +11,25 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final requete = RequestOptions(path: '/api/catalog/vehicles');
 
-  DioException reponse(int code, {Object? corps, Map<String, List<String>>? entetes}) =>
-      DioException(
-        requestOptions: requete,
-        response: Response(
-          requestOptions: requete,
-          statusCode: code,
-          data: corps,
-          headers: Headers.fromMap(entetes ?? {}),
-        ),
-      );
+  DioException reponse(
+    int code, {
+    Object? corps,
+    Map<String, List<String>>? entetes,
+  }) => DioException(
+    requestOptions: requete,
+    response: Response(
+      requestOptions: requete,
+      statusCode: code,
+      data: corps,
+      headers: Headers.fromMap(entetes ?? {}),
+    ),
+  );
 
   DioException coupure() => DioException(
-        requestOptions: requete,
-        type: DioExceptionType.connectionError,
-        message: 'SocketException: Failed host lookup',
-      );
+    requestOptions: requete,
+    type: DioExceptionType.connectionError,
+    message: 'SocketException: Failed host lookup',
+  );
 
   group('Message présenté à l\'utilisateur', () {
     test('une coupure réseau le dit, en français', () {
@@ -49,54 +52,86 @@ void main() {
     /// action ». Le remplacer par un message générique perdrait l'information.
     test('un refus de droits conserve le message du serveur', () {
       final e = ApiException.fromDioError(
-        reponse(403, corps: {'message': 'Votre role ne permet pas cette action.'}),
+        reponse(
+          403,
+          corps: {'message': 'Votre role ne permet pas cette action.'},
+        ),
       );
 
       expect(e.userMessage, 'Votre role ne permet pas cette action.');
     });
 
     test('une validation montre la première erreur corrigeable', () {
-      final e = ApiException.fromDioError(reponse(422, corps: {
-        'message': 'The given data was invalid.',
-        'errors': {
-          'plate_number': ['Le numéro de plaque est déjà utilisé.'],
-        },
-      }));
+      final e = ApiException.fromDioError(
+        reponse(
+          422,
+          corps: {
+            'message': 'The given data was invalid.',
+            'errors': {
+              'plate_number': ['Le numéro de plaque est déjà utilisé.'],
+            },
+          },
+        ),
+      );
 
       expect(e.userMessage, 'Le numéro de plaque est déjà utilisé.');
     });
 
-    test('une erreur serveur ne montre pas « Server Error » mais une référence', () {
-      final e = ApiException.fromDioError(reponse(500, corps: {
-        'message': 'Server Error',
-        'request_id': 'a1b2c3d4',
-      }));
+    test(
+      'une erreur serveur ne montre pas « Server Error » mais une référence',
+      () {
+        final e = ApiException.fromDioError(
+          reponse(
+            500,
+            corps: {'message': 'Server Error', 'request_id': 'a1b2c3d4'},
+          ),
+        );
 
-      expect(e.userMessage, isNot(contains('Server Error')));
-      expect(e.userMessage, contains('a1b2c3d4'),
-          reason: 'Sans la référence, le signalement de l\'utilisateur ne mène nulle part.');
-    });
+        expect(e.userMessage, isNot(contains('Server Error')));
+        expect(
+          e.userMessage,
+          contains('a1b2c3d4'),
+          reason:
+              'Sans la référence, le signalement de l\'utilisateur ne mène nulle part.',
+        );
+      },
+    );
 
     /// Le cas qui avait coûté des heures : le serveur ne peut pas vérifier la
     /// session. Lui répondre « reconnectez-vous » envoie tourner en rond.
-    test('une vérification impossible affiche le message du serveur, pas une invite à se reconnecter', () {
-      final e = ApiException.fromDioError(reponse(503, corps: {
-        'message': 'Verification de session indisponible. Reessayez dans un instant.',
-        'request_id': 'ff00ff00',
-      }));
+    test(
+      'une vérification impossible affiche le message du serveur, pas une invite à se reconnecter',
+      () {
+        final e = ApiException.fromDioError(
+          reponse(
+            503,
+            corps: {
+              'message':
+                  'Verification de session indisponible. Reessayez dans un instant.',
+              'request_id': 'ff00ff00',
+            },
+          ),
+        );
 
-      expect(e.userMessage, contains('indisponible'));
-      expect(e.userMessage.toLowerCase(), isNot(contains('reconnect')));
-      expect(e.userMessage, contains('ff00ff00'));
-    });
+        expect(e.userMessage, contains('indisponible'));
+        expect(e.userMessage.toLowerCase(), isNot(contains('reconnect')));
+        expect(e.userMessage, contains('ff00ff00'));
+      },
+    );
 
     /// Après plusieurs mots de passe erronés, le serveur refuse un moment.
     /// Son message dit combien de temps patienter : le remplacer par un
     /// générique perdrait cette indication.
     test('un refus pour excès de tentatives garde le message du serveur', () {
-      final e = ApiException.fromDioError(reponse(429, corps: {
-        'message': 'Trop de tentatives de connexion. Patientez une minute avant de reessayer.',
-      }));
+      final e = ApiException.fromDioError(
+        reponse(
+          429,
+          corps: {
+            'message':
+                'Trop de tentatives de connexion. Patientez une minute avant de reessayer.',
+          },
+        ),
+      );
 
       expect(e.isThrottled, isTrue);
       expect(e.userMessage, contains('Patientez'));
@@ -107,16 +142,24 @@ void main() {
     /// validation, et sans rien savoir du metier. Son message est « The POST
     /// data is too large. » — anglais, et muet sur la conduite a tenir.
     test('un envoi trop volumineux dit quoi faire, en francais', () {
-      final e = ApiException.fromDioError(reponse(413, corps: {
-        'message': 'The POST data is too large.',
-        'request_id': 'c0ffee00',
-      }));
+      final e = ApiException.fromDioError(
+        reponse(
+          413,
+          corps: {
+            'message': 'The POST data is too large.',
+            'request_id': 'c0ffee00',
+          },
+        ),
+      );
 
       expect(e.isTooLarge, isTrue);
       expect(e.userMessage, isNot(contains('POST')));
       expect(e.userMessage.toLowerCase(), contains('volumineux'));
-      expect(e.userMessage.toLowerCase(), contains('photos'),
-          reason: 'Trop volumineux sans dire de quoi ne donne aucune prise.');
+      expect(
+        e.userMessage.toLowerCase(),
+        contains('photos'),
+        reason: 'Trop volumineux sans dire de quoi ne donne aucune prise.',
+      );
     });
 
     /// Le meme refus peut tomber d'un mandataire place devant l'application :
@@ -135,7 +178,10 @@ void main() {
   group('Référence de requête', () {
     test('elle est lue dans le corps', () {
       final e = ApiException.fromDioError(
-        reponse(500, corps: {'message': 'Server Error', 'request_id': 'depuis-le-corps'}),
+        reponse(
+          500,
+          corps: {'message': 'Server Error', 'request_id': 'depuis-le-corps'},
+        ),
       );
 
       expect(e.requestId, 'depuis-le-corps');
@@ -144,11 +190,15 @@ void main() {
     /// Une réponse non JSON — passerelle, proxy — n'a pas de corps exploitable ;
     /// l'en-tête reste.
     test('à défaut, elle est lue dans l\'en-tête', () {
-      final e = ApiException.fromDioError(reponse(
-        502,
-        corps: '<html>Bad Gateway</html>',
-        entetes: {'x-request-id': ['depuis-l-entete']},
-      ));
+      final e = ApiException.fromDioError(
+        reponse(
+          502,
+          corps: '<html>Bad Gateway</html>',
+          entetes: {
+            'x-request-id': ['depuis-l-entete'],
+          },
+        ),
+      );
 
       expect(e.requestId, 'depuis-l-entete');
       expect(e.userMessage, contains('depuis-l-entete'));
@@ -166,7 +216,7 @@ void main() {
     test('déballe une DioException brute', () {
       expect(messageFor(coupure()), contains('connexion'));
     });
-  });
+  });
   group('RefusLocal', () {
     /// Un refus décidé par l'écran arrive à l'écran, mot pour mot.
     ///

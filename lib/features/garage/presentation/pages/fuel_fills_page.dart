@@ -1,3 +1,5 @@
+import '../garage_labels.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -28,11 +30,7 @@ class FuelFillsPage extends ConsumerWidget {
   /// fonctionner sans, comme l'écran des pièces compatibles.
   final OwnedVehicle? vehicle;
 
-  const FuelFillsPage({
-    super.key,
-    required this.ownedVehicleId,
-    this.vehicle,
-  });
+  const FuelFillsPage({super.key, required this.ownedVehicleId, this.vehicle});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -42,7 +40,8 @@ class FuelFillsPage extends ConsumerWidget {
     // kilométrage relevé au dernier passage, que la boîte de saisie
     // pré-remplit. Celui de `extra` a été capturé à l'ouverture de la page et
     // vieillit dès le premier enregistrement.
-    final courant = (ref.watch(garageProvider).valueOrNull ?? const <OwnedVehicle>[])
+    final courant =
+        (ref.watch(garageProvider).valueOrNull ?? const <OwnedVehicle>[])
             .where((v) => v.id == ownedVehicleId)
             .cast<OwnedVehicle?>()
             .firstOrNull ??
@@ -52,8 +51,10 @@ class FuelFillsPage extends ConsumerWidget {
       appBar: AppBar(
         title: Text(
           courant == null
-              ? 'Passages à la pompe'
-              : 'Carburant — ${courant.displayName}',
+              ? AppLocalizations.of(context).garageRefillsTitle
+              : AppLocalizations.of(
+                  context,
+                ).garageFuelForVehicle((courant.displayName).toString()),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -64,12 +65,12 @@ class FuelFillsPage extends ConsumerWidget {
           : FloatingActionButton.extended(
               onPressed: () => _enregistrer(context, courant),
               icon: const Icon(Icons.add),
-              label: const Text('Passage'),
+              label: Text(AppLocalizations.of(context).garageRefillLabel),
             ),
       body: passages.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => _Erreur(
-          message: messageFor(e),
+          message: messageFor(e, l10n: AppLocalizations.of(context)),
           onRetry: () =>
               ref.read(fuelFillsProvider(ownedVehicleId).notifier).refresh(),
         ),
@@ -111,7 +112,7 @@ class FuelFillsPage extends ConsumerWidget {
     if (!enregistre || !context.mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Passage enregistré.')),
+      SnackBar(content: Text(AppLocalizations.of(context).garageRefillSaved)),
     );
   }
 }
@@ -130,8 +131,8 @@ class _LignePassage extends ConsumerWidget {
     return ListTile(
       leading: Tooltip(
         message: passage.isFull
-            ? 'Plein — la pompe s\'est arrêtée toute seule'
-            : 'Demi-plein',
+            ? AppLocalizations.of(context).garageFullRefillExplanation
+            : AppLocalizations.of(context).garagePartialRefill,
         child: Icon(
           passage.isFull
               ? Icons.local_gas_station
@@ -140,16 +141,26 @@ class _LignePassage extends ConsumerWidget {
         ),
       ),
       title: Text(
-        '${_entier(passage.mileageKm)} km · ${_nombre(passage.litres)} l'
-        '${passage.amountFcfa == null ? '' : ' · ${_entier(passage.amountFcfa!)} FCFA'}',
+        AppLocalizations.of(context).garageRefillSummary(
+          (_entier(context, passage.mileageKm)).toString(),
+          (_nombre(context, passage.litres)).toString(),
+          (passage.amountFcfa == null
+                  ? ''
+                  : AppLocalizations.of(context).garageRefillAmountSuffix(
+                      _entier(context, passage.amountFcfa!),
+                    ))
+              .toString(),
+        ),
       ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             [
-              passage.isFull ? 'Plein' : 'Demi-plein',
-              if (passage.filledAt != null) _jour(passage.filledAt!),
+              passage.isFull
+                  ? AppLocalizations.of(context).garageFullRefill
+                  : AppLocalizations.of(context).garagePartialRefill,
+              if (passage.filledAt != null) _jour(context, passage.filledAt!),
             ].join(' · '),
             style: textes.bodySmall?.copyWith(color: cs.outline),
           ),
@@ -158,25 +169,51 @@ class _LignePassage extends ConsumerWidget {
           // litres au calcul mais ne borne jamais un intervalle.
           if (passage.l100km != null)
             Text(
-              '${_nombre(passage.l100km!)} l/100 km'
-              '${passage.distanceKm == null ? '' : ' sur ${_entier(passage.distanceKm!.round())} km'}'
-              '${passage.retenu ? '' : ' — écarté'}',
+              AppLocalizations.of(context).garageRefillConsumption(
+                (_nombre(context, passage.l100km!)).toString(),
+                (passage.distanceKm == null
+                        ? ''
+                        : AppLocalizations.of(
+                            context,
+                          ).garageRefillDistanceSuffix(
+                            _entier(context, passage.distanceKm!.round()),
+                          ))
+                    .toString(),
+                (passage.retenu
+                        ? ''
+                        : AppLocalizations.of(
+                            context,
+                          ).garageRefillExcludedSuffix)
+                    .toString(),
+              ),
               style: textes.bodySmall?.copyWith(
                 color: passage.retenu ? cs.primary : cs.outline,
                 fontWeight: passage.retenu ? FontWeight.bold : null,
               ),
             ),
-          if (passage.motifLibelle != null)
+          if (fuelExclusionLabel(
+                AppLocalizations.of(context),
+                passage.motifEcart,
+              ) !=
+              null)
             Text(
-              passage.motifLibelle!,
+              fuelExclusionLabel(
+                AppLocalizations.of(context),
+                passage.motifEcart,
+              )!,
               style: textes.bodySmall?.copyWith(color: cs.error),
             ),
         ],
       ),
-      isThreeLine: passage.motifLibelle != null,
+      isThreeLine:
+          fuelExclusionLabel(
+            AppLocalizations.of(context),
+            passage.motifEcart,
+          ) !=
+          null,
       trailing: IconButton(
         icon: const Icon(Icons.delete_outline),
-        tooltip: 'Supprimer ce passage',
+        tooltip: AppLocalizations.of(context).garageDeleteRefillAction,
         onPressed: () => _supprimer(context, ref),
       ),
     );
@@ -186,19 +223,19 @@ class _LignePassage extends ConsumerWidget {
     final confirme = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Supprimer ce passage ?'),
+        title: Text(AppLocalizations.of(context).garageDeleteRefillTitle),
         // On annonce l'effet réel : la suppression ne retire pas une ligne
         // d'une liste, elle détruit des mesures et change le chiffre affiché
         // sur la fiche.
-        content: Text(_effetDeLaSuppression(passage)),
+        content: Text(_effetDeLaSuppression(context, passage)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler'),
+            child: Text(AppLocalizations.of(context).commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Supprimer'),
+            child: Text(AppLocalizations.of(context).catalogDeleteAction),
           ),
         ],
       ),
@@ -214,9 +251,12 @@ class _LignePassage extends ConsumerWidget {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(erreur ?? 'Passage supprimé.'),
-        backgroundColor:
-            erreur == null ? null : Theme.of(context).colorScheme.error,
+        content: Text(
+          erreur ?? AppLocalizations.of(context).garageRefillDeleted,
+        ),
+        backgroundColor: erreur == null
+            ? null
+            : Theme.of(context).colorScheme.error,
       ),
     );
   }
@@ -236,20 +276,16 @@ class _LignePassage extends ConsumerWidget {
 ///
 /// [FuelFill.bornesIntervalles] vient du serveur, seul à chaîner les pleins :
 /// deviner ici depuis la ligne seule reviendrait à recopier la chaîne.
-String _effetDeLaSuppression(FuelFill passage) => switch (passage.bornesIntervalles) {
+String _effetDeLaSuppression(BuildContext context, FuelFill passage) =>
+    switch (passage.bornesIntervalles) {
       // Un plein au milieu de la série : il ferme un intervalle retenu et en
       // ouvre un autre. Les deux chiffres disparaissent, un seul les remplace.
-      >= 2 => 'Ce passage ferme une mesure et en ouvre une autre. En le '
-          'supprimant, ces deux mesures disparaissent et leurs intervalles '
-          'n\'en font plus qu\'un, deux fois plus long : votre consommation '
-          'sera recalculée dessus, et elle peut changer beaucoup.',
+      >= 2 => AppLocalizations.of(context).garageDeleteTwoIntervals,
       // Le dernier plein de la série, ou le premier : une seule mesure tombe.
-      1 => 'Ce passage ferme une des mesures retenues. En le supprimant, '
-          'cette mesure disparaît et votre consommation sera recalculée.',
+      1 => AppLocalizations.of(context).garageDeleteOneInterval,
       // Un demi-plein, ou un plein dont l'intervalle est écarté : il n'apporte
       // que ses litres, et aucun chiffre affiché ne s'effondre.
-      _ => 'Les litres de ce passage sortiront du calcul et votre '
-          'consommation sera recalculée.',
+      _ => AppLocalizations.of(context).garageDeleteRefillLitres,
     };
 
 /// L'état vide dit à quoi sert l'écran, et pas seulement qu'il est vide.
@@ -269,20 +305,16 @@ class _Vide extends StatelessWidget {
             Icon(Icons.local_gas_station_outlined, size: 48, color: cs.outline),
             const SizedBox(height: 16),
             Text(
-              'Aucun passage enregistré',
+              AppLocalizations.of(context).garageNoRefillsTitle,
               style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'Notez ce que vous mettez à la pompe : le montant et le prix au '
-              'litre suffisent. Après deux pleins, l\'application vous dit ce '
-              'que votre véhicule consomme vraiment, et vous prévient le jour '
-              'où ça monte.',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: cs.outline),
+              AppLocalizations.of(context).garageNoRefillsBody,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: cs.outline),
               textAlign: TextAlign.center,
             ),
           ],
@@ -310,7 +342,7 @@ class _Erreur extends StatelessWidget {
             const SizedBox(height: 12),
             FilledButton.tonal(
               onPressed: onRetry,
-              child: const Text('Réessayer'),
+              child: Text(AppLocalizations.of(context).commonRetry),
             ),
           ],
         ),
@@ -320,25 +352,12 @@ class _Erreur extends StatelessWidget {
 }
 
 /// « 8,2 » et non « 8.2 ».
-String _nombre(double valeur) =>
-    valeur.toStringAsFixed(1).replaceAll('.', ',');
+String _nombre(BuildContext context, double valeur) =>
+    garageDecimal(AppLocalizations.of(context), valeur);
 
 /// « 97 400 » : sans séparateur, un compteur à six chiffres ne se relit pas.
-String _entier(int valeur) {
-  final chiffres = valeur.toString();
-  final tampon = StringBuffer();
+String _entier(BuildContext context, int valeur) =>
+    garageInteger(AppLocalizations.of(context), valeur);
 
-  for (var i = 0; i < chiffres.length; i++) {
-    if (i > 0 && (chiffres.length - i) % 3 == 0) tampon.write(' ');
-    tampon.write(chiffres[i]);
-  }
-
-  return tampon.toString();
-}
-
-const _mois = [
-  'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
-  'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.',
-];
-
-String _jour(DateTime d) => '${d.day} ${_mois[d.month - 1]} ${d.year}';
+String _jour(BuildContext context, DateTime d) =>
+    garageDate(AppLocalizations.of(context), d);

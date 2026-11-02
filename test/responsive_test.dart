@@ -231,7 +231,11 @@ void main() {
 
   Widget formulaireGarage() => ProviderScope(
         overrides: [catalogRefsProvider.overrideWith((_) async => refs)],
-        child: const MaterialApp(home: AddVehicleToGaragePage()),
+        child: const MaterialApp(
+          locale: const Locale('fr'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: AddVehicleToGaragePage()),
       );
 
   group('Ajouter un véhicule au garage', () {
@@ -264,7 +268,11 @@ void main() {
             catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
             catalogRefsProvider.overrideWith((_) async => refs),
           ],
-          child: MaterialApp(home: AddPartPage(existing: _piece())),
+          child: MaterialApp(
+            locale: const Locale('fr'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AddPartPage(existing: _piece())),
         );
 
     for (final format in formats.entries) {
@@ -291,7 +299,11 @@ void main() {
             catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
             catalogRefsProvider.overrideWith((_) async => refs),
           ],
-          child: MaterialApp(home: AddAccessoryPage(existing: _accessoire())),
+          child: MaterialApp(
+            locale: const Locale('fr'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: AddAccessoryPage(existing: _accessoire())),
         );
 
     for (final format in formats.entries) {
@@ -514,6 +526,9 @@ void main() {
             mediaRepositoryProvider.overrideWithValue(_DepotMedia(deja)),
           ],
           child: const MaterialApp(
+            locale: const Locale('fr'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: MediaUploadPage(
               config: MediaUploadConfig(
                 type: MediaOwnerType.part,
@@ -574,7 +589,11 @@ void main() {
             fuelFillsProvider.overrideWith(() => _Passages(passages)),
             garageProvider.overrideWith(_GarageAvecCamry.new),
           ],
-          child: const MaterialApp(home: FuelFillsPage(ownedVehicleId: 1)),
+          child: const MaterialApp(
+            locale: const Locale('fr'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: FuelFillsPage(ownedVehicleId: 1)),
         );
 
     for (final format in formats.entries) {

@@ -1,3 +1,5 @@
+import '../../../../core/l10n/langue.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/garage_repository.dart';
@@ -10,7 +12,10 @@ class GarageNotifier extends AsyncNotifier<List<OwnedVehicle>> {
   GarageRepository get _repo => ref.read(garageRepositoryProvider);
 
   @override
-  Future<List<OwnedVehicle>> build() => _repo.getVehicles();
+  Future<List<OwnedVehicle>> build() {
+    ref.watch(langueProvider);
+    return _repo.getVehicles();
+  }
 
   /// Ajoute un véhicule et l'insère en tête de liste sans recharger.
   Future<String?> addVehicle(Map<String, dynamic> payload) async {
@@ -19,9 +24,15 @@ class GarageNotifier extends AsyncNotifier<List<OwnedVehicle>> {
       state = AsyncData([vehicle, ...state.valueOrNull ?? []]);
       return null; // succès
     } on ApiException catch (e) {
-      return e.errors?.values.first.first ?? e.message;
+      return messageFor(
+        e,
+        l10n: lookupAppLocalizations(ref.read(langueProvider)),
+      );
     } catch (e) {
-      return messageFor(e);
+      return messageFor(
+        e,
+        l10n: lookupAppLocalizations(ref.read(langueProvider)),
+      );
     }
   }
 
@@ -34,9 +45,15 @@ class GarageNotifier extends AsyncNotifier<List<OwnedVehicle>> {
       );
       return null;
     } on ApiException catch (e) {
-      return e.errors?.values.first.first ?? e.message;
+      return messageFor(
+        e,
+        l10n: lookupAppLocalizations(ref.read(langueProvider)),
+      );
     } catch (e) {
-      return messageFor(e);
+      return messageFor(
+        e,
+        l10n: lookupAppLocalizations(ref.read(langueProvider)),
+      );
     }
   }
 
@@ -49,9 +66,15 @@ class GarageNotifier extends AsyncNotifier<List<OwnedVehicle>> {
       );
       return null;
     } on ApiException catch (e) {
-      return e.message;
+      return messageFor(
+        e,
+        l10n: lookupAppLocalizations(ref.read(langueProvider)),
+      );
     } catch (e) {
-      return messageFor(e);
+      return messageFor(
+        e,
+        l10n: lookupAppLocalizations(ref.read(langueProvider)),
+      );
     }
   }
 
@@ -63,11 +86,12 @@ class GarageNotifier extends AsyncNotifier<List<OwnedVehicle>> {
 
 final garageProvider =
     AsyncNotifierProvider<GarageNotifier, List<OwnedVehicle>>(
-  GarageNotifier.new,
-);
+      GarageNotifier.new,
+    );
 
 /// Véhicule du garage actuellement sélectionné pour marquer les pièces
 /// compatibles dans la liste de pièces détachées.
 /// null = aucun filtre actif, pas de badge affiché.
-final selectedGarageVehicleProvider =
-    StateProvider<OwnedVehicle?>((ref) => null);
+final selectedGarageVehicleProvider = StateProvider<OwnedVehicle?>(
+  (ref) => null,
+);

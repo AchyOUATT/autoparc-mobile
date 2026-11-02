@@ -1,3 +1,4 @@
+import '../../../catalog/presentation/catalog_reference_labels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -199,7 +200,7 @@ class _Body extends ConsumerWidget {
     }
     if (paged.hasError) {
       return _ErrorView(
-        error: messageFor(paged.error),
+        error: messageFor(paged.error, l10n: AppLocalizations.of(context)),
         onRetry: () => ref.read(partListProvider.notifier).refresh(),
       );
     }
@@ -284,7 +285,7 @@ class _FilterBar extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              label: Text(c.name),
+              label: Text(catalogPartCategoryLabel(c.name, AppLocalizations.of(context))),
               selected: filter.categoryId == c.id,
               onSelected: (_) => update(
                 (f) => f.categoryId == c.id

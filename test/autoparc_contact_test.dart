@@ -6,6 +6,7 @@ import 'package:auto/core/contact/autoparc_contact_provider.dart';
 import 'package:auto/features/auth/data/auth_repository.dart';
 import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
 import 'package:auto/features/settings/presentation/contact_settings_page.dart';
+import 'package:auto/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -92,6 +93,7 @@ Future<ProviderContainer> _open(
   _Api api, {
   AuthState? auth,
   _Cache? cache,
+  Locale locale = const Locale('fr'),
 }) async {
   final container = ProviderContainer(
     overrides: [
@@ -104,7 +106,12 @@ Future<ProviderContainer> _open(
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: container,
-      child: const MaterialApp(home: ContactSettingsPage()),
+      child: MaterialApp(
+        locale: locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const ContactSettingsPage(),
+      ),
     ),
   );
   await tester.pumpAndSettle();
@@ -400,6 +407,37 @@ void main() {
     expect(api.writes, hasLength(1));
     pending.complete({'phone': '+22670000002'});
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('contact settings validation and save feedback follow English', (
+    tester,
+  ) async {
+    final api = _Api();
+    await _open(tester, api, locale: const Locale('en'));
+    expect(find.text('AutoParc contact'), findsOneWidget);
+    expect(find.text('Phone number to contact AutoParc'), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('autoparc-contact-phone')),
+      '123',
+    );
+    await tester.tap(find.byKey(const Key('save-autoparc-contact')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'Enter a valid international number, for example +226 75 57 04 84.',
+      ),
+      findsOneWidget,
+    );
+    expect(api.writes, isEmpty);
+    await tester.enterText(
+      find.byKey(const Key('autoparc-contact-phone')),
+      '+22670000002',
+    );
+    await tester.tap(find.byKey(const Key('save-autoparc-contact')));
+    await tester.pumpAndSettle();
+    expect(find.text('AutoParc contact number saved.'), findsOneWidget);
+    expect(api.writes.single.data!['phone'], '+22670000002');
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets(

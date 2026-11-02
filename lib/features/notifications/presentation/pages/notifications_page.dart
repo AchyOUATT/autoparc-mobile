@@ -1,8 +1,10 @@
+import 'package:auto/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:intl/intl.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
+
 import '../../data/models/app_notification.dart';
 import '../../data/notifications_repository.dart';
 import '../providers/notifications_provider.dart';
@@ -16,12 +18,11 @@ class NotificationsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifsAsync = ref.watch(notificationsProvider);
-    final auth        = ref.watch(authProvider);
-    final isStaff     = auth.isStaff;
+    final auth = ref.watch(authProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title:  Text(AppLocalizations.of(context).notificationsTitle),
         centerTitle: false,
         actions: [
           // Bouton "tout marquer comme lu"
@@ -37,7 +38,7 @@ class NotificationsPage extends ConsumerWidget {
                   ref.invalidate(notificationsProvider);
                   ref.invalidate(unreadCountProvider);
                 },
-                child: const Text('Tout lire'),
+                child:  Text(AppLocalizations.of(context).notificationsMarkAllRead),
               );
             },
             orElse: () => const SizedBox.shrink(),
@@ -47,7 +48,7 @@ class NotificationsPage extends ConsumerWidget {
           if (auth.canBroadcast)
             IconButton(
               icon: const Icon(Icons.campaign_outlined),
-              tooltip: 'Envoyer un conseil',
+              tooltip: AppLocalizations.of(context).notificationsBroadcastTooltip,
               onPressed: () => _showBroadcastSheet(context, ref),
             ),
           IconButton(
@@ -67,11 +68,11 @@ class NotificationsPage extends ConsumerWidget {
             children: [
               const Icon(Icons.wifi_off, size: 48),
               const SizedBox(height: 12),
-              Text(messageFor(e), textAlign: TextAlign.center),
+              Text(messageFor(e, l10n: AppLocalizations.of(context)), textAlign: TextAlign.center),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: () => ref.invalidate(notificationsProvider),
-                child: const Text('Réessayer'),
+                child:  Text(AppLocalizations.of(context).commonRetry),
               ),
             ],
           ),
@@ -141,7 +142,7 @@ class _NotificationTile extends ConsumerWidget {
           Text(notif.body, maxLines: 2, overflow: TextOverflow.ellipsis),
           if (notif.createdAt != null)
             Text(
-              _formatDate(notif.createdAt!),
+              _formatDate(notif.createdAt!, AppLocalizations.of(context)),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.outline,
                   ),
@@ -244,14 +245,14 @@ class _NotificationTile extends ConsumerWidget {
     }
   }
 
-  String _formatDate(DateTime dt) {
+  String _formatDate(DateTime dt, AppLocalizations l10n) {
     final now  = DateTime.now();
     final diff = now.difference(dt);
-    if (diff.inMinutes < 60) return 'Il y a ${diff.inMinutes} min';
-    if (diff.inHours < 24) return 'Il y a ${diff.inHours} h';
-    if (diff.inDays == 1) return 'Hier';
-    if (diff.inDays < 7) return 'Il y a ${diff.inDays} jours';
-    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+    if (diff.inMinutes < 60) return l10n.notificationsMinutesAgo((diff.inMinutes).toString());
+    if (diff.inHours < 24) return l10n.notificationsHoursAgo((diff.inHours).toString());
+    if (diff.inDays == 1) return l10n.notificationsYesterday;
+    if (diff.inDays < 7) return l10n.notificationsDaysAgo((diff.inDays).toString());
+    return DateFormat.yMd(l10n.localeName).format(dt);
   }
 }
 
@@ -266,10 +267,10 @@ class _EmptyNotifications extends StatelessWidget {
         Icon(Icons.notifications_none_outlined,
             size: 64, color: Theme.of(context).colorScheme.outline),
         const SizedBox(height: 16),
-        Text('Aucune notification',
+        Text(AppLocalizations.of(context).notificationsEmptyTitle,
             style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
-        const Text('Vous serez notifié ici des activités importantes.',
+         Text(AppLocalizations.of(context).notificationsEmptyBody,
             textAlign: TextAlign.center),
       ],
     ),
@@ -301,7 +302,7 @@ class _BroadcastSheetState extends ConsumerState<_BroadcastSheet> {
   Future<void> _send() async {
     if (_titleCtrl.text.trim().isEmpty || _bodyCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Titre et message sont obligatoires.')),
+         SnackBar(content: Text(AppLocalizations.of(context).notificationsTitleBodyRequired)),
       );
       return;
     }
@@ -314,8 +315,8 @@ class _BroadcastSheetState extends ConsumerState<_BroadcastSheet> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Conseil envoyé à tous les clients ✓'),
+           SnackBar(
+            content: Text(AppLocalizations.of(context).notificationsBroadcastSent),
             backgroundColor: Colors.green,
           ),
         );
@@ -323,7 +324,7 @@ class _BroadcastSheetState extends ConsumerState<_BroadcastSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
+          SnackBar(content: Text(messageFor(e, l10n: AppLocalizations.of(context))), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -352,7 +353,7 @@ class _BroadcastSheetState extends ConsumerState<_BroadcastSheet> {
             children: [
               const Icon(Icons.campaign_outlined, size: 22),
               const SizedBox(width: 8),
-              Text('Conseil aux propriétaires',
+              Text(AppLocalizations.of(context).notificationsBroadcastTitle,
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
@@ -361,15 +362,15 @@ class _BroadcastSheetState extends ConsumerState<_BroadcastSheet> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Ce message sera envoyé par notification push à tous les clients de l\'app.',
+            AppLocalizations.of(context).notificationsBroadcastBody,
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _titleCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Titre *',
-              hintText: 'Ex. : Vérifiez votre pression des pneus',
+            decoration:  InputDecoration(
+              labelText: AppLocalizations.of(context).notificationsTitleField,
+              hintText: AppLocalizations.of(context).notificationsTitleHint,
               border: OutlineInputBorder(),
             ),
             textCapitalization: TextCapitalization.sentences,
@@ -378,10 +379,10 @@ class _BroadcastSheetState extends ConsumerState<_BroadcastSheet> {
           const SizedBox(height: 12),
           TextField(
             controller: _bodyCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Message *',
+            decoration:  InputDecoration(
+              labelText: AppLocalizations.of(context).notificationsBodyField,
               hintText:
-                  'Ex. : Une bonne pression de gonflage améliore la durée de vie des pneus de 20 %…',
+                  AppLocalizations.of(context).notificationsBodyHint,
               border: OutlineInputBorder(),
               alignLabelWithHint: true,
             ),
@@ -398,7 +399,7 @@ class _BroadcastSheetState extends ConsumerState<_BroadcastSheet> {
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.send_outlined),
-            label: const Text('Envoyer à tous les clients'),
+            label:  Text(AppLocalizations.of(context).notificationsBroadcastAction),
           ),
         ],
       ),

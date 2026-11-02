@@ -1,3 +1,5 @@
+import '../garage_labels.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -122,8 +124,9 @@ class _FuelFillDialogState extends ConsumerState<_FuelFillDialog> {
 
     if (dernier == null) return;
 
-    _prix.text = _nombre(dernier.pricePerLitre!, decimales: 0);
-    _prixTouche = false; // le listener vient de se déclencher sur notre propre écriture
+    _prix.text = dernier.pricePerLitre!.toStringAsFixed(0);
+    _prixTouche =
+        false; // le listener vient de se déclencher sur notre propre écriture
     setState(() {});
   }
 
@@ -193,7 +196,7 @@ class _FuelFillDialogState extends ConsumerState<_FuelFillDialog> {
     final litres = _litresCalcules;
 
     return AlertDialog(
-      title: const Text('Passage à la pompe'),
+      title: Text(AppLocalizations.of(context).garageRecordRefillTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -201,8 +204,8 @@ class _FuelFillDialogState extends ConsumerState<_FuelFillDialog> {
           children: [
             TextField(
               controller: _km,
-              decoration: const InputDecoration(
-                labelText: 'Kilométrage au compteur',
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(context).garageOdometerLabel,
                 suffixText: 'km',
               ),
               keyboardType: TextInputType.number,
@@ -214,9 +217,11 @@ class _FuelFillDialogState extends ConsumerState<_FuelFillDialog> {
             if (!_litresDirects) ...[
               TextField(
                 controller: _montant,
-                decoration: const InputDecoration(
-                  labelText: 'Montant payé',
-                  suffixText: 'FCFA',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(
+                    context,
+                  ).garageRefillAmountPaid,
+                  suffixText: AppLocalizations.of(context).garageCurrencyUnit,
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -227,22 +232,30 @@ class _FuelFillDialogState extends ConsumerState<_FuelFillDialog> {
               const SizedBox(height: 8),
               TextField(
                 controller: _prix,
-                decoration: const InputDecoration(
-                  labelText: 'Prix au litre',
-                  suffixText: 'FCFA/l',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(
+                    context,
+                  ).garageRefillPricePerLitre,
+                  suffixText: AppLocalizations.of(
+                    context,
+                  ).garageCurrencyPerLitre,
                 ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 enabled: !_envoi,
                 onChanged: (_) => setState(() {}),
               ),
             ] else
               TextField(
                 controller: _litres,
-                decoration: const InputDecoration(
-                  labelText: 'Litres pris',
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(context).garageRefillLitres,
                   suffixText: 'l',
                 ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 enabled: !_envoi,
                 autofocus: true,
                 onChanged: (_) => setState(() {}),
@@ -255,10 +268,12 @@ class _FuelFillDialogState extends ConsumerState<_FuelFillDialog> {
               padding: const EdgeInsets.only(top: 8),
               child: Text(
                 _litresDirects
-                    ? 'Enregistré tel quel.'
+                    ? AppLocalizations.of(context).garageRefillValueUnchanged
                     : litres == null
-                        ? 'Les litres se déduisent du montant et du prix.'
-                        : 'Soit ${_nombre(litres)} l',
+                    ? AppLocalizations.of(context).garageRefillLitresCalculated
+                    : AppLocalizations.of(context).garageRefillCalculatedLitres(
+                        (_nombre(context, litres)).toString(),
+                      ),
                 style: textes.bodySmall?.copyWith(
                   color: litres == null ? cs.outline : cs.primary,
                   fontWeight: litres == null ? null : FontWeight.bold,
@@ -277,9 +292,11 @@ class _FuelFillDialogState extends ConsumerState<_FuelFillDialog> {
                   minimumSize: const Size(0, 32),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: Text(_litresDirects
-                    ? 'Saisir le montant payé'
-                    : 'Je connais les litres'),
+                child: Text(
+                  _litresDirects
+                      ? AppLocalizations.of(context).garageRefillEnterAmount
+                      : AppLocalizations.of(context).garageRefillKnowLitres,
+                ),
               ),
             ),
 
@@ -290,24 +307,27 @@ class _FuelFillDialogState extends ConsumerState<_FuelFillDialog> {
             // qu'un conducteur sait reproduire, l'arrêt automatique du
             // pistolet l'est.
             SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment(value: false, label: Text('Demi-plein')),
-                ButtonSegment(value: true, label: Text('Plein')),
+              segments: [
+                ButtonSegment(
+                  value: false,
+                  label: Text(AppLocalizations.of(context).garagePartialRefill),
+                ),
+                ButtonSegment(
+                  value: true,
+                  label: Text(AppLocalizations.of(context).garageFullRefill),
+                ),
               ],
               selected: {_plein},
               onSelectionChanged: _envoi
                   ? null
                   : (choix) => setState(() => _plein = choix.first),
               showSelectedIcon: false,
-              style: const ButtonStyle(
-                visualDensity: VisualDensity.compact,
-              ),
+              style: const ButtonStyle(visualDensity: VisualDensity.compact),
             ),
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(
-                'Plein = la pompe s\'est arrêtée toute seule. Seul un plein '
-                'permet de mesurer la consommation.',
+                AppLocalizations.of(context).garageRefillFullTankExplanation,
                 style: textes.bodySmall?.copyWith(color: cs.outline),
               ),
             ),
@@ -326,7 +346,7 @@ class _FuelFillDialogState extends ConsumerState<_FuelFillDialog> {
       actions: [
         TextButton(
           onPressed: _envoi ? null : () => Navigator.pop(context, false),
-          child: const Text('Annuler'),
+          child: Text(AppLocalizations.of(context).commonCancel),
         ),
         FilledButton(
           onPressed: _envoi ? null : _enregistrer,
@@ -336,7 +356,7 @@ class _FuelFillDialogState extends ConsumerState<_FuelFillDialog> {
                   height: 16,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Text('Enregistrer'),
+              : Text(AppLocalizations.of(context).catalogFeaturesSave),
         ),
       ],
     );
@@ -361,13 +381,18 @@ class _FuelFillDialogState extends ConsumerState<_FuelFillDialog> {
     // station, un refus qui arrive trente secondes plus tard est un refus
     // qu'on ne lit pas.
     if (km == null) {
-      setState(() => _erreur = 'Indiquez le kilométrage au compteur.');
+      setState(
+        () =>
+            _erreur = AppLocalizations.of(context).garageRefillMileageRequired,
+      );
       return;
     }
     if (litres == null || litres < 1 || litres > 200) {
-      setState(() => _erreur = _litresDirects
-          ? 'Les litres doivent être compris entre 1 et 200.'
-          : 'Montant et prix au litre donnent une quantité impossible.');
+      setState(
+        () => _erreur = _litresDirects
+            ? AppLocalizations.of(context).garageRefillLitresRange
+            : AppLocalizations.of(context).garageRefillImpossibleQuantity,
+      );
       return;
     }
 
@@ -376,23 +401,24 @@ class _FuelFillDialogState extends ConsumerState<_FuelFillDialog> {
       _envoi = true;
     });
 
-    final erreur =
-        await ref.read(fuelFillsProvider(widget.vehicle.id).notifier).addFill({
-      'mileage_km': km,
-      'litres': litres,
-      'is_full': _plein,
-      if (montant != null) 'amount_fcfa': montant.round(),
-      'price_per_litre': ?prix,
+    final erreur = await ref
+        .read(fuelFillsProvider(widget.vehicle.id).notifier)
+        .addFill({
+          'mileage_km': km,
+          'litres': litres,
+          'is_full': _plein,
+          if (montant != null) 'amount_fcfa': montant.round(),
+          'price_per_litre': ?prix,
 
-      // La date vient du téléphone, qui est le seul à connaître le fuseau du
-      // propriétaire ; le serveur tourne en UTC. Sans ce champ la colonne
-      // reste NULL — elle est nullable pour la saisie en retard — et la ligne
-      // de l'historique s'affiche sans aucune date, ce qui rend impossible de
-      // reconnaître lequel de deux passages au compteur voisin on regarde.
-      'filled_at': _dateDuJour(),
+          // La date vient du téléphone, qui est le seul à connaître le fuseau du
+          // propriétaire ; le serveur tourne en UTC. Sans ce champ la colonne
+          // reste NULL — elle est nullable pour la saisie en retard — et la ligne
+          // de l'historique s'affiche sans aucune date, ce qui rend impossible de
+          // reconnaître lequel de deux passages au compteur voisin on regarde.
+          'filled_at': _dateDuJour(),
 
-      'client_reference': _reference(km, litres),
-    });
+          'client_reference': _reference(km, litres),
+        });
 
     if (!mounted) return;
 
@@ -410,8 +436,8 @@ class _FuelFillDialogState extends ConsumerState<_FuelFillDialog> {
 
 /// « 8,2 » et non « 8.2 » ; et la saisie accepte la virgule, puisque c'est
 /// ainsi qu'on écrit un décimal ici.
-String _nombre(double valeur, {int decimales = 1}) =>
-    valeur.toStringAsFixed(decimales).replaceAll('.', ',');
+String _nombre(BuildContext context, double valeur, {int decimales = 1}) =>
+    garageDecimal(AppLocalizations.of(context), valeur, decimals: decimales);
 
 double? _decimal(String texte) {
   final propre = texte.trim().replaceAll(',', '.').replaceAll(' ', '');

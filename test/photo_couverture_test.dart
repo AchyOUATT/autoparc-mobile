@@ -374,6 +374,9 @@ void main() {
           fixture('vehicle_detail')['data'] as Map<String, dynamic>);
 
       await tester.pumpWidget(MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: SizedBox(
             width: 360,

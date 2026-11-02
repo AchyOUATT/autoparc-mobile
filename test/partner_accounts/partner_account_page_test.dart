@@ -4,6 +4,7 @@ import 'package:auto/features/partner_accounts/partner_accounts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 class _Repository extends PartnerRepository {
   PartnerProfile? savedProfile;
@@ -39,7 +40,11 @@ PartnerProfile _profile(String status) => PartnerProfile(user: const {'role': 'p
 
 Future<void> _open(WidgetTester tester, _Repository repository) async {
   await tester.pumpWidget(ProviderScope(overrides: [partnerRepositoryProvider.overrideWithValue(repository)],
-    child: const MaterialApp(home: PartnerAccountPage())));
+    child: const MaterialApp(
+      locale: const Locale('fr'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: PartnerAccountPage())));
   await tester.pumpAndSettle();
 }
 

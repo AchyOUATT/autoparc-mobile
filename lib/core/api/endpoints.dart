@@ -114,6 +114,7 @@ class Endpoints {
 
   // ── Catalogue public ────────────────────────────────────────────
   static const String catalogVehicles       = '/catalog/vehicles';
+  static const String catalogVehicleListings = '/catalog/vehicle-listings';
   static const String catalogParts          = '/catalog/parts';
   static const String catalogAccessories    = '/catalog/accessories';
   static const String catalogSync           = '/catalog/sync';

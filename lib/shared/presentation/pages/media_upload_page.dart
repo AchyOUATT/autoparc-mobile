@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -36,10 +37,11 @@ class MediaUploadPage extends ConsumerStatefulWidget {
 }
 
 class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
   final _picker = ImagePicker();
 
-  List<MediaItem> _uploaded = [];   // médias déjà sur le serveur
-  bool _loading   = true;
+  List<MediaItem> _uploaded = []; // médias déjà sur le serveur
+  bool _loading = true;
   bool _uploading = false;
 
   /// Non nul quand la liste n'a pas pu être chargée — à ne pas confondre avec
@@ -53,8 +55,8 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
   }
 
   MediaRepository get _repo => ref.read(mediaRepositoryProvider);
-  MediaOwnerType  get _type => widget.config.type;
-  int             get _id   => widget.config.id;
+  MediaOwnerType get _type => widget.config.type;
+  int get _id => widget.config.id;
 
   Future<void> _loadExisting() async {
     setState(() {
@@ -69,7 +71,7 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
       // quand la requête avait échoué que quand il n'y en avait réellement
       // pas. On téléversait alors des doublons, ou on croyait des photos
       // perdues.
-      if (mounted) setState(() => _loadError = messageFor(e));
+      if (mounted) setState(() => _loadError = messageFor(e, l10n: l10n));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -181,7 +183,7 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
         setState(() => _uploaded = [..._uploaded, ...newItems]);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${newItems.length} photo(s) ajoutée(s).'),
+            content: Text(l10n.mediaPhotosAdded(newItems.length)),
             backgroundColor: Colors.green,
           ),
         );
@@ -189,7 +191,10 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(messageFor(e, l10n: l10n)),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -203,14 +208,17 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Supprimer cette photo ?'),
-        content: const Text('Cette action est irréversible.'),
+        title: Text(l10n.mediaDeletePhotoTitle),
+        content: Text(l10n.mediaDeletePhotoBody),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.commonCancel),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Supprimer'),
+            child: Text(l10n.catalogDeleteAction),
           ),
         ],
       ),
@@ -223,7 +231,10 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(messageFor(e, l10n: l10n)),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -237,13 +248,18 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
       await _repo.setCover(item.id);
       if (mounted) {
         setState(() {
-          _uploaded = _uploaded.map((m) => m.copyWith(isCover: m.id == item.id)).toList();
+          _uploaded = _uploaded
+              .map((m) => m.copyWith(isCover: m.id == item.id))
+              .toList();
         });
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(messageFor(e, l10n: l10n)),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -253,6 +269,7 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -260,7 +277,7 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Photos', style: TextStyle(fontSize: 16)),
+            Text(l10n.catalogPhotosTooltip, style: TextStyle(fontSize: 16)),
             Text(
               widget.config.title,
               style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
@@ -270,7 +287,7 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
         actions: [
           TextButton(
             onPressed: () => context.pop(true),
-            child: const Text('Terminer'),
+            child: Text(l10n.mediaFinish),
           ),
         ],
       ),
@@ -282,7 +299,7 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
                 _UploadBar(
                   uploading: _uploading,
                   onGallery: () => _pickAndUpload(ImageSource.gallery),
-                  onCamera:  () => _pickAndUpload(ImageSource.camera),
+                  onCamera: () => _pickAndUpload(ImageSource.camera),
                 ),
 
                 // ── Grille des photos ────────────────────────────────
@@ -291,15 +308,18 @@ class _MediaUploadPageState extends ConsumerState<MediaUploadPage> {
                     // L'échec de chargement se dit, et se réessaie : sans
                     // cela, la page annonçait « aucune photo » alors que les
                     // photos existaient peut-être bel et bien.
-                    (final String erreur, _) =>
-                        _LoadFailed(message: erreur, onRetry: _loadExisting),
-                    (null, true) =>
-                        _EmptyState(onAdd: () => _pickAndUpload(ImageSource.gallery)),
+                    (final String erreur, _) => _LoadFailed(
+                      message: erreur,
+                      onRetry: _loadExisting,
+                    ),
+                    (null, true) => _EmptyState(
+                      onAdd: () => _pickAndUpload(ImageSource.gallery),
+                    ),
                     (null, false) => _PhotoGrid(
-                          items: _uploaded,
-                          onDelete: _delete,
-                          onSetCover: _setCover,
-                        ),
+                      items: _uploaded,
+                      onDelete: _delete,
+                      onSetCover: _setCover,
+                    ),
                   },
                 ),
               ],
@@ -316,16 +336,23 @@ class _UploadBar extends StatelessWidget {
   final bool uploading;
   final VoidCallback onGallery;
   final VoidCallback onCamera;
-  const _UploadBar({required this.uploading, required this.onGallery, required this.onCamera});
+  const _UploadBar({
+    required this.uploading,
+    required this.onGallery,
+    required this.onCamera,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
-        border: Border(bottom: BorderSide(color: cs.outlineVariant, width: 0.5)),
+        border: Border(
+          bottom: BorderSide(color: cs.outlineVariant, width: 0.5),
+        ),
       ),
       child: Row(
         children: [
@@ -334,18 +361,22 @@ class _UploadBar extends StatelessWidget {
               onPressed: uploading ? null : onGallery,
               icon: uploading
                   ? const SizedBox(
-                      width: 16, height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.photo_library_outlined),
-              label: Text(uploading ? 'Envoi…' : 'Galerie'),
+              label: Text(uploading ? l10n.mediaUploading : l10n.mediaGallery),
             ),
           ),
           const SizedBox(width: 12),
           OutlinedButton.icon(
             onPressed: uploading ? null : onCamera,
             icon: const Icon(Icons.camera_alt_outlined),
-            label: const Text('Caméra'),
+            label: Text(l10n.mediaCamera),
           ),
         ],
       ),
@@ -361,7 +392,11 @@ class _PhotoGrid extends StatelessWidget {
   final List<MediaItem> items;
   final Future<void> Function(MediaItem) onDelete;
   final Future<void> Function(MediaItem) onSetCover;
-  const _PhotoGrid({required this.items, required this.onDelete, required this.onSetCover});
+  const _PhotoGrid({
+    required this.items,
+    required this.onDelete,
+    required this.onSetCover,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -387,10 +422,15 @@ class _PhotoTile extends StatelessWidget {
   final MediaItem item;
   final VoidCallback onDelete;
   final VoidCallback onSetCover;
-  const _PhotoTile({required this.item, required this.onDelete, required this.onSetCover});
+  const _PhotoTile({
+    required this.item,
+    required this.onDelete,
+    required this.onSetCover,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
 
     return Stack(
@@ -415,7 +455,8 @@ class _PhotoTile extends StatelessWidget {
         // Badge couverture
         if (item.isCover)
           Positioned(
-            bottom: 6, left: 6,
+            bottom: 6,
+            left: 6,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
               decoration: BoxDecoration(
@@ -427,8 +468,13 @@ class _PhotoTile extends StatelessWidget {
                 children: [
                   Icon(Icons.star, size: 10, color: cs.onPrimary),
                   const SizedBox(width: 3),
-                  Text('Cover',
-                    style: TextStyle(fontSize: 9, color: cs.onPrimary, fontWeight: FontWeight.bold),
+                  Text(
+                    l10n.mediaCover,
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: cs.onPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -438,7 +484,8 @@ class _PhotoTile extends StatelessWidget {
         // Bouton couverture (si pas encore cover)
         if (!item.isCover)
           Positioned(
-            bottom: 6, left: 6,
+            bottom: 6,
+            left: 6,
             child: GestureDetector(
               onTap: onSetCover,
               child: Container(
@@ -447,14 +494,19 @@ class _PhotoTile extends StatelessWidget {
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Icon(Icons.star_outline, size: 14, color: Colors.white),
+                child: const Icon(
+                  Icons.star_outline,
+                  size: 14,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
 
         // Bouton supprimer
         Positioned(
-          top: 6, right: 6,
+          top: 6,
+          right: 6,
           child: GestureDetector(
             onTap: onDelete,
             child: Container(
@@ -484,6 +536,7 @@ class _LoadFailed extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
 
     return Center(
@@ -492,10 +545,14 @@ class _LoadFailed extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_off_outlined, size: 44, color: cs.onSurfaceVariant),
+            Icon(
+              Icons.cloud_off_outlined,
+              size: 44,
+              color: cs.onSurfaceVariant,
+            ),
             const SizedBox(height: 12),
             Text(
-              'Photos non chargées',
+              l10n.mediaLoadFailed,
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 6),
@@ -508,7 +565,7 @@ class _LoadFailed extends StatelessWidget {
             FilledButton.tonalIcon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Réessayer'),
+              label: Text(l10n.commonRetry),
             ),
           ],
         ),
@@ -523,25 +580,28 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.add_photo_alternate_outlined,
+          Icon(
+            Icons.add_photo_alternate_outlined,
             size: 72,
             color: Theme.of(context).colorScheme.outline,
           ),
           const SizedBox(height: 16),
-          Text('Aucune photo', style: Theme.of(context).textTheme.titleMedium),
+          Text(l10n.mediaEmpty, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
-          const Text('Appuyez sur "Galerie" pour ajouter des photos.',
+          Text(
+            l10n.mediaEmptyHint,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: onAdd,
             icon: const Icon(Icons.add_photo_alternate_outlined),
-            label: const Text('Ajouter des photos'),
+            label: Text(l10n.mediaAddPhotos),
           ),
         ],
       ),

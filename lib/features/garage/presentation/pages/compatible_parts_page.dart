@@ -15,13 +15,15 @@ import '../../../../l10n/app_localizations.dart';
 /// ne doit pas resservir la liste complète mise en cache pour ce véhicule.
 typedef _Demande = ({int ownedVehicleId, int? categoryId});
 
-final _compatiblePartsProvider =
-    FutureProvider.autoDispose.family<List<Part>, _Demande>((ref, demande) {
-  return ref.read(garageRepositoryProvider).compatibleParts(
-        demande.ownedVehicleId,
-        categoryId: demande.categoryId,
-      );
-});
+final _compatiblePartsProvider = FutureProvider.autoDispose
+    .family<List<Part>, _Demande>((ref, demande) {
+      return ref
+          .read(garageRepositoryProvider)
+          .compatibleParts(
+            demande.ownedVehicleId,
+            categoryId: demande.categoryId,
+          );
+    });
 
 // ── Page ─────────────────────────────────────────────────────────────
 
@@ -47,14 +49,19 @@ class CompatiblePartsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final partsAsync = ref.watch(_compatiblePartsProvider(
-      (ownedVehicleId: ownedVehicleId, categoryId: categoryId),
-    ));
+    final partsAsync = ref.watch(
+      _compatiblePartsProvider((
+        ownedVehicleId: ownedVehicleId,
+        categoryId: categoryId,
+      )),
+    );
     final title = categoryLabel != null
-        ? '$categoryLabel — ${vehicle?.displayName ?? 'mon véhicule'}'
+        ? '$categoryLabel — ${vehicle?.displayName ?? AppLocalizations.of(context).garageMyVehicle}'
         : vehicle != null
-            ? 'Pièces — ${vehicle!.displayName}'
-            : 'Pièces compatibles';
+        ? AppLocalizations.of(
+            context,
+          ).garageMatchingPartsForVehicle((vehicle!.displayName).toString())
+        : AppLocalizations.of(context).garageMatchingPartsTitle;
 
     return Scaffold(
       appBar: AppBar(
@@ -66,14 +73,19 @@ class CompatiblePartsPage extends ConsumerWidget {
                 child: Container(
                   width: double.infinity,
                   color: Colors.orange.shade700,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: const Row(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  child: Row(
                     children: [
                       Icon(Icons.info_outline, color: Colors.white, size: 16),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Précision limitée — ajoutez la motorisation pour un résultat plus fin.',
+                          AppLocalizations.of(
+                            context,
+                          ).garageMatchingPartsLimited,
                           style: TextStyle(color: Colors.white, fontSize: 12),
                         ),
                       ),
@@ -91,13 +103,19 @@ class CompatiblePartsPage extends ConsumerWidget {
             children: [
               const Icon(Icons.wifi_off, size: 48),
               const SizedBox(height: 12),
-              Text(messageFor(e), textAlign: TextAlign.center),
+              Text(
+                messageFor(e, l10n: AppLocalizations.of(context)),
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 16),
               FilledButton(
-                onPressed: () => ref.invalidate(_compatiblePartsProvider(
-                  (ownedVehicleId: ownedVehicleId, categoryId: categoryId),
-                )),
-                child: const Text('Réessayer'),
+                onPressed: () => ref.invalidate(
+                  _compatiblePartsProvider((
+                    ownedVehicleId: ownedVehicleId,
+                    categoryId: categoryId,
+                  )),
+                ),
+                child: Text(AppLocalizations.of(context).commonRetry),
               ),
             ],
           ),
@@ -124,7 +142,9 @@ class _PartsList extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
           sliver: SliverToBoxAdapter(
             child: Text(
-              '${parts.length} pièce${parts.length > 1 ? 's' : ''} trouvée${parts.length > 1 ? 's' : ''}',
+              AppLocalizations.of(
+                context,
+              ).garageMatchingPartsCount(parts.length),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -144,15 +164,15 @@ class _PartTile extends StatelessWidget {
   const _PartTile({required this.part});
 
   static const _typeColors = {
-    'oem':         Colors.blue,
-    'oes':         Colors.teal,
+    'oem': Colors.blue,
+    'oes': Colors.teal,
     'aftermarket': Colors.orange,
-    'salvage':     Colors.grey,
+    'salvage': Colors.grey,
   };
 
   @override
   Widget build(BuildContext context) {
-    final cs    = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
     final color = _typeColors[part.type] ?? Colors.grey;
 
     return ListTile(
@@ -190,12 +210,14 @@ class _PartTile extends StatelessWidget {
                 color: part.isAvailableForSale ? Colors.green : Colors.red,
               ),
               const SizedBox(width: 3),
-              Text(part.seller != null && !part.stock.hasQuantity
-                  ? (part.stock.isAvailable
-                      ? AppLocalizations.of(context).catalogStockIn
-                      : AppLocalizations.of(context).catalogStockOut)
-                  : '${part.stock.quantity}',
-                  style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                part.seller != null && !part.stock.hasQuantity
+                    ? (part.stock.isAvailable
+                          ? AppLocalizations.of(context).catalogStockIn
+                          : AppLocalizations.of(context).catalogStockOut)
+                    : '${part.stock.quantity}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ],
           ),
         ],
@@ -223,23 +245,22 @@ class _EmptyParts extends StatelessWidget {
 
   bool get _motorisationManquante => vehicle?.compatibilityReady == false;
 
-  String get _titre => _motorisationManquante
-      ? 'Motorisation inconnue'
-      : 'Aucune pièce déclarée pour ce modèle';
+  String _titre(BuildContext context) => _motorisationManquante
+      ? AppLocalizations.of(context).garageUnknownEngineTitle
+      : AppLocalizations.of(context).garageNoMatchingPartsTitle;
 
-  String get _explication {
+  String _explication(BuildContext context) {
     if (_motorisationManquante) {
-      return 'Sans la motorisation, impossible de savoir quelles pièces vont '
-          'sur ce véhicule. Renseignez-la, ou saisissez le numéro de série : '
-          'il la retrouve tout seul.';
+      return AppLocalizations.of(context).garageUnknownEngineBody;
     }
 
     final modele = vehicle?.identity.model;
 
     return modele == null
-        ? 'Aucune pièce du catalogue n\'est rattachée à ce véhicule pour le moment.'
-        : 'Aucune pièce du catalogue n\'est rattachée à ce modèle — '
-            'une $modele — pour le moment.';
+        ? AppLocalizations.of(context).garageNoVehiclePartsBody
+        : AppLocalizations.of(
+            context,
+          ).garageNoModelPartsBody((modele).toString());
   }
 
   @override
@@ -261,16 +282,17 @@ class _EmptyParts extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              _titre,
+              _titre(context),
               style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              _explication,
+              _explication(context),
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium
-                  ?.copyWith(color: cs.onSurfaceVariant),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
             ),
             const SizedBox(height: 24),
 
@@ -278,7 +300,9 @@ class _EmptyParts extends StatelessWidget {
               FilledButton.icon(
                 onPressed: () => context.push('/garage'),
                 icon: const Icon(Icons.edit_outlined, size: 18),
-                label: const Text('Compléter mon véhicule'),
+                label: Text(
+                  AppLocalizations.of(context).garageCompleteVehicleAction,
+                ),
               ),
 
             // Le besoin n'est pas un lot de consolation : c'est le seul canal
@@ -286,11 +310,13 @@ class _EmptyParts extends StatelessWidget {
             TextButton.icon(
               onPressed: () => context.push('/needs/new?type=part'),
               icon: const Icon(Icons.inbox_outlined, size: 18),
-              label: const Text('Dites-nous ce que vous cherchez'),
+              label: Text(AppLocalizations.of(context).catalogNeedCta),
             ),
             TextButton(
               onPressed: () => context.go('/parts'),
-              child: const Text('Parcourir toutes les pièces'),
+              child: Text(
+                AppLocalizations.of(context).garageBrowseAllPartsAction,
+              ),
             ),
           ],
         ),

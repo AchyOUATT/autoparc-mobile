@@ -1,4 +1,6 @@
+import '../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'marge_recapitulatif.dart';
 
@@ -112,30 +114,40 @@ class _ChampsDePromotionState extends State<ChampsDePromotion> {
     // courante, et elle épargne deux sélecteurs au vendeur pressé. Il reste
     // libre de les changer.
     final maintenant = DateTime.now();
-    widget.onChanged(PromotionSaisie(
-      debut: DateTime(maintenant.year, maintenant.month, maintenant.day),
-      fin: DateTime(maintenant.year, maintenant.month, maintenant.day)
-          .add(const Duration(days: 7)),
-    ));
+    widget.onChanged(
+      PromotionSaisie(
+        debut: DateTime(maintenant.year, maintenant.month, maintenant.day),
+        fin: DateTime(
+          maintenant.year,
+          maintenant.month,
+          maintenant.day,
+        ).add(const Duration(days: 7)),
+      ),
+    );
   }
 
   Future<void> _choisirDate({required bool debut}) async {
     final maintenant = DateTime.now();
-    final initiale = (debut ? widget.valeur.debut : widget.valeur.fin) ?? maintenant;
+    final initiale =
+        (debut ? widget.valeur.debut : widget.valeur.fin) ?? maintenant;
 
     final choisie = await showDatePicker(
       context: context,
       initialDate: initiale,
       firstDate: DateTime(maintenant.year, maintenant.month, maintenant.day),
       lastDate: maintenant.add(const Duration(days: 365)),
-      helpText: debut ? 'Début de la promotion' : 'Fin de la promotion',
+      helpText: debut
+          ? AppLocalizations.of(context).partnerAccountsPromotionStartTitle
+          : AppLocalizations.of(context).partnerAccountsPromotionEndTitle,
     );
 
     if (choisie == null) return;
 
-    widget.onChanged(debut
-        ? widget.valeur.copier(debut: choisie)
-        : widget.valeur.copier(fin: choisie));
+    widget.onChanged(
+      debut
+          ? widget.valeur.copier(debut: choisie)
+          : widget.valeur.copier(fin: choisie),
+    );
   }
 
   @override
@@ -144,7 +156,8 @@ class _ChampsDePromotionState extends State<ChampsDePromotion> {
     final textes = Theme.of(context).textTheme;
     final valeur = widget.valeur;
     final remise = valeur.remise(widget.prixNormal);
-    final depasse = remise != null &&
+    final depasse =
+        remise != null &&
         widget.plafondPourcentage > 0 &&
         remise > widget.plafondPourcentage;
 
@@ -155,13 +168,23 @@ class _ChampsDePromotionState extends State<ChampsDePromotion> {
           key: const Key('promotion-activer'),
           contentPadding: EdgeInsets.zero,
           secondary: const Icon(Icons.local_offer_outlined),
-          title: const Text('Mettre en promotion'),
+          title: Text(
+            AppLocalizations.of(context).partnerAccountsPromotionEnabled,
+          ),
           subtitle: Text(
             widget.prixNormal == null
-                ? 'Indiquez d’abord un prix de vente.'
+                ? AppLocalizations.of(
+                    context,
+                  ).partnerAccountsPromotionPriceRequired
                 : widget.plafondPourcentage > 0
-                    ? 'Remise de ${MargeRecapitulatif.formaterMontant(widget.plafondPourcentage)} % au maximum.'
-                    : 'Pendant une durée que vous choisissez.',
+                ? AppLocalizations.of(context).partnerAccountsPromotionMaximum(
+                    MargeRecapitulatif.formaterMontant(
+                      widget.plafondPourcentage,
+                    ),
+                  )
+                : AppLocalizations.of(
+                    context,
+                  ).partnerAccountsPromotionDurationHelp,
           ),
           value: valeur.active || valeur.debut != null,
           // Grisé tant qu'il n'y a pas de prix à remiser : le serveur refuse
@@ -176,7 +199,9 @@ class _ChampsDePromotionState extends State<ChampsDePromotion> {
             controller: _prix,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
-              labelText: 'Prix pendant la promotion (FCFA)',
+              labelText: AppLocalizations.of(
+                context,
+              ).partnerAccountsPromotionPrice,
               border: const OutlineInputBorder(),
               // TROIS LIGNES, ET C EST UNE CAPTURE QUI L A MONTRE : le
               // refus par defaut tient sur UNE ligne et se coupait en
@@ -185,22 +210,36 @@ class _ChampsDePromotionState extends State<ChampsDePromotion> {
               // c est-a-dire sans savoir de combien il depassait.
               errorMaxLines: 3,
               errorText: depasse
-                  ? 'La remise ne peut pas dépasser '
-                      '${MargeRecapitulatif.formaterMontant(widget.plafondPourcentage)} % : '
-                      'celle-ci est de ${remise.toStringAsFixed(1)} %.'
+                  ? AppLocalizations.of(
+                      context,
+                    ).partnerAccountsPromotionExceeded(
+                      MargeRecapitulatif.formaterMontant(
+                        widget.plafondPourcentage,
+                      ),
+                      remise.toStringAsFixed(1),
+                    )
                   : null,
             ),
             onChanged: (texte) {
-              final nombre = num.tryParse(texte.replaceAll(RegExp(r'[^0-9.]'), ''));
+              final nombre = num.tryParse(
+                texte.replaceAll(RegExp(r'[^0-9.]'), ''),
+              );
               widget.onChanged(valeur.copier(prix: nombre));
             },
             validator: (_) {
               if (!valeur.active) return null;
-              if (widget.prixNormal != null && valeur.prix! >= widget.prixNormal!) {
-                return 'Le prix promotionnel doit être inférieur au prix normal.';
+              if (widget.prixNormal != null &&
+                  valeur.prix! >= widget.prixNormal!) {
+                return AppLocalizations.of(
+                  context,
+                ).partnerAccountsPromotionPriceInvalid;
               }
 
-              return depasse ? 'Remise trop forte.' : null;
+              return depasse
+                  ? AppLocalizations.of(
+                      context,
+                    ).partnerAccountsPromotionDiscountInvalid
+                  : null;
             },
           ),
           const SizedBox(height: 12),
@@ -221,8 +260,12 @@ class _ChampsDePromotionState extends State<ChampsDePromotion> {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                'L’acheteur verra −${remise.toStringAsFixed(remise == remise.roundToDouble() ? 0 : 1)} %, '
-                '${MargeRecapitulatif.formaterMontant(widget.prixNormal!)} FCFA barré.',
+                AppLocalizations.of(context).partnerAccountsPromotionPreview(
+                  remise.toStringAsFixed(
+                    remise == remise.roundToDouble() ? 0 : 1,
+                  ),
+                  MargeRecapitulatif.formaterMontant(widget.prixNormal!),
+                ),
                 style: textes.bodySmall,
               ),
             ),
@@ -241,9 +284,12 @@ class _ChampsDePromotionState extends State<ChampsDePromotion> {
       icon: const Icon(Icons.event_outlined, size: 18),
       label: Text(
         date == null
-            ? (debut ? 'Début' : 'Fin')
-            : '${date.day.toString().padLeft(2, '0')}/'
-                '${date.month.toString().padLeft(2, '0')}',
+            ? (debut
+                  ? AppLocalizations.of(context).partnerAccountsPromotionStart
+                  : AppLocalizations.of(context).partnerAccountsPromotionEnd)
+            : DateFormat.Md(
+                Localizations.localeOf(context).toString(),
+              ).format(date),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),

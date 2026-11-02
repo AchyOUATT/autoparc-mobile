@@ -9,6 +9,9 @@ import 'package:auto/features/garage/data/models/owned_vehicle.dart';
 import 'package:auto/features/private_sales/data/private_listing_repository.dart';
 import 'package:auto/features/private_sales/presentation/private_listing_detail.dart';
 import 'package:auto/features/private_sales/presentation/private_listing_form.dart';
+import 'package:auto/features/private_sales/presentation/private_listing_labels.dart';
+import 'package:auto/l10n/app_localizations_fr.dart';
+import 'package:auto/l10n/app_localizations_en.dart';
 import 'package:auto/features/private_sales/presentation/private_listings_page.dart';
 import 'package:auto/l10n/app_localizations.dart';
 import 'package:auto/features/vehicles/data/models/catalog_refs.dart';
@@ -151,8 +154,10 @@ Future<void> saveSaleDraft(WidgetTester tester) async {
 Map<String, dynamic> listingFields({
   int id = 1,
   String status = 'published',
+
   /// Un modérateur a-t-il déjà appelé ce vendeur ?
   bool appelPasse = true,
+
   /// Ce que le vendeur a saisi, vide pour l'annonce qui n'indique aucun numéro.
   String numeroSaisi = '+22670000000',
 }) => {
@@ -316,6 +321,7 @@ Future<void> open(
   Widget screen, {
   AuthState auth = const AuthState(type: AuthType.client),
   GlobalKey? capture,
+  Locale locale = const Locale('fr'),
   Future<CatalogRefs> Function()? loadRefs,
 }) async {
   await tester.pumpWidget(const SizedBox.shrink());
@@ -334,7 +340,7 @@ Future<void> open(
           fontFamily: 'Roboto',
           colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff18594a)),
         ),
-        locale: const Locale('fr'),
+        locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: capture == null
@@ -367,6 +373,105 @@ void main() {
   setUpAll(chargerPolices);
 
   test(
+    'presentation labels follow French or English without changing status data',
+    () {
+      final french = AppLocalizationsFr();
+      final english = AppLocalizationsEn();
+      for (final entry in {
+        'draft': ('Brouillon', 'Draft'),
+        'pending': ('En cours de validation', 'Under review'),
+        'published': ('En ligne', 'Published'),
+        'rejected': ('À corriger', 'Changes needed'),
+        'withdrawn': ('Retirée', 'Withdrawn'),
+        'sold': ('Vendue', 'Sold'),
+        'unknown': ('Particulier', 'Private seller'),
+      }.entries) {
+        final listing = PrivateListing({'status': entry.key});
+        expect(privateListingStatusLabel(listing, french), entry.value.$1);
+        expect(privateListingStatusLabel(listing, english), entry.value.$2);
+        expect(listing.status, entry.key);
+      }
+    },
+  );
+
+  testWidgets(
+    'English seller form translates shared identity fields and validation',
+    (tester) async {
+      saleViewport(tester);
+      final api = FakeSalesApi();
+      await open(
+        tester,
+        api,
+        const PrivateListingForm(),
+        locale: const Locale('en'),
+      );
+      expect(find.text('Sell my car'), findsOneWidget);
+      expect(find.text('Your car, your listing'), findsOneWidget);
+      expect(find.text('Make *'), findsWidgets);
+      expect(find.text('Model *'), findsWidgets);
+      await tester.ensureVisible(find.text('Save draft'));
+      await tester.tap(find.text('Save draft'));
+      await tester.pumpAndSettle();
+      expect(find.text('Make is required'), findsOneWidget);
+      expect(find.text('Enter a valid mileage.'), findsOneWidget);
+      expect(api.commands, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'English moderation explains the human phone check before publication',
+    (tester) async {
+      saleViewport(tester);
+      final api = FakeSalesApi()
+        ..status = 'pending'
+        ..appelPasse = false;
+      await open(
+        tester,
+        api,
+        const PrivateListingsPage(mode: PrivateListingMode.review),
+        auth: manager,
+        locale: const Locale('en'),
+      );
+      expect(find.text('Review listings'), findsOneWidget);
+      await tester.tap(find.text('Publish'));
+      await tester.pumpAndSettle();
+      expect(find.text('Call the seller'), findsOneWidget);
+      expect(find.text('Dial'), findsOneWidget);
+      expect(
+        find.text(
+          'I called this number and the seller confirmed posting this listing.',
+        ),
+        findsOneWidget,
+      );
+      expect(api.commands, isEmpty);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'English public listing translates its seller and contact labels',
+    (tester) async {
+      final api = FakeSalesApi();
+      await open(
+        tester,
+        api,
+        PrivateListingDetail(listing: PrivateListing(listingFields())),
+        locale: const Locale('en'),
+      );
+      expect(find.text('Private seller listing'), findsOneWidget);
+      expect(find.text('Private seller'), findsOneWidget);
+      expect(find.text('Phone verified'), findsOneWidget);
+      expect(
+        find.text('This vehicle has not been inspected by AutoParc.'),
+        findsOneWidget,
+      );
+      await tester.ensureVisible(find.text('Call the seller'));
+      expect(find.text('Call the seller'), findsOneWidget);
+    },
+  );
+
+  test(
     'repository keeps public, seller and moderation routes separate',
     () async {
       final api = FakeSalesApi();
@@ -397,7 +502,7 @@ void main() {
     });
     expect(listing.id, 4);
     expect(listing.number('price'), 6500000);
-    expect(listing.statusLabel, 'En ligne');
+    expect(listing.status, 'published');
   });
 
   testWidgets('guest cannot load seller data', (tester) async {
@@ -476,16 +581,14 @@ void main() {
     tester,
   ) async {
     final api = FakeSalesApi();
-    final depuisLaListe = PrivateListing(
-      sansNumeroPublic(listingFields()),
+    final depuisLaListe = PrivateListing(sansNumeroPublic(listingFields()));
+    expect(
+      depuisLaListe.verifiedPhone,
+      isEmpty,
+      reason: 'La liste ne le donne pas.',
     );
-    expect(depuisLaListe.verifiedPhone, isEmpty, reason: 'La liste ne le donne pas.');
 
-    await open(
-      tester,
-      api,
-      PrivateListingDetail(listing: depuisLaListe),
-    );
+    await open(tester, api, PrivateListingDetail(listing: depuisLaListe));
     await tester.pumpAndSettle();
 
     expect(api.queries.single.path, '/private-listings/1');

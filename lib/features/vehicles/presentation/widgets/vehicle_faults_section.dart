@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/vehicle_fault.dart';
+import 'vehicle_fault_labels.dart';
 import '../../data/vehicle_fault_repository.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -12,8 +14,8 @@ import '../../../../core/api/api_exception.dart';
 
 final _faultsProvider = FutureProvider.autoDispose
     .family<List<VehicleFault>, int>((ref, vehicleId) {
-  return ref.read(vehicleFaultRepositoryProvider).getFaults(vehicleId);
-});
+      return ref.read(vehicleFaultRepositoryProvider).getFaults(vehicleId);
+    });
 
 // ════════════════════════════════════════════════════════════════════
 // Section principale (intégrée dans la fiche véhicule — staff only)
@@ -26,10 +28,11 @@ class VehicleFaultsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final faultsAsync = ref.watch(_faultsProvider(vehicleId));
     // Tout le personnel consulte les pannes ; seuls le mecanicien et la
     // direction en declarent.
-    final canDeclare  = ref.watch(authProvider).canManageFaults;
+    final canDeclare = ref.watch(authProvider).canManageFaults;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,18 +41,17 @@ class VehicleFaultsSection extends ConsumerWidget {
         Row(
           children: [
             Text(
-              'Pannes déclarées',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              l10n.catalogFieldFaults,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const Spacer(),
             if (canDeclare)
               FilledButton.tonalIcon(
                 onPressed: () => _openAddSheet(context, ref),
                 icon: const Icon(Icons.add, size: 16),
-                label: const Text('Déclarer'),
+                label: Text(l10n.vehiclesFaultDeclare),
                 style: FilledButton.styleFrom(
                   visualDensity: VisualDensity.compact,
                 ),
@@ -70,10 +72,10 @@ class VehicleFaultsSection extends ConsumerWidget {
               children: [
                 const Icon(Icons.wifi_off, size: 18),
                 const SizedBox(width: 8),
-                Expanded(child: Text(messageFor(e))),
+                Expanded(child: Text(messageFor(e, l10n: l10n))),
                 TextButton(
                   onPressed: () => ref.invalidate(_faultsProvider(vehicleId)),
-                  child: const Text('Réessayer'),
+                  child: Text(l10n.commonRetry),
                 ),
               ],
             ),
@@ -85,12 +87,14 @@ class VehicleFaultsSection extends ConsumerWidget {
                 )
               : Column(
                   children: faults
-                      .map((f) => _FaultCard(
-                            fault: f,
-                            vehicleId: vehicleId,
-                            onChanged: () =>
-                                ref.invalidate(_faultsProvider(vehicleId)),
-                          ))
+                      .map(
+                        (f) => _FaultCard(
+                          fault: f,
+                          vehicleId: vehicleId,
+                          onChanged: () =>
+                              ref.invalidate(_faultsProvider(vehicleId)),
+                        ),
+                      )
                       .toList(),
                 ),
         ),
@@ -126,6 +130,7 @@ class _FaultCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final severityColor = Color(fault.severityColor);
     final isOpen = fault.isOpen;
     final canManage = ref.watch(authProvider).canManageFaults;
@@ -140,7 +145,9 @@ class _FaultCard extends ConsumerWidget {
             height: 4,
             decoration: BoxDecoration(
               color: severityColor,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
             ),
           ),
 
@@ -165,13 +172,23 @@ class _FaultCard extends ConsumerWidget {
                           Wrap(
                             spacing: 6,
                             children: [
-                              _Chip(fault.categoryLabel,
-                                  Theme.of(context).colorScheme.secondaryContainer),
-                              _Chip(fault.severityLabel,
-                                  severityColor.withAlpha(40),
-                                  textColor: severityColor),
-                              _Chip(fault.statusLabel,
-                                  Theme.of(context).colorScheme.surfaceContainerHigh),
+                              _Chip(
+                                vehicleFaultCategoryLabel(fault.category, l10n),
+                                Theme.of(
+                                  context,
+                                ).colorScheme.secondaryContainer,
+                              ),
+                              _Chip(
+                                vehicleFaultSeverityLabel(fault.severity, l10n),
+                                severityColor.withAlpha(40),
+                                textColor: severityColor,
+                              ),
+                              _Chip(
+                                vehicleFaultStatusLabel(fault.status, l10n),
+                                Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHigh,
+                              ),
                             ],
                           ),
                         ],
@@ -181,50 +198,65 @@ class _FaultCard extends ConsumerWidget {
                     // Resoudre et supprimer sont des ecritures : le menu
                     // disparait pour qui ne les a pas.
                     if (canManage)
-                    PopupMenuButton<String>(
-                      onSelected: (v) =>
-                          _handleAction(context, ref, v),
-                      itemBuilder: (_) => [
-                        if (isOpen)
-                          const PopupMenuItem(
-                            value: 'resolve',
+                      PopupMenuButton<String>(
+                        onSelected: (v) => _handleAction(context, ref, v),
+                        itemBuilder: (_) => [
+                          if (isOpen)
+                            PopupMenuItem(
+                              value: 'resolve',
+                              child: ListTile(
+                                leading: Icon(Icons.check_circle_outline),
+                                title: Text(l10n.vehiclesFaultResolve),
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ),
+                          PopupMenuItem(
+                            value: 'delete',
                             child: ListTile(
-                              leading: Icon(Icons.check_circle_outline),
-                              title: Text('Résoudre'),
+                              leading: Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                              ),
+                              title: Text(
+                                l10n.catalogDeleteAction,
+                                style: TextStyle(color: Colors.red),
+                              ),
                               dense: true,
                               contentPadding: EdgeInsets.zero,
                             ),
                           ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: ListTile(
-                            leading: Icon(Icons.delete_outline, color: Colors.red),
-                            title: Text('Supprimer',
-                                style: TextStyle(color: Colors.red)),
-                            dense: true,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
                   ],
                 ),
 
                 // ── Flags ─────────────────────────────────────────
-                if (fault.isSafetyCritical || fault.affectsDrivability ||
+                if (fault.isSafetyCritical ||
+                    fault.affectsDrivability ||
                     fault.disclosedToBuyer) ...[
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 6,
                     children: [
                       if (fault.isSafetyCritical)
-                        _IconFlag(Icons.warning_amber, 'Sécurité', Colors.red),
+                        _IconFlag(
+                          Icons.warning_amber,
+                          l10n.vehiclesFeatureSafety,
+                          Colors.red,
+                        ),
                       if (fault.affectsDrivability)
-                        _IconFlag(Icons.directions_car_outlined,
-                            'Conduite affectée', Colors.orange),
+                        _IconFlag(
+                          Icons.directions_car_outlined,
+                          l10n.vehiclesFaultDrivingAffected,
+                          Colors.orange,
+                        ),
                       if (fault.disclosedToBuyer)
-                        _IconFlag(Icons.visibility_outlined,
-                            'Divulguée acheteur', Colors.blue),
+                        _IconFlag(
+                          Icons.visibility_outlined,
+                          l10n.vehiclesFaultDisclosed,
+                          Colors.blue,
+                        ),
                     ],
                   ),
                 ],
@@ -250,7 +282,9 @@ class _FaultCard extends ConsumerWidget {
                         const Icon(Icons.speed, size: 13),
                         const SizedBox(width: 4),
                         Text(
-                          '${fault.mileageAtDetectionKm} km',
+                          l10n.commonMileageKm(
+                            fault.mileageAtDetectionKm!.toString(),
+                          ),
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                         const SizedBox(width: 16),
@@ -259,19 +293,23 @@ class _FaultCard extends ConsumerWidget {
                         const Icon(Icons.build_outlined, size: 13),
                         const SizedBox(width: 4),
                         Text(
-                          'Estimé : ${formatXof(fault.estimatedRepairCost)}',
+                          l10n.vehiclesFaultEstimatedCostValue(
+                            formatXof(fault.estimatedRepairCost),
+                          ),
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
                       if (fault.actualRepairCost != null) ...[
                         const SizedBox(width: 12),
-                        const Icon(Icons.check, size: 13,
-                            color: Colors.green),
+                        const Icon(Icons.check, size: 13, color: Colors.green),
                         const SizedBox(width: 4),
                         Text(
-                          'Réel : ${formatXof(fault.actualRepairCost)}',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Colors.green),
+                          l10n.vehiclesFaultActualCostValue(
+                            formatXof(fault.actualRepairCost),
+                          ),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(color: Colors.green),
                         ),
                       ],
                     ],
@@ -286,7 +324,11 @@ class _FaultCard extends ConsumerWidget {
   }
 
   Future<void> _handleAction(
-      BuildContext context, WidgetRef ref, String action) async {
+    BuildContext context,
+    WidgetRef ref,
+    String action,
+  ) async {
+    final l10n = AppLocalizations.of(context);
     if (action == 'resolve') {
       await showModalBottomSheet(
         context: context,
@@ -302,17 +344,17 @@ class _FaultCard extends ConsumerWidget {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text('Supprimer cette panne ?'),
+          title: Text(l10n.vehiclesFaultDeleteTitle),
           content: Text(fault.title),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuler'),
+              child: Text(l10n.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
               style: FilledButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Supprimer'),
+              child: Text(l10n.catalogDeleteAction),
             ),
           ],
         ),
@@ -327,8 +369,9 @@ class _FaultCard extends ConsumerWidget {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                  content: Text(messageFor(e)),
-                  backgroundColor: Colors.red),
+                content: Text(messageFor(e, l10n: l10n)),
+                backgroundColor: Colors.red,
+              ),
             );
           }
         }
@@ -377,11 +420,14 @@ class _IconFlag extends StatelessWidget {
     children: [
       Icon(icon, size: 13, color: color),
       const SizedBox(width: 3),
-      Text(label,
-          style: TextStyle(
-              fontSize: 11,
-              color: color,
-              fontWeight: FontWeight.w500)),
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          color: color,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     ],
   );
 }
@@ -398,30 +444,38 @@ class _EmptyFaults extends StatelessWidget {
   const _EmptyFaults({required this.onAdd, required this.canDeclare});
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Column(
-      children: [
-        Icon(Icons.check_circle_outline,
-            size: 40, color: Colors.green.shade400),
-        const SizedBox(height: 8),
-        const Text('Aucune panne déclarée',
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        Text(
-          canDeclare
-              ? 'Déclarez les défauts connus pour informer les acheteurs.'
-              : 'Ce véhicule ne présente aucun défaut connu.',
-          style: Theme.of(context).textTheme.bodySmall,
-          textAlign: TextAlign.center,
-        ),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.check_circle_outline,
+            size: 40,
+            color: Colors.green.shade400,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.vehiclesFaultEmpty,
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            canDeclare
+                ? l10n.vehiclesFaultEmptyStaffHint
+                : l10n.vehiclesFaultEmptyViewerHint,
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -439,30 +493,37 @@ class _AddFaultSheet extends ConsumerStatefulWidget {
 }
 
 class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
-  final _formKey      = GlobalKey<FormState>();
-  final _titleCtrl    = TextEditingController();
-  final _descCtrl     = TextEditingController();
-  final _codeCtrl     = TextEditingController();
-  final _costCtrl     = TextEditingController();
-  final _mileCtrl     = TextEditingController();
+  AppLocalizations get l10n => AppLocalizations.of(context);
+  final _formKey = GlobalKey<FormState>();
+  final _titleCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
+  final _codeCtrl = TextEditingController();
+  final _costCtrl = TextEditingController();
+  final _mileCtrl = TextEditingController();
   final _reporterCtrl = TextEditingController();
-  final _dateCtrl     = TextEditingController();
+  final _dateCtrl = TextEditingController();
 
   String _category = 'engine';
   String _severity = 'moderate';
 
   bool _affectsDrivability = false;
-  bool _isSafetyCritical   = false;
-  bool _disclosedToBuyer   = true; // par défaut divulguée
+  bool _isSafetyCritical = false;
+  bool _disclosedToBuyer = true; // par défaut divulguée
 
   bool _saving = false;
 
   @override
   void dispose() {
     for (final c in [
-      _titleCtrl, _descCtrl, _codeCtrl, _costCtrl,
-      _mileCtrl, _reporterCtrl, _dateCtrl,
-    ]) c.dispose();
+      _titleCtrl,
+      _descCtrl,
+      _codeCtrl,
+      _costCtrl,
+      _mileCtrl,
+      _reporterCtrl,
+      _dateCtrl,
+    ])
+      c.dispose();
     super.dispose();
   }
 
@@ -471,17 +532,19 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
     setState(() => _saving = true);
 
     final payload = <String, dynamic>{
-      'category':           _category,
-      'title':              _titleCtrl.text.trim(),
-      'severity':           _severity,
+      'category': _category,
+      'title': _titleCtrl.text.trim(),
+      'severity': _severity,
       'affects_drivability': _affectsDrivability,
-      'is_safety_critical':  _isSafetyCritical,
-      'disclosed_to_buyer':  _disclosedToBuyer,
-      if (_descCtrl.text.trim().isNotEmpty) 'description': _descCtrl.text.trim(),
+      'is_safety_critical': _isSafetyCritical,
+      'disclosed_to_buyer': _disclosedToBuyer,
+      if (_descCtrl.text.trim().isNotEmpty)
+        'description': _descCtrl.text.trim(),
       if (_codeCtrl.text.trim().isNotEmpty) 'code': _codeCtrl.text.trim(),
       if (_costCtrl.text.trim().isNotEmpty)
-        'estimated_repair_cost':
-            double.parse(_costCtrl.text.replaceAll(' ', '')),
+        'estimated_repair_cost': double.parse(
+          _costCtrl.text.replaceAll(' ', ''),
+        ),
       if (_mileCtrl.text.trim().isNotEmpty)
         'mileage_at_detection_km': int.parse(_mileCtrl.text),
       if (_reporterCtrl.text.trim().isNotEmpty)
@@ -498,7 +561,10 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(messageFor(e, l10n: l10n)),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -508,6 +574,7 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return DraggableScrollableSheet(
       initialChildSize: 0.92,
       maxChildSize: 0.97,
@@ -519,20 +586,26 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
           children: [
             // ── Poignée ───────────────────────────────────────────
             const SizedBox(height: 12),
-            Center(child: Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            )),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
                 children: [
-                  Text('Déclarer une panne',
-                    style: Theme.of(context).textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    l10n.vehiclesFaultCreateTitle,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -552,38 +625,41 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
                   // Titre obligatoire
                   TextFormField(
                     controller: _titleCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Titre *',
-                      hintText: 'Ex. : Fuite d\'huile moteur',
+                    decoration: InputDecoration(
+                      labelText: l10n.vehiclesFaultTitleLabel,
+                      hintText: l10n.vehiclesFaultTitleHint,
                       border: OutlineInputBorder(),
                     ),
                     textCapitalization: TextCapitalization.sentences,
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty)
-                            ? 'Le titre est obligatoire'
-                            : null,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? l10n.vehiclesFaultTitleRequired
+                        : null,
                   ),
                   const SizedBox(height: 16),
 
                   // Catégorie
-                  _label(context, 'Catégorie *'),
+                  _label(context, l10n.vehiclesFaultCategoryLabel),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _category,
-                    decoration: const InputDecoration(border: OutlineInputBorder()),
+                    decoration: InputDecoration(border: OutlineInputBorder()),
                     isExpanded: true,
                     items: faultCategories
-                        .map((c) => DropdownMenuItem(
-                              value: c.value,
-                              child: Text(c.label),
-                            ))
+                        .map(
+                          (c) => DropdownMenuItem(
+                            value: c.value,
+                            child: Text(
+                              vehicleFaultCategoryLabel(c.value, l10n),
+                            ),
+                          ),
+                        )
                         .toList(),
                     onChanged: (v) => setState(() => _category = v!),
                   ),
                   const SizedBox(height: 16),
 
                   // Sévérité
-                  _label(context, 'Sévérité *'),
+                  _label(context, l10n.vehiclesFaultSeverityLabel),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -592,16 +668,14 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
                       final selected = _severity == s.value;
                       final col = Color(s.color);
                       return ChoiceChip(
-                        label: Text(s.label),
+                        label: Text(vehicleFaultSeverityLabel(s.value, l10n)),
                         selected: selected,
                         selectedColor: col.withAlpha(50),
                         side: selected ? BorderSide(color: col) : null,
                         labelStyle: selected
-                            ? TextStyle(
-                                color: col, fontWeight: FontWeight.bold)
+                            ? TextStyle(color: col, fontWeight: FontWeight.bold)
                             : null,
-                        onSelected: (_) =>
-                            setState(() => _severity = s.value),
+                        onSelected: (_) => setState(() => _severity = s.value),
                       );
                     }).toList(),
                   ),
@@ -609,23 +683,23 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
 
                   // Flags
                   SwitchListTile(
-                    title: const Text('Affecte la conduite'),
-                    subtitle: const Text('Le véhicule est difficile ou dangereux à conduire'),
+                    title: Text(l10n.vehiclesFaultAffectsDriving),
+                    subtitle: Text(l10n.vehiclesFaultDrivingHint),
                     value: _affectsDrivability,
                     onChanged: (v) => setState(() => _affectsDrivability = v),
                     contentPadding: EdgeInsets.zero,
                     dense: true,
                   ),
                   SwitchListTile(
-                    title: const Text('Critique pour la sécurité'),
+                    title: Text(l10n.vehiclesFaultSafetyCritical),
                     value: _isSafetyCritical,
                     onChanged: (v) => setState(() => _isSafetyCritical = v),
                     contentPadding: EdgeInsets.zero,
                     dense: true,
                   ),
                   SwitchListTile(
-                    title: const Text('Divulguée à l\'acheteur'),
-                    subtitle: const Text('Cette panne est mentionnée dans l\'annonce'),
+                    title: Text(l10n.vehiclesFaultDisclosureLabel),
+                    subtitle: Text(l10n.vehiclesFaultDisclosureHint),
                     value: _disclosedToBuyer,
                     onChanged: (v) => setState(() => _disclosedToBuyer = v),
                     contentPadding: EdgeInsets.zero,
@@ -638,11 +712,11 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
                   TextFormField(
                     controller: _descCtrl,
                     maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Description (optionnel)',
+                    decoration: InputDecoration(
+                      labelText: l10n.vehiclesFaultDescriptionLabel,
                       border: OutlineInputBorder(),
                       alignLabelWithHint: true,
-                      hintText: 'Détails sur la panne, symptômes, conditions…',
+                      hintText: l10n.vehiclesFaultDescriptionHint,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -650,9 +724,9 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
                   // Code OBD
                   TextFormField(
                     controller: _codeCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Code OBD (optionnel)',
-                      hintText: 'Ex. : P0301',
+                    decoration: InputDecoration(
+                      labelText: l10n.vehiclesFaultObdLabel,
+                      hintText: l10n.vehiclesFaultObdHint,
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.qr_code_outlined),
                     ),
@@ -664,11 +738,11 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
                   // Date de détection
                   TextFormField(
                     controller: _dateCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Date de détection (optionnel)',
+                    decoration: InputDecoration(
+                      labelText: l10n.vehiclesFaultDetectionDate,
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.event_outlined),
-                      hintText: 'AAAA-MM-JJ',
+                      hintText: l10n.vehiclesDateHint,
                     ),
                     readOnly: true,
                     onTap: () async {
@@ -689,8 +763,8 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
                   // Kilométrage
                   TextFormField(
                     controller: _mileCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Kilométrage à la détection (optionnel)',
+                    decoration: InputDecoration(
+                      labelText: l10n.vehiclesFaultDetectionMileage,
                       border: OutlineInputBorder(),
                       suffixText: 'km',
                       prefixIcon: Icon(Icons.speed_outlined),
@@ -703,8 +777,8 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
                   // Coût estimé
                   TextFormField(
                     controller: _costCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Coût estimé de réparation (optionnel)',
+                    decoration: InputDecoration(
+                      labelText: l10n.vehiclesFaultEstimatedCost,
                       border: OutlineInputBorder(),
                       prefixText: 'XOF ',
                       suffixText: 'FCFA',
@@ -717,7 +791,7 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
                     validator: (v) {
                       if (v != null && v.isNotEmpty) {
                         if (double.tryParse(v.replaceAll(' ', '')) == null) {
-                          return 'Montant invalide';
+                          return l10n.vehiclesAmountInvalid;
                         }
                       }
                       return null;
@@ -728,11 +802,11 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
                   // Signalé par
                   TextFormField(
                     controller: _reporterCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Signalé par (optionnel)',
+                    decoration: InputDecoration(
+                      labelText: l10n.vehiclesFaultReportedBy,
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.person_outline),
-                      hintText: 'Nom du technicien ou du client',
+                      hintText: l10n.vehiclesFaultReporterHint,
                     ),
                   ),
 
@@ -744,19 +818,26 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
             // ── Bouton enregistrer ────────────────────────────────
             Padding(
               padding: EdgeInsets.fromLTRB(
-                20, 8, 20,
+                20,
+                8,
+                20,
                 MediaQuery.of(context).viewInsets.bottom + 16,
               ),
               child: FilledButton(
                 onPressed: _saving ? null : _save,
                 style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(52)),
+                  minimumSize: const Size.fromHeight(52),
+                ),
                 child: _saving
                     ? const SizedBox(
-                        width: 20, height: 20,
+                        width: 20,
+                        height: 20,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : const Text('Enregistrer la panne'),
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(l10n.vehiclesFaultSave),
               ),
             ),
           ],
@@ -767,10 +848,9 @@ class _AddFaultSheetState extends ConsumerState<_AddFaultSheet> {
 
   Widget _label(BuildContext context, String text) => Text(
     text,
-    style: Theme.of(context)
-        .textTheme
-        .titleSmall
-        ?.copyWith(fontWeight: FontWeight.bold),
+    style: Theme.of(
+      context,
+    ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
   );
 }
 
@@ -790,22 +870,21 @@ class _ResolveFaultSheet extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<_ResolveFaultSheet> createState() =>
-      _ResolveFaultSheetState();
+  ConsumerState<_ResolveFaultSheet> createState() => _ResolveFaultSheetState();
 }
 
 class _ResolveFaultSheetState extends ConsumerState<_ResolveFaultSheet> {
+  AppLocalizations get l10n => AppLocalizations.of(context);
   final _costCtrl = TextEditingController();
   final _dateCtrl = TextEditingController();
-  bool _saving    = false;
+  bool _saving = false;
 
   @override
   void initState() {
     super.initState();
     // Préremplir le coût estimé si disponible
     if (widget.fault.estimatedRepairCost != null) {
-      _costCtrl.text =
-          widget.fault.estimatedRepairCost!.toStringAsFixed(0);
+      _costCtrl.text = widget.fault.estimatedRepairCost!.toStringAsFixed(0);
     }
     // Date d'aujourd'hui par défaut
     final now = DateTime.now();
@@ -823,20 +902,25 @@ class _ResolveFaultSheetState extends ConsumerState<_ResolveFaultSheet> {
   Future<void> _resolve() async {
     setState(() => _saving = true);
     try {
-      await ref.read(vehicleFaultRepositoryProvider).resolveFault(
-        widget.vehicleId,
-        widget.fault.id,
-        actualRepairCost: _costCtrl.text.trim().isNotEmpty
-            ? double.parse(_costCtrl.text.replaceAll(' ', ''))
-            : null,
-        repairedAt: _dateCtrl.text.isNotEmpty ? _dateCtrl.text : null,
-      );
+      await ref
+          .read(vehicleFaultRepositoryProvider)
+          .resolveFault(
+            widget.vehicleId,
+            widget.fault.id,
+            actualRepairCost: _costCtrl.text.trim().isNotEmpty
+                ? double.parse(_costCtrl.text.replaceAll(' ', ''))
+                : null,
+            repairedAt: _dateCtrl.text.isNotEmpty ? _dateCtrl.text : null,
+          );
       widget.onResolved();
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(messageFor(e)), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(messageFor(e, l10n: l10n)),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -846,22 +930,28 @@ class _ResolveFaultSheetState extends ConsumerState<_ResolveFaultSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        20, 16, 20,
+        20,
+        16,
+        20,
         MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(child: Container(
-            width: 40, height: 4,
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.outlineVariant,
-              borderRadius: BorderRadius.circular(2),
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          )),
+          ),
           const SizedBox(height: 16),
 
           Row(
@@ -870,11 +960,10 @@ class _ResolveFaultSheetState extends ConsumerState<_ResolveFaultSheet> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Résoudre : ${widget.fault.title}',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  l10n.vehiclesFaultResolveTitle(widget.fault.title),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -884,8 +973,8 @@ class _ResolveFaultSheetState extends ConsumerState<_ResolveFaultSheet> {
           // Date de réparation
           TextFormField(
             controller: _dateCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Date de réparation',
+            decoration: InputDecoration(
+              labelText: l10n.vehiclesFaultRepairDate,
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.event_outlined),
             ),
@@ -908,8 +997,8 @@ class _ResolveFaultSheetState extends ConsumerState<_ResolveFaultSheet> {
           // Coût réel
           TextFormField(
             controller: _costCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Coût réel de réparation (optionnel)',
+            decoration: InputDecoration(
+              labelText: l10n.vehiclesFaultActualCost,
               border: OutlineInputBorder(),
               prefixText: 'XOF ',
               suffixText: 'FCFA',
@@ -926,11 +1015,15 @@ class _ResolveFaultSheetState extends ConsumerState<_ResolveFaultSheet> {
             onPressed: _saving ? null : _resolve,
             icon: _saving
                 ? const SizedBox(
-                    width: 18, height: 18,
+                    width: 18,
+                    height: 18,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white))
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                 : const Icon(Icons.check),
-            label: const Text('Marquer comme réparée'),
+            label: Text(l10n.vehiclesFaultMarkRepaired),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.green,
               minimumSize: const Size.fromHeight(50),

@@ -13,6 +13,7 @@ import 'package:auto/features/garage/data/garage_repository.dart';
 import 'package:auto/features/garage/data/models/owned_vehicle.dart';
 import 'package:auto/features/garage/data/models/vehicle_check.dart';
 import 'package:auto/features/garage/presentation/pages/vehicle_check_page.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 /// Le contrôle avant voyage, côté application.
 ///
@@ -99,6 +100,9 @@ void main() {
   Widget ecran(_FauxDepot depot) => ProviderScope(
         overrides: [garageRepositoryProvider.overrideWithValue(depot)],
         child: const MaterialApp(
+          locale: const Locale('fr'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
           home: VehicleCheckPage(ownedVehicleId: 1, vehicle: vehicule),
         ),
       );

@@ -16,6 +16,7 @@ import 'package:auto/features/vehicles/data/vehicle_admin_repository.dart';
 import 'package:auto/features/vehicles/presentation/pages/vehicle_register_page.dart';
 import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provider.dart';
 import 'package:auto/shared/models/paginated_response.dart';
+import 'package:auto/l10n/app_localizations.dart';
 
 /// Les règles du formulaire véhicule s'appliquent VRAIMENT.
 ///
@@ -120,7 +121,11 @@ Future<void> _ouvrir(WidgetTester tester, _Depot depot, Vehicle existant) async 
       vehicleAdminRepositoryProvider.overrideWithValue(depot),
       partnerRepositoryProvider.overrideWithValue(_Annuaire()),
     ],
-    child: MaterialApp(home: VehicleRegisterPage(existing: existant)),
+    child: MaterialApp(
+      locale: const Locale('fr'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: VehicleRegisterPage(existing: existant)),
   ));
   await tester.pumpAndSettle();
 }

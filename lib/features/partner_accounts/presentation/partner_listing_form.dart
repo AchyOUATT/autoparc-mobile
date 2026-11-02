@@ -1,5 +1,7 @@
+import '../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/api/api_exception.dart';
 
 import '../data/partner_repository.dart';
 import 'champs_de_promotion.dart';
@@ -33,10 +35,10 @@ class _PartnerListingFormPageState
   final _manufacturerReference = TextEditingController();
   PartnerReferences? _references;
   Object? _loadError;
-  String? _saveError;
+  Object? _saveError;
   bool _saving = false;
   bool _loadingDonors = false;
-  String? _donorError;
+  Object? _donorError;
   List<Map<String, dynamic>> _donors = [];
   bool _donorsLoaded = false;
   int? _categoryId;
@@ -52,23 +54,11 @@ class _PartnerListingFormPageState
   bool get _part => widget.kind == PartnerListingKind.parts;
   bool get _editing => widget.initialListing != null;
 
-  /// Le cas `vehicles` reste ecrit pour que le `switch` soit exhaustif ; c'est
-  /// l'assertion de `initState` qui dit pourquoi il n'arrive plus.
-  String get _kindName => switch (widget.kind) {
-    PartnerListingKind.vehicles => 'véhicule',
-    PartnerListingKind.parts => 'pièce',
-    PartnerListingKind.accessories => 'accessoire',
-  };
+  static int? _id(dynamic value) =>
+      value is num ? value.toInt() : int.tryParse(value?.toString() ?? '');
 
-  String get _article => _part ? 'une' : 'un';
-
-  static int? _id(dynamic value) => value is num
-      ? value.toInt()
-      : int.tryParse(value?.toString() ?? '');
-
-  static Map<String, dynamic> _map(dynamic value) => value is Map
-      ? Map<String, dynamic>.from(value)
-      : <String, dynamic>{};
+  static Map<String, dynamic> _map(dynamic value) =>
+      value is Map ? Map<String, dynamic>.from(value) : <String, dynamic>{};
 
   static String _text(dynamic value) => value?.toString() ?? '';
 
@@ -99,7 +89,9 @@ class _PartnerListingFormPageState
     _stock.text = _text(_map(listing['stock'])['quantity'] ?? 0);
     _sku.text = _text(listing['sku']);
     _manufacturerReference.text = _text(listing['manufacturer_reference']);
-    _categoryId = _id(listing['category_id'] ?? _map(listing['category'])['id']);
+    _categoryId = _id(
+      listing['category_id'] ?? _map(listing['category'])['id'],
+    );
     _manufacturerId = _id(listing['manufacturer_id']);
     _donorId = _id(listing['donor_vehicle_id']);
     // La promotion enregistree, s'il y en a une. Le bloc `deal` n'est rendu
@@ -125,7 +117,12 @@ class _PartnerListingFormPageState
   @override
   void dispose() {
     for (final controller in [
-      _name, _description, _salePrice, _stock, _sku, _manufacturerReference,
+      _name,
+      _description,
+      _salePrice,
+      _stock,
+      _sku,
+      _manufacturerReference,
     ]) {
       controller.dispose();
     }
@@ -146,12 +143,16 @@ class _PartnerListingFormPageState
 
   Future<void> _loadDonors() async {
     if (_donorsLoaded || _loadingDonors) return;
-    setState(() { _loadingDonors = true; _donorError = null; });
+    setState(() {
+      _loadingDonors = true;
+      _donorError = null;
+    });
     try {
       final donors = <Map<String, dynamic>>[];
       var page = 1;
       while (true) {
-        final result = await ref.read(partnerRepositoryProvider)
+        final result = await ref
+            .read(partnerRepositoryProvider)
             .listListings(PartnerListingKind.vehicles, page: page);
         donors.addAll(result.items);
         if (page >= result.lastPage) break;
@@ -159,13 +160,20 @@ class _PartnerListingFormPageState
       }
       if (!mounted) return;
       if (_donorId == null && widget.initialListing?['donor_vehicle'] != null) {
-        final matches = donors.where((item) =>
-            item['reference'] == widget.initialListing!['donor_vehicle']).toList();
+        final matches = donors
+            .where(
+              (item) =>
+                  item['reference'] == widget.initialListing!['donor_vehicle'],
+            )
+            .toList();
         if (matches.length == 1) _donorId = _id(matches.single['id']);
       }
-      setState(() { _donors = donors; _donorsLoaded = true; });
+      setState(() {
+        _donors = donors;
+        _donorsLoaded = true;
+      });
     } catch (error) {
-      if (mounted) setState(() => _donorError = _errorMessage(error));
+      if (mounted) setState(() => _donorError = error);
     } finally {
       if (mounted) setState(() => _loadingDonors = false);
     }
@@ -173,19 +181,28 @@ class _PartnerListingFormPageState
 
   String _errorMessage(Object error) {
     if (error is PartnerApiException) {
-      return error.fields.isEmpty ? error.message : error.fields.values.join('\n');
+      return error.fields.isEmpty
+          ? messageFor(error.message, l10n: AppLocalizations.of(context))
+          : error.fields.values
+                .map(
+                  (message) =>
+                      messageFor(message, l10n: AppLocalizations.of(context)),
+                )
+                .join('\n');
     }
-    return 'Impossible de terminer la demande. Vérifiez votre connexion et réessayez.';
+    return AppLocalizations.of(context).partnerAccountsRequestFailed;
   }
 
   num? _number(TextEditingController controller) =>
       num.tryParse(controller.text.trim().replaceAll(',', '.'));
 
   String? _money(String? value) {
-    if ((value ?? '').trim().isEmpty) return 'Indiquez un prix.';
+    if ((value ?? '').trim().isEmpty)
+      return AppLocalizations.of(context).partnerAccountsPriceRequired;
     final number = num.tryParse(value!.trim().replaceAll(',', '.'));
     return number == null || !number.isFinite || number < 0
-        ? 'Indiquez un montant positif ou nul.' : null;
+        ? AppLocalizations.of(context).partnerAccountsMoneyInvalid
+        : null;
   }
 
   Future<void> _save() async {
@@ -224,25 +241,36 @@ class _PartnerListingFormPageState
     } else if (_editing) {
       data['deal_price'] = null;
     }
-    setState(() { _saving = true; _saveError = null; });
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
     try {
-      await ref.read(partnerRepositoryProvider).saveListing(
-        widget.kind, data, id: _id(widget.initialListing?['id']),
-      );
+      await ref
+          .read(partnerRepositoryProvider)
+          .saveListing(
+            widget.kind,
+            data,
+            id: _id(widget.initialListing?['id']),
+          );
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
-      if (mounted) setState(() => _saveError = _errorMessage(error));
+      if (mounted) setState(() => _saveError = error);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
-  List<Map<String, dynamic>> _flattenCategories(List<Map<String, dynamic>> items) {
+  List<Map<String, dynamic>> _flattenCategories(
+    List<Map<String, dynamic>> items,
+  ) {
     final result = <Map<String, dynamic>>[];
     for (final item in items) {
       result.add(item);
       if (item['children'] is List) {
-        result.addAll(_flattenCategories((item['children'] as List).map(_map).toList()));
+        result.addAll(
+          _flattenCategories((item['children'] as List).map(_map).toList()),
+        );
       }
     }
     final seen = <int?>{};
@@ -262,17 +290,32 @@ class _PartnerListingFormPageState
       key: ValueKey('$label:${values.join(',')}:$value'),
       initialValue: values.contains(value) ? value : null,
       isExpanded: true,
-      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
       items: [
-        if (!isRequired) const DropdownMenuItem<int>(value: null, child: Text('Non renseigné')),
-        ...items.map((item) => DropdownMenuItem<int>(
-          value: _id(item['id']),
-          child: Text(text?.call(item) ?? _text(item['name'] ?? item['label']),
-            overflow: TextOverflow.ellipsis),
-        )),
+        if (!isRequired)
+          DropdownMenuItem<int>(
+            value: null,
+            child: Text(
+              AppLocalizations.of(context).partnerAccountsNotProvided,
+            ),
+          ),
+        ...items.map(
+          (item) => DropdownMenuItem<int>(
+            value: _id(item['id']),
+            child: Text(
+              text?.call(item) ?? _text(item['name'] ?? item['label']),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
       ],
       onChanged: _saving ? null : onChanged,
-      validator: (selected) => isRequired && selected == null ? 'Choisissez une valeur.' : null,
+      validator: (selected) => isRequired && selected == null
+          ? AppLocalizations.of(context).partnerAccountsChoiceRequired
+          : null,
     );
   }
 
@@ -281,24 +324,42 @@ class _PartnerListingFormPageState
   /// Chacun de ces champs part sur une vraie réponse — « adaptable »,
   /// « neuve », « utilitaire » — et non sur un défaut de colonne qui se
   /// ferait passer pour un choix du vendeur.
-  Widget _choice(String label, String value, Map<String, String> choices,
-      ValueChanged<String> onChanged) =>
-      DropdownButtonFormField<String>(
-        initialValue: choices.containsKey(value) ? value : null,
-        isExpanded: true,
-        decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
-        items: choices.entries.map((entry) => DropdownMenuItem(
-          value: entry.key,
-          child: Text(entry.value, overflow: TextOverflow.ellipsis),
-        )).toList(),
-        onChanged: _saving ? null : (selected) {
-          if (selected != null) onChanged(selected);
-        },
-        validator: (selected) => selected == null ? 'Choisissez une valeur.' : null,
-      );
+  Widget _choice(
+    String label,
+    String value,
+    Map<String, String> choices,
+    ValueChanged<String> onChanged,
+  ) => DropdownButtonFormField<String>(
+    initialValue: choices.containsKey(value) ? value : null,
+    isExpanded: true,
+    decoration: InputDecoration(
+      labelText: label,
+      border: const OutlineInputBorder(),
+    ),
+    items: choices.entries
+        .map(
+          (entry) => DropdownMenuItem(
+            value: entry.key,
+            child: Text(entry.value, overflow: TextOverflow.ellipsis),
+          ),
+        )
+        .toList(),
+    onChanged: _saving
+        ? null
+        : (selected) {
+            if (selected != null) onChanged(selected);
+          },
+    validator: (selected) => selected == null
+        ? AppLocalizations.of(context).partnerAccountsChoiceRequired
+        : null,
+  );
 
-  Widget _field(String label, TextEditingController controller, {
-    TextInputType? keyboardType, String? Function(String?)? validator, int maxLines = 1,
+  Widget _field(
+    String label,
+    TextEditingController controller, {
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    int maxLines = 1,
     ValueChanged<String>? onChanged,
   }) => TextFormField(
     controller: controller,
@@ -306,7 +367,10 @@ class _PartnerListingFormPageState
     keyboardType: keyboardType,
     maxLines: maxLines,
     onChanged: onChanged,
-    decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+    decoration: InputDecoration(
+      labelText: label,
+      border: const OutlineInputBorder(),
+    ),
     validator: validator,
   );
 
@@ -314,19 +378,39 @@ class _PartnerListingFormPageState
   Widget build(BuildContext context) {
     final references = _references;
     return Scaffold(
-      appBar: AppBar(title: Text('${_editing ? 'Modifier' : 'Ajouter'} $_article $_kindName')),
+      appBar: AppBar(
+        title: Text(
+          _part
+              ? (_editing
+                    ? AppLocalizations.of(context).partnerAccountsEditPart
+                    : AppLocalizations.of(context).partnerAccountsAddPart)
+              : (_editing
+                    ? AppLocalizations.of(context).partnerAccountsEditAccessory
+                    : AppLocalizations.of(context).partnerAccountsAddAccessory),
+        ),
+      ),
       body: references == null
-          ? Center(child: _loadError == null
-              ? const CircularProgressIndicator()
-              : Padding(padding: const EdgeInsets.all(24), child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(_errorMessage(_loadError!)),
-                    const SizedBox(height: 16),
-                    FilledButton.icon(onPressed: _loadReferences,
-                      icon: const Icon(Icons.refresh), label: const Text('Réessayer')),
-                  ],
-                )))
+          ? Center(
+              child: _loadError == null
+                  ? const CircularProgressIndicator()
+                  : Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_errorMessage(_loadError!)),
+                          const SizedBox(height: 16),
+                          FilledButton.icon(
+                            onPressed: _loadReferences,
+                            icon: const Icon(Icons.refresh),
+                            label: Text(
+                              AppLocalizations.of(context).commonRetry,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+            )
           : Form(
               key: _form,
               child: SingleChildScrollView(
@@ -334,27 +418,65 @@ class _PartnerListingFormPageState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: _spaced([
-                  Text(_editing ? 'Mettez à jour votre annonce.' : 'L’annonce sera créée en brouillon. Vous pourrez ensuite ajouter ses photos et la publier.',
-                    style: Theme.of(context).textTheme.bodyMedium),
-                  ..._itemFields(references),
-                  ChampsDePromotion(
-                    prixNormal: _number(_salePrice),
-                    plafondPourcentage: ref.watch(partnerSessionProvider)
-                        .profile?.plafondRemisePourcentage ?? 0,
-                    valeur: _promotion,
-                    onChanged: (valeur) => setState(() => _promotion = valeur),
-                  ),
-                  _field('Description', _description, maxLines: 4),
-                  if (_saveError != null) Semantics(
-                    liveRegion: true,
-                    child: Text(_saveError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                  ),
-                  FilledButton.icon(
-                    onPressed: _saving ? null : _save,
-                    icon: _saving ? const SizedBox(width: 18, height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined),
-                    label: Text(_saving ? 'Enregistrement…' : _editing ? 'Enregistrer les modifications' : 'Enregistrer le brouillon'),
-                  ),
+                    Text(
+                      _editing
+                          ? AppLocalizations.of(
+                              context,
+                            ).partnerAccountsEditListingHelp
+                          : AppLocalizations.of(
+                              context,
+                            ).partnerAccountsNewListingHelp,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    ..._itemFields(references),
+                    ChampsDePromotion(
+                      prixNormal: _number(_salePrice),
+                      plafondPourcentage:
+                          ref
+                              .watch(partnerSessionProvider)
+                              .profile
+                              ?.plafondRemisePourcentage ??
+                          0,
+                      valeur: _promotion,
+                      onChanged: (valeur) =>
+                          setState(() => _promotion = valeur),
+                    ),
+                    _field(
+                      AppLocalizations.of(context).catalogSectionDescription,
+                      _description,
+                      maxLines: 4,
+                    ),
+                    if (_saveError != null)
+                      Semantics(
+                        liveRegion: true,
+                        child: Text(
+                          _errorMessage(_saveError!),
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ),
+                    FilledButton.icon(
+                      onPressed: _saving ? null : _save,
+                      icon: _saving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.save_outlined),
+                      label: Text(
+                        _saving
+                            ? AppLocalizations.of(context).partnerAccountsSaving
+                            : _editing
+                            ? AppLocalizations.of(
+                                context,
+                              ).partnerAccountsSaveChanges
+                            : AppLocalizations.of(
+                                context,
+                              ).partnerAccountsSaveDraft,
+                      ),
+                    ),
                   ]),
                 ),
               ),
@@ -364,60 +486,136 @@ class _PartnerListingFormPageState
 
   List<Widget> _spaced(List<Widget> children) => [
     for (var index = 0; index < children.length; index++) ...[
-      if (index > 0) const SizedBox(height: 16), children[index],
+      if (index > 0) const SizedBox(height: 16),
+      children[index],
     ],
   ];
 
   List<Widget> _itemFields(PartnerReferences references) => [
-    _field('Nom de l’article', _name,
-      validator: (value) => (value ?? '').trim().isEmpty ? 'Indiquez un nom.' : null),
+    _field(
+      AppLocalizations.of(context).partnerAccountsItemName,
+      _name,
+      validator: (value) => (value ?? '').trim().isEmpty
+          ? AppLocalizations.of(context).partnerAccountsNameRequired
+          : null,
+    ),
     if (_part) ...[
-      _dropdown(label: 'Catégorie de pièce', value: _categoryId,
+      _dropdown(
+        label: AppLocalizations.of(context).partnerAccountsPartCategory,
+        value: _categoryId,
         items: _flattenCategories(references.partCategories),
-        onChanged: (value) => setState(() => _categoryId = value)),
-      _choice('Origine de la pièce', _partType, const {
-        'oem': 'Constructeur (OEM)', 'oes': 'Équipementier (OES)',
-        'aftermarket': 'Adaptable', 'salvage': 'Pièce de récupération',
-      }, (value) => setState(() => _partType = value)),
-      _choice('État', _partCondition, const {
-        'new': 'Neuve', 'refurbished': 'Reconditionnée', 'used': 'D’occasion',
-      }, (value) {
-        setState(() => _partCondition = value);
-        if (value == 'used') _loadDonors();
-      }),
+        onChanged: (value) => setState(() => _categoryId = value),
+      ),
+      _choice(
+        AppLocalizations.of(context).partnerAccountsPartOrigin,
+        _partType,
+        {
+          'oem': AppLocalizations.of(context).partnerAccountsPartOem,
+          'oes': AppLocalizations.of(context).partnerAccountsPartOes,
+          'aftermarket': AppLocalizations.of(
+            context,
+          ).partnerAccountsPartAftermarket,
+          'salvage': AppLocalizations.of(context).partnerAccountsPartSalvage,
+        },
+        (value) => setState(() => _partType = value),
+      ),
+      _choice(
+        AppLocalizations.of(context).partnerAccountsCondition,
+        _partCondition,
+        {
+          'new': AppLocalizations.of(context).partnerAccountsConditionNew,
+          'refurbished': AppLocalizations.of(
+            context,
+          ).partnerAccountsConditionRefurbished,
+          'used': AppLocalizations.of(context).partnerAccountsConditionUsed,
+        },
+        (value) {
+          setState(() => _partCondition = value);
+          if (value == 'used') _loadDonors();
+        },
+      ),
       if (_partCondition == 'used') ...[
-        const Text('Une pièce d’occasion doit être rattachée à un véhicule donneur de votre propre inventaire.'),
-        if (_loadingDonors) const LinearProgressIndicator()
+        Text(AppLocalizations.of(context).partnerAccountsDonorRequiredHelp),
+        if (_loadingDonors)
+          const LinearProgressIndicator()
         else if (_donorError != null) ...[
-          Text(_donorError!),
-          TextButton(onPressed: _loadDonors, child: const Text('Recharger les véhicules donneurs')),
+          Text(_errorMessage(_donorError!)),
+          TextButton(
+            onPressed: _loadDonors,
+            child: Text(
+              AppLocalizations.of(context).partnerAccountsReloadDonors,
+            ),
+          ),
         ] else if (_donorsLoaded && _donors.isEmpty)
-          const Text('Ajoutez d’abord le véhicule donneur dans vos annonces de véhicules.'),
-        _dropdown(label: 'Véhicule donneur', value: _donorId, items: _donors,
-          text: (item) => _text(item['designation'] ?? item['reference'] ?? item['id']),
-          onChanged: (value) => setState(() => _donorId = value)),
+          Text(AppLocalizations.of(context).partnerAccountsDonorsEmpty),
+        _dropdown(
+          label: AppLocalizations.of(context).partnerAccountsDonorVehicle,
+          value: _donorId,
+          items: _donors,
+          text: (item) =>
+              _text(item['designation'] ?? item['reference'] ?? item['id']),
+          onChanged: (value) => setState(() => _donorId = value),
+        ),
       ],
-      _field('Référence fabricant (facultatif)', _manufacturerReference),
+      _field(
+        AppLocalizations.of(
+          context,
+        ).partnerAccountsManufacturerReferenceOptional,
+        _manufacturerReference,
+      ),
     ] else
-      _choice('Catégorie d’accessoire', _accessoryCategory, const {
-        'esthetique': 'Esthétique', 'confort': 'Confort', 'securite': 'Sécurité',
-        'multimedia': 'Multimédia', 'utilitaire': 'Utilitaire',
-      }, (value) => setState(() => _accessoryCategory = value)),
-    _dropdown(label: 'Fabricant (facultatif)', value: _manufacturerId,
-      items: references.manufacturers, isRequired: false,
-      onChanged: (value) => setState(() => _manufacturerId = value)),
-    _field('Référence interne / SKU (facultatif)', _sku),
-    _field('Prix de vente (FCFA)', _salePrice,
+      _choice(
+        AppLocalizations.of(context).partnerAccountsAccessoryCategory,
+        _accessoryCategory,
+        {
+          'esthetique': AppLocalizations.of(
+            context,
+          ).catalogAccessoryCategoryStyling,
+          'confort': AppLocalizations.of(
+            context,
+          ).catalogAccessoryCategoryComfort,
+          'securite': AppLocalizations.of(
+            context,
+          ).catalogAccessoryCategorySafety,
+          'multimedia': AppLocalizations.of(
+            context,
+          ).catalogAccessoryCategoryMultimedia,
+          'utilitaire': AppLocalizations.of(
+            context,
+          ).catalogAccessoryCategoryUtility,
+        },
+        (value) => setState(() => _accessoryCategory = value),
+      ),
+    _dropdown(
+      label: AppLocalizations.of(context).partnerAccountsManufacturerOptional,
+      value: _manufacturerId,
+      items: references.manufacturers,
+      isRequired: false,
+      onChanged: (value) => setState(() => _manufacturerId = value),
+    ),
+    _field(AppLocalizations.of(context).partnerAccountsSkuOptional, _sku),
+    _field(
+      AppLocalizations.of(context).partnerAccountsSalePrice,
+      _salePrice,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      validator: _money, onChanged: (_) => setState(() {})),
+      validator: _money,
+      onChanged: (_) => setState(() {}),
+    ),
     MargeRecapitulatif(
       prixPropose: _number(_salePrice),
-      pourcentage: ref.watch(partnerSessionProvider).profile?.margePourcentage ?? 0,
+      pourcentage:
+          ref.watch(partnerSessionProvider).profile?.margePourcentage ?? 0,
     ),
-    _field('Quantité en stock', _stock, keyboardType: TextInputType.number,
+    _field(
+      AppLocalizations.of(context).partnerAccountsStockQuantity,
+      _stock,
+      keyboardType: TextInputType.number,
       validator: (value) {
         final quantity = int.tryParse(value?.trim() ?? '');
-        return quantity == null || quantity < 0 ? 'Indiquez un nombre entier positif ou nul.' : null;
-      }),
+        return quantity == null || quantity < 0
+            ? AppLocalizations.of(context).partnerAccountsStockInvalid
+            : null;
+      },
+    ),
   ];
 }
