@@ -22,6 +22,7 @@ import '../../../../core/widgets/grille_maconnerie.dart';
 import '../../../../core/widgets/titre_barre.dart';
 import '../../../../core/api/api_exception.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../partner_accounts/presentation/partner_session.dart';
 import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
 import '../../../../core/providers/shell_scaffold_provider.dart';
@@ -80,6 +81,12 @@ class _VehicleListPageState extends ConsumerState<VehicleListPage> {
     }.toList()..sort();
     final auth = ref.watch(authProvider);
     final isStaff = auth.isStaff;
+    final partnerSession = ref.watch(partnerSessionProvider);
+    final isPartner = partnerSession.profile != null ||
+        partnerSession.deniedStatus != null ||
+        partnerSession.restoreFailed ||
+        auth.clientLoginRequiresPartner;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       // Un magasinier ou un observateur n'a pas le droit de creer une fiche :
@@ -104,7 +111,20 @@ class _VehicleListPageState extends ConsumerState<VehicleListPage> {
                   }
                 },
                 icon: const Icon(Icons.add),
-                label: Text(AppLocalizations.of(context).catalogVehicleAddCta),
+                label: Text(l10n.catalogVehicleAddCta),
+              ),
+            )
+          : privateSalesEnabled &&
+                !isStaff &&
+                !isPartner &&
+                !auth.isLoading &&
+                !partnerSession.loading
+          ? BoutonFlottantEffacable(
+              controleur: _scrollCtrl,
+              enfant: FloatingActionButton.extended(
+                onPressed: () => context.push('/sell'),
+                icon: const Icon(Icons.sell_outlined),
+                label: Text(l10n.privateSalesSellTitle),
               ),
             )
           : null,
