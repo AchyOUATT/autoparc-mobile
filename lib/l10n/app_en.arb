@@ -14,6 +14,7 @@
   "commonPerDaySuffix": "/day",
   "commonPerMonthSuffix": "/month",
   "commonMileageKm": "{value} km",
+  "commonMileageNotProvided": "Mileage not provided",
   "commonShareUnavailable": "Cannot open sharing on this device. The message has been copied.",
   "commonLinkUnavailable": "Cannot open {what} on this device. {value} has been copied.",
   "shellExitTitle": "Quit AutoParc?",

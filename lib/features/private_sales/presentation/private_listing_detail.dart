@@ -65,11 +65,7 @@ class PrivateListingDetail extends ConsumerWidget {
             style: Theme.of(context).textTheme.titleLarge,
           ),
           Text(
-            l10n.privateSalesVehicleSummary(
-              listing.number('year'),
-              listing.number('mileage_km'),
-              listing.text('city'),
-            ),
+            privateListingVehicleSummary(listing, l10n),
           ),
           const SizedBox(height: 16),
           for (final entry in {

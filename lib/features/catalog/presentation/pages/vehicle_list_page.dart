@@ -28,6 +28,7 @@ import '../../../../core/providers/shell_scaffold_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../private_sales/data/private_listing_repository.dart';
 import '../../../private_sales/presentation/private_listing_detail.dart';
+import '../../../private_sales/presentation/private_listing_labels.dart';
 import '../../../inspections/presentation/staff_inspection_widgets.dart';
 
 class VehicleListPage extends ConsumerStatefulWidget {
@@ -1023,9 +1024,7 @@ class PrivateCatalogVehicleCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    l10n.commonMileageKm(
-                      formatEntier(listing.number('mileage_km')),
-                    ),
+                    privateListingMileageLabel(listing, l10n),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: cs.onSurfaceVariant,
                     ),

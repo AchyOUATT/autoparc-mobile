@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../../core/utils/mileage.dart';
 import '../../inspections/data/staff_inspection.dart';
 import '../../vehicles/data/models/fault_declaration.dart';
 
@@ -16,6 +17,7 @@ class PrivateListing {
   int get id => readListingInt(fields['id']);
   String text(String key) => fields[key]?.toString() ?? '';
   int number(String key) => readListingInt(fields[key]);
+  int? get mileageKm => parseMileageKm(fields['mileage_km']);
   String get title => text('title');
   StaffInspectionSummary? get inspection =>
       StaffInspectionSummary.parse(fields['inspection']);

@@ -55,13 +55,14 @@ Map<String, dynamic> _fixture() =>
 ///
 /// `condition` passe à « occasion » parce que le champ kilométrage n'existe
 /// que là : sur un véhicule neuf, le formulaire le masque et le vide.
-Vehicle _vehicule({bool immatricule = true, String condition = 'used'}) {
+Vehicle _vehicule({bool immatricule = true, String condition = 'used', int? mileage}) {
   final json = jsonDecode(jsonEncode(_fixture()['data'])) as Map<String, dynamic>;
   json['registration_status'] = <String, dynamic>{
     'value': immatricule ? 'registered' : 'unregistered',
     'label': immatricule ? 'Deja immatricule' : 'Non immatricule',
   };
   (json['commercial'] as Map<String, dynamic>)['condition'] = condition;
+  (json['technical'] as Map<String, dynamic>)['mileage_km'] = mileage;
   json.addAll(<String, dynamic>{
     'brand_id': _marque.id,
     'vehicle_model_id': _modele.id,
@@ -318,9 +319,39 @@ void main() {
     await _enregistrer(tester);
 
     expect(partenaire.charge!.containsKey('registration'), isFalse,
-        reason: 'Un champ vide veut dire « je ne touche pas », et non '
-            '« efface ce qui est enregistré ».');
+        reason: 'Un kilométrage déjà inconnu reste absent sans créer un zéro.');
     expect(partenaire.charge!.containsKey('import'), isFalse);
+  });
+
+  for (final registered in [true, false]) {
+    testWidgets('effacer un compteur connu envoie null (immatriculé=$registered)',
+        (tester) async {
+      await _ouvrir(tester,
+          mode: VehicleFormMode.partenaire,
+          partenaire: partenaire,
+          personnel: personnel,
+          existant: _vehicule(immatricule: registered, mileage: 85000));
+      _saisirKilometrage(tester, '');
+      await _enregistrer(tester);
+
+      expect(partenaire.charge![registered ? 'registration' : 'import'],
+          {registered ? 'mileage_km' : 'odometer_at_import_km': null});
+    });
+  }
+
+  testWidgets('un zéro renseigné reste prérempli et sauvegardé', (tester) async {
+    await _ouvrir(tester,
+        mode: VehicleFormMode.partenaire,
+        partenaire: partenaire,
+        personnel: personnel,
+        existant: _vehicule(mileage: 0));
+    final champ = find.byWidgetPredicate(
+      (widget) => widget is TextField && widget.decoration?.labelText == 'Kilométrage',
+      skipOffstage: false,
+    );
+    expect(tester.widget<TextField>(champ).controller!.text, '0');
+    await _enregistrer(tester);
+    expect(partenaire.charge!['registration'], {'mileage_km': 0});
   });
 
   // ── CE QUE LA BASCULE SUPPRIME, DIT AVANT L'ENREGISTREMENT ───────────────

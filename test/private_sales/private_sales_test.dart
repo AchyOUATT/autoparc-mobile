@@ -440,7 +440,7 @@ void main() {
       await tester.tap(find.text('Save draft'));
       await tester.pumpAndSettle();
       expect(find.text('Make is required'), findsOneWidget);
-      expect(find.text('Enter a valid mileage.'), findsOneWidget);
+      expect(find.text('Enter a valid mileage.'), findsNothing);
       expect(api.commands, isEmpty);
     },
   );

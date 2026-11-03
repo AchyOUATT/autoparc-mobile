@@ -208,6 +208,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       _vinCtrl.text = e.vin ?? '';
       if (e.identity.year != null) _yearCtrl.text = e.identity.year.toString();
       _condition = e.commercial.condition;
+      _mileageCtrl.text = e.mileageKm?.toString() ?? '';
       _availability = e.commercial.availability;
       _negotiable = e.commercial.priceNegotiable;
       _dealType = e.commercial.dealType ?? '';
@@ -575,6 +576,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     final int? mileage = _mileageCtrl.text.isNotEmpty
         ? int.tryParse(_mileageCtrl.text.replaceAll(RegExp(r'\D'), ''))
         : null;
+    final clearingMileage = _existing != null &&
+        _existing!.isRegistered == _immatricule &&
+        _existing!.mileageKm != null &&
+        mileage == null;
 
     return <String, dynamic>{
       if (_canDeclareFaults && _faultsReady && _faultsDirty)
@@ -655,7 +660,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       // bloc qu'elle écrit (`syncTypeSpecificDetails`). Quand les deux
       // divergeaient, le bloc envoyé était ignoré sans un mot, et le
       // kilométrage avec lui.
-      if (mileage != null && _immatricule)
+      if (_immatricule && (mileage != null || clearingMileage))
         'registration': {'mileage_km': mileage},
       // Le bloc import part des qu'il a quelque chose a dire : le compteur,
       // le pays, ou les deux. Il etait conditionne au seul kilometrage, donc
@@ -672,9 +677,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         'deal_ends_at': _promotion.fin?.toIso8601String(),
       } else if (widget.mode.estPartenaire && _existing != null)
         'deal_price': null,
-      if (!_immatricule && (mileage != null || _paysOrigine != null))
+      if (!_immatricule && (mileage != null || clearingMileage || _paysOrigine != null))
         'import': {
-          'odometer_at_import_km': ?mileage,
+          if (mileage != null || clearingMileage) 'odometer_at_import_km': mileage,
           'origin_country_id': ?_paysOrigine?.id,
         },
     };
@@ -988,7 +993,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                   : l10n.vehiclesImportedHint,
             ),
             value: _immatricule,
-            onChanged: (v) => setState(() => _immatricule = v),
+            onChanged: (v) => setState(() {
+              if (_immatricule != v) _mileageCtrl.clear();
+              _immatricule = v;
+            }),
           ),
 
           // ── CE QUE DECOCHER SUPPRIME, DIT AVANT L'ENREGISTREMENT ──────
@@ -1030,7 +1038,12 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             // d'origine.
             onChanged: (v) {
               final saisie = v.trim().isNotEmpty;
-              if (saisie && !_immatricule) setState(() => _immatricule = true);
+              if (saisie && !_immatricule) {
+                setState(() {
+                  _mileageCtrl.clear();
+                  _immatricule = true;
+                });
+              }
             },
           ),
         ],

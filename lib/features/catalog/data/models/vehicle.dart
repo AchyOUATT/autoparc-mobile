@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../core/utils/mileage.dart';
 
 import 'promotion.dart';
 import '../../../garage/data/models/motorisation.dart';
@@ -334,7 +335,7 @@ class Vehicle extends Equatable {
               ?.map((f) => VehicleFeature.fromJson(f as Map<String, dynamic>))
               .toList() ??
           [],
-      mileageKm: _asInt(technique?['mileage_km']),
+      mileageKm: parseMileageKm(technique?['mileage_km']),
       transmission: technique?['transmission'] as String?,
       powerHp: _asInt(technique?['power_hp']),
       seats: _asInt(technique?['seats']),
@@ -645,7 +646,7 @@ class VehicleImport extends Equatable {
     customsCleared:     json['customs_cleared']      as bool? ?? false,
     portOfEntry:        json['port_of_entry']         as String?,
     steeringside:       json['steering_side']         as String?,
-    odometerAtImportKm: json['odometer_at_import_km'] as int?,
+    odometerAtImportKm: parseMileageKm(json['odometer_at_import_km']),
   );
 
   @override
