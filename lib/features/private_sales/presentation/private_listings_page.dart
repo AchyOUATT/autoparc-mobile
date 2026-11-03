@@ -509,7 +509,7 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
         ListTile(
           title: Text(listing.title),
           subtitle: Text(
-            '${formatXof(listing.number('price').toDouble())}\n${listing.number('year')} · ${listing.number('mileage_km')} km · ${listing.text('city')}',
+            '${formatXof(listing.number('price').toDouble())}\n${privateListingVehicleSummary(listing, l10n)}',
           ),
           isThreeLine: true,
           onTap: () => _openListing(listing),

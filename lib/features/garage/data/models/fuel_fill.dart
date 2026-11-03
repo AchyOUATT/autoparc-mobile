@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../core/utils/mileage.dart';
 
 /// Un passage à la pompe.
 ///
@@ -98,7 +99,8 @@ class FuelFill extends Equatable {
     id:            _int(json['id']) ?? 0,
     isFull:        _bool(json['is_full']),
     filledAt:      _date(json['filled_at']),
-    mileageKm:     _int(json['mileage_km']) ?? 0,
+    mileageKm:     parseMileageKm(json['mileage_km']) ??
+        (throw const FormatException('A fuel fill requires a mileage reading.')),
     litres:        _double(json['litres']) ?? 0,
     amountFcfa:    _int(json['amount_fcfa']),
     pricePerLitre: _double(json['price_per_litre']),
@@ -224,7 +226,7 @@ class FuelTracking extends Equatable {
     fullFills:         _int(json['full_fills'])          ?? 0,
     excludedIntervals: _int(json['excluded_intervals'])  ?? 0,
     lastFilledAt:      _date(json['last_filled_at']),
-    lastMileageKm:     _int(json['last_mileage_km']),
+    lastMileageKm:     parseMileageKm(json['last_mileage_km']),
     baselineL100km:    _double(json['baseline_l_100km']),
     abnormal:          _bool(json['abnormal']),
     alerteL100km:      _double(json['alerte_l_100km']),

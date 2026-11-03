@@ -44,6 +44,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get commonMileageNotProvided => 'Kilométrage non renseigné';
+
+  @override
   String get commonShareUnavailable =>
       'Impossible d\'ouvrir le partage sur cet appareil. Le message a été copié.';
 

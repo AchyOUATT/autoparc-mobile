@@ -176,7 +176,8 @@ class VehicleIdentityFields extends StatelessWidget {
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           onChanged: (_) => onChanged(),
           validator: (value) {
-            final parsed = int.tryParse(value?.trim() ?? '');
+            if (value == null || value.trim().isEmpty) return null;
+            final parsed = int.tryParse(value.trim());
             return parsed == null || parsed < 0 || parsed > 3000000
                 ? l10n.privateSalesMileageInvalid
                 : null;

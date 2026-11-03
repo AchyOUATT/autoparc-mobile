@@ -64,6 +64,7 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
     ]) {
       _inputs[key] = TextEditingController(text: _saved?.text(key) ?? '');
     }
+    _inputs['mileage_km']!.text = _saved?.mileageKm?.toString() ?? '';
     // ASYMETRIE VOULUE : on ECRIT `phone` et on LIT `phone_claimed`.
     //
     // Le serveur distingue deux numeros. `phone` dans la reponse est le numero
@@ -155,6 +156,7 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
     await _run(() async {
       final fields = <String, dynamic>{
         for (final entry in _inputs.entries) entry.key: entry.value.text.trim(),
+        'mileage_km': int.tryParse(_inputs['mileage_km']!.text.trim()),
         'whatsapp_enabled': _whatsapp,
         'brand_id': _classification.brand?.id,
         'vehicle_model_id': _classification.model?.id,

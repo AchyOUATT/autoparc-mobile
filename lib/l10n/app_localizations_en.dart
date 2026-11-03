@@ -44,6 +44,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get commonMileageNotProvided => 'Mileage not provided';
+
+  @override
   String get commonShareUnavailable =>
       'Cannot open sharing on this device. The message has been copied.';
 

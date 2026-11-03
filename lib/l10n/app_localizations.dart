@@ -164,6 +164,12 @@ abstract class AppLocalizations {
   /// **'{value} km'**
   String commonMileageKm(String value);
 
+  /// Valeur affichée quand aucun kilométrage n'a été renseigné. Un zéro explicitement relevé s'affiche toujours comme 0 km.
+  ///
+  /// In fr, this message translates to:
+  /// **'Kilométrage non renseigné'**
+  String get commonMileageNotProvided;
+
   /// Repli de `partagerArticle` quand la feuille de partage d'Android refuse de s'ouvrir. UN SEUL site d'écriture — `_signalerEchec` dans core/utils/partage.dart — donc sous la règle des trois sites, `common` est une entorse ASSUMÉE : c'est la même famille de repli que commonLinkUnavailable, dans le même fichier voisin, servant les trois fiches clientes. Les séparer rendrait deux clés jumelles dont l'une serait traduite et l'autre non, ce qui est précisément le défaut que ce lot corrige.
   ///
   /// In fr, this message translates to:

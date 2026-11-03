@@ -237,7 +237,15 @@ void main() {
       await tester.pump();
 
       expect(find.text('Essence'), findsOneWidget);
+      expect(find.textContaining('0 km'), findsNothing);
       expect(find.textContaining('• •'), findsNothing);
+    });
+
+    testWidgets('un zéro explicitement renseigné reste affiché', (tester) async {
+      await tester.pumpWidget(carte(vehicule(kilometrage: 0)));
+      await tester.pump();
+
+      expect(find.text('0 km • Essence'), findsOneWidget);
     });
 
     testWidgets('la valeur restante reste seule, sans séparateur orphelin',
