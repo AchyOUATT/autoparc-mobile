@@ -672,12 +672,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get catalogBodyLabelOther => 'Autre';
 
   @override
-  String get vehiclesAutomaticTypeOptional => 'Type d’automatique (facultatif)';
-
-  @override
-  String get vehiclesAutomaticTypeUnspecified => 'Non précisé';
-
-  @override
   String vehiclesSavedTransmissionType(String type) {
     return 'Boîte enregistrée : $type';
   }
@@ -1355,7 +1349,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get privateSalesFuel => 'Carburant';
 
   @override
-  String get privateSalesDrivetrain => 'Motricité';
+  String get privateSalesDrivetrain => 'Roues motrices';
 
   @override
   String get privateSalesPhoneVerified => 'Téléphone vérifié';
@@ -3453,7 +3447,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get vehiclesTransmissionLabel => 'Boîte de vitesses';
 
   @override
-  String get vehiclesDrivetrainLabel => 'Transmission des roues';
+  String get vehiclesDrivetrainLabel => 'Roues motrices';
 
   @override
   String get vehiclesPowerLabel => 'Puissance (ch)';
@@ -4293,11 +4287,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get vehiclesReferenceDriveRearWheel => 'Propulsion arrière';
 
   @override
-  String get vehiclesReferenceDriveAllWheel =>
-      'Transmission intégrale permanente';
+  String get vehiclesReferenceDriveAllWheel => 'Intégrale (AWD)';
 
   @override
-  String get vehiclesReferenceDriveFourWheel => '4x4 débrayable';
+  String get vehiclesReferenceDriveFourWheel => '4×4 (4WD)';
 
   @override
   String get vehiclesReferenceColourWhite => 'Blanc';

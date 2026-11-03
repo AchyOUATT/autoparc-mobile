@@ -945,14 +945,6 @@
   "@catalogBodyLabelOther": {
     "description": "Libellé de carrosserie de la fiche pour une valeur hors des onze autres. LA LISTE DES PUCES DE FILTRE N'A PAS CETTE VALEUR — onze contre douze —, et c'est pourquoi les deux jeux ne se recouvrent pas tout à fait : on ne filtre pas sur « autre »."
   },
-  "vehiclesAutomaticTypeOptional": "Type d’automatique (facultatif)",
-  "@vehiclesAutomaticTypeOptional": {
-    "description": "Précision facultative après le choix d’une boîte automatique."
-  },
-  "vehiclesAutomaticTypeUnspecified": "Non précisé",
-  "@vehiclesAutomaticTypeUnspecified": {
-    "description": "Boîte automatique dont la famille précise n’est pas renseignée."
-  },
   "vehiclesSavedTransmissionType": "Boîte enregistrée : {type}",
   "@vehiclesSavedTransmissionType": {
     "description": "Type de boîte enregistré que cette version de l’application ne reconnaît pas.",
@@ -1898,7 +1890,7 @@
   "@privateSalesFuel": {
     "description": "Libellé du carburant dans l’identité du véhicule."
   },
-  "privateSalesDrivetrain": "Motricité",
+  "privateSalesDrivetrain": "Roues motrices",
   "@privateSalesDrivetrain": {
     "description": "Libellé de motricité dans l’identité du véhicule."
   },
@@ -4720,7 +4712,7 @@
   "@vehiclesTransmissionLabel": {
     "description": "Titre du choix de boîte."
   },
-  "vehiclesDrivetrainLabel": "Transmission des roues",
+  "vehiclesDrivetrainLabel": "Roues motrices",
   "@vehiclesDrivetrainLabel": {
     "description": "Libellé de la motricité."
   },
@@ -5832,13 +5824,13 @@
   "@vehiclesReferenceDriveRearWheel": {
     "description": "Roues motrices du référentiel identifiées par leur code stable."
   },
-  "vehiclesReferenceDriveAllWheel": "Transmission intégrale permanente",
+  "vehiclesReferenceDriveAllWheel": "Intégrale (AWD)",
   "@vehiclesReferenceDriveAllWheel": {
-    "description": "Roues motrices du référentiel identifiées par leur code stable."
+    "description": "Motricité AWD, sans présumer un fonctionnement permanent ou à la demande."
   },
-  "vehiclesReferenceDriveFourWheel": "4x4 débrayable",
+  "vehiclesReferenceDriveFourWheel": "4×4 (4WD)",
   "@vehiclesReferenceDriveFourWheel": {
-    "description": "Roues motrices du référentiel identifiées par leur code stable."
+    "description": "Motricité 4WD, sans présumer que le système soit débrayable ou permanent."
   },
   "vehiclesReferenceColourWhite": "Blanc",
   "@vehiclesReferenceColourWhite": {

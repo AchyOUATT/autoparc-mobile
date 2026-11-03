@@ -143,20 +143,11 @@ Future<void> _registration(
 Finder _chip(String label) =>
     find.widgetWithText(ChoiceChip, label, skipOffstage: false);
 
-Finder _automaticDetail() => find.descendant(
+Finder _transmissionDropdowns() => find.descendant(
   of: find.byType(TransmissionSelector, skipOffstage: false),
   matching: find.byType(DropdownButtonFormField<String>, skipOffstage: false),
   skipOffstage: false,
 );
-
-DropdownButton<String> _detailButton(WidgetTester tester) =>
-    tester.widget<DropdownButton<String>>(
-      find.descendant(
-        of: _automaticDetail(),
-        matching: find.byType(DropdownButton<String>, skipOffstage: false),
-        skipOffstage: false,
-      ),
-    );
 
 void main() {
   test(
@@ -192,62 +183,55 @@ void main() {
   );
 
   for (final language in ['fr', 'en']) {
-    testWidgets(
-      'staff selects a simple group and optional detail in $language',
-      (tester) async {
-        tester.view.physicalSize = const Size(320, 640);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.reset);
-        final repository = _Vehicles();
-        await _registration(
-          tester,
-          repository,
-          locale: Locale(language),
-          textScale: 1.5,
-        );
-        for (var step = 0; step < 2; step++) {
-          tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
-          await tester.pumpAndSettle();
-        }
-        final labels = language == 'fr' ? _labelsFr : _labelsEn;
-        final groupChips = find.descendant(
-          of: find.byType(TransmissionSelector, skipOffstage: false),
-          matching: find.byType(ChoiceChip, skipOffstage: false),
-          skipOffstage: false,
-        );
-        expect(groupChips, findsNWidgets(2));
-        expect(_chip(labels['manual']!), findsOneWidget);
-        expect(_chip(labels['automatic']!), findsOneWidget);
-        expect(_chip(labels['automated_manual']!), findsNothing);
-        expect(
-          _detailButton(tester).items!.map((item) => item.value).toSet(),
-          labels.keys.where((code) => code != 'manual').toSet(),
-        );
-        await tester.ensureVisible(_automaticDetail());
+    testWidgets('staff only chooses manual or automatic in $language', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final repository = _Vehicles();
+      await _registration(
+        tester,
+        repository,
+        locale: Locale(language),
+        textScale: 1.5,
+      );
+      for (var step = 0; step < 2; step++) {
+        tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+        await tester.pumpAndSettle();
+      }
+      final labels = language == 'fr' ? _labelsFr : _labelsEn;
+      final groupChips = find.descendant(
+        of: find.byType(TransmissionSelector, skipOffstage: false),
+        matching: find.byType(ChoiceChip, skipOffstage: false),
+        skipOffstage: false,
+      );
+      expect(groupChips, findsNWidgets(2));
+      expect(_chip(labels['manual']!), findsOneWidget);
+      expect(_chip(labels['automatic']!), findsOneWidget);
+      expect(_chip(labels['automated_manual']!), findsNothing);
+      expect(_transmissionDropdowns(), findsNothing);
+      await tester.ensureVisible(_chip(labels['manual']!));
       await tester.pumpAndSettle();
-        await tester.tap(_automaticDetail());
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(labels['automated_manual']!).last);
-        await tester.pumpAndSettle();
-        expect(
-          tester.state<FormFieldState<String>>(_automaticDetail()).value,
-          'automated_manual',
-        );
-        // The collapsed technical summary must describe the selected AMT.
-        tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
-        await tester.pumpAndSettle();
-        final summary =
-            tester.widget<Stepper>(find.byType(Stepper)).steps[2].subtitle
-                as Text;
-        expect(summary.data, contains(labels['automated_manual']!));
-        tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
-        await tester.pumpAndSettle();
-        expect(
-          repository.saved,
-          containsPair('transmission', 'automated_manual'),
-        );
-      },
-    );
+      await tester.tap(_chip(labels['manual']!));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<ChoiceChip>(_chip(labels['manual']!)).selected,
+        isTrue,
+      );
+      await tester.tap(_chip(labels['automatic']!));
+      await tester.pumpAndSettle();
+      expect(_transmissionDropdowns(), findsNothing);
+      tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+      await tester.pumpAndSettle();
+      final summary =
+          tester.widget<Stepper>(find.byType(Stepper)).steps[2].subtitle
+              as Text;
+      expect(summary.data, contains(labels['automatic']!));
+      tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+      await tester.pumpAndSettle();
+      expect(repository.saved, containsPair('transmission', 'automatic'));
+    });
   }
 
   for (final code in transmissionCodes) {
@@ -264,14 +248,7 @@ void main() {
             .selected,
         isTrue,
       );
-      if (code != 'manual') {
-        expect(
-          tester.state<FormFieldState<String>>(_automaticDetail()).value,
-          code,
-        );
-      } else {
-        expect(_automaticDetail(), findsNothing);
-      }
+      expect(_transmissionDropdowns(), findsNothing);
       for (var step = 0; step < 4; step++) {
         tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
         await tester.pumpAndSettle();
@@ -338,46 +315,32 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    final field = _automaticDetail();
-    expect(tester.state<FormFieldState<String>>(field).value, 'e_cvt');
-    final button = tester.widget<DropdownButton<String>>(
-      find.descendant(of: field, matching: find.byType(DropdownButton<String>)),
-    );
-    expect(
-      button.items!.map((item) => item.value).toSet(),
-      _labelsFr.keys.where((code) => code != 'manual').toSet(),
-    );
-    await tester.ensureVisible(field);
-    await tester.tap(field);
+    expect(_transmissionDropdowns(), findsNothing);
+    expect(tester.widget<ChoiceChip>(_chip('Automatique')).selected, isTrue);
+    await tester.ensureVisible(_chip('Automatique'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Robotisée (AMT)').last);
-    await tester.pumpAndSettle();
-    expect(selected, 'automated_manual');
     await tester.tap(_chip('Automatique'));
     await tester.pumpAndSettle();
     expect(
       selected,
-      'automated_manual',
-      reason: 'Selecting the existing group must keep its precision.',
+      'e_cvt',
+      reason: 'Editing a saved record must preserve its original code.',
     );
     await tester.tap(_chip('Manuelle'));
     await tester.pumpAndSettle();
     expect(selected, 'manual');
-    expect(_automaticDetail(), findsNothing);
+    expect(_transmissionDropdowns(), findsNothing);
     await tester.tap(_chip('Automatique'));
     await tester.pumpAndSettle();
     expect(selected, 'automatic');
-    expect(
-      tester.state<FormFieldState<String>>(_automaticDetail()).value,
-      'automatic',
-    );
+    expect(_transmissionDropdowns(), findsNothing);
     await tester.ensureVisible(
       find.byKey(const ValueKey('transmission-clear')),
     );
     await tester.tap(find.byKey(const ValueKey('transmission-clear')));
     await tester.pumpAndSettle();
     expect(selected, isNull);
-    expect(_automaticDetail(), findsNothing);
+    expect(_transmissionDropdowns(), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

@@ -671,12 +671,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogBodyLabelOther => 'Other';
 
   @override
-  String get vehiclesAutomaticTypeOptional => 'Automatic type (optional)';
-
-  @override
-  String get vehiclesAutomaticTypeUnspecified => 'Not specified';
-
-  @override
   String vehiclesSavedTransmissionType(String type) {
     return 'Saved gearbox: $type';
   }
@@ -4289,10 +4283,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get vehiclesReferenceDriveRearWheel => 'Rear-wheel drive';
 
   @override
-  String get vehiclesReferenceDriveAllWheel => 'All-wheel drive';
+  String get vehiclesReferenceDriveAllWheel => 'All-wheel drive (AWD)';
 
   @override
-  String get vehiclesReferenceDriveFourWheel => 'Selectable four-wheel drive';
+  String get vehiclesReferenceDriveFourWheel => 'Four-wheel drive (4WD)';
 
   @override
   String get vehiclesReferenceColourWhite => 'White';

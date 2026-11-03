@@ -75,7 +75,11 @@ class PrivateListingDetail extends StatelessWidget {
                   entry.value,
                   switch (entry.key) {
                     'engine_type' => referenceFuelLabel(null, listing.identityText(entry.key), l10n),
-                    'drivetrain' => referenceDrivetrainLabel(null, listing.identityText(entry.key), l10n),
+                    'drivetrain' => referenceDrivetrainLabel(
+                      listing.identityText('drivetrain_code'),
+                      listing.identityText(entry.key),
+                      l10n,
+                    ),
                     'color' => referenceColourLabel(listing.identityText(entry.key), l10n),
                     _ => listing.identityText(entry.key),
                   },

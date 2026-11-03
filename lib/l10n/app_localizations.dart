@@ -1289,18 +1289,6 @@ abstract class AppLocalizations {
   /// **'Autre'**
   String get catalogBodyLabelOther;
 
-  /// Précision facultative après le choix d’une boîte automatique.
-  ///
-  /// In fr, this message translates to:
-  /// **'Type d’automatique (facultatif)'**
-  String get vehiclesAutomaticTypeOptional;
-
-  /// Boîte automatique dont la famille précise n’est pas renseignée.
-  ///
-  /// In fr, this message translates to:
-  /// **'Non précisé'**
-  String get vehiclesAutomaticTypeUnspecified;
-
   /// Type de boîte enregistré que cette version de l’application ne reconnaît pas.
   ///
   /// In fr, this message translates to:
@@ -2478,7 +2466,7 @@ abstract class AppLocalizations {
   /// Libellé de motricité dans l’identité du véhicule.
   ///
   /// In fr, this message translates to:
-  /// **'Motricité'**
+  /// **'Roues motrices'**
   String get privateSalesDrivetrain;
 
   /// Indication d’une vérification du numéro par le personnel.
@@ -6104,7 +6092,7 @@ abstract class AppLocalizations {
   /// Libellé de la motricité.
   ///
   /// In fr, this message translates to:
-  /// **'Transmission des roues'**
+  /// **'Roues motrices'**
   String get vehiclesDrivetrainLabel;
 
   /// Libellé de puissance sans conversion de quantité.
@@ -7607,16 +7595,16 @@ abstract class AppLocalizations {
   /// **'Propulsion arrière'**
   String get vehiclesReferenceDriveRearWheel;
 
-  /// Roues motrices du référentiel identifiées par leur code stable.
+  /// Motricité AWD, sans présumer un fonctionnement permanent ou à la demande.
   ///
   /// In fr, this message translates to:
-  /// **'Transmission intégrale permanente'**
+  /// **'Intégrale (AWD)'**
   String get vehiclesReferenceDriveAllWheel;
 
-  /// Roues motrices du référentiel identifiées par leur code stable.
+  /// Motricité 4WD, sans présumer que le système soit débrayable ou permanent.
   ///
   /// In fr, this message translates to:
-  /// **'4x4 débrayable'**
+  /// **'4×4 (4WD)'**
   String get vehiclesReferenceDriveFourWheel;
 
   /// Couleur standard exacte de ColorsSeeder ; les couleurs personnalisées sont conservées.

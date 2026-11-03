@@ -23,7 +23,6 @@ class TransmissionSelector extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final group = transmissionGroup(value);
     final hasValue = value != null && value!.isNotEmpty;
-    final automaticCodes = transmissionCodes.where((code) => code != 'manual');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -52,33 +51,6 @@ class TransmissionSelector extends StatelessWidget {
               ),
           ],
         ),
-        if (group == 'automatic') ...[
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            key: ValueKey('transmission-detail-$value'),
-            initialValue: value,
-            isExpanded: true,
-            itemHeight: null,
-            decoration: InputDecoration(
-              labelText: l10n.vehiclesAutomaticTypeOptional,
-            ),
-            items: [
-              for (final code in automaticCodes)
-                DropdownMenuItem(
-                  value: code,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Text(
-                      code == 'automatic'
-                          ? l10n.vehiclesAutomaticTypeUnspecified
-                          : transmissionLabel(code, l10n),
-                    ),
-                  ),
-                ),
-            ],
-            onChanged: enabled ? onChanged : null,
-          ),
-        ],
         if (hasValue && group == null) ...[
           const SizedBox(height: 8),
           Text(
