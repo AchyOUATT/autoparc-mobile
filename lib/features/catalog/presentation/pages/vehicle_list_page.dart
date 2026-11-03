@@ -357,14 +357,14 @@ class _FilterChips extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 20),
-            LibelleGroupeFiltres(l10n.catalogFieldFaults),
+            LibelleGroupeFiltres(l10n.catalogValidatedByAutoParc),
             FilterChip(
-              avatar: const Icon(Icons.fact_check_outlined, size: 14),
-              label: Text(l10n.faultDeclarationFilterNoUnrepaired),
-              selected: filter.withoutFaults == true,
-              onSelected: (_) => update((f) => f.withoutFaults == true
-                  ? f.copyWith(clearWithoutFaults: true)
-                  : f.copyWith(withoutFaults: true)),
+              avatar: const Icon(Icons.verified_outlined, size: 14),
+              label: Text(l10n.catalogValidatedByAutoParc),
+              selected: filter.validatedByAutoParc == true,
+              onSelected: (_) => update((f) => f.validatedByAutoParc == true
+                  ? f.copyWith(clearValidatedByAutoParc: true)
+                  : f.copyWith(validatedByAutoParc: true)),
             ),
             const SizedBox(width: 8),
             LibelleGroupeFiltres(l10n.catalogFilterGroupType),
@@ -1935,7 +1935,7 @@ class _EmptyView extends ConsumerWidget {
             : l10n.catalogFilterTermRent,
       if (f.deal == true) l10n.catalogFilterTermDeal,
       if (f.customsCleared == true) l10n.catalogFilterTermCustoms,
-      if (f.withoutFaults == true) l10n.faultDeclarationFilterNoUnrepaired,
+      if (f.validatedByAutoParc == true) l10n.catalogValidatedByAutoParc,
       if (f.vehicleType != null) l10n.catalogFilterTermVehicleType,
       if (f.bodyStyle != null) l10n.catalogFilterTermBodyStyle,
       if (f.condition != null) l10n.catalogFilterTermCondition,

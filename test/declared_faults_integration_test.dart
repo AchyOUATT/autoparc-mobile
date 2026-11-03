@@ -134,30 +134,30 @@ void main() {
   );
 
   test(
-    'filter forwards strict condition to both catalogue APIs and can be cleared',
+    'AutoParc validation filter reaches both catalogue APIs and can be cleared',
     () async {
       final api = _FilterApi();
       final repo = CatalogRepository(api, CatalogLocalCache());
-      final filter = const VehicleFilter().copyWith(withoutFaults: true);
-      await repo.getVehicleListings(withoutFaults: filter.withoutFaults);
-      await repo.getVehicles(withoutFaults: true);
-      expect(api.calls.map((call) => call.params!['without_faults']), [
+      final filter = const VehicleFilter().copyWith(validatedByAutoParc: true);
+      await repo.getVehicleListings(validatedByAutoParc: filter.validatedByAutoParc);
+      await repo.getVehicles(validatedByAutoParc: true);
+      expect(api.calls.map((call) => call.params!['validated_by_autoparc']), [
         '1',
         '1',
       ]);
-      expect(filter.copyWith(clearWithoutFaults: true).withoutFaults, isNull);
-      await repo.getVehicleListings(withoutFaults: false);
-      expect(api.calls.last.params!.containsKey('without_faults'), isFalse);
+      expect(filter.copyWith(clearValidatedByAutoParc: true).validatedByAutoParc, isNull);
+      await repo.getVehicleListings(validatedByAutoParc: false);
+      expect(api.calls.last.params!.containsKey('validated_by_autoparc'), isFalse);
     },
   );
 
   test(
-    'strict condition cannot fall back to an older catalogue with unknown declarations',
+    'AutoParc validation cannot fall back to an older unfiltered catalogue',
     () async {
       final api = _FilterApi()..missingUnified = true;
       final repo = CatalogRepository(api, CatalogLocalCache());
       await expectLater(
-        repo.getVehicleListings(withoutFaults: true),
+        repo.getVehicleListings(validatedByAutoParc: true),
         throwsA(isA<ApiException>()),
       );
       expect(api.calls, hasLength(1));

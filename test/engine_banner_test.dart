@@ -13,10 +13,8 @@ import 'package:auto/l10n/app_localizations.dart';
 
 /// Le bandeau qui réclame la motorisation manquante.
 ///
-/// Il se décide sur `compatibility_ready`, calculé par le serveur — jamais sur
-/// la présence d'un libellé de motorisation dans l'affichage. Les deux peuvent
-/// diverger : un véhicule dont la finition porte la motorisation par défaut
-/// n'affiche aucun libellé, et pourtant le serveur sait calculer.
+/// Le bandeau suit les données moteur renseignées, indépendamment du verdict
+/// de compatibilité des pièces.
 ///
 /// ── ET IL CHANGE DE FORME, CE QUI SE JUGE À L'ŒIL ──────────────────────────
 ///
@@ -34,7 +32,8 @@ import 'package:auto/l10n/app_localizations.dart';
 ///
 ///   CAPTURES=1 flutter test test/engine_banner_test.dart --update-goldens
 
-OwnedVehicle _vehicule({required bool pret, String? engineType}) => OwnedVehicle(
+OwnedVehicle _vehicule({required bool pret, String? engineType}) =>
+    OwnedVehicle(
       id: 1,
       designation: 'Toyota Corolla 2017',
       brandId: 1,
@@ -62,8 +61,9 @@ Future<void> _afficher(WidgetTester tester, OwnedVehicle vehicule) async {
 }
 
 void main() {
-  testWidgets('le bandeau se tait quand le serveur sait calculer',
-      (tester) async {
+  testWidgets('le bandeau se tait quand le serveur sait calculer', (
+    tester,
+  ) async {
     await _afficher(tester, _vehicule(pret: true));
 
     expect(find.textContaining('Motorisation'), findsNothing);
@@ -80,18 +80,50 @@ void main() {
     expect(find.text('Compléter'), findsOneWidget);
   });
 
-  /// Le piège inverse de celui du formulaire : une motorisation affichée ne
-  /// garantit pas que le serveur sache calculer, et son absence ne prouve pas
-  /// le contraire. Seul `compatibility_ready` tranche.
-  testWidgets('le bandeau ignore le libellé affiché, il suit le serveur',
-      (tester) async {
-    await _afficher(tester, _vehicule(pret: true, engineType: null));
-    expect(find.text('Compléter'), findsNothing,
-        reason: 'Prêt sans libellé : la finition a suffi.');
-
+  testWidgets('un type moteur renseigné masque le bandeau sans code précis', (
+    tester,
+  ) async {
     await _afficher(tester, _vehicule(pret: false, engineType: 'Essence'));
-    expect(find.text('Compléter'), findsOneWidget,
-        reason: 'Un libellé affiché ne remplace pas compatibility_ready.');
+    expect(find.text('Compléter'), findsNothing);
+  });
+
+  testWidgets('une motorisation sélectionnée masque le bandeau', (
+    tester,
+  ) async {
+    await _afficher(
+      tester,
+      const OwnedVehicle(
+        id: 1,
+        designation: 'Toyota Corolla 2017',
+        brandId: 1,
+        vehicleModelId: 2,
+        year: 2017,
+        motorisationId: 3,
+        identity: OwnedVehicleIdentity(),
+        compatibilityReady: false,
+      ),
+    );
+    expect(find.text('Compléter'), findsNothing);
+  });
+
+  testWidgets('le serveur reconnaît le moteur hérité de la finition', (
+    tester,
+  ) async {
+    await _afficher(
+      tester,
+      const OwnedVehicle(
+        id: 1,
+        designation: 'Toyota Corolla 2017',
+        brandId: 1,
+        vehicleModelId: 2,
+        year: 2017,
+        trimId: 4,
+        engineDataProvided: true,
+        identity: OwnedVehicleIdentity(),
+        compatibilityReady: false,
+      ),
+    );
+    expect(find.text('Compléter'), findsNothing);
   });
 
   // ── LES DEUX FORMES, EN IMAGE ────────────────────────────────────────────
@@ -142,9 +174,7 @@ void main() {
                 body: Center(
                   child: SizedBox(
                     width: largeurBandeau,
-                    child: MissingEngineBanner(
-                      vehicle: _vehicule(pret: false),
-                    ),
+                    child: MissingEngineBanner(vehicle: _vehicule(pret: false)),
                   ),
                 ),
               ),
@@ -176,7 +206,8 @@ void main() {
         await capturer(
           tester,
           echelle: echelle,
-          nom: 'bandeau-motorisation-x${echelle.toStringAsFixed(1).replaceAll('.', '')}',
+          nom:
+              'bandeau-motorisation-x${echelle.toStringAsFixed(1).replaceAll('.', '')}',
         );
       });
     }

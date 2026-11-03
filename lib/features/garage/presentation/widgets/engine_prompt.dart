@@ -10,13 +10,9 @@ import '../providers/garage_provider.dart';
 
 /// Réclamer la motorisation manquante, là où le manque se voit.
 ///
-/// La compatibilité d'une pièce se décide côté serveur sur
-/// `effective_engine_type_id` ou `effective_engine_code` : sans l'un des deux,
-/// aucune pièce ne peut être déclarée compatible, et la liste reste vide sans
-/// que rien n'explique pourquoi. Le serveur résume cet état dans
-/// `compatibility_ready`, et c'est lui qu'on lit — surtout pas « le menu
-/// déroulant était vide » : la motorisation peut venir de la finition sans
-/// avoir été saisie.
+/// La présence de données moteur est indépendante de la compatibilité :
+/// un type de moteur ou une motorisation sélectionnée suffit à faire taire
+/// ce bandeau. Le verdict par pièce reste calculé par le serveur.
 ///
 /// Le moment choisi n'est pas l'enregistrement. Quelqu'un qui vient de remplir
 /// dix champs a gagné son écran de succès ; l'arrêter avec un reproche qu'il ne
@@ -155,7 +151,7 @@ class MissingEngineBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (vehicle.compatibilityReady) return const SizedBox.shrink();
+    if (vehicle.hasEngineData) return const SizedBox.shrink();
     final _titre = AppLocalizations.of(context).garageEngineMissingTitle;
     final _phrase = AppLocalizations.of(context).garageEngineMissingBody;
     final _action = AppLocalizations.of(context).garageCompleteAction;
