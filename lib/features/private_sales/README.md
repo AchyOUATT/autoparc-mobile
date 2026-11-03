@@ -42,6 +42,13 @@ ce numéro et confirme que la personne a bien déposé l’annonce. Le serveur e
 cette confirmation, sauf si le numéro courant a déjà été vérifié par un appel.
 Il reste seul juge de la vérification téléphonique et des droits de publication.
 
+Le nom et les coordonnées du particulier restent réservés à ses annonces et à
+la modération. La consultation publique propose les contacts AutoParc configurés
+dans le back-office. Le message WhatsApp identifie l’annonce par son titre et son
+lien public. La fiche publique ne recharge pas le téléphone du vendeur et masque
+ses coordonnées même si une ancienne réponse les contient encore. Le consentement
+du dépôt autorise le contact privé par AutoParc, sans publication du nom ni du numéro.
+
 L’interface et ses validations suivent la langue choisie, français ou anglais.
 Les descriptions du vendeur, motifs de modération et noms fournis par le catalogue
 restent les données reçues ; les traductions ne modifient ni l’annonce ni ses références.

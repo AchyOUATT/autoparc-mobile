@@ -7,6 +7,8 @@ import 'package:auto/core/l10n/transmission_labels.dart';
 import 'package:auto/core/local/catalog_local_cache.dart';
 import 'package:auto/features/catalog/data/models/vehicle.dart';
 import 'package:auto/features/catalog/presentation/libelles_vehicule.dart';
+import 'package:auto/features/partner_accounts/data/partner_repository.dart'
+    as owner;
 import 'package:auto/features/partners/data/models/partner.dart';
 import 'package:auto/features/partners/data/partner_repository.dart';
 import 'package:auto/features/private_sales/presentation/private_listing_labels.dart';
@@ -14,6 +16,7 @@ import 'package:auto/features/vehicles/data/models/catalog_refs.dart';
 import 'package:auto/features/vehicles/data/models/vehicle_classification_selection.dart';
 import 'package:auto/features/vehicles/data/vehicle_admin_repository.dart';
 import 'package:auto/features/vehicles/presentation/pages/vehicle_register_page.dart';
+import 'package:auto/features/vehicles/presentation/pages/vehicle_form_mode.dart';
 import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provider.dart';
 import 'package:auto/features/vehicles/presentation/widgets/vehicle_identity_fields.dart';
 import 'package:auto/features/vehicles/presentation/widgets/transmission_selector.dart';
@@ -108,12 +111,36 @@ class _Partners extends PartnerRepository {
   );
 }
 
+class _PartnerVehicles extends owner.PartnerRepository {
+  Map<String, dynamic>? saved;
+
+  @override
+  Future<Map<String, dynamic>> listing(
+    owner.PartnerListingKind kind,
+    int id,
+  ) async => {
+    'fault_declaration': {'state': 'unknown', 'faults': []},
+  };
+
+  @override
+  Future<Map<String, dynamic>> saveListing(
+    owner.PartnerListingKind kind,
+    Map<String, dynamic> data, {
+    int? id,
+  }) async {
+    saved = Map<String, dynamic>.from(data);
+    throw const ApiException(message: 'Captured request', statusCode: 422);
+  }
+}
+
 Future<void> _registration(
   WidgetTester tester,
   _Vehicles repository, {
   String transmission = 'automatic',
   Locale locale = const Locale('fr'),
   double textScale = 1,
+  VehicleFormMode mode = VehicleFormMode.personnel,
+  _PartnerVehicles? partnerVehicles,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -122,6 +149,8 @@ Future<void> _registration(
         countriesProvider.overrideWith((_) async => []),
         vehicleAdminRepositoryProvider.overrideWithValue(repository),
         partnerRepositoryProvider.overrideWithValue(_Partners()),
+        if (partnerVehicles != null)
+          owner.partnerRepositoryProvider.overrideWithValue(partnerVehicles),
       ],
       child: MaterialApp(
         locale: locale,
@@ -133,7 +162,7 @@ Future<void> _registration(
           ).copyWith(textScaler: TextScaler.linear(textScale)),
           child: child!,
         ),
-        home: VehicleRegisterPage(existing: _vehicle(transmission)),
+        home: VehicleRegisterPage(existing: _vehicle(transmission), mode: mode),
       ),
     ),
   );
@@ -240,6 +269,10 @@ void main() {
     ) async {
       final repository = _Vehicles();
       await _registration(tester, repository, transmission: code);
+      final summary =
+          tester.widget<Stepper>(find.byType(Stepper)).steps[2].subtitle
+              as Text;
+      expect(summary.data, contains(_labelsFr[code]!));
       expect(
         tester
             .widget<ChoiceChip>(
@@ -256,6 +289,41 @@ void main() {
       expect(repository.saved, containsPair('transmission', code));
       expect(tester.takeException(), isNull);
     });
+  }
+
+  for (final code in transmissionCodes) {
+    testWidgets(
+      'partner editing preserves the saved $code gearbox and summary',
+      (tester) async {
+        final repository = _PartnerVehicles();
+        await _registration(
+          tester,
+          _Vehicles(),
+          transmission: code,
+          mode: VehicleFormMode.partenaire,
+          partnerVehicles: repository,
+        );
+        final selector = tester.widget<TransmissionSelector>(
+          find.byType(TransmissionSelector, skipOffstage: false),
+        );
+        expect(selector.value, code);
+        final summary =
+            tester.widget<Stepper>(find.byType(Stepper)).steps[2].subtitle
+                as Text;
+        expect(summary.data, contains(_labelsFr[code]!));
+        for (var step = 0; step < 4; step++) {
+          tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+          await tester.pumpAndSettle();
+        }
+        expect(repository.saved, containsPair('transmission', code));
+        expect(repository.saved!.containsKey('faults'), isFalse);
+        expect(
+          repository.saved!.containsKey('fault_declaration_state'),
+          isFalse,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
   }
 
   testWidgets('an unknown saved mode is not summarized as automatic', (

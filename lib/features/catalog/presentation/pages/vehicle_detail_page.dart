@@ -29,6 +29,8 @@ import '../libelles_vehicule.dart';
 import '../vehicle_price.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../shared/presentation/widgets/seller_contact_bar.dart';
+import '../../../inspections/presentation/staff_inspection_widgets.dart';
+import '../../../vehicles/presentation/widgets/declared_faults_section.dart';
 
 // LES DEUX `NumberFormat` FIGÉS EN `fr_FR` ONT DISPARU, et c'est une
 // correction et non un rangement. Ils ponctuaient le kilométrage et la
@@ -337,6 +339,19 @@ class _VehicleDetailView extends ConsumerWidget {
                   // ── Prix ───────────────────────────────────────
                   _PriceSection(commercial: c, promotion: vehicle.deal),
 
+                  const SizedBox(height: 12),
+                  StaffInspectionSection(
+                    key: ValueKey('vehicle-inspection:${vehicle.id}'),
+                    source: 'vehicle',
+                    sourceId: vehicle.id,
+                    inspectionSummary: vehicle.inspection,
+                    canManage: auth.canManageInspections,
+                    onChanged: () {
+                      ref.invalidate(vehicleDetailProvider(vehicle.id));
+                      ref.invalidate(vehicleListProvider);
+                    },
+                  ),
+
                   // Le badge suit le prix : c'est là qu'il pèse dans la
                   // décision. Il annonce son propre décompte, pour ne pas
                   // demander à l'acheteur de croire un mot sur parole.
@@ -487,9 +502,19 @@ class _VehicleDetailView extends ConsumerWidget {
                   ],
 
                   // ── Pannes (staff seulement) ────────────────────
+                  if (!isStaff) ...[
+                    const Divider(height: 32),
+                    DeclaredFaultsSection(declaration: vehicle.faultDeclaration),
+                  ],
                   if (isStaff) ...[
                     const Divider(height: 32),
-                    VehicleFaultsSection(vehicleId: vehicle.id),
+                    VehicleFaultsSection(
+                      vehicleId: vehicle.id,
+                      onChanged: () {
+                        ref.invalidate(vehicleDetailProvider(vehicle.id));
+                        ref.invalidate(vehicleListProvider);
+                      },
+                    ),
                     const SizedBox(height: 24),
                   ],
 

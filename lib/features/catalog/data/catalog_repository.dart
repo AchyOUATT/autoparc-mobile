@@ -49,6 +49,7 @@ class CatalogRepository {
     int? locationId,
     bool? customsCleared,
     bool? deal,
+    bool? withoutFaults,
     String? registrationStatus,
     bool includePrivate = privateSalesEnabled,
   }) async {
@@ -69,6 +70,7 @@ class CatalogRepository {
       locationId: locationId,
       customsCleared: customsCleared,
       deal: deal,
+      withoutFaults: withoutFaults,
       registrationStatus: registrationStatus,
     )..['include_private'] = includePrivate ? '1' : '0';
 
@@ -79,7 +81,7 @@ class CatalogRepository {
       );
       return PaginatedResponse.fromJson(json, CatalogVehicleItem.fromJson);
     } on ApiException catch (error) {
-      if (!error.isNotFound) rethrow;
+      if (!error.isNotFound || withoutFaults == true) rethrow;
       final legacy = await getVehicles(
         page: page,
         perPage: perPage,
@@ -97,6 +99,7 @@ class CatalogRepository {
         locationId: locationId,
         customsCleared: customsCleared,
         deal: deal,
+        withoutFaults: withoutFaults,
         registrationStatus: registrationStatus,
       );
       return PaginatedResponse(
@@ -130,6 +133,7 @@ class CatalogRepository {
     int? locationId, // filtre par agence précise
     bool? customsCleared, // true = uniquement les importés dédouanés
     bool? deal, // true = uniquement les véhicules mis en avant
+    bool? withoutFaults,
     String? registrationStatus, // null | 'registered' | 'unregistered'
   }) async {
     final params = _vehicleParams(
@@ -149,6 +153,7 @@ class CatalogRepository {
       locationId: locationId,
       customsCleared: customsCleared,
       deal: deal,
+      withoutFaults: withoutFaults,
       registrationStatus: registrationStatus,
     );
 
@@ -173,6 +178,7 @@ class CatalogRepository {
     required int? locationId,
     required bool? customsCleared,
     required bool? deal,
+    required bool? withoutFaults,
     required String? registrationStatus,
   }) => <String, dynamic>{
     'page': page,
@@ -185,6 +191,7 @@ class CatalogRepository {
     if (yearMax != null) 'year_max': yearMax,
     if (priceMax != null) 'price_max': priceMax.toInt(),
     if (condition != null) 'condition': condition,
+    if (withoutFaults == true) 'without_faults': '1',
     if (originCountryId != null) 'origin_country_id': originCountryId,
     if (city != null) 'city': city,
     if (locationId != null) 'location_id': locationId,

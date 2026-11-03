@@ -258,7 +258,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('private tap opens its native detail and loads seller contact', (
+  testWidgets('private tap opens its native detail with AutoParc contact', (
     tester,
   ) async {
     final controller = ScrollController();
@@ -284,8 +284,8 @@ void main() {
     expect(detail.publicListing, isTrue);
     expect(detail.listing.id, 1);
     expect(detail.listing.text('share_url'), endsWith('/annonces/1'));
-    expect(api.paths, ['/private-listings/1']);
-    expect(find.text('Appeler le vendeur'), findsOneWidget);
+    expect(api.paths, isEmpty);
+    expect(find.text('Appeler AutoParc'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

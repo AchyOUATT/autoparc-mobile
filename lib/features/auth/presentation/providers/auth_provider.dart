@@ -77,6 +77,10 @@ class AuthState {
   /// Declarer et resoudre une panne.
   bool get canManageFaults   => _roleIn(const {'admin', 'manager', 'mechanic'});
 
+  /// Consigner une inspection physique et retirer son attestation.
+  bool get canManageInspections =>
+      _roleIn(const {'admin', 'manager', 'mechanic'});
+
   /// Entrees, sorties et disponibilite du stock.
   bool get canManageStock    => _roleIn(const {'admin', 'manager', 'warehouse'});
 

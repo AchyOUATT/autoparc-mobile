@@ -6,7 +6,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/api/api_exception.dart';
 import '../../../core/utils/currency_format.dart';
 import '../../../core/utils/lien_externe.dart';
+import '../../../core/widgets/product_gallery.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
+import '../../inspections/presentation/staff_inspection_widgets.dart';
 import '../data/private_listing_repository.dart';
 import 'private_listing_detail.dart';
 import 'private_listing_form.dart';
@@ -82,6 +84,19 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => PrivateListingForm(existing: listing),
+      ),
+    );
+    if (mounted) await _load();
+  }
+
+  Future<void> _openListing(PrivateListing listing) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => PrivateListingDetail(
+          listing: listing,
+          publicListing: !_mine && !_review,
+        ),
       ),
     );
     if (mounted) await _load();
@@ -455,14 +470,18 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (listing.photos.isNotEmpty)
-          Image.network(
-            '${listing.photos.first['url']}',
+        if (listing.photoUrls.isNotEmpty)
+          SizedBox(
             height: 180,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => const SizedBox(
-              height: 80,
-              child: Icon(Icons.directions_car_outlined),
+            child: ProductGallery(
+              key: ValueKey(
+                'private-photos:${listing.id}:${listing.photoUrls.join('|')}',
+              ),
+              urls: listing.photoUrls,
+              titre: listing.title,
+              fallback: const Center(
+                child: Icon(Icons.directions_car_outlined),
+              ),
             ),
           ),
         Padding(
@@ -478,21 +497,22 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
             ),
           ),
         ),
+        // The badge opens the public report, available only in browse mode.
+        if (!_mine && !_review && listing.inspection != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: StaffInspectionBadge(inspection: listing.inspection!),
+            ),
+          ),
         ListTile(
           title: Text(listing.title),
           subtitle: Text(
             '${formatXof(listing.number('price').toDouble())}\n${listing.number('year')} · ${listing.number('mileage_km')} km · ${listing.text('city')}',
           ),
           isThreeLine: true,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute<void>(
-              builder: (_) => PrivateListingDetail(
-                listing: listing,
-                publicListing: !_mine && !_review,
-              ),
-            ),
-          ),
+          onTap: () => _openListing(listing),
         ),
         if (listing.text('review_reason').isNotEmpty)
           Padding(

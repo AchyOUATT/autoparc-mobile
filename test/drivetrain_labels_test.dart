@@ -1,4 +1,5 @@
 import 'package:auto/core/l10n/reference_labels.dart';
+import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
 import 'package:auto/features/private_sales/data/private_listing_repository.dart';
 import 'package:auto/features/private_sales/presentation/private_listing_detail.dart';
 import 'package:auto/features/vehicles/data/models/catalog_refs.dart';
@@ -6,7 +7,9 @@ import 'package:auto/features/vehicles/data/models/vehicle_classification_select
 import 'package:auto/features/vehicles/presentation/widgets/vehicle_identity_fields.dart';
 import 'package:auto/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'private_sales/private_sales_test.dart' as fixture;
 
 const _drives = [
   DrivetrainRef(id: 1, code: 'FWD', label: 'Traction avant'),
@@ -178,7 +181,7 @@ void main() {
         );
         expect(button.items!.map((item) => item.value!.id), [1, 2, 3, 4]);
         expect(
-        button.items!.map((item) => (item.child as Text).data),
+          button.items!.map((item) => (item.child as Text).data),
           _labels(language).values,
         );
         expect(selection.toPayload(editing: true)['drivetrain_id'], 3);
@@ -206,23 +209,30 @@ void main() {
       'private details prefer an explicit drivetrain code in $language',
       (tester) async {
         await tester.pumpWidget(
-          MaterialApp(
-            locale: Locale(language),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: const PrivateListingDetail(
-              publicListing: false,
-              listing: PrivateListing({
-                'title': 'Toyota',
-                'year': 2020,
-                'mileage_km': 20000,
-                'price': 4500000,
-                'city': 'Ouagadougou',
-                'vehicle_identity': {
-                  'drivetrain': 'Traction avant',
-                  'drivetrain_code': 'AWD',
-                },
-              }),
+          ProviderScope(
+            overrides: [
+              authProvider.overrideWith(
+                (_) => fixture.TestAuth(const AuthState()),
+              ),
+            ],
+            child: MaterialApp(
+              locale: Locale(language),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: const PrivateListingDetail(
+                publicListing: false,
+                listing: PrivateListing({
+                  'title': 'Toyota',
+                  'year': 2020,
+                  'mileage_km': 20000,
+                  'price': 4500000,
+                  'city': 'Ouagadougou',
+                  'vehicle_identity': {
+                    'drivetrain': 'Traction avant',
+                    'drivetrain_code': 'AWD',
+                  },
+                }),
+              ),
             ),
           ),
         );

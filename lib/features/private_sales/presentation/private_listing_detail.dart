@@ -4,12 +4,18 @@ import '../../../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../core/contact/autoparc_contact_provider.dart';
+import '../../../core/widgets/product_gallery.dart';
 import '../../../core/utils/currency_format.dart';
 import '../../../core/utils/lien_externe.dart';
 import '../data/private_listing_repository.dart';
 import 'private_listing_labels.dart';
+import '../../auth/presentation/providers/auth_provider.dart';
+import '../../catalog/presentation/providers/catalog_providers.dart';
+import '../../inspections/presentation/staff_inspection_widgets.dart';
+import '../../vehicles/presentation/widgets/declared_faults_section.dart';
 
-class PrivateListingDetail extends StatelessWidget {
+class PrivateListingDetail extends ConsumerWidget {
   const PrivateListingDetail({
     super.key,
     required this.listing,
@@ -19,8 +25,10 @@ class PrivateListingDetail extends StatelessWidget {
   final bool publicListing;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final auth = ref.watch(authProvider);
+    final photoUrls = listing.photoUrls;
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.privateSalesDetailTitle),
@@ -71,19 +79,23 @@ class PrivateListingDetail extends StatelessWidget {
           }.entries)
             if (listing.identityText(entry.key).isNotEmpty)
               Text(
-                l10n.privateSalesFieldValue(
-                  entry.value,
-                  switch (entry.key) {
-                    'engine_type' => referenceFuelLabel(null, listing.identityText(entry.key), l10n),
-                    'drivetrain' => referenceDrivetrainLabel(
-                      listing.identityText('drivetrain_code'),
-                      listing.identityText(entry.key),
-                      l10n,
-                    ),
-                    'color' => referenceColourLabel(listing.identityText(entry.key), l10n),
-                    _ => listing.identityText(entry.key),
-                  },
-                ),
+                l10n.privateSalesFieldValue(entry.value, switch (entry.key) {
+                  'engine_type' => referenceFuelLabel(
+                    null,
+                    listing.identityText(entry.key),
+                    l10n,
+                  ),
+                  'drivetrain' => referenceDrivetrainLabel(
+                    listing.identityText('drivetrain_code'),
+                    listing.identityText(entry.key),
+                    l10n,
+                  ),
+                  'color' => referenceColourLabel(
+                    listing.identityText(entry.key),
+                    l10n,
+                  ),
+                  _ => listing.identityText(entry.key),
+                }),
               ),
           if (listing.text('transmission').isNotEmpty)
             Text(
@@ -96,30 +108,47 @@ class PrivateListingDetail extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 12),
-          for (final photo in listing.photos)
+          if (photoUrls.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  '${photo['url']}',
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const SizedBox(
-                    height: 160,
-                    child: Center(child: Icon(Icons.broken_image_outlined)),
+                child: AspectRatio(
+                  aspectRatio: 4 / 3,
+                  child: ProductGallery(
+                    key: ValueKey(
+                      'private-photos:${listing.id}:${photoUrls.join('|')}',
+                    ),
+                    urls: photoUrls,
+                    titre: listing.title,
+                    fallback: const Center(
+                      child: Icon(Icons.directions_car_outlined),
+                    ),
                   ),
                 ),
               ),
             ),
           Text(listing.text('description')),
           const Divider(height: 32),
-          Text(
-            listing.text('seller_name'),
-            style: Theme.of(context).textTheme.titleMedium,
+          DeclaredFaultsSection(declaration: listing.faultDeclaration),
+          const Divider(height: 32),
+          if (!publicListing) ...[
+            Text(
+              listing.text('seller_name'),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            if (listing.fields['phone_verified'] == true)
+              Text(l10n.privateSalesPhoneVerified),
+          ],
+          StaffInspectionSection(
+            key: ValueKey('private-listing-inspection:${listing.id}'),
+            source: 'private_listing',
+            sourceId: listing.id,
+            inspectionSummary: listing.inspection,
+            canManage: auth.canManageInspections,
+            uninspectedLabel: l10n.privateSalesNotInspected,
+            onChanged: () => ref.invalidate(vehicleListProvider),
           ),
-          if (listing.fields['phone_verified'] == true)
-            Text(l10n.privateSalesPhoneVerified),
-          Text(l10n.privateSalesNotInspected),
           _BlocDeContact(
             listing: listing,
             depuisLaListePublique: publicListing,
@@ -130,25 +159,9 @@ class PrivateListingDetail extends StatelessWidget {
   }
 }
 
-/// Les boutons pour joindre le vendeur, et d'où leur numéro vient.
-///
-/// POURQUOI CE BLOC CHARGE AU LIEU DE LIRE L'OBJET DÉJÀ EN MAIN
-///
-/// La liste publique `GET private-listings` ne sert plus le numéro : avec
-/// vingt fiches par page et aucune authentification, c'était un annuaire de
-/// particuliers moissonnable d'un seul appel. Le serveur le sert maintenant
-/// sur la FICHE, `GET private-listings/{id}` — l'endroit d'où l'on appelle.
-///
-/// Or cet écran recevait son annonce de la liste et ne rechargeait jamais. Sans
-/// cette requête, les deux boutons disparaîtraient purement et simplement pour
-/// tous les acheteurs, c'est-à-dire la raison d'être de la page. Le reste de
-/// l'écran s'affiche tout de suite avec ce que la liste portait déjà ; seul ce
-/// bloc attend.
-///
-/// En mode vendeur ou modérateur, en revanche, on ne charge RIEN : la liste
-/// porte déjà le numéro — ces deux lecteurs sont « privés » pour le serveur —
-/// et la route publique rendrait 404 sur une annonce non publiée.
-class _BlocDeContact extends ConsumerStatefulWidget {
+/// The display mode determines the contact channel, including with an old
+/// payload containing the seller's details. Public buyers always use AutoParc.
+class _BlocDeContact extends ConsumerWidget {
   const _BlocDeContact({
     required this.listing,
     required this.depuisLaListePublique,
@@ -157,36 +170,48 @@ class _BlocDeContact extends ConsumerStatefulWidget {
   final bool depuisLaListePublique;
 
   @override
-  ConsumerState<_BlocDeContact> createState() => _BlocDeContactState();
-}
-
-class _BlocDeContactState extends ConsumerState<_BlocDeContact> {
-  AppLocalizations get l10n => AppLocalizations.of(context);
-
-  PrivateListing? _fiche;
-
-  @override
-  void initState() {
-    super.initState();
-    if (!widget.depuisLaListePublique) {
-      _fiche = widget.listing;
-
-      return;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    if (depuisLaListePublique) {
+      final contact = ref.watch(autoparcContactProvider);
+      final message = l10n.privateSalesAutoParcMessage(
+        listing.title,
+        listing.text('share_url'),
+      );
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.privateSalesAutoParcContactNotice),
+          const SizedBox(height: 4),
+          Text(contact.phoneDisplay),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            icon: const Icon(Icons.call_outlined),
+            label: Text(l10n.privateSalesCallAutoParc),
+            onPressed: () => ouvrirLien(
+              context,
+              contact.phoneUri,
+              valeurACopier: contact.phoneDisplay,
+              ceQuiNePeutPasSOuvrir: l10n.shellContactDialerTarget,
+            ),
+          ),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.chat_outlined),
+            label: Text(l10n.privateSalesWhatsappAutoParc),
+            onPressed: () => ouvrirLien(
+              context,
+              contact.whatsappUri.replace(
+                query: 'text=${Uri.encodeComponent(message)}',
+              ),
+              valeurACopier: contact.phoneDisplay,
+              ceQuiNePeutPasSOuvrir: 'WhatsApp',
+            ),
+          ),
+        ],
+      );
     }
-    ref
-        .read(privateListingRepositoryProvider)
-        .get(widget.listing.id)
-        .then((fiche) {
-          if (mounted) setState(() => _fiche = fiche);
-        })
-        // Un échec ne doit rien casser : l'écran reste lisible, et le numéro
-        // n'apparaît pas plutôt que d'apparaître faux.
-        .catchError((_) => null);
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    final numero = _fiche?.verifiedPhone ?? '';
+    final numero = listing.verifiedPhone;
     if (numero.isEmpty) return const SizedBox.shrink();
 
     return Column(
@@ -203,7 +228,7 @@ class _BlocDeContactState extends ConsumerState<_BlocDeContact> {
             ceQuiNePeutPasSOuvrir: l10n.shellContactDialerTarget,
           ),
         ),
-        if (_fiche?.fields['whatsapp_enabled'] == true)
+        if (listing.fields['whatsapp_enabled'] == true)
           OutlinedButton.icon(
             icon: const Icon(Icons.chat_outlined),
             label: Text(l10n.privateSalesContactWhatsapp),

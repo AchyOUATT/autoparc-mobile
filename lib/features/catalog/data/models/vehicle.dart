@@ -2,6 +2,8 @@ import 'package:equatable/equatable.dart';
 
 import 'promotion.dart';
 import '../../../garage/data/models/motorisation.dart';
+import '../../../inspections/data/staff_inspection.dart';
+import '../../../vehicles/data/models/fault_declaration.dart';
 
 import '../../../../shared/models/product_seller.dart';
 
@@ -71,6 +73,10 @@ class Vehicle extends Equatable {
   final VehicleCommercial commercial;
   final VehicleImport? import_;
   final int faultsCount;
+
+  /// Compte rendu staff encore valable, distinct de la modération de l'annonce.
+  final StaffInspectionSummary? inspection;
+  final FaultDeclaration faultDeclaration;
 
   /// Toutes les photos du véhicule, **couverture en tête**.
   ///
@@ -201,6 +207,8 @@ class Vehicle extends Equatable {
     required this.commercial,
     this.import_,
     required this.faultsCount,
+    this.inspection,
+    this.faultDeclaration = const FaultDeclaration.unknown(),
     required this.mediaUrls,
     this.coverUrl,
     this.publishedAt,
@@ -303,6 +311,8 @@ class Vehicle extends Equatable {
           ? VehicleImport.fromJson(json['import'] as Map<String, dynamic>)
           : null,
       faultsCount: json['faults_count'] as int? ?? 0,
+      inspection: StaffInspectionSummary.parse(json['inspection']),
+      faultDeclaration: FaultDeclaration.fromJson(json['fault_declaration']),
       mediaUrls: photos,
       // `coverUrl` n'est pas une seconde lecture de `media` : c'est le même
       // premier élément, nommé. Les deux ne peuvent donc pas diverger.
@@ -407,7 +417,7 @@ class Vehicle extends Equatable {
   bool get isPassenger => vehicleType == 'passenger';
 
   @override
-  List<Object?> get props => [id, reference];
+  List<Object?> get props => [id, reference, inspection, faultDeclaration];
 }
 
 // ── Identité ──────────────────────────────────────────────────────

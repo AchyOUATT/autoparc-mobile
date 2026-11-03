@@ -12,6 +12,8 @@ import '../../vehicles/data/models/catalog_refs.dart';
 import '../../vehicles/data/models/vehicle_classification_selection.dart';
 import '../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../vehicles/presentation/widgets/vehicle_identity_fields.dart';
+import '../../vehicles/data/models/fault_declaration.dart';
+import '../../vehicles/presentation/widgets/fault_declaration_widget.dart';
 import '../data/private_listing_repository.dart';
 import 'private_listing_labels.dart';
 
@@ -38,6 +40,8 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
   OwnedVehicle? _source;
   bool _busy = false, _whatsapp = false, _owner = false, _consent = false;
   bool _dirty = false;
+  bool _faultsDirty = false;
+  FaultDeclaration _faultDeclaration = const FaultDeclaration.unknown();
   String? _error, _transmission;
   String? _editingSession;
   PrivateListingRepository get _repo =>
@@ -47,6 +51,8 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
   void initState() {
     super.initState();
     _saved = widget.existing;
+    _faultDeclaration =
+        _saved?.faultDeclaration ?? const FaultDeclaration.unknown();
     _source = widget.vehicle;
     for (final key in [
       'year',
@@ -160,12 +166,15 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
         'drivetrain_id': _classification.drivetrain?.id,
         'color_id': _color?.id,
         'transmission': _transmission,
+        if (_saved == null || _faultsDirty) ..._faultDeclaration.toPayload(),
         if (_saved == null && _source != null) 'owned_vehicle_id': _source!.id,
       };
       final saved = await _repo.save(fields, id: _saved?.id);
       if (mounted) {
         setState(() {
           _saved = saved;
+          _faultDeclaration = saved.faultDeclaration;
+          _faultsDirty = false;
           _dirty = false;
         });
       }
@@ -233,6 +242,9 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
   String? _obstacleAEnvoyer(PrivateListing saved) {
     if (_dirty) return l10n.privateSalesSaveBeforeSubmit;
     if (saved.photos.isEmpty) return l10n.privateSalesSubmitPhotosRequired;
+    if (!saved.faultDeclaration.canSubmit) {
+      return l10n.faultDeclarationPrivateSubmitRequired;
+    }
     if (!_owner || !_consent) return l10n.privateSalesSubmitConsentRequired;
 
     return null;
@@ -377,6 +389,17 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
                 _dirty = true;
               }),
             ),
+            const SizedBox(height: 16),
+            FaultDeclarationWidget(
+              value: _faultDeclaration,
+              enabled: editable && !_busy,
+              onChanged: (declaration) => setState(() {
+                _faultDeclaration = declaration;
+                _faultsDirty = true;
+                _dirty = true;
+              }),
+            ),
+            const SizedBox(height: 16),
             _field(
               'price',
               l10n.privateSalesPriceLabel,

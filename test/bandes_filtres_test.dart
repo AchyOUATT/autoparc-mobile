@@ -3349,6 +3349,7 @@ class _Depot implements CatalogRepository {
     int? locationId,
     bool? customsCleared,
     bool? deal,
+    bool? withoutFaults,
     String? registrationStatus,
     bool includePrivate = false,
   }) async => PaginatedResponse<CatalogVehicleItem>(
@@ -3377,6 +3378,7 @@ class _Depot implements CatalogRepository {
     int? locationId,
     bool? customsCleared,
     bool? deal,
+    bool? withoutFaults,
     String? registrationStatus,
   }) async => PaginatedResponse<Vehicle>(
     data: liste,

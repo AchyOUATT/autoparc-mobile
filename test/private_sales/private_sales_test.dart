@@ -132,7 +132,7 @@ Future<void> fillSaleCommercial(WidgetTester tester) async {
     'Ville': 'Ouagadougou',
     'État du véhicule et informations utiles':
         'Véhicule entretenu et disponible pour une visite.',
-    'Nom affiché aux acheteurs': 'Vendeur particulier',
+    'Nom du vendeur': 'Vendeur particulier',
     // Le numéro que le personnel appellera : champ obligatoire du formulaire
     // depuis que la vérification ne passe plus par un SMS.
     'Téléphone avec indicatif': '+22670000000',
@@ -140,6 +140,15 @@ Future<void> fillSaleCommercial(WidgetTester tester) async {
     await tester.ensureVisible(saleTextField(entry.key));
     await tester.enterText(saleTextField(entry.key), entry.value);
   }
+  // A complete seller submission now includes an explicit condition declaration.
+  final noFaults = find.byKey(const ValueKey('fault-declaration-state-none'));
+  await tester.scrollUntilVisible(
+    noFaults,
+    -250,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.tap(noFaults);
+  await tester.pumpAndSettle();
 }
 
 Future<void> saveSaleDraft(WidgetTester tester) async {
@@ -189,7 +198,29 @@ Map<String, dynamic> listingFields({
   'whatsapp_enabled': false,
   'status': status,
   'revision': 4,
+  'fault_declaration': {
+    'state': 'none',
+    'declared_at': '2026-11-03T10:00:00Z',
+    'faults': <Map<String, dynamic>>[],
+    'unresolved_count': 0,
+  },
   'photos': <Map<String, dynamic>>[],
+};
+
+Map<String, dynamic> savedListingFields(Map<String, dynamic>? data) => {
+  ...listingFields(status: 'draft'),
+  ...?data,
+  if (data?.containsKey('fault_declaration_state') == true)
+    'fault_declaration': {
+      'state': data!['fault_declaration_state'],
+      'declared_at': data['fault_declaration_state'] == 'unknown'
+          ? null
+          : '2026-11-03T10:00:00Z',
+      'faults': data['faults'] ?? <Map<String, dynamic>>[],
+      'unresolved_count': (data['faults'] as List? ?? [])
+          .where((fault) => fault['status'] != 'repaired')
+          .length,
+    },
 };
 
 /// Ce que la liste PUBLIQUE sert réellement : tout, sauf le numéro.
@@ -281,9 +312,7 @@ class FakeSalesApi implements ApiClient {
     }
     if (path == '/my/private-listings') {
       saved = data;
-      return {
-        'data': {...listingFields(status: 'draft'), ...?data},
-      };
+      return {'data': savedListingFields(data)};
     }
     empty = true;
     return {'data': listingFields(status: 'pending')};
@@ -296,9 +325,7 @@ class FakeSalesApi implements ApiClient {
   }) async {
     commands.add((path: path, data: data));
     saved = data;
-    return {
-      'data': {...listingFields(status: 'draft'), ...?data},
-    };
+    return {'data': savedListingFields(data)};
   }
 
   @override
@@ -449,27 +476,26 @@ void main() {
     },
   );
 
-  testWidgets(
-    'English public listing translates its seller and contact labels',
-    (tester) async {
-      final api = FakeSalesApi();
-      await open(
-        tester,
-        api,
-        PrivateListingDetail(listing: PrivateListing(listingFields())),
-        locale: const Locale('en'),
-      );
-      expect(find.text('Private seller listing'), findsOneWidget);
-      expect(find.text('Private seller'), findsOneWidget);
-      expect(find.text('Phone verified'), findsOneWidget);
-      expect(
-        find.text('This vehicle has not been inspected by AutoParc.'),
-        findsOneWidget,
-      );
-      await tester.ensureVisible(find.text('Call the seller'));
-      expect(find.text('Call the seller'), findsOneWidget);
-    },
-  );
+  testWidgets('English public listing translates AutoParc contact labels', (
+    tester,
+  ) async {
+    final api = FakeSalesApi();
+    await open(
+      tester,
+      api,
+      PrivateListingDetail(listing: PrivateListing(listingFields())),
+      locale: const Locale('en'),
+    );
+    expect(find.text('Private seller listing'), findsOneWidget);
+    expect(find.text('Private seller'), findsOneWidget);
+    expect(find.text('Phone verified'), findsNothing);
+    expect(
+      find.text('This vehicle has not been inspected by AutoParc.'),
+      findsOneWidget,
+    );
+    await tester.ensureVisible(find.text('Call AutoParc'));
+    expect(find.text('Call AutoParc'), findsOneWidget);
+  });
 
   test(
     'repository keeps public, seller and moderation routes separate',
@@ -570,14 +596,9 @@ void main() {
     expect(find.text('Aucune annonce à examiner.'), findsOneWidget);
   });
 
-  /// L'acheteur peut appeler, même si la liste ne porte plus le numéro.
-  ///
-  /// C'est la moitié cliente d'une correction serveur : la liste publique ne
-  /// sert plus le téléphone — elle était un annuaire de particuliers
-  /// moissonnable d'un seul appel — et la fiche le sert. Or cet écran recevait
-  /// son annonce de la liste et ne rechargeait jamais : sans la requête que ce
-  /// banc mesure, les deux boutons disparaîtraient pour tous les acheteurs.
-  testWidgets('la fiche publique charge le numéro que la liste ne donne plus', (
+  /// La consultation publique utilise AutoParc et ne demande pas le numéro
+  /// personnel du vendeur, même lorsqu'une ancienne API pouvait le rendre.
+  testWidgets('la fiche publique contacte AutoParc sans recharger le vendeur', (
     tester,
   ) async {
     final api = FakeSalesApi();
@@ -591,9 +612,10 @@ void main() {
     await open(tester, api, PrivateListingDetail(listing: depuisLaListe));
     await tester.pumpAndSettle();
 
-    expect(api.queries.single.path, '/private-listings/1');
-    expect(find.text('Appeler le vendeur'), findsOneWidget);
-    expect(find.text('Téléphone vérifié'), findsOneWidget);
+    expect(api.queries, isEmpty);
+    expect(find.text('Appeler AutoParc'), findsOneWidget);
+    expect(find.text('WhatsApp AutoParc'), findsOneWidget);
+    expect(find.text('Téléphone vérifié'), findsNothing);
   });
 
   /// Le vendeur et le modérateur, eux, ne déclenchent aucune requête.
