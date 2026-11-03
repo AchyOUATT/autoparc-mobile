@@ -7283,6 +7283,24 @@ abstract class AppLocalizations {
   /// **'Email ou mot de passe incorrect.'**
   String get authErrorCredentials;
 
+  /// No description provided for @authErrorPartnerAccount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce compte est un compte partenaire. Connectez-vous à l’espace partenaire.'**
+  String get authErrorPartnerAccount;
+
+  /// No description provided for @authErrorStaffAccount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce compte appartient au personnel. Utilisez la connexion du personnel.'**
+  String get authErrorStaffAccount;
+
+  /// No description provided for @authOpenPartnerSpace.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir l’espace partenaire'**
+  String get authOpenPartnerSpace;
+
   /// Texte de auth_provider.dart (_extractMessage).
   ///
   /// In fr, this message translates to:

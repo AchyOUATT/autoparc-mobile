@@ -19,12 +19,13 @@ class AuthState {
   final User? firebaseUser;
   final bool isLoading;
   final String? error;
+  final bool clientLoginRequiresPartner;
 
   /// Le serveur a confirmé cette session pendant cette exécution.
   ///
-  /// Faux dans un seul cas : le DEMARRAGE OPTIMISTE. L'application s'ouvre sur
-  /// ce que le coffre contient, sans attendre le réseau, puis une vérification
-  /// en arrière-plan confirme ou ferme la session.
+  /// Faux au démarrage optimiste du personnel, et quand un client déjà
+  /// confirmé garde sa session pendant une coupure réseau. Une identité
+  /// Firebase nouvelle ou restaurée doit d'abord être acceptée par l'API.
   ///
   /// Le défaut est `vrai` à dessein, et ce n'est pas une facilité : une
   /// cinquantaine de constructions `const AuthState(...)` existent dans les
@@ -34,27 +35,30 @@ class AuthState {
   final bool verified;
 
   const AuthState({
-    this.type      = AuthType.none,
+    this.type = AuthType.none,
     this.staffUser = null,
     this.firebaseUser = null,
     this.isLoading = false,
-    this.error     = null,
-    this.verified  = true,
+    this.error = null,
+    this.clientLoginRequiresPartner = false,
+    this.verified = true,
   });
 
   bool get isAuthenticated => type != AuthType.none;
-  bool get isStaff         => type == AuthType.staff;
-  bool get isClient        => type == AuthType.client;
+  bool get isStaff => type == AuthType.staff;
+  bool get isClient => type == AuthType.client;
 
   /// Session du personnel restaurée du coffre, pas encore confirmée.
   ///
   /// C'est ce que l'indicateur discret montre. On ne le dit que du personnel :
-  /// une session client est tenue par Firebase, qui est son propre juge.
+  /// le rôle client est vérifié séparément par l'API avant l'ouverture du
+  /// garage ; Firebase confirme uniquement l'identité.
   bool get sessionAConfirmer => isStaff && !verified;
 
   String get displayName {
-    if (isStaff)  return staffUser?.name  ?? 'Staff';
-    if (isClient) return firebaseUser?.displayName ?? firebaseUser?.email ?? 'Client';
+    if (isStaff) return staffUser?.name ?? 'Staff';
+    if (isClient)
+      return firebaseUser?.displayName ?? firebaseUser?.email ?? 'Client';
     return '';
   }
 
@@ -65,24 +69,23 @@ class AuthState {
   // utiliser, plutot que de le laisser buter sur un 403. Toute modification de
   // la matrice se fait donc des deux cotes.
 
-  bool _roleIn(Set<String> roles) =>
-      isStaff && roles.contains(staffUser?.role);
+  bool _roleIn(Set<String> roles) => isStaff && roles.contains(staffUser?.role);
 
   /// Creer et modifier une fiche du catalogue.
-  bool get canManageCatalog  => _roleIn(const {'admin', 'manager', 'sales'});
+  bool get canManageCatalog => _roleIn(const {'admin', 'manager', 'sales'});
 
   /// Supprimer definitivement une fiche — plus restreint que la modification.
-  bool get canDeleteCatalog  => _roleIn(const {'admin', 'manager'});
+  bool get canDeleteCatalog => _roleIn(const {'admin', 'manager'});
 
   /// Declarer et resoudre une panne.
-  bool get canManageFaults   => _roleIn(const {'admin', 'manager', 'mechanic'});
+  bool get canManageFaults => _roleIn(const {'admin', 'manager', 'mechanic'});
 
   /// Consigner une inspection physique et retirer son attestation.
   bool get canManageInspections =>
       _roleIn(const {'admin', 'manager', 'mechanic'});
 
   /// Entrees, sorties et disponibilite du stock.
-  bool get canManageStock    => _roleIn(const {'admin', 'manager', 'warehouse'});
+  bool get canManageStock => _roleIn(const {'admin', 'manager', 'warehouse'});
 
   /// Annuaire des partenaires et rattachement aux produits.
   bool get canManagePartners => _roleIn(const {'admin', 'manager'});
@@ -91,7 +94,7 @@ class AuthState {
   bool get canManageSettings => _roleIn(const {'admin', 'manager'});
 
   /// Envoyer une notification a tous les clients.
-  bool get canBroadcast      => _roleIn(const {'admin', 'manager'});
+  bool get canBroadcast => _roleIn(const {'admin', 'manager'});
 
   AuthState copyWith({
     AuthType? type,
@@ -101,20 +104,24 @@ class AuthState {
     String? error,
     bool clearError = false,
     bool? verified,
-  }) =>
-      AuthState(
-        type:         type         ?? this.type,
-        staffUser:    staffUser    ?? this.staffUser,
-        firebaseUser: firebaseUser ?? this.firebaseUser,
-        isLoading:    isLoading    ?? this.isLoading,
-        error:        clearError ? null : (error ?? this.error),
-        verified:     verified     ?? this.verified,
-      );
+    bool? clientLoginRequiresPartner,
+  }) => AuthState(
+    type: type ?? this.type,
+    staffUser: staffUser ?? this.staffUser,
+    firebaseUser: firebaseUser ?? this.firebaseUser,
+    isLoading: isLoading ?? this.isLoading,
+    error: clearError ? null : (error ?? this.error),
+    verified: verified ?? this.verified,
+    clientLoginRequiresPartner: clearError
+        ? false
+        : clientLoginRequiresPartner ?? this.clientLoginRequiresPartner,
+  );
 }
 
 // ── Notifier ───────────────────────────────────────────────────────
 
-class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver {
+class AuthNotifier extends StateNotifier<AuthState>
+    with WidgetsBindingObserver {
   final AuthRepository _repo;
 
   /// Attente avant la SECONDE tentative de vérification.
@@ -147,6 +154,8 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
   /// ce numéro est encore le courant. `mounted` ne suffit pas : il ne dit que
   /// la mort du notifier, pas qu'un état plus récent a été posé entre-temps.
   int _generation = 0;
+  int? _clientLoginInFlight;
+  String? _pendingFirebaseUid;
 
   AuthNotifier(
     this._repo, {
@@ -184,9 +193,12 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
   @override
   void didChangeAppLifecycleState(AppLifecycleState etat) {
     if (etat != AppLifecycleState.resumed) return;
-    if (!mounted || !state.isStaff) return;
-
-    _verifier();
+    if (!mounted) return;
+    if (state.isStaff) {
+      _verifier();
+    } else {
+      _restaurerFirebase();
+    }
   }
 
   /// Suit l'état d'authentification Firebase pour toute la durée de vie de
@@ -219,12 +231,22 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
       // Une session du personnel prime : elle vient d'un autre système
       // d'identité et ne doit pas être écrasée par un résidu Firebase.
       if (state.isStaff) return;
+      // The explicit login operation validates its own SDK result. Ignoring
+      // its stream echo prevents Firebase success from opening a client UI
+      // before the server has checked the account role.
+      if (_clientLoginInFlight != null) return;
 
       if (utilisateur != null) {
+        if (_pendingFirebaseUid == utilisateur.uid) return;
+        if (state.isClient && state.verified &&
+            state.firebaseUser?.uid == utilisateur.uid) {
+          return;
+        }
         _perimerLesVerifications();
-        state = AuthState(type: AuthType.client, firebaseUser: utilisateur);
-      } else if (state.isClient) {
+        unawaited(_validateFirebaseClient(utilisateur, _generation));
+      } else if (state.isClient || _pendingFirebaseUid != null) {
         _perimerLesVerifications();
+        _pendingFirebaseUid = null;
         state = const AuthState();
       }
     });
@@ -240,9 +262,11 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
       debugPrint('[Auth] coffre illisible au démarrage : $e');
     }
 
-    if (!mounted) return;
+    if (!mounted || _clientLoginInFlight != null) return;
 
     if (session != null) {
+      _perimerLesVerifications();
+      _pendingFirebaseUid = null;
       // ── DEMARRAGE OPTIMISTE ───────────────────────────────────────────
       //
       // On ouvre l'application sur ce que le coffre contient, SANS attendre
@@ -299,7 +323,10 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
   /// réponse de l'ancienne session écrasait la nouvelle.
   ///
   /// Toute affectation autoritaire de l'état périme donc ce qui est en vol.
-  void _perimerLesVerifications() => _generation++;
+  void _perimerLesVerifications() {
+    _generation++;
+    _pendingFirebaseUid = null;
+  }
 
   /// Confirme ou ferme, en arrière-plan, la session restaurée du coffre.
   Future<void> _verifier({bool reessayer = true}) async {
@@ -347,7 +374,9 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
         return _verifier(reessayer: false);
       }
 
-      debugPrint('[Auth] session non confirmée (${e.statusCode}), jeton conservé');
+      debugPrint(
+        '[Auth] session non confirmée (${e.statusCode}), jeton conservé',
+      );
     } catch (e) {
       if (!mounted || generation != _generation) return;
       debugPrint('[Auth] vérification impossible, jeton conservé : $e');
@@ -364,11 +393,87 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
       debugPrint('[Auth] Firebase indisponible : $e');
     }
 
-    if (!mounted) return;
+    if (!mounted || state.isStaff || _clientLoginInFlight != null) return;
+    if (_pendingFirebaseUid != null) return;
+    if (fbUser != null) {
+      _perimerLesVerifications();
+      await _validateFirebaseClient(fbUser, _generation);
+    } else if (state.error == null || state.isClient) {
+      state = const AuthState();
+    }
+  }
 
-    state = fbUser != null
-        ? AuthState(type: AuthType.client, firebaseUser: fbUser)
-        : const AuthState();
+  bool _current(int generation) => mounted && generation == _generation;
+
+  int _beginClientLogin() {
+    _perimerLesVerifications();
+    _pendingFirebaseUid = null;
+    _clientLoginInFlight = _generation;
+    state = const AuthState(isLoading: true);
+    return _generation;
+  }
+
+  Future<void> _clientFailure(Object error, int generation) async {
+    if (!_current(generation)) return;
+    _pendingFirebaseUid = null;
+    final partner =
+        error is ApiException &&
+        error.code == 'client_account_requires_partner_login';
+    state = AuthState(
+      error: _extractMessage(error),
+      clientLoginRequiresPartner: partner,
+    );
+    // A temporary network failure does not erase the SDK credentials. A
+    // definitive refusal does: its restored stream must not reopen a garage.
+    if (error is ApiException && (error.isUnauthorized || error.isForbidden)) {
+      try {
+        await _repo.signOutClient();
+      } catch (e) {
+        debugPrint('[Auth] Firebase sign-out failed after account refusal: $e');
+      }
+    }
+  }
+
+  Future<Object?> _validateFirebaseClient(User user, int generation) async {
+    if (!_current(generation)) return null;
+    final previous = state;
+    _pendingFirebaseUid = user.uid;
+    if (!previous.isClient || previous.firebaseUser?.uid != user.uid) {
+      state = const AuthState(isLoading: true);
+    }
+    try {
+      await _repo.verifyClientSession();
+      if (!_current(generation)) return null;
+      _pendingFirebaseUid = null;
+      state = AuthState(type: AuthType.client, firebaseUser: user);
+      return null;
+    } catch (e) {
+      if (!_current(generation)) return null;
+      final transient =
+          e is ApiException &&
+          (e.isNetworkFailure || e.isServerError || e.isThrottled);
+      if (transient &&
+          previous.isClient &&
+          previous.firebaseUser?.uid == user.uid) {
+        _pendingFirebaseUid = null;
+        state = previous.copyWith(verified: false, isLoading: false);
+      } else {
+        await _clientFailure(e, generation);
+      }
+      return e;
+    }
+  }
+
+  Future<void> _loginFirebase(Future<User> Function() login) async {
+    final generation = _beginClientLogin();
+    try {
+      final user = await login();
+      if (_current(generation)) await _validateFirebaseClient(user, generation);
+    } catch (e) {
+      await _clientFailure(e, generation);
+    } finally {
+      if (_clientLoginInFlight == generation) _clientLoginInFlight = null;
+    }
   }
 
   @override
@@ -409,15 +514,15 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
         // vérifiable de son côté.
         GoogleSignInExceptionCode.canceled =>
           'Connexion Google interrompue. Si vous n\'avez pas fermé la fenêtre, '
-          'vérifiez votre connexion internet puis réessayez.',
+              'vérifiez votre connexion internet puis réessayez.',
         GoogleSignInExceptionCode.interrupted =>
           'Connexion Google interrompue. Vérifiez votre connexion internet '
-          'puis réessayez.',
+              'puis réessayez.',
         // Le cas d'une application mal déclarée côté Google : empreinte de
         // signature absente du projet Firebase, le plus souvent.
         GoogleSignInExceptionCode.clientConfigurationError =>
           'La connexion Google n\'est pas correctement configurée pour cette '
-          'version de l\'application.',
+              'version de l\'application.',
         GoogleSignInExceptionCode.providerConfigurationError =>
           'La connexion Google n\'est pas disponible sur cet appareil.',
         GoogleSignInExceptionCode.uiUnavailable =>
@@ -434,26 +539,30 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
         // impossible (unknownError) » et ne saurait pas qu'il lui manque
         // simplement un compte.
         _ => [
-            'Connexion Google impossible (${e.code.name}).',
-            if (e.description != null && e.description!.isNotEmpty) e.description!,
-          ].join(' '),
+          'Connexion Google impossible (${e.code.name}).',
+          if (e.description != null && e.description!.isNotEmpty)
+            e.description!,
+        ].join(' '),
       };
     }
 
     if (e is FirebaseAuthException) {
       return switch (e.code) {
-        'user-not-found'       => 'Aucun compte trouvé pour cet email.',
-        'wrong-password'       => 'Mot de passe incorrect.',
-        'invalid-credential'   => 'Email ou mot de passe incorrect.',
+        'user-not-found' => 'Aucun compte trouvé pour cet email.',
+        'wrong-password' => 'Mot de passe incorrect.',
+        'invalid-credential' => 'Email ou mot de passe incorrect.',
         'email-already-in-use' => 'Un compte existe déjà avec cet email.',
-        'weak-password'        => 'Mot de passe trop faible (6 caractères minimum).',
-        'invalid-email'        => 'Adresse email invalide.',
-        'user-disabled'        => 'Ce compte a été désactivé. Contactez le support.',
-        'too-many-requests'    => 'Trop de tentatives. Réessayez dans quelques minutes.',
-        'network-request-failed' => 'Erreur réseau. Vérifiez votre connexion internet.',
-        'operation-not-allowed'  => 'Cette méthode de connexion n\'est pas activée.',
-        'account-exists-with-different-credential'
-                               => 'Ce compte existe déjà avec un autre mode de connexion.',
+        'weak-password' => 'Mot de passe trop faible (6 caractères minimum).',
+        'invalid-email' => 'Adresse email invalide.',
+        'user-disabled' => 'Ce compte a été désactivé. Contactez le support.',
+        'too-many-requests' =>
+          'Trop de tentatives. Réessayez dans quelques minutes.',
+        'network-request-failed' =>
+          'Erreur réseau. Vérifiez votre connexion internet.',
+        'operation-not-allowed' =>
+          'Cette méthode de connexion n\'est pas activée.',
+        'account-exists-with-different-credential' =>
+          'Ce compte existe déjà avec un autre mode de connexion.',
         // Codes du Web. Sur Android, l'ancien flux par onglet Chrome rendait
         // `web-context-canceled`, qui n'était pas traité : fermer l'onglet
         // affichait « Erreur de connexion (web-context-canceled) », donc une
@@ -463,16 +572,23 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
         //
         // Même prudence qu'avec le SDK natif : on ne dit pas « annulée », une
         // coupure réseau produit le même résultat.
-        'popup-closed-by-user' || 'cancelled-popup-request' ||
-        'web-context-canceled'
-                               => 'Connexion Google interrompue. Si vous n\'avez '
-                                  'pas fermé la fenêtre, vérifiez votre connexion '
-                                  'internet puis réessayez.',
-        _                      => 'Erreur de connexion (${e.code}).',
+        'popup-closed-by-user' ||
+        'cancelled-popup-request' ||
+        'web-context-canceled' =>
+          'Connexion Google interrompue. Si vous n\'avez '
+              'pas fermé la fenêtre, vérifiez votre connexion '
+              'internet puis réessayez.',
+        _ => 'Erreur de connexion (${e.code}).',
       };
     }
     // ── Erreurs API Laravel ────────────────────────────────────────
     if (e is ApiException) {
+      if (e.code == 'client_account_requires_partner_login') {
+        return 'Ce compte est un compte partenaire. Connectez-vous à l’espace partenaire.';
+      }
+      if (e.code == 'client_account_requires_staff_login') {
+        return 'Ce compte appartient au personnel. Utilisez la connexion du personnel.';
+      }
       // 422 : prendre le premier message du champ "errors" (plus précis que message)
       final errs = e.errors;
       if (errs != null && errs.isNotEmpty) {
@@ -528,25 +644,13 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
   // ── Connexion client Firebase ──────────────────────────────────────
 
   Future<void> signInWithGoogle() async {
-    _perimerLesVerifications();
-    state = state.copyWith(isLoading: true, clearError: true);
-    try {
-      final user = await _repo.signInWithGoogle();
-      state = AuthState(type: AuthType.client, firebaseUser: user);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: _extractMessage(e));
-    }
+    await _loginFirebase(_repo.signInWithGoogle);
   }
 
   Future<void> signInClientEmail(String email, String password) async {
-    _perimerLesVerifications();
-    state = state.copyWith(isLoading: true, clearError: true);
-    try {
-      final user = await _repo.signInWithEmailAndPassword(email, password);
-      state = AuthState(type: AuthType.client, firebaseUser: user);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: _extractMessage(e));
-    }
+    await _loginFirebase(
+      () => _repo.signInWithEmailAndPassword(email, password),
+    );
   }
 
   // ── Connexion unifiée ──────────────────────────────────────────────
@@ -570,65 +674,72 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
   /// passe faux » : Firebase les confond volontairement pour empêcher
   /// d'énumérer les comptes.
   static bool _estUnRefusDIdentifiants(String code) => const {
-        'invalid-credential',
-        'user-not-found',
-        'wrong-password',
-        'invalid-email',
-        'user-disabled',
-      }.contains(code);
+    'invalid-credential',
+    'user-not-found',
+    'wrong-password',
+    'invalid-email',
+    'user-disabled',
+  }.contains(code);
 
   Future<void> signIn(String email, String password) async {
-    _perimerLesVerifications();
-    state = state.copyWith(isLoading: true, clearError: true);
-
+    final generation = _beginClientLogin();
     try {
-      final user = await _repo.signInWithEmailAndPassword(email, password);
-      state = AuthState(type: AuthType.client, firebaseUser: user);
-      return;
-    } on FirebaseAuthException catch (e) {
-      debugPrint('[Auth] Firebase a refusé : ${e.code}');
+      try {
+        final user = await _repo.signInWithEmailAndPassword(email, password);
+        if (!_current(generation)) return;
+        final refusal = await _validateFirebaseClient(user, generation);
+        if (!_current(generation)) return;
+        if (refusal is! ApiException ||
+            refusal.code != 'client_account_requires_staff_login') {
+          return;
+        }
+        state = const AuthState(isLoading: true);
+      } on FirebaseAuthException catch (e) {
+        if (!_current(generation)) return;
+        debugPrint('[Auth] Firebase a refusé : ${e.code}');
 
-      // Seul un refus d'identifiants autorise à essayer l'autre système. Une
-      // panne réseau ou une configuration Firebase absente n'a rien à voir
-      // avec le compte : la masquer derrière « mot de passe incorrect »
-      // enverrait chercher une faute de frappe pendant des heures.
-      if (!_estUnRefusDIdentifiants(e.code)) {
-        state = state.copyWith(isLoading: false, error: _extractMessage(e));
+        // Seul un refus d'identifiants autorise à essayer l'autre système. Une
+        // panne réseau ou une configuration Firebase absente n'a rien à voir
+        // avec le compte : la masquer derrière « mot de passe incorrect »
+        // enverrait chercher une faute de frappe pendant des heures.
+        if (!_estUnRefusDIdentifiants(e.code)) {
+          state = state.copyWith(isLoading: false, error: _extractMessage(e));
+          return;
+        }
+      } catch (e) {
+        if (!_current(generation)) return;
+        debugPrint('[Auth] Firebase indisponible : $e');
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Connexion impossible pour le moment. Réessayez.',
+        );
         return;
       }
-    } catch (e) {
-      debugPrint('[Auth] Firebase indisponible : $e');
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Connexion impossible pour le moment. Réessayez.',
-      );
-      return;
-    }
 
-    try {
-      final staff = await _repo.loginStaff(email, password);
-      state = AuthState(type: AuthType.staff, staffUser: staff);
-      return;
-    } catch (e) {
-      // Un refus pour excès de tentatives se dit tel quel : « identifiants
-      // incorrects » enverrait chercher une faute de frappe inexistante.
-      final message = (e is ApiException && e.isThrottled)
-          ? e.userMessage
-          : 'Email ou mot de passe incorrect.';
+      try {
+        final staff = await _repo.loginStaff(email, password);
+        if (!_current(generation)) return;
+        state = AuthState(type: AuthType.staff, staffUser: staff);
+        return;
+      } catch (e) {
+        if (!_current(generation)) return;
+        // Un refus pour excès de tentatives se dit tel quel : « identifiants
+        // incorrects » enverrait chercher une faute de frappe inexistante.
+        final message = (e is ApiException && e.isThrottled)
+            ? e.userMessage
+            : 'Email ou mot de passe incorrect.';
 
-      state = state.copyWith(isLoading: false, error: message);
+        state = state.copyWith(isLoading: false, error: message);
+      }
+    } finally {
+      if (_clientLoginInFlight == generation) _clientLoginInFlight = null;
     }
   }
 
   Future<void> registerClient(String email, String password) async {
-    _perimerLesVerifications();
-    state = state.copyWith(isLoading: true, clearError: true);
-    try {
-      final user = await _repo.registerWithEmailAndPassword(email, password);
-      state = AuthState(type: AuthType.client, firebaseUser: user);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: _extractMessage(e));
-    }
+    await _loginFirebase(
+      () => _repo.registerWithEmailAndPassword(email, password),
+    );
   }
 
   /// Meme ordre, et pour la meme raison, que [logoutStaff].
@@ -636,9 +747,13 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
     // Lu AVANT de vider : c'est l'etat qui dit quel systeme d'identite
     // prevenir.
     final etaitPersonnel = state.isStaff;
-    final etaitClient = state.isClient;
+    final etaitClient =
+        state.isClient ||
+        _pendingFirebaseUid != null ||
+        _clientLoginInFlight != null;
 
     _perimerLesVerifications();
+    _pendingFirebaseUid = null;
     state = const AuthState();
 
     if (etaitPersonnel) await _repo.logoutStaff();

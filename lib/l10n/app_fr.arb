@@ -5598,6 +5598,9 @@
     "description": "Texte de auth_provider.dart (_extractMessage)."
   },
   "authErrorCredentials": "Email ou mot de passe incorrect.",
+  "authErrorPartnerAccount": "Ce compte est un compte partenaire. Connectez-vous à l’espace partenaire.",
+  "authErrorStaffAccount": "Ce compte appartient au personnel. Utilisez la connexion du personnel.",
+  "authOpenPartnerSpace": "Ouvrir l’espace partenaire",
   "@authErrorCredentials": {
     "description": "Texte de auth_provider.dart (_extractMessage)."
   },

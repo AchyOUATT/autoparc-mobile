@@ -4108,6 +4108,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authErrorCredentials => 'Incorrect email or password.';
 
   @override
+  String get authErrorPartnerAccount =>
+      'This is a partner account. Sign in to the partner area.';
+
+  @override
+  String get authErrorStaffAccount =>
+      'This is a staff account. Use staff sign-in.';
+
+  @override
+  String get authOpenPartnerSpace => 'Open partner area';
+
+  @override
   String get authErrorEmailInUse =>
       'An account already exists for this email address.';
 

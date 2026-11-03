@@ -155,6 +155,12 @@ class ApiException implements DisplayableException {
   /// Le détail technique n'est pas perdu : il reste dans [message] et part
   /// dans `debugPrint` via l'intercepteur.
   String get userMessage {
+    if (code == 'client_account_requires_partner_login') {
+      return 'Ce compte est un compte partenaire. Connectez-vous à l’espace partenaire.';
+    }
+    if (code == 'client_account_requires_staff_login') {
+      return 'Ce compte appartient au personnel. Utilisez la connexion du personnel.';
+    }
     if (isNetworkFailure) {
       return 'Pas de connexion. Vérifiez votre réseau puis réessayez.';
     }
@@ -200,6 +206,12 @@ class ApiException implements DisplayableException {
   String _reference() => requestId == null ? '' : ' (réf. $requestId)';
 
   String localizedUserMessage(AppLocalizations l10n) {
+    if (code == 'client_account_requires_partner_login') {
+      return l10n.authErrorPartnerAccount;
+    }
+    if (code == 'client_account_requires_staff_login') {
+      return l10n.authErrorStaffAccount;
+    }
     if (l10n.localeName.startsWith('fr')) return userMessage;
     if (isNetworkFailure) return l10n.commonErrorNetwork;
     final text = switch (statusCode) {

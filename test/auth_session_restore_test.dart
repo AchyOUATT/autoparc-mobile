@@ -39,6 +39,9 @@ class _FauxDepot extends AuthRepository {
 
   @override
   Stream<User?> get firebaseAuthStream => controleur.stream;
+
+  @override
+  Future<void> verifyClientSession() async {}
 }
 
 Future<AuthNotifier> _notifier(_FauxDepot depot) async {

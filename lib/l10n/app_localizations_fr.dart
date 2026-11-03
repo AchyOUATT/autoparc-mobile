@@ -4110,6 +4110,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authErrorCredentials => 'Email ou mot de passe incorrect.';
 
   @override
+  String get authErrorPartnerAccount =>
+      'Ce compte est un compte partenaire. Connectez-vous à l’espace partenaire.';
+
+  @override
+  String get authErrorStaffAccount =>
+      'Ce compte appartient au personnel. Utilisez la connexion du personnel.';
+
+  @override
+  String get authOpenPartnerSpace => 'Ouvrir l’espace partenaire';
+
+  @override
   String get authErrorEmailInUse => 'Un compte existe déjà avec cet email.';
 
   @override
