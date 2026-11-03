@@ -671,10 +671,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogBodyLabelOther => 'Other';
 
   @override
+  String get vehiclesAutomaticTypeOptional => 'Automatic type (optional)';
+
+  @override
+  String get vehiclesAutomaticTypeUnspecified => 'Not specified';
+
+  @override
+  String vehiclesSavedTransmissionType(String type) {
+    return 'Saved gearbox: $type';
+  }
+
+  @override
+  String get catalogTransmissionAutomatedManual => 'Automated manual (AMT)';
+
+  @override
+  String get catalogTransmissionECvt => 'Hybrid e-CVT';
+
+  @override
   String get catalogTransmissionManual => 'Manual';
 
   @override
-  String get catalogTransmissionCvt => 'CVT';
+  String get catalogTransmissionCvt => 'Continuously variable (CVT)';
 
   @override
   String get catalogTransmissionAutomatic => 'Automatic';
@@ -1403,7 +1420,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get privateSalesTransmissionOptional => 'Transmission (optional)';
 
   @override
-  String get privateSalesTransmissionDualClutch => 'Dual-clutch';
+  String get privateSalesTransmissionDualClutch => 'Dual-clutch (DCT)';
 
   @override
   String get privateSalesTransmissionSingleSpeed => 'Single-speed';
@@ -3419,7 +3436,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get vehiclesEngineTypeRequired => 'Powertrain is required';
 
   @override
-  String get vehiclesTransmissionLabel => 'Transmission';
+  String get vehiclesTransmissionLabel => 'Gearbox';
 
   @override
   String get vehiclesDrivetrainLabel => 'Drivetrain';

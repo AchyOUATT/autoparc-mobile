@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../data/models/catalog_refs.dart';
 import '../../data/models/vehicle_classification_selection.dart';
 import 'vehicle_reference_dropdown.dart';
+import 'transmission_selector.dart';
 
 /// Vehicle identity uses the same selectors and dependency transitions as registration.
 /// Submission stays with the caller, so this widget cannot create stock or publish a listing.
@@ -249,42 +250,12 @@ class VehicleIdentityFields extends StatelessWidget {
         if (color != null)
           _clear(l10n.privateSalesClearColour, () => onColorChanged(null)),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          key: ValueKey('private-sale-transmission-${transmission ?? 'none'}'),
-          initialValue: transmission,
-          isExpanded: true,
-          decoration: InputDecoration(
-            labelText: l10n.privateSalesTransmissionOptional,
-          ),
-          items: [
-            DropdownMenuItem(
-              value: 'manual',
-              child: Text(l10n.catalogTransmissionManual),
-            ),
-            DropdownMenuItem(
-              value: 'automatic',
-              child: Text(l10n.catalogTransmissionAutomatic),
-            ),
-            DropdownMenuItem(
-              value: 'cvt',
-              child: Text(l10n.catalogTransmissionCvt),
-            ),
-            DropdownMenuItem(
-              value: 'dual_clutch',
-              child: Text(l10n.privateSalesTransmissionDualClutch),
-            ),
-            DropdownMenuItem(
-              value: 'single_speed',
-              child: Text(l10n.privateSalesTransmissionSingleSpeed),
-            ),
-          ],
-          onChanged: enabled ? onTransmissionChanged : null,
+        TransmissionSelector(
+          label: l10n.privateSalesTransmissionOptional,
+          value: transmission,
+          enabled: enabled,
+          onChanged: onTransmissionChanged,
         ),
-        if (transmission != null)
-          _clear(
-            l10n.privateSalesClearTransmission,
-            () => onTransmissionChanged(null),
-          ),
         const SizedBox(height: 16),
       ],
     );

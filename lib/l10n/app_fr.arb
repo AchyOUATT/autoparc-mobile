@@ -945,13 +945,36 @@
   "@catalogBodyLabelOther": {
     "description": "Libellé de carrosserie de la fiche pour une valeur hors des onze autres. LA LISTE DES PUCES DE FILTRE N'A PAS CETTE VALEUR — onze contre douze —, et c'est pourquoi les deux jeux ne se recouvrent pas tout à fait : on ne filtre pas sur « autre »."
   },
+  "vehiclesAutomaticTypeOptional": "Type d’automatique (facultatif)",
+  "@vehiclesAutomaticTypeOptional": {
+    "description": "Précision facultative après le choix d’une boîte automatique."
+  },
+  "vehiclesAutomaticTypeUnspecified": "Non précisé",
+  "@vehiclesAutomaticTypeUnspecified": {
+    "description": "Boîte automatique dont la famille précise n’est pas renseignée."
+  },
+  "vehiclesSavedTransmissionType": "Boîte enregistrée : {type}",
+  "@vehiclesSavedTransmissionType": {
+    "description": "Type de boîte enregistré que cette version de l’application ne reconnaît pas.",
+    "placeholders": {
+      "type": { "type": "String" }
+    }
+  },
+  "catalogTransmissionAutomatedManual": "Robotisée (AMT)",
+  "@catalogTransmissionAutomatedManual": {
+    "description": "Boîte manuelle robotisée à simple embrayage, distincte du double embrayage."
+  },
+  "catalogTransmissionECvt": "Hybride e-CVT",
+  "@catalogTransmissionECvt": {
+    "description": "Transmission hybride de type e-CVT, distincte de la CVT mécanique."
+  },
   "catalogTransmissionManual": "Manuelle",
   "@catalogTransmissionManual": {
-    "description": "Valeur de la ligne « Boîte ». La transmission est le seul champ technique que le serveur envoie en CODE (`manual` / `cvt` / `automatic`) et non déjà rédigé — d'où ces trois clés, là où « Motorisation » n'en a aucune."
+    "description": "Type de boîte de vitesses. Les codes et libellés des familles sont partagés par les formulaires et les fiches."
   },
-  "catalogTransmissionCvt": "CVT",
+  "catalogTransmissionCvt": "Variation continue (CVT)",
   "@catalogTransmissionCvt": {
-    "description": "Valeur de la ligne « Boîte ». Sigle identique dans les deux langues. Voir catalogTransmissionManual."
+    "description": "Boîte mécanique à variation continue, distincte du système hybride e-CVT."
   },
   "catalogTransmissionAutomatic": "Automatique",
   "@catalogTransmissionAutomatic": {
@@ -1955,7 +1978,7 @@
   "@privateSalesTransmissionOptional": {
     "description": "Libellé du choix facultatif de boîte."
   },
-  "privateSalesTransmissionDualClutch": "Double embrayage",
+  "privateSalesTransmissionDualClutch": "Double embrayage (DCT)",
   "@privateSalesTransmissionDualClutch": {
     "description": "Type de boîte à double embrayage."
   },
@@ -4693,7 +4716,7 @@
   "@vehiclesEngineTypeRequired": {
     "description": "Validation de motorisation."
   },
-  "vehiclesTransmissionLabel": "Transmission",
+  "vehiclesTransmissionLabel": "Boîte de vitesses",
   "@vehiclesTransmissionLabel": {
     "description": "Titre du choix de boîte."
   },

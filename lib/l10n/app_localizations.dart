@@ -1289,16 +1289,46 @@ abstract class AppLocalizations {
   /// **'Autre'**
   String get catalogBodyLabelOther;
 
-  /// Valeur de la ligne « Boîte ». La transmission est le seul champ technique que le serveur envoie en CODE (`manual` / `cvt` / `automatic`) et non déjà rédigé — d'où ces trois clés, là où « Motorisation » n'en a aucune.
+  /// Précision facultative après le choix d’une boîte automatique.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type d’automatique (facultatif)'**
+  String get vehiclesAutomaticTypeOptional;
+
+  /// Boîte automatique dont la famille précise n’est pas renseignée.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non précisé'**
+  String get vehiclesAutomaticTypeUnspecified;
+
+  /// Type de boîte enregistré que cette version de l’application ne reconnaît pas.
+  ///
+  /// In fr, this message translates to:
+  /// **'Boîte enregistrée : {type}'**
+  String vehiclesSavedTransmissionType(String type);
+
+  /// Boîte manuelle robotisée à simple embrayage, distincte du double embrayage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Robotisée (AMT)'**
+  String get catalogTransmissionAutomatedManual;
+
+  /// Transmission hybride de type e-CVT, distincte de la CVT mécanique.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hybride e-CVT'**
+  String get catalogTransmissionECvt;
+
+  /// Type de boîte de vitesses. Les codes et libellés des familles sont partagés par les formulaires et les fiches.
   ///
   /// In fr, this message translates to:
   /// **'Manuelle'**
   String get catalogTransmissionManual;
 
-  /// Valeur de la ligne « Boîte ». Sigle identique dans les deux langues. Voir catalogTransmissionManual.
+  /// Boîte mécanique à variation continue, distincte du système hybride e-CVT.
   ///
   /// In fr, this message translates to:
-  /// **'CVT'**
+  /// **'Variation continue (CVT)'**
   String get catalogTransmissionCvt;
 
   /// Valeur de la ligne « Boîte ». Voir catalogTransmissionManual.
@@ -2568,7 +2598,7 @@ abstract class AppLocalizations {
   /// Type de boîte à double embrayage.
   ///
   /// In fr, this message translates to:
-  /// **'Double embrayage'**
+  /// **'Double embrayage (DCT)'**
   String get privateSalesTransmissionDualClutch;
 
   /// Type de transmission à rapport unique.
@@ -6068,7 +6098,7 @@ abstract class AppLocalizations {
   /// Titre du choix de boîte.
   ///
   /// In fr, this message translates to:
-  /// **'Transmission'**
+  /// **'Boîte de vitesses'**
   String get vehiclesTransmissionLabel;
 
   /// Libellé de la motricité.
