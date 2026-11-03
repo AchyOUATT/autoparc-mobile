@@ -136,6 +136,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           ),
                         ),
 
+                      if (auth.clientLoginRequiresPartner)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: OutlinedButton.icon(
+                            onPressed: () => context.push('/partner'),
+                            icon: const Icon(Icons.business_outlined),
+                            label: Text(AppLocalizations.of(context).authOpenPartnerSpace),
+                          ),
+                        ),
+
                       // ── Formulaire unique ─────────────────────────
                       // Personnel et clients saisissent la même chose : c'est
                       // à l'application de reconnaître qui se présente, pas à

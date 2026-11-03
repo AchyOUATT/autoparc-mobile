@@ -25,10 +25,10 @@ class StaffUser {
   });
 
   factory StaffUser.fromJson(Map<String, dynamic> json) => StaffUser(
-    id:    json['id']    as int,
-    name:  json['name']  as String,
+    id: json['id'] as int,
+    name: json['name'] as String,
     email: json['email'] as String,
-    role:  json['role']  as String,
+    role: json['role'] as String,
   );
 
   /// Pour retourner au coffre, d'ou un demarrage optimiste le relira.
@@ -52,13 +52,14 @@ class AuthRepository {
 
   /// Authentifie un membre du staff, stocke le token Sanctum.
   Future<StaffUser> loginStaff(String email, String password) async {
-    final json = await _client.post(Endpoints.login, data: {
-      'email':    email,
-      'password': password,
-    });
+    final json = await _client.post(
+      Endpoints.login,
+      data: {'email': email, 'password': password},
+    );
 
     final token = json['token'] as String?;
-    if (token == null) throw const ApiException(message: 'Token manquant dans la réponse.');
+    if (token == null)
+      throw const ApiException(message: 'Token manquant dans la réponse.');
 
     final profil = StaffUser.fromJson(json['user'] as Map<String, dynamic>);
 
@@ -73,9 +74,9 @@ class AuthRepository {
   Future<StaffUser> getMe() async {
     final json = await _client.get(Endpoints.me);
     final profile = json['data'];
-    return StaffUser.fromJson(profile is Map
-        ? Map<String, dynamic>.from(profile)
-        : json);
+    return StaffUser.fromJson(
+      profile is Map ? Map<String, dynamic>.from(profile) : json,
+    );
   }
 
   /// Déconnecte le staff : révoque le token côté serveur, le supprime localement.
@@ -89,6 +90,47 @@ class AuthRepository {
   }
 
   // ── Client Firebase ───────────────────────────────────────────────
+
+  /// Firebase proves identity; the API confirms that it belongs to a client.
+  /// A partner or staff account must never open the personal garage.
+  Future<void> verifyClientSession() async {
+    final response = await _client.get('/my/account');
+    final profile = response['data'];
+    if (profile is! Map) {
+      throw const FormatException('Invalid client account response.');
+    }
+    final role = profile['role'];
+    if (role == 'partner') {
+      throw const ApiException(
+        statusCode: 403,
+        code: 'client_account_requires_partner_login',
+        message:
+            'Ce compte est un compte partenaire. Connectez-vous à l’espace partenaire.',
+      );
+    }
+    if (const {
+      'admin',
+      'manager',
+      'sales',
+      'mechanic',
+      'warehouse',
+      'viewer',
+    }.contains(role)) {
+      throw const ApiException(
+        statusCode: 403,
+        code: 'client_account_requires_staff_login',
+        message:
+            'Ce compte appartient au personnel. Utilisez la connexion du personnel.',
+      );
+    }
+    if (role != 'client' ||
+        profile['id'] is! int ||
+        (profile['id'] as int) <= 0 ||
+        profile['name'] is! String ||
+        profile['email'] is! String) {
+      throw const FormatException('Invalid client account response.');
+    }
+  }
 
   /// Connexion Google (client mobile).
   ///
@@ -130,16 +172,19 @@ class AuthRepository {
   /// Connexion email/password Firebase (client mobile).
   Future<User> signInWithEmailAndPassword(String email, String password) async {
     final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
-      email:    email,
+      email: email,
       password: password,
     );
     return cred.user!;
   }
 
   /// Inscription Firebase (nouveau client).
-  Future<User> registerWithEmailAndPassword(String email, String password) async {
+  Future<User> registerWithEmailAndPassword(
+    String email,
+    String password,
+  ) async {
     final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-      email:    email,
+      email: email,
       password: password,
     );
     return cred.user!;
@@ -182,7 +227,8 @@ class AuthRepository {
   }
 
   /// Stream de l'état Firebase Auth — émet à chaque changement de session.
-  Stream<User?> get firebaseAuthStream => FirebaseAuth.instance.authStateChanges();
+  Stream<User?> get firebaseAuthStream =>
+      FirebaseAuth.instance.authStateChanges();
 
   /// Session Firebase déjà restaurée, s'il y en a une.
   ///

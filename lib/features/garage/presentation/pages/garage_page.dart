@@ -24,14 +24,6 @@ class GaragePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
 
-    // Invalider garageProvider dès que le client se connecte, pour ne pas
-    // rester bloqué sur l'erreur 401 envoyée avant l'obtention du token.
-    ref.listen<AuthState>(authProvider, (prev, next) {
-      if (next.isClient && !(prev?.isClient ?? false)) {
-        ref.invalidate(garageProvider);
-      }
-    });
-
     // ── Staff → profil staff ─────────────────────────────────────────
     if (auth.isStaff) return _StaffProfilePage(auth: auth);
 

@@ -4,6 +4,8 @@ import '../../l10n/app_localizations.dart';
 String localizeExceptionMessage(String message, AppLocalizations l10n) {
   if (l10n.localeName.startsWith('fr')) return message;
   switch (message) {
+    case "Ce compte est un compte partenaire. Connectez-vous à l’espace partenaire.": return l10n.authErrorPartnerAccount;
+    case "Ce compte appartient au personnel. Utilisez la connexion du personnel.": return l10n.authErrorStaffAccount;
     case "Token manquant dans la réponse.": return l10n.authErrorTokenMissing;
     case "Google n'a pas fourni de jeton d'identité.": return l10n.authErrorGoogleTokenMissing;
     case "Connexion Google interrompue. Si vous n'avez pas fermé la fenêtre, vérifiez votre connexion internet puis réessayez.": return l10n.authErrorGoogleInterrupted;
