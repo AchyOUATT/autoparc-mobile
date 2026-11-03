@@ -157,13 +157,19 @@ class OwnedVehicle extends Equatable {
 
   /// Présence de données moteur, indépendante du verdict de compatibilité.
   /// Le repli permet de fonctionner avec un serveur antérieur à ce champ.
-  bool get hasEngineData =>
+  bool get hasMotorisationData =>
       engineDataProvided ??
       (compatibilityReady ||
           engineTypeId != null ||
           motorisationId != null ||
           (identity.engineType?.trim().isNotEmpty ?? false) ||
           (engineCode?.trim().length ?? 0) > 1);
+
+  /// Indicateur historique : données moteur rattachées à un modèle du catalogue.
+  /// Le verdict de compatibilité reste calculé par le serveur pour chaque pièce.
+  bool get hasEngineData =>
+      vehicleModelId != null &&
+      (engineCode != null || identity.engineType != null);
 
   /// Vrai quand le modèle a été tapé à la main : la recherche de pièces
   /// compatibles est indisponible pour ce véhicule, et rien ne la débloquera

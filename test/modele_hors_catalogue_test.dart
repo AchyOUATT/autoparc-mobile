@@ -90,6 +90,8 @@ void main() {
     final v = depuisJson(modelLibre: 'CX-9', engineCode: 'PY-VPS');
 
     expect(v.engineCode, 'PY-VPS');
+    expect(v.hasMotorisationData, isTrue,
+        reason: 'Le moteur est renseigné même si le modèle est hors catalogue.');
     expect(
       v.hasEngineData,
       isFalse,

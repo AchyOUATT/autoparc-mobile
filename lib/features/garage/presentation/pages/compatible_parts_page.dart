@@ -243,7 +243,7 @@ class _EmptyParts extends StatelessWidget {
   final OwnedVehicle? vehicle;
   const _EmptyParts({this.vehicle});
 
-  bool get _motorisationManquante => vehicle?.hasEngineData == false;
+  bool get _motorisationManquante => vehicle?.hasMotorisationData == false;
 
   String _titre(BuildContext context) => _motorisationManquante
       ? AppLocalizations.of(context).garageUnknownEngineTitle

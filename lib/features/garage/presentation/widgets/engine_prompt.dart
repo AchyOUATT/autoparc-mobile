@@ -151,7 +151,7 @@ class MissingEngineBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (vehicle.hasEngineData) return const SizedBox.shrink();
+    if (vehicle.hasMotorisationData) return const SizedBox.shrink();
     final _titre = AppLocalizations.of(context).garageEngineMissingTitle;
     final _phrase = AppLocalizations.of(context).garageEngineMissingBody;
     final _action = AppLocalizations.of(context).garageCompleteAction;

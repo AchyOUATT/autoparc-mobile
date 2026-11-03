@@ -290,7 +290,7 @@ class _VehicleCard extends ConsumerWidget {
                 // Sous les échéances, et non au-dessus : les dates sont la
                 // raison d'ouvrir l'application, le manque à combler vient
                 // ensuite. Il disparaît de lui-même une fois renseigné.
-                if (!vehicle.hasEngineData) ...[
+                if (!vehicle.hasMotorisationData) ...[
                   const SizedBox(height: 10),
                   MissingEngineBanner(vehicle: vehicle),
                 ],
