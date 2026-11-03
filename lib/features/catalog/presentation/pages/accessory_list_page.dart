@@ -235,16 +235,22 @@ class _FilterBar extends ConsumerWidget {
     // seulement lesquelles portent un article en vente, et seules celles-là
     // sont proposées : le catalogue d'accessoires est vide en production, et
     // les cinq pastilles ne renvoyaient rien.
+    final isStaff = ref.watch(authProvider.select((auth) => auth.isStaff));
     final occupees = ref.watch(categoriesAccessoiresOccupeesProvider);
+    // Le personnel filtre aussi les accessoires indisponibles, absents des
+    // catégories publiques : toutes les catégories restent accessibles.
     final categories = _categories
-        .where((c) => occupees.valueOrNull?.contains(c.value) ?? false)
+        .where(
+          (c) => isStaff || (occupees.valueOrNull?.contains(c.value) ?? false),
+        )
         .toList();
 
     // Même garde que pour les pièces : la désélection passe par la pastille,
     // donc un filtre posé sur une catégorie qui n'est plus proposée ne pourrait
     // plus être retiré. Conditionné aux données reçues — pendant le chargement,
     // l'ensemble est vide sans rien dire de l'occupation.
-    if (occupees.hasValue &&
+    if (!isStaff &&
+        occupees.hasValue &&
         filter.category != null &&
         !occupees.requireValue.contains(filter.category)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -1,3 +1,4 @@
+import '../../../../core/l10n/transmission_labels.dart';
 import '../../../catalog/presentation/catalog_reference_labels.dart';
 import '../../../../core/l10n/reference_labels.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +25,7 @@ import '../../../../features/partner_accounts/presentation/partner_session.dart'
     as espace;
 import '../../../../core/api/api_exception.dart';
 import '../widgets/vehicle_reference_dropdown.dart';
+import '../widgets/transmission_selector.dart';
 import '../../../../shared/presentation/pages/media_upload_page.dart';
 import '../../../../shared/data/media_repository.dart';
 import '../../../../features/catalog/data/models/vehicle.dart';
@@ -132,7 +134,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   set _engineType(EngineTypeRef? value) => _classification.engineType = value;
   DrivetrainRef? get _drivetrain => _classification.drivetrain;
   set _drivetrain(DrivetrainRef? value) => _classification.drivetrain = value;
-  String _transmission = 'automatic'; // 'manual' | 'automatic' | 'cvt'
+  String _transmission = 'automatic'; // Gearbox family, separate from wheel drive.
   final _powerCtrl = TextEditingController();
   final _seatsCtrl = TextEditingController(text: '5');
   final _doorsCtrl = TextEditingController(text: '4');
@@ -1053,11 +1055,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     final parts = <String>[
       if (_engineType != null) referenceFuelLabel(_engineType!.code, _engineType!.label, l10n),
       if (_transmission.isNotEmpty)
-        switch (_transmission) {
-          'manual' => l10n.vehiclesTransmissionManualSummary,
-          'cvt' => l10n.catalogTransmissionCvt,
-          _ => l10n.vehiclesTransmissionAutomaticSummary,
-        },
+        transmissionLabel(_transmission, l10n),
       if (_drivetrain != null) referenceDrivetrainLabel(_drivetrain!.code, _drivetrain!.label, l10n),
       if (_powerCtrl.text.trim().isNotEmpty)
         l10n.vehiclesPowerSummary(_powerCtrl.text.trim()),
@@ -1105,29 +1103,14 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           ),
           const SizedBox(height: 12),
 
-          // Transmission
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              l10n.vehiclesFaultCategoryTransmission,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          _ChoiceGroup<String>(
-            options: [
-              (value: 'manual', label: l10n.catalogTransmissionManual),
-              (value: 'automatic', label: l10n.catalogTransmissionAutomatic),
-              (value: 'cvt', label: l10n.catalogTransmissionCvt),
-            ],
-            selected: _transmission,
-            onChanged: (v) => setState(() => _transmission = v),
+          TransmissionSelector(
+            label: l10n.vehiclesTransmissionLabel,
+            value: _transmission,
+            onChanged: (value) => setState(() => _transmission = value ?? ''),
           ),
           const SizedBox(height: 16),
 
-          // Transmission séquentielle
+          // Roues motrices
           VehicleReferenceDropdown<DrivetrainRef>(
             label: l10n.vehiclesDrivetrainLabel,
             items: refs.drivetrains,
@@ -1620,7 +1603,9 @@ class _StepControls extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: 20, bottom: 8),
-      child: Row(
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 8,
         children: [
           FilledButton(
             onPressed: submitting ? null : details.onStepContinue,
@@ -1635,7 +1620,6 @@ class _StepControls extends StatelessWidget {
                   )
                 : Text(isLast ? l10n.catalogFeaturesSave : l10n.vehiclesNext),
           ),
-          const SizedBox(width: 12),
           if (details.stepIndex > 0)
             OutlinedButton(
               onPressed: details.onStepCancel,

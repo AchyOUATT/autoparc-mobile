@@ -209,6 +209,7 @@ class CatalogRepository {
   // ── Accessoires ──────────────────────────────────────────────────
 
   Future<PaginatedResponse<Accessory>> getAccessories({
+    bool forStaff = false,
     int page = 1,
     int perPage = 20,
     String? search,
@@ -231,12 +232,22 @@ class CatalogRepository {
       if (locationId != null) 'location_id': locationId,
     };
 
-    final json = await _client.get(Endpoints.catalogAccessories, params: params);
+    // Le catalogue public masque les indisponibles ; le personnel doit
+    // pouvoir les retrouver pour les remettre en vente. L’API protège
+    // cette route avec auth:sanctum et le rôle staff.
+    final json = await _client.get(
+      forStaff ? Endpoints.staffAccessories : Endpoints.catalogAccessories,
+      params: params,
+    );
     return PaginatedResponse.fromJson(json, Accessory.fromJson);
   }
 
-  Future<Accessory> getAccessory(int id) async {
-    final json = await _client.get(Endpoints.accessoryDetail(id));
+  Future<Accessory> getAccessory(int id, {bool forStaff = false}) async {
+    final json = await _client.get(
+      forStaff
+          ? Endpoints.staffAccessoryDetail(id)
+          : Endpoints.accessoryDetail(id),
+    );
     return Accessory.fromJson(json['data'] as Map<String, dynamic>);
   }
 

@@ -672,10 +672,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get catalogBodyLabelOther => 'Autre';
 
   @override
+  String vehiclesSavedTransmissionType(String type) {
+    return 'Boîte enregistrée : $type';
+  }
+
+  @override
+  String get catalogTransmissionAutomatedManual => 'Robotisée (AMT)';
+
+  @override
+  String get catalogTransmissionECvt => 'Hybride e-CVT';
+
+  @override
   String get catalogTransmissionManual => 'Manuelle';
 
   @override
-  String get catalogTransmissionCvt => 'CVT';
+  String get catalogTransmissionCvt => 'Variation continue (CVT)';
 
   @override
   String get catalogTransmissionAutomatic => 'Automatique';
@@ -1338,7 +1349,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get privateSalesFuel => 'Carburant';
 
   @override
-  String get privateSalesDrivetrain => 'Motricité';
+  String get privateSalesDrivetrain => 'Roues motrices';
 
   @override
   String get privateSalesPhoneVerified => 'Téléphone vérifié';
@@ -1402,7 +1413,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get privateSalesTransmissionOptional => 'Boîte (facultatif)';
 
   @override
-  String get privateSalesTransmissionDualClutch => 'Double embrayage';
+  String get privateSalesTransmissionDualClutch => 'Double embrayage (DCT)';
 
   @override
   String get privateSalesTransmissionSingleSpeed => 'Rapport unique';
@@ -3433,10 +3444,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get vehiclesEngineTypeRequired => 'Motorisation obligatoire';
 
   @override
-  String get vehiclesTransmissionLabel => 'Transmission';
+  String get vehiclesTransmissionLabel => 'Boîte de vitesses';
 
   @override
-  String get vehiclesDrivetrainLabel => 'Transmission des roues';
+  String get vehiclesDrivetrainLabel => 'Roues motrices';
 
   @override
   String get vehiclesPowerLabel => 'Puissance (ch)';
@@ -4276,11 +4287,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get vehiclesReferenceDriveRearWheel => 'Propulsion arrière';
 
   @override
-  String get vehiclesReferenceDriveAllWheel =>
-      'Transmission intégrale permanente';
+  String get vehiclesReferenceDriveAllWheel => 'Intégrale (AWD)';
 
   @override
-  String get vehiclesReferenceDriveFourWheel => '4x4 débrayable';
+  String get vehiclesReferenceDriveFourWheel => '4×4 (4WD)';
 
   @override
   String get vehiclesReferenceColourWhite => 'Blanc';
