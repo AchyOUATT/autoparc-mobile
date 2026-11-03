@@ -84,7 +84,7 @@ class VehicleFilter {
     bool clearLocation = false,
     bool clearCustomsCleared = false,
     bool clearDeal = false,
-    bool clearWithoutFaults = false,
+    bool clearValidatedByAutoParc = false,
     bool clearRegistrationStatus = false,
   }) =>
       VehicleFilter(

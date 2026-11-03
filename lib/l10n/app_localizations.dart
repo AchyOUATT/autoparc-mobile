@@ -10096,6 +10096,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Hybride e-CVT'**
   String get catalogTransmissionECvt;
+
+  /// Filter for vehicles inspected and validated by AutoParc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Validés par AutoParc'**
+  String get catalogValidatedByAutoParc;
 }
 
 class _AppLocalizationsDelegate

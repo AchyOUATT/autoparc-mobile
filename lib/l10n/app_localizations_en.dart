@@ -5667,4 +5667,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get catalogTransmissionECvt => 'Hybrid e-CVT';
+
+  @override
+  String get catalogValidatedByAutoParc => 'Validated by AutoParc';
 }

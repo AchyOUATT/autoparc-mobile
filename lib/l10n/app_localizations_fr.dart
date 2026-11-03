@@ -5687,4 +5687,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get catalogTransmissionECvt => 'Hybride e-CVT';
+
+  @override
+  String get catalogValidatedByAutoParc => 'Validés par AutoParc';
 }
