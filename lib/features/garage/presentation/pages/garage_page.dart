@@ -456,7 +456,7 @@ class _VehicleCard extends ConsumerWidget {
           //
           // Juste au-dessus du bouton qu'elle rend inopérant : la liste des
           // pièces compatibles s'ouvrirait vide, sans rien dire.
-          if (!vehicle.compatibilityReady)
+          if (!vehicle.hasEngineData)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
               child: MissingEngineBanner(vehicle: vehicle),

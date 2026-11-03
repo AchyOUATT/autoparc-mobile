@@ -35,6 +35,7 @@ class OwnedVehicle extends Equatable {
   final int year;
   final OwnedVehicleIdentity identity;
   final bool compatibilityReady;
+  final bool? engineDataProvided;
 
   /// Motorisation choisie par le propriétaire, et sa cote officielle.
   ///
@@ -91,6 +92,7 @@ class OwnedVehicle extends Equatable {
     required this.year,
     required this.identity,
     required this.compatibilityReady,
+    this.engineDataProvided,
     this.motorisationId,
     this.consumption,
     this.fuelTracking,
@@ -126,6 +128,7 @@ class OwnedVehicle extends Equatable {
       json['identity'] as Map<String, dynamic>,
     ),
     compatibilityReady: json['compatibility_ready'] as bool? ?? false,
+    engineDataProvided: json['engine_data_provided'] as bool?,
     motorisationId: json['motorisation_id'] as int?,
     consumption: json['consumption'] == null
         ? null
@@ -152,14 +155,15 @@ class OwnedVehicle extends Equatable {
   @override
   List<Object?> get props => [id];
 
-  /// Vrai si au moins une donnée technique est connue (moteur ou code moteur).
-  ///
-  /// Un modèle hors catalogue l'emporte sur tout le reste : les compatibilités
-  /// sont déclarées par modèle, et aucune ne peut correspondre. Répondre vrai
-  /// ferait passer un « on ne sait pas » pour un résultat.
+  /// Présence de données moteur, indépendante du verdict de compatibilité.
+  /// Le repli permet de fonctionner avec un serveur antérieur à ce champ.
   bool get hasEngineData =>
-      vehicleModelId != null &&
-      (engineCode != null || identity.engineType != null);
+      engineDataProvided ??
+      (compatibilityReady ||
+          engineTypeId != null ||
+          motorisationId != null ||
+          (identity.engineType?.trim().isNotEmpty ?? false) ||
+          (engineCode?.trim().length ?? 0) > 1);
 
   /// Vrai quand le modèle a été tapé à la main : la recherche de pièces
   /// compatibles est indisponible pour ce véhicule, et rien ne la débloquera
