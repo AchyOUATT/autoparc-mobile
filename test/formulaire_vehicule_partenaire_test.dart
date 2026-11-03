@@ -99,6 +99,11 @@ class _DepotPartenaire extends espace.PartnerRepository {
   int? identifiant;
 
   @override
+  Future<Map<String, dynamic>> listing(espace.PartnerListingKind kind, int id) async => {
+    'fault_declaration': {'state': 'unknown', 'faults': []},
+  };
+
+  @override
   Future<Map<String, dynamic>> saveListing(
     espace.PartnerListingKind kind,
     Map<String, dynamic> data, {

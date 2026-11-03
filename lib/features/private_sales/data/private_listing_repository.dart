@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../inspections/data/staff_inspection.dart';
+import '../../vehicles/data/models/fault_declaration.dart';
 
 const privateSalesEnabled = bool.fromEnvironment('ENABLE_PRIVATE_SALES');
 
@@ -15,6 +17,10 @@ class PrivateListing {
   String text(String key) => fields[key]?.toString() ?? '';
   int number(String key) => readListingInt(fields[key]);
   String get title => text('title');
+  StaffInspectionSummary? get inspection =>
+      StaffInspectionSummary.parse(fields['inspection']);
+  FaultDeclaration get faultDeclaration =>
+      FaultDeclaration.fromJson(fields['fault_declaration']);
   String identityText(String key) {
     final identity = fields['vehicle_identity'];
     return identity is Map ? identity[key]?.toString() ?? '' : '';
@@ -25,8 +31,8 @@ class PrivateListing {
   /// Le numero SAISI par le vendeur, que le personnel appellera.
   String get phoneClaimed => text('phone_claimed');
 
-  /// Le numero VERIFIE : vide tant que personne n'a appele. C'est lui,
-  /// et lui seul, que les acheteurs voient.
+  /// Le numéro vérifié, réservé au propriétaire et à la modération.
+  /// Le catalogue public renvoie les coordonnées AutoParc.
   String get verifiedPhone => text('phone');
 
   /// Un appel a-t-il ete passe et consigne ?
@@ -37,6 +43,13 @@ class PrivateListing {
       .whereType<Map>()
       .map((photo) => Map<String, dynamic>.from(photo))
       .toList();
+
+  List<String> get photoUrls => photos
+      .map((photo) => photo['url'])
+      .whereType<String>()
+      .map((url) => url.trim())
+      .where((url) => url.isNotEmpty)
+      .toList(growable: false);
 }
 
 class PrivateListingPage {

@@ -103,6 +103,7 @@ Future<void> _ouvrirFormulaire(
       catalogRefsProvider.overrideWith((_) async => _refs),
       countriesProvider.overrideWith((_) async => <CountryRef>[]),
       vehicleAdminRepositoryProvider.overrideWithValue(_DepotVehicules()),
+      espace.partnerRepositoryProvider.overrideWithValue(_DepotAnnonces(const [])),
       annuaire.partnerRepositoryProvider.overrideWithValue(_Annuaire()),
       espace.partnerSessionProvider.overrideWith((_) => _Session(taux)),
     ],
@@ -120,6 +121,11 @@ class _DepotAnnonces extends espace.PartnerRepository {
   _DepotAnnonces(this.annonces);
 
   final List<Map<String, dynamic>> annonces;
+
+  @override
+  Future<Map<String, dynamic>> listing(espace.PartnerListingKind kind, int id) async => {
+    'fault_declaration': {'state': 'unknown', 'faults': []},
+  };
 
   @override
   Future<espace.PartnerListingPage> listListings(

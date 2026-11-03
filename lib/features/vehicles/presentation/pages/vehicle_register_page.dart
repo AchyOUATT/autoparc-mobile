@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import '../../../catalog/presentation/catalog_reference_labels.dart';
 import '../../../../core/l10n/reference_labels.dart';
+import '../../../../core/l10n/transmission_labels.dart';
 import 'package:flutter/material.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../l10n/app_localizations_fr.dart';
@@ -8,7 +11,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/catalog_refs.dart';
+import '../../data/models/fault_declaration.dart';
 import '../../data/models/vehicle_classification_selection.dart';
+import '../../data/vehicle_fault_repository.dart';
 import '../providers/vehicle_refs_provider.dart';
 import '../../data/vehicle_admin_repository.dart';
 import 'vehicle_form_mode.dart';
@@ -24,6 +29,8 @@ import '../../../../features/partner_accounts/presentation/partner_session.dart'
     as espace;
 import '../../../../core/api/api_exception.dart';
 import '../widgets/vehicle_reference_dropdown.dart';
+import '../widgets/fault_declaration_widget.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../shared/presentation/pages/media_upload_page.dart';
 import '../../../../shared/data/media_repository.dart';
 import '../../../../features/catalog/data/models/vehicle.dart';
@@ -87,6 +94,17 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   int _step = 0;
   bool _submitting = false;
   bool _refsInitialized = false; // pré-sélection refs (mode édition)
+  FaultDeclaration _faultDeclaration = const FaultDeclaration.unknown();
+  bool _faultsDirty = false;
+  bool _faultsReady = false;
+  bool _faultsLoading = false;
+  Object? _faultsLoadError;
+  String? _faultAccessKey;
+  String _faultBaseline = '';
+  int _faultLoadGeneration = 0;
+
+  bool get _canDeclareFaults => widget.mode.estPartenaire ||
+      ref.read(authProvider).canManageFaults;
 
   Vehicle? get _existing => widget.existing;
 
@@ -132,7 +150,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   set _engineType(EngineTypeRef? value) => _classification.engineType = value;
   DrivetrainRef? get _drivetrain => _classification.drivetrain;
   set _drivetrain(DrivetrainRef? value) => _classification.drivetrain = value;
-  String _transmission = 'automatic'; // 'manual' | 'automatic' | 'cvt'
+  String _transmission = 'automatic';
   final _powerCtrl = TextEditingController();
   final _seatsCtrl = TextEditingController(text: '5');
   final _doorsCtrl = TextEditingController(text: '4');
@@ -175,6 +193,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   void initState() {
     super.initState();
     final e = _existing;
+    _faultDeclaration = e?.faultDeclaration ?? const FaultDeclaration.unknown();
+    _faultsReady = e == null;
+    _faultBaseline = jsonEncode(_faultDeclaration.toPayload());
+    Future.microtask(_syncFaultAccess);
     if (e != null) {
       _vehicleType = e.vehicleType;
       _bodyStyle = e.bodyStyle;
@@ -216,6 +238,114 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         );
       }
     }
+  }
+
+  /// Editing staff must fetch every internal row, not reuse public omissions.
+  /// Partner detail has its own authorization and marks staff rows read-only.
+  void _syncFaultAccess() {
+    if (!mounted) return;
+    final auth = widget.mode.estPartenaire ? null : ref.read(authProvider);
+    final key = widget.mode.estPartenaire
+        ? 'partner'
+        : '${auth!.staffUser?.id}:${auth.staffUser?.role}:${auth.canManageFaults}';
+    if (_faultAccessKey == key) return;
+    _faultAccessKey = key;
+    _faultLoadGeneration++;
+    setState(() {
+      _faultDeclaration = _existing?.faultDeclaration ?? const FaultDeclaration.unknown();
+      _faultsDirty = false;
+      _faultsReady = _existing == null;
+      _faultsLoading = false;
+      _faultsLoadError = null;
+      _faultBaseline = jsonEncode(_faultDeclaration.toPayload());
+    });
+    if (_canDeclareFaults && _existing != null) _loadFaultDeclaration();
+  }
+
+  Future<void> _loadFaultDeclaration() async {
+    final existing = _existing;
+    if (existing == null || !_canDeclareFaults || _faultsLoading) return;
+    final generation = ++_faultLoadGeneration;
+    setState(() {
+      _faultsLoading = true;
+      _faultsLoadError = null;
+    });
+    try {
+      final FaultDeclaration declaration;
+      if (widget.mode.estPartenaire) {
+        final detail = await ref.read(espace.partnerRepositoryProvider)
+            .listing(espace.PartnerListingKind.vehicles, existing.id);
+        declaration = FaultDeclaration.fromJson(detail['fault_declaration']);
+      } else {
+        final rows = await ref.read(vehicleFaultRepositoryProvider).getFaults(existing.id);
+        declaration = FaultDeclaration.fromJson({
+          'state': existing.faultDeclaration.state,
+          'faults': rows.map((fault) => {
+            'id': fault.id,
+            'category': fault.category,
+            'title': fault.title,
+            'description': fault.description,
+            'severity': fault.severity,
+            'status': fault.status,
+            'affects_drivability': fault.affectsDrivability,
+            'is_safety_critical': fault.isSafetyCritical,
+            'disclosed_to_buyer': fault.disclosedToBuyer,
+            'editable': true,
+          }).toList(),
+        });
+      }
+      if (!mounted || generation != _faultLoadGeneration || !_canDeclareFaults) return;
+      setState(() {
+        _faultDeclaration = declaration;
+        _faultBaseline = jsonEncode(declaration.toPayload());
+        _faultsDirty = false;
+        _faultsReady = true;
+      });
+    } catch (error) {
+      if (mounted && generation == _faultLoadGeneration) {
+        setState(() => _faultsLoadError = error);
+      }
+    } finally {
+      if (mounted && generation == _faultLoadGeneration) {
+        setState(() => _faultsLoading = false);
+      }
+    }
+  }
+
+  Widget _faultDeclarationEditor() {
+    if (!_canDeclareFaults) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (!_faultsReady) ...[
+            Text(l10n.catalogFieldFaults),
+            const SizedBox(height: 8),
+            if (_faultsLoadError != null)
+              Wrap(
+                spacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(messageFor(_faultsLoadError!, l10n: l10n)),
+                  TextButton(onPressed: _loadFaultDeclaration, child: Text(l10n.commonRetry)),
+                ],
+              )
+            else
+              const LinearProgressIndicator(),
+          ] else
+            FaultDeclarationWidget(
+              value: _faultDeclaration,
+              enabled: !_submitting,
+              staffStatuses: !widget.mode.estPartenaire,
+              onChanged: (declaration) => setState(() {
+                _faultDeclaration = declaration;
+                _faultsDirty = jsonEncode(declaration.toPayload()) != _faultBaseline;
+              }),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -446,6 +576,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         : null;
 
     return <String, dynamic>{
+      if (_canDeclareFaults && _faultsReady && _faultsDirty)
+        ..._faultDeclaration.toPayload(),
       'vehicle_type': _vehicleType,
       if (_bodyStyle != null || _classificationChanged)
         'body_style': _bodyStyle,
@@ -604,6 +736,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final refsAsync = ref.watch(catalogRefsProvider);
+    if (!widget.mode.estPartenaire) {
+      ref.listen<AuthState>(authProvider, (_, _) => _syncFaultAccess());
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -1053,11 +1188,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     final parts = <String>[
       if (_engineType != null) referenceFuelLabel(_engineType!.code, _engineType!.label, l10n),
       if (_transmission.isNotEmpty)
-        switch (_transmission) {
-          'manual' => l10n.vehiclesTransmissionManualSummary,
-          'cvt' => l10n.catalogTransmissionCvt,
-          _ => l10n.vehiclesTransmissionAutomaticSummary,
-        },
+        transmissionLabel(_transmission, l10n),
       if (_drivetrain != null) referenceDrivetrainLabel(_drivetrain!.code, _drivetrain!.label, l10n),
       if (_powerCtrl.text.trim().isNotEmpty)
         l10n.vehiclesPowerSummary(_powerCtrl.text.trim()),
@@ -1105,11 +1236,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           ),
           const SizedBox(height: 12),
 
-          // Transmission
+          // Boîte de vitesses
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              l10n.vehiclesFaultCategoryTransmission,
+              l10n.catalogFieldTransmission,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -1117,17 +1248,15 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           ),
           const SizedBox(height: 6),
           _ChoiceGroup<String>(
-            options: [
-              (value: 'manual', label: l10n.catalogTransmissionManual),
-              (value: 'automatic', label: l10n.catalogTransmissionAutomatic),
-              (value: 'cvt', label: l10n.catalogTransmissionCvt),
-            ],
+            options: vehicleTransmissionCodes
+                .map((code) => (value: code, label: transmissionLabel(code, l10n)))
+                .toList(),
             selected: _transmission,
             onChanged: (v) => setState(() => _transmission = v),
           ),
           const SizedBox(height: 16),
 
-          // Transmission séquentielle
+          // Roues motrices, indépendantes du type de boîte.
           VehicleReferenceDropdown<DrivetrainRef>(
             label: l10n.vehiclesDrivetrainLabel,
             items: refs.drivetrains,
@@ -1183,6 +1312,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               ),
             ],
           ),
+
+          _faultDeclarationEditor(),
 
           // ── Équipements / options ────────────────────────────────────
           if (refs.features.isNotEmpty) ...[

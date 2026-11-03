@@ -615,7 +615,7 @@
   "@catalogFieldBodyStyle": {
     "description": "Libellé de ligne de la fiche. Même mot que catalogFilterGroupBodyStyle, qui titre le groupe de puces de la liste ; deux clés parce que l'un est un intitulé de groupe de filtres et l'autre un libellé de ligne — scinder plus tard aurait demandé d'auditer les deux écrans."
   },
-  "catalogFieldTransmission": "Boîte",
+  "catalogFieldTransmission": "Boîte de vitesses",
   "@catalogFieldTransmission": {
     "description": "Libellé de ligne de la fiche. ABRÉGÉ EN FRANÇAIS — « Boîte » et non « Boîte de vitesses » —, et l'anglais ne peut pas abréger de la même façon : « Box » ne veut rien dire ici, d'où « Gearbox », plus long d'un signe que le français."
   },
@@ -1767,7 +1767,7 @@
   "@privateSalesPrefillGarage": {
     "description": "Action de préremplissage."
   },
-  "privateSalesGaragePrivacy": "Votre garage reste privé. Seules les informations saisies ici seront publiées.",
+  "privateSalesGaragePrivacy": "Votre garage reste privé. Seuls les détails du véhicule et ses photos sont publiés.",
   "@privateSalesGaragePrivacy": {
     "description": "Explication de confidentialité du préremplissage."
   },
@@ -1783,15 +1783,15 @@
   "@privateSalesDescriptionLabel": {
     "description": "Libellé de la description publique."
   },
-  "privateSalesSellerNameLabel": "Nom affiché aux acheteurs",
+  "privateSalesSellerNameLabel": "Nom du vendeur",
   "@privateSalesSellerNameLabel": {
-    "description": "Libellé du nom public du vendeur."
+    "description": "Nom du vendeur réservé à AutoParc, au propriétaire et à la modération."
   },
   "privateSalesPhoneLabel": "Téléphone avec indicatif",
   "@privateSalesPhoneLabel": {
     "description": "Libellé du numéro de contact."
   },
-  "privateSalesWhatsappOptIn": "Être contacté sur WhatsApp",
+  "privateSalesWhatsappOptIn": "Autoriser AutoParc à me joindre sur WhatsApp",
   "@privateSalesWhatsappOptIn": {
     "description": "Interrupteur du canal WhatsApp."
   },
@@ -1827,7 +1827,7 @@
   "@privateSalesBeforePublication": {
     "description": "Titre de la section de consentement."
   },
-  "privateSalesPhoneCallNotice": "Une personne d’AutoParc vous appellera au numéro indiqué pour confirmer que l’annonce vient bien de vous. Votre numéro ne sera affiché aux acheteurs qu’après cet appel.",
+  "privateSalesPhoneCallNotice": "Une personne d’AutoParc vous appellera au numéro indiqué pour confirmer que l’annonce vient bien de vous. Votre numéro reste réservé à AutoParc.",
   "@privateSalesPhoneCallNotice": {
     "description": "Explication de la vérification humaine du téléphone."
   },
@@ -1835,9 +1835,9 @@
   "@privateSalesOwnerConfirmation": {
     "description": "Confirmation de propriété ou d’autorisation de vente."
   },
-  "privateSalesContactConsent": "J’accepte que mon nom affiché et mon téléphone vérifié soient publics sur cette annonce.",
+  "privateSalesContactConsent": "J’autorise AutoParc à me contacter au sujet de cette annonce. Mon nom et mon numéro ne sont pas rendus publics.",
   "@privateSalesContactConsent": {
-    "description": "Consentement à la publication des coordonnées."
+    "description": "Consentement au contact privé par AutoParc pour le traitement de l’annonce."
   },
   "privateSalesSubmit": "Envoyer pour validation",
   "@privateSalesSubmit": {
@@ -1890,6 +1890,26 @@
   "privateSalesContactWhatsapp": "Contacter sur WhatsApp",
   "@privateSalesContactWhatsapp": {
     "description": "Bouton de contact WhatsApp du vendeur."
+  },
+  "privateSalesAutoParcContactNotice": "Pour cette annonce, contactez AutoParc. Les coordonnées du vendeur restent privées.",
+  "@privateSalesAutoParcContactNotice": {
+    "description": "Explication du canal de contact public des annonces de particuliers."
+  },
+  "privateSalesCallAutoParc": "Appeler AutoParc",
+  "@privateSalesCallAutoParc": {
+    "description": "Action publique pour joindre AutoParc au sujet d’une annonce."
+  },
+  "privateSalesWhatsappAutoParc": "WhatsApp AutoParc",
+  "@privateSalesWhatsappAutoParc": {
+    "description": "Action publique pour envoyer à AutoParc un message identifiant l’annonce."
+  },
+  "privateSalesAutoParcMessage": "Bonjour AutoParc, je souhaite des informations sur cette annonce : {title}\n{url}",
+  "@privateSalesAutoParcMessage": {
+    "description": "Message WhatsApp public adressé à AutoParc, sans coordonnées personnelles du vendeur.",
+    "placeholders": {
+      "title": { "type": "String" },
+      "url": { "type": "String" }
+    }
   },
   "privateSalesBrandRequiredLabel": "Marque *",
   "@privateSalesBrandRequiredLabel": {
@@ -1951,7 +1971,7 @@
   "@privateSalesClearColour": {
     "description": "Action de remise à zéro de la couleur."
   },
-  "privateSalesTransmissionOptional": "Boîte (facultatif)",
+  "privateSalesTransmissionOptional": "Boîte de vitesses (facultatif)",
   "@privateSalesTransmissionOptional": {
     "description": "Libellé du choix facultatif de boîte."
   },
@@ -4697,7 +4717,7 @@
   "@vehiclesTransmissionLabel": {
     "description": "Titre du choix de boîte."
   },
-  "vehiclesDrivetrainLabel": "Transmission des roues",
+  "vehiclesDrivetrainLabel": "Roues motrices",
   "@vehiclesDrivetrainLabel": {
     "description": "Libellé de la motricité."
   },
@@ -5809,11 +5829,11 @@
   "@vehiclesReferenceDriveRearWheel": {
     "description": "Roues motrices du référentiel identifiées par leur code stable."
   },
-  "vehiclesReferenceDriveAllWheel": "Transmission intégrale permanente",
+  "vehiclesReferenceDriveAllWheel": "Transmission intégrale (AWD)",
   "@vehiclesReferenceDriveAllWheel": {
     "description": "Roues motrices du référentiel identifiées par leur code stable."
   },
-  "vehiclesReferenceDriveFourWheel": "4x4 débrayable",
+  "vehiclesReferenceDriveFourWheel": "Quatre roues motrices (4WD)",
   "@vehiclesReferenceDriveFourWheel": {
     "description": "Roues motrices du référentiel identifiées par leur code stable."
   },
@@ -7084,5 +7104,108 @@
   "settingsContactPhoneInvalid": "Saisissez un numéro international valide, par exemple +226 75 57 04 84.",
   "settingsContactSave": "Enregistrer le numéro",
   "settingsContactSaving": "Enregistrement…",
-  "shellContactSettings": "Paramètres · Contact AutoParc"
+  "shellContactSettings": "Paramètres · Contact AutoParc",
+  "inspectionBadgeLabel": "Inspecté par AutoParc",
+  "inspectionAttentionLabel": "Points à prévoir",
+  "inspectionBlockingLabel": "Défauts bloquants signalés",
+  "inspectionReportTitle": "Rapport d’inspection",
+  "inspectionScopeNote": "Constat à la date et au kilométrage indiqués, limité aux points ci-dessous.",
+  "inspectionDateLabel": "Date du contrôle",
+  "inspectionMileageLabel": "Kilométrage relevé",
+  "inspectionValidUntilLabel": "Valable jusqu’au",
+  "inspectionCheckedCount": "{count, plural, one{1 point contrôlé} other{{count} points contrôlés}}",
+  "inspectionSummaryLabel": "Compte rendu",
+  "inspectionStatusOk": "Contrôlé : aucun défaut relevé",
+  "inspectionStatusAttention": "À prévoir",
+  "inspectionStatusBlocking": "Défaut bloquant",
+  "inspectionStatusNotChecked": "Non contrôlé",
+  "inspectionReportUnavailable": "Ce rapport n’est plus disponible. Actualisez la fiche du véhicule.",
+  "inspectionClose": "Fermer",
+  "inspectionAdd": "Enregistrer une inspection",
+  "inspectionReplace": "Enregistrer une nouvelle inspection",
+  "inspectionWithdraw": "Retirer l’inspection",
+  "inspectionHistory": "Historique des inspections",
+  "inspectionHistoryActive": "Inspection en cours",
+  "inspectionHistoryWithdrawn": "Retirée",
+  "inspectionHistorySuperseded": "Remplacée",
+  "inspectionHistoryExpired": "Validité expirée",
+  "inspectionHistoryInactive": "Inspection inactive",
+  "inspectionMore": "Voir les inspections précédentes",
+  "inspectionFormTitle": "Inspection AutoParc",
+  "inspectionFormIntro": "À remplir après un contrôle physique du véhicule. Sélectionnez uniquement les points réellement contrôlés et consignez les défauts constatés.",
+  "inspectionDateFuture": "La date du contrôle ne peut pas être dans le futur.",
+  "inspectionMileageRequired": "Indiquez le kilométrage relevé en kilomètres.",
+  "inspectionSummaryRequired": "Renseignez le compte rendu du contrôle.",
+  "inspectionPointLabel": "Point de contrôle",
+  "inspectionPointHint": "Ex. freinage, moteur, carrosserie",
+  "inspectionPointNote": "Observation (facultatif)",
+  "inspectionPointStatus": "Résultat du contrôle",
+  "inspectionPointRequired": "Nommez le point de contrôle.",
+  "inspectionAddPoint": "Ajouter un point de contrôle",
+  "inspectionRemovePoint": "Supprimer ce point",
+  "inspectionAtLeastOneChecked": "Contrôlez au moins un point avant d’enregistrer l’inspection.",
+  "inspectionConfirmation": "Je confirme qu’AutoParc a physiquement contrôlé ce véhicule et que ce rapport décrit les points vérifiés.",
+  "inspectionConfirmationRequired": "Confirmez le contrôle physique du véhicule.",
+  "inspectionSave": "Enregistrer l’inspection",
+  "inspectionSaved": "Inspection enregistrée.",
+  "inspectionValidityOptional": "Préciser une fin de validité (facultatif)",
+  "inspectionValidityDateError": "Choisissez une fin de validité postérieure au contrôle.",
+  "inspectionChooseDate": "Choisir une date",
+  "inspectionWithdrawTitle": "Retirer cette inspection ?",
+  "inspectionWithdrawReason": "Motif du retrait",
+  "inspectionWithdrawReasonRequired": "Indiquez le motif du retrait.",
+  "inspectionWithdrawConfirm": "Retirer",
+  "inspectionWithdrawn": "Inspection retirée.",
+  "@inspectionCheckedCount": {
+    "description": "Nombre de points réellement contrôlés, hors points non contrôlés.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "faultDeclarationTitle": "État déclaré",
+  "faultDeclarationUnknown": "Non renseigné",
+  "faultDeclarationNoneSeller": "Aucun défaut déclaré par le vendeur",
+  "faultDeclarationHasFaults": "Des défauts sont déclarés",
+  "faultDeclarationSellerNote": "Informations déclarées par le vendeur. Elles ne constituent pas un contrôle AutoParc.",
+  "faultDeclarationDate": "Déclaration du {date}",
+  "faultDeclarationUnresolvedCount": "{count, plural, =0{Aucun défaut non réparé déclaré} one{1 défaut non réparé déclaré} other{{count} défauts non réparés déclarés}}",
+  "faultDeclarationUnrepaired": "Non réparé",
+  "faultDeclarationDetailsUnavailable": "Des défauts ont été déclarés. Contactez AutoParc pour consulter les détails.",
+  "faultDeclarationPrivateSubmitRequired": "Renseignez l’état du véhicule : aucun défaut déclaré ou une liste de défauts.",
+  "faultDeclarationListRequired": "Ajoutez au moins un défaut ou choisissez explicitement un autre état.",
+  "faultDeclarationInvalidFault": "Vérifiez les défauts déclarés avant d’enregistrer.",
+  "faultDeclarationFilterNoUnrepaired": "Sans défaut non réparé déclaré",
+  "faultDeclarationChoiceHint": "Choisissez explicitement l’état déclaré. Une liste vide ne vaut pas une déclaration d’absence de défaut.",
+  "faultDeclarationAdd": "Ajouter un défaut",
+  "faultDeclarationEdit": "Modifier le défaut",
+  "faultDeclarationStatusLabel": "Statut déclaré",
+  "faultDeclarationClearTitle": "Effacer les défauts saisis ?",
+  "faultDeclarationClearMessage": "Choisir « Aucun défaut déclaré » retirera les défauts saisis de cette déclaration.",
+  "faultDeclarationClearConfirm": "Effacer et continuer",
+  "faultDeclarationReadOnlyNotice": "Ce défaut est géré par AutoParc. Sa modification est réservée au personnel.",
+  "faultDeclarationReadOnlyBlocksNone": "Des défauts gérés par AutoParc restent présents. Vous ne pouvez pas effacer cette liste.",
+  "faultDeclarationKeepFaultsBeforeUnknown": "Retirez d’abord les défauts modifiables pour passer à « Non renseigné ». Les défauts gérés par AutoParc restent conservés.",
+  "faultDeclarationChangedElsewhere": "La déclaration a été actualisée pendant la saisie. Vérifiez son contenu avant de réessayer.",
+  "faultDeclarationFaultLimit": "La déclaration est limitée à 100 défauts.",
+  "faultDeclarationTitleTooLong": "L’intitulé ne doit pas dépasser 180 caractères.",
+  "faultDeclarationDescriptionTooLong": "La description ne doit pas dépasser 5 000 caractères.",
+  "faultDeclarationApply": "Appliquer",
+  "@faultDeclarationDate": {
+    "description": "Date de déclaration du vendeur, fournie par le serveur. Ce n’est pas une date d’inspection.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "@faultDeclarationUnresolvedCount": {
+    "description": "Défauts dont le statut est différent de repaired. wont_fix compte comme non réparé, même si la maintenance est clôturée.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

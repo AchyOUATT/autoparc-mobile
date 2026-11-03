@@ -14,7 +14,20 @@ String referenceFuelLabel(String? code, String fallback, AppLocalizations l10n) 
     };
 
 String referenceDrivetrainLabel(String? code, String fallback, AppLocalizations l10n) =>
-    l10n.localeName.startsWith('fr') ? fallback : switch (code ?? const {'FWD':'FWD', 'RWD':'RWD', 'AWD':'AWD', '4WD':'4WD', 'Traction avant':'FWD', 'Propulsion arrière':'RWD', 'Transmission intégrale permanente':'AWD', '4x4 débrayable':'4WD'}[fallback]) {
+    switch (code ?? const {
+      'FWD': 'FWD',
+      'RWD': 'RWD',
+      'AWD': 'AWD',
+      '4WD': '4WD',
+      'Traction avant': 'FWD',
+      'Propulsion arrière': 'RWD',
+      'Transmission intégrale permanente': 'AWD',
+      'Transmission intégrale (AWD)': 'AWD',
+      'All-wheel drive (AWD)': 'AWD',
+      '4x4 débrayable': '4WD',
+      'Quatre roues motrices (4WD)': '4WD',
+      'Four-wheel drive (4WD)': '4WD',
+    }[fallback]) {
     'FWD' => l10n.vehiclesReferenceDriveFrontWheel,
     'RWD' => l10n.vehiclesReferenceDriveRearWheel,
     'AWD' => l10n.vehiclesReferenceDriveAllWheel,

@@ -28,6 +28,7 @@ import '../../../../core/providers/shell_scaffold_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../private_sales/data/private_listing_repository.dart';
 import '../../../private_sales/presentation/private_listing_detail.dart';
+import '../../../inspections/presentation/staff_inspection_widgets.dart';
 
 class VehicleListPage extends ConsumerStatefulWidget {
   const VehicleListPage({super.key});
@@ -335,6 +336,16 @@ class _FilterChips extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 20),
+            LibelleGroupeFiltres(l10n.catalogFieldFaults),
+            FilterChip(
+              avatar: const Icon(Icons.fact_check_outlined, size: 14),
+              label: Text(l10n.faultDeclarationFilterNoUnrepaired),
+              selected: filter.withoutFaults == true,
+              onSelected: (_) => update((f) => f.withoutFaults == true
+                  ? f.copyWith(clearWithoutFaults: true)
+                  : f.copyWith(withoutFaults: true)),
+            ),
+            const SizedBox(width: 8),
             LibelleGroupeFiltres(l10n.catalogFilterGroupType),
             FilterChip(
               avatar: const Icon(Icons.airport_shuttle_outlined, size: 14),
@@ -1034,6 +1045,10 @@ class PrivateCatalogVehicleCard extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
+                  if (listing.inspection case final inspection?) ...[
+                    const SizedBox(height: 6),
+                    StaffInspectionBadge(inspection: inspection),
+                  ],
                 ],
               ),
             ),
@@ -1402,6 +1417,10 @@ class _VehicleCardState extends State<VehicleCard> {
       ],
       const SizedBox(height: 4),
       prix,
+      if (vehicle.inspection case final inspection?) ...[
+        const SizedBox(height: 6),
+        StaffInspectionBadge(inspection: inspection),
+      ],
     ];
 
     // RIEN DE RÉSERVÉ, RIEN D'ELLIPSÉ. Les lignes absentes ne laissent pas de
@@ -1897,6 +1916,7 @@ class _EmptyView extends ConsumerWidget {
             : l10n.catalogFilterTermRent,
       if (f.deal == true) l10n.catalogFilterTermDeal,
       if (f.customsCleared == true) l10n.catalogFilterTermCustoms,
+      if (f.withoutFaults == true) l10n.faultDeclarationFilterNoUnrepaired,
       if (f.vehicleType != null) l10n.catalogFilterTermVehicleType,
       if (f.bodyStyle != null) l10n.catalogFilterTermBodyStyle,
       if (f.condition != null) l10n.catalogFilterTermCondition,

@@ -1,9 +1,10 @@
 import '../../../l10n/app_localizations.dart';
+import '../../../core/l10n/transmission_labels.dart';
 
 /// Les libellés que le serveur ne rend pas déjà rédigés.
 ///
 /// `engineType` arrive libellé (« Essence », « Électrique »…), la transmission
-/// non : elle voyage en code (`manual` / `automatic` / `cvt`). La traduction
+/// non : elle voyage en code (`manual`, `dual_clutch`…). La traduction
 /// vivait dans `vehicle_detail_page.dart`, en privé, et a été sortie ici quand
 /// la carte de la grille s'est mise à afficher la boîte de vitesses.
 ///
@@ -22,12 +23,7 @@ import '../../../l10n/app_localizations.dart';
 /// `BuildContext` ne traverse pas une fonction de niveau supérieur, et le seul
 /// appelant est une ligne de la fiche qui en a déjà un sous la main.
 String libelleTransmission(AppLocalizations l10n, String code) =>
-    switch (code) {
-      'manual' => l10n.catalogTransmissionManual,
-      'cvt' => l10n.catalogTransmissionCvt,
-      'automatic' => l10n.catalogTransmissionAutomatic,
-      _ => code,
-    };
+    transmissionLabel(code, l10n);
 
 /// La finition telle qu'une CARTE doit l'afficher : sans sa parenthèse.
 ///

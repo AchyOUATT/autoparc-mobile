@@ -17,6 +17,7 @@ import '../../../garage/data/models/owned_vehicle.dart';
 import '../../../garage/presentation/providers/garage_provider.dart';
 import '../../../garage/presentation/widgets/engine_prompt.dart';
 import '../../../garage/presentation/widgets/mileage_dialog.dart';
+import '../../../inspections/presentation/staff_inspection_widgets.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
 import '../providers/home_providers.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -890,6 +891,13 @@ class _DealTile extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
                         child: PastillePromotion(promotion: vehicle.deal),
+                      ),
+                    if (vehicle.inspection != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: StaffInspectionBadge(
+                          inspection: vehicle.inspection!,
+                        ),
                       ),
                   ],
                 ),

@@ -23,8 +23,13 @@ final _faultsProvider = FutureProvider.autoDispose
 
 class VehicleFaultsSection extends ConsumerWidget {
   final int vehicleId;
+  final VoidCallback? onChanged;
 
-  const VehicleFaultsSection({super.key, required this.vehicleId});
+  const VehicleFaultsSection({
+    super.key,
+    required this.vehicleId,
+    this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -91,8 +96,10 @@ class VehicleFaultsSection extends ConsumerWidget {
                         (f) => _FaultCard(
                           fault: f,
                           vehicleId: vehicleId,
-                          onChanged: () =>
-                              ref.invalidate(_faultsProvider(vehicleId)),
+                          onChanged: () {
+                            ref.invalidate(_faultsProvider(vehicleId));
+                            onChanged?.call();
+                          },
                         ),
                       )
                       .toList(),
@@ -109,7 +116,10 @@ class VehicleFaultsSection extends ConsumerWidget {
       useSafeArea: true,
       builder: (_) => _AddFaultSheet(
         vehicleId: vehicleId,
-        onSaved: () => ref.invalidate(_faultsProvider(vehicleId)),
+        onSaved: () {
+          ref.invalidate(_faultsProvider(vehicleId));
+          onChanged?.call();
+        },
       ),
     );
   }

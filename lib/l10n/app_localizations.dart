@@ -917,7 +917,7 @@ abstract class AppLocalizations {
   /// Libellé de ligne de la fiche. ABRÉGÉ EN FRANÇAIS — « Boîte » et non « Boîte de vitesses » —, et l'anglais ne peut pas abréger de la même façon : « Box » ne veut rien dire ici, d'où « Gearbox », plus long d'un signe que le français.
   ///
   /// In fr, this message translates to:
-  /// **'Boîte'**
+  /// **'Boîte de vitesses'**
   String get catalogFieldTransmission;
 
   /// Libellé de ligne de la fiche.
@@ -2286,7 +2286,7 @@ abstract class AppLocalizations {
   /// Explication de confidentialité du préremplissage.
   ///
   /// In fr, this message translates to:
-  /// **'Votre garage reste privé. Seules les informations saisies ici seront publiées.'**
+  /// **'Votre garage reste privé. Seuls les détails du véhicule et ses photos sont publiés.'**
   String get privateSalesGaragePrivacy;
 
   /// Libellé du prix de l’annonce ; devise inchangée.
@@ -2307,10 +2307,10 @@ abstract class AppLocalizations {
   /// **'État du véhicule et informations utiles'**
   String get privateSalesDescriptionLabel;
 
-  /// Libellé du nom public du vendeur.
+  /// Nom du vendeur réservé à AutoParc, au propriétaire et à la modération.
   ///
   /// In fr, this message translates to:
-  /// **'Nom affiché aux acheteurs'**
+  /// **'Nom du vendeur'**
   String get privateSalesSellerNameLabel;
 
   /// Libellé du numéro de contact.
@@ -2322,7 +2322,7 @@ abstract class AppLocalizations {
   /// Interrupteur du canal WhatsApp.
   ///
   /// In fr, this message translates to:
-  /// **'Être contacté sur WhatsApp'**
+  /// **'Autoriser AutoParc à me joindre sur WhatsApp'**
   String get privateSalesWhatsappOptIn;
 
   /// Action d’enregistrement initial.
@@ -2376,7 +2376,7 @@ abstract class AppLocalizations {
   /// Explication de la vérification humaine du téléphone.
   ///
   /// In fr, this message translates to:
-  /// **'Une personne d’AutoParc vous appellera au numéro indiqué pour confirmer que l’annonce vient bien de vous. Votre numéro ne sera affiché aux acheteurs qu’après cet appel.'**
+  /// **'Une personne d’AutoParc vous appellera au numéro indiqué pour confirmer que l’annonce vient bien de vous. Votre numéro reste réservé à AutoParc.'**
   String get privateSalesPhoneCallNotice;
 
   /// Confirmation de propriété ou d’autorisation de vente.
@@ -2385,10 +2385,10 @@ abstract class AppLocalizations {
   /// **'Je suis propriétaire de ce véhicule ou autorisé à le vendre.'**
   String get privateSalesOwnerConfirmation;
 
-  /// Consentement à la publication des coordonnées.
+  /// Consentement au contact privé par AutoParc pour le traitement de l’annonce.
   ///
   /// In fr, this message translates to:
-  /// **'J’accepte que mon nom affiché et mon téléphone vérifié soient publics sur cette annonce.'**
+  /// **'J’autorise AutoParc à me contacter au sujet de cette annonce. Mon nom et mon numéro ne sont pas rendus publics.'**
   String get privateSalesContactConsent;
 
   /// Action de soumission d’un brouillon.
@@ -2468,6 +2468,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Contacter sur WhatsApp'**
   String get privateSalesContactWhatsapp;
+
+  /// Explication du canal de contact public des annonces de particuliers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour cette annonce, contactez AutoParc. Les coordonnées du vendeur restent privées.'**
+  String get privateSalesAutoParcContactNotice;
+
+  /// Action publique pour joindre AutoParc au sujet d’une annonce.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appeler AutoParc'**
+  String get privateSalesCallAutoParc;
+
+  /// Action publique pour envoyer à AutoParc un message identifiant l’annonce.
+  ///
+  /// In fr, this message translates to:
+  /// **'WhatsApp AutoParc'**
+  String get privateSalesWhatsappAutoParc;
+
+  /// Message WhatsApp public adressé à AutoParc, sans coordonnées personnelles du vendeur.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bonjour AutoParc, je souhaite des informations sur cette annonce : {title}\n{url}'**
+  String privateSalesAutoParcMessage(String title, String url);
 
   /// Libellé de la marque obligatoire dans le formulaire.
   ///
@@ -2562,7 +2586,7 @@ abstract class AppLocalizations {
   /// Libellé du choix facultatif de boîte.
   ///
   /// In fr, this message translates to:
-  /// **'Boîte (facultatif)'**
+  /// **'Boîte de vitesses (facultatif)'**
   String get privateSalesTransmissionOptional;
 
   /// Type de boîte à double embrayage.
@@ -6074,7 +6098,7 @@ abstract class AppLocalizations {
   /// Libellé de la motricité.
   ///
   /// In fr, this message translates to:
-  /// **'Transmission des roues'**
+  /// **'Roues motrices'**
   String get vehiclesDrivetrainLabel;
 
   /// Libellé de puissance sans conversion de quantité.
@@ -7580,13 +7604,13 @@ abstract class AppLocalizations {
   /// Roues motrices du référentiel identifiées par leur code stable.
   ///
   /// In fr, this message translates to:
-  /// **'Transmission intégrale permanente'**
+  /// **'Transmission intégrale (AWD)'**
   String get vehiclesReferenceDriveAllWheel;
 
   /// Roues motrices du référentiel identifiées par leur code stable.
   ///
   /// In fr, this message translates to:
-  /// **'4x4 débrayable'**
+  /// **'Quatre roues motrices (4WD)'**
   String get vehiclesReferenceDriveFourWheel;
 
   /// Couleur standard exacte de ColorsSeeder ; les couleurs personnalisées sont conservées.
@@ -9580,6 +9604,480 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Paramètres · Contact AutoParc'**
   String get shellContactSettings;
+
+  /// No description provided for @inspectionBadgeLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inspecté par AutoParc'**
+  String get inspectionBadgeLabel;
+
+  /// No description provided for @inspectionAttentionLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Points à prévoir'**
+  String get inspectionAttentionLabel;
+
+  /// No description provided for @inspectionBlockingLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Défauts bloquants signalés'**
+  String get inspectionBlockingLabel;
+
+  /// No description provided for @inspectionReportTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rapport d’inspection'**
+  String get inspectionReportTitle;
+
+  /// No description provided for @inspectionScopeNote.
+  ///
+  /// In fr, this message translates to:
+  /// **'Constat à la date et au kilométrage indiqués, limité aux points ci-dessous.'**
+  String get inspectionScopeNote;
+
+  /// No description provided for @inspectionDateLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date du contrôle'**
+  String get inspectionDateLabel;
+
+  /// No description provided for @inspectionMileageLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Kilométrage relevé'**
+  String get inspectionMileageLabel;
+
+  /// No description provided for @inspectionValidUntilLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Valable jusqu’au'**
+  String get inspectionValidUntilLabel;
+
+  /// Nombre de points réellement contrôlés, hors points non contrôlés.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{1 point contrôlé} other{{count} points contrôlés}}'**
+  String inspectionCheckedCount(int count);
+
+  /// No description provided for @inspectionSummaryLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte rendu'**
+  String get inspectionSummaryLabel;
+
+  /// No description provided for @inspectionStatusOk.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contrôlé : aucun défaut relevé'**
+  String get inspectionStatusOk;
+
+  /// No description provided for @inspectionStatusAttention.
+  ///
+  /// In fr, this message translates to:
+  /// **'À prévoir'**
+  String get inspectionStatusAttention;
+
+  /// No description provided for @inspectionStatusBlocking.
+  ///
+  /// In fr, this message translates to:
+  /// **'Défaut bloquant'**
+  String get inspectionStatusBlocking;
+
+  /// No description provided for @inspectionStatusNotChecked.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non contrôlé'**
+  String get inspectionStatusNotChecked;
+
+  /// No description provided for @inspectionReportUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce rapport n’est plus disponible. Actualisez la fiche du véhicule.'**
+  String get inspectionReportUnavailable;
+
+  /// No description provided for @inspectionClose.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermer'**
+  String get inspectionClose;
+
+  /// No description provided for @inspectionAdd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer une inspection'**
+  String get inspectionAdd;
+
+  /// No description provided for @inspectionReplace.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer une nouvelle inspection'**
+  String get inspectionReplace;
+
+  /// No description provided for @inspectionWithdraw.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer l’inspection'**
+  String get inspectionWithdraw;
+
+  /// No description provided for @inspectionHistory.
+  ///
+  /// In fr, this message translates to:
+  /// **'Historique des inspections'**
+  String get inspectionHistory;
+
+  /// No description provided for @inspectionHistoryActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inspection en cours'**
+  String get inspectionHistoryActive;
+
+  /// No description provided for @inspectionHistoryWithdrawn.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirée'**
+  String get inspectionHistoryWithdrawn;
+
+  /// No description provided for @inspectionHistorySuperseded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Remplacée'**
+  String get inspectionHistorySuperseded;
+
+  /// No description provided for @inspectionHistoryExpired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Validité expirée'**
+  String get inspectionHistoryExpired;
+
+  /// No description provided for @inspectionHistoryInactive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inspection inactive'**
+  String get inspectionHistoryInactive;
+
+  /// No description provided for @inspectionMore.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir les inspections précédentes'**
+  String get inspectionMore;
+
+  /// No description provided for @inspectionFormTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inspection AutoParc'**
+  String get inspectionFormTitle;
+
+  /// No description provided for @inspectionFormIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'À remplir après un contrôle physique du véhicule. Sélectionnez uniquement les points réellement contrôlés et consignez les défauts constatés.'**
+  String get inspectionFormIntro;
+
+  /// No description provided for @inspectionDateFuture.
+  ///
+  /// In fr, this message translates to:
+  /// **'La date du contrôle ne peut pas être dans le futur.'**
+  String get inspectionDateFuture;
+
+  /// No description provided for @inspectionMileageRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indiquez le kilométrage relevé en kilomètres.'**
+  String get inspectionMileageRequired;
+
+  /// No description provided for @inspectionSummaryRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renseignez le compte rendu du contrôle.'**
+  String get inspectionSummaryRequired;
+
+  /// No description provided for @inspectionPointLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Point de contrôle'**
+  String get inspectionPointLabel;
+
+  /// No description provided for @inspectionPointHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ex. freinage, moteur, carrosserie'**
+  String get inspectionPointHint;
+
+  /// No description provided for @inspectionPointNote.
+  ///
+  /// In fr, this message translates to:
+  /// **'Observation (facultatif)'**
+  String get inspectionPointNote;
+
+  /// No description provided for @inspectionPointStatus.
+  ///
+  /// In fr, this message translates to:
+  /// **'Résultat du contrôle'**
+  String get inspectionPointStatus;
+
+  /// No description provided for @inspectionPointRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nommez le point de contrôle.'**
+  String get inspectionPointRequired;
+
+  /// No description provided for @inspectionAddPoint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un point de contrôle'**
+  String get inspectionAddPoint;
+
+  /// No description provided for @inspectionRemovePoint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer ce point'**
+  String get inspectionRemovePoint;
+
+  /// No description provided for @inspectionAtLeastOneChecked.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contrôlez au moins un point avant d’enregistrer l’inspection.'**
+  String get inspectionAtLeastOneChecked;
+
+  /// No description provided for @inspectionConfirmation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je confirme qu’AutoParc a physiquement contrôlé ce véhicule et que ce rapport décrit les points vérifiés.'**
+  String get inspectionConfirmation;
+
+  /// No description provided for @inspectionConfirmationRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confirmez le contrôle physique du véhicule.'**
+  String get inspectionConfirmationRequired;
+
+  /// No description provided for @inspectionSave.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer l’inspection'**
+  String get inspectionSave;
+
+  /// No description provided for @inspectionSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inspection enregistrée.'**
+  String get inspectionSaved;
+
+  /// No description provided for @inspectionValidityOptional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Préciser une fin de validité (facultatif)'**
+  String get inspectionValidityOptional;
+
+  /// No description provided for @inspectionValidityDateError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez une fin de validité postérieure au contrôle.'**
+  String get inspectionValidityDateError;
+
+  /// No description provided for @inspectionChooseDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir une date'**
+  String get inspectionChooseDate;
+
+  /// No description provided for @inspectionWithdrawTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer cette inspection ?'**
+  String get inspectionWithdrawTitle;
+
+  /// No description provided for @inspectionWithdrawReason.
+  ///
+  /// In fr, this message translates to:
+  /// **'Motif du retrait'**
+  String get inspectionWithdrawReason;
+
+  /// No description provided for @inspectionWithdrawReasonRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indiquez le motif du retrait.'**
+  String get inspectionWithdrawReasonRequired;
+
+  /// No description provided for @inspectionWithdrawConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer'**
+  String get inspectionWithdrawConfirm;
+
+  /// No description provided for @inspectionWithdrawn.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inspection retirée.'**
+  String get inspectionWithdrawn;
+
+  /// No description provided for @faultDeclarationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'État déclaré'**
+  String get faultDeclarationTitle;
+
+  /// No description provided for @faultDeclarationUnknown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non renseigné'**
+  String get faultDeclarationUnknown;
+
+  /// No description provided for @faultDeclarationNoneSeller.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun défaut déclaré par le vendeur'**
+  String get faultDeclarationNoneSeller;
+
+  /// No description provided for @faultDeclarationHasFaults.
+  ///
+  /// In fr, this message translates to:
+  /// **'Des défauts sont déclarés'**
+  String get faultDeclarationHasFaults;
+
+  /// No description provided for @faultDeclarationSellerNote.
+  ///
+  /// In fr, this message translates to:
+  /// **'Informations déclarées par le vendeur. Elles ne constituent pas un contrôle AutoParc.'**
+  String get faultDeclarationSellerNote;
+
+  /// Date de déclaration du vendeur, fournie par le serveur. Ce n’est pas une date d’inspection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déclaration du {date}'**
+  String faultDeclarationDate(String date);
+
+  /// Défauts dont le statut est différent de repaired. wont_fix compte comme non réparé, même si la maintenance est clôturée.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun défaut non réparé déclaré} one{1 défaut non réparé déclaré} other{{count} défauts non réparés déclarés}}'**
+  String faultDeclarationUnresolvedCount(int count);
+
+  /// No description provided for @faultDeclarationUnrepaired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non réparé'**
+  String get faultDeclarationUnrepaired;
+
+  /// No description provided for @faultDeclarationDetailsUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Des défauts ont été déclarés. Contactez AutoParc pour consulter les détails.'**
+  String get faultDeclarationDetailsUnavailable;
+
+  /// No description provided for @faultDeclarationPrivateSubmitRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renseignez l’état du véhicule : aucun défaut déclaré ou une liste de défauts.'**
+  String get faultDeclarationPrivateSubmitRequired;
+
+  /// No description provided for @faultDeclarationListRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoutez au moins un défaut ou choisissez explicitement un autre état.'**
+  String get faultDeclarationListRequired;
+
+  /// No description provided for @faultDeclarationInvalidFault.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vérifiez les défauts déclarés avant d’enregistrer.'**
+  String get faultDeclarationInvalidFault;
+
+  /// No description provided for @faultDeclarationFilterNoUnrepaired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans défaut non réparé déclaré'**
+  String get faultDeclarationFilterNoUnrepaired;
+
+  /// No description provided for @faultDeclarationChoiceHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez explicitement l’état déclaré. Une liste vide ne vaut pas une déclaration d’absence de défaut.'**
+  String get faultDeclarationChoiceHint;
+
+  /// No description provided for @faultDeclarationAdd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un défaut'**
+  String get faultDeclarationAdd;
+
+  /// No description provided for @faultDeclarationEdit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le défaut'**
+  String get faultDeclarationEdit;
+
+  /// No description provided for @faultDeclarationStatusLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Statut déclaré'**
+  String get faultDeclarationStatusLabel;
+
+  /// No description provided for @faultDeclarationClearTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effacer les défauts saisis ?'**
+  String get faultDeclarationClearTitle;
+
+  /// No description provided for @faultDeclarationClearMessage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir « Aucun défaut déclaré » retirera les défauts saisis de cette déclaration.'**
+  String get faultDeclarationClearMessage;
+
+  /// No description provided for @faultDeclarationClearConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Effacer et continuer'**
+  String get faultDeclarationClearConfirm;
+
+  /// No description provided for @faultDeclarationReadOnlyNotice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce défaut est géré par AutoParc. Sa modification est réservée au personnel.'**
+  String get faultDeclarationReadOnlyNotice;
+
+  /// No description provided for @faultDeclarationReadOnlyBlocksNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Des défauts gérés par AutoParc restent présents. Vous ne pouvez pas effacer cette liste.'**
+  String get faultDeclarationReadOnlyBlocksNone;
+
+  /// No description provided for @faultDeclarationKeepFaultsBeforeUnknown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirez d’abord les défauts modifiables pour passer à « Non renseigné ». Les défauts gérés par AutoParc restent conservés.'**
+  String get faultDeclarationKeepFaultsBeforeUnknown;
+
+  /// No description provided for @faultDeclarationChangedElsewhere.
+  ///
+  /// In fr, this message translates to:
+  /// **'La déclaration a été actualisée pendant la saisie. Vérifiez son contenu avant de réessayer.'**
+  String get faultDeclarationChangedElsewhere;
+
+  /// No description provided for @faultDeclarationFaultLimit.
+  ///
+  /// In fr, this message translates to:
+  /// **'La déclaration est limitée à 100 défauts.'**
+  String get faultDeclarationFaultLimit;
+
+  /// No description provided for @faultDeclarationTitleTooLong.
+  ///
+  /// In fr, this message translates to:
+  /// **'L’intitulé ne doit pas dépasser 180 caractères.'**
+  String get faultDeclarationTitleTooLong;
+
+  /// No description provided for @faultDeclarationDescriptionTooLong.
+  ///
+  /// In fr, this message translates to:
+  /// **'La description ne doit pas dépasser 5 000 caractères.'**
+  String get faultDeclarationDescriptionTooLong;
+
+  /// No description provided for @faultDeclarationApply.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appliquer'**
+  String get faultDeclarationApply;
 }
 
 class _AppLocalizationsDelegate

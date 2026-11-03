@@ -1,4 +1,5 @@
 import '../../../../core/l10n/reference_labels.dart';
+import '../../../../core/l10n/transmission_labels.dart';
 import 'package:flutter/material.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
@@ -256,28 +257,12 @@ class VehicleIdentityFields extends StatelessWidget {
           decoration: InputDecoration(
             labelText: l10n.privateSalesTransmissionOptional,
           ),
-          items: [
-            DropdownMenuItem(
-              value: 'manual',
-              child: Text(l10n.catalogTransmissionManual),
-            ),
-            DropdownMenuItem(
-              value: 'automatic',
-              child: Text(l10n.catalogTransmissionAutomatic),
-            ),
-            DropdownMenuItem(
-              value: 'cvt',
-              child: Text(l10n.catalogTransmissionCvt),
-            ),
-            DropdownMenuItem(
-              value: 'dual_clutch',
-              child: Text(l10n.privateSalesTransmissionDualClutch),
-            ),
-            DropdownMenuItem(
-              value: 'single_speed',
-              child: Text(l10n.privateSalesTransmissionSingleSpeed),
-            ),
-          ],
+          items: vehicleTransmissionCodes
+              .map((code) => DropdownMenuItem(
+                value: code,
+                child: Text(transmissionLabel(code, l10n)),
+              ))
+              .toList(),
           onChanged: enabled ? onTransmissionChanged : null,
         ),
         if (transmission != null)

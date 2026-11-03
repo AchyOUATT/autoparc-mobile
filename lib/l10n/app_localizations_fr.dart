@@ -457,7 +457,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get catalogFieldBodyStyle => 'Carrosserie';
 
   @override
-  String get catalogFieldTransmission => 'Boîte';
+  String get catalogFieldTransmission => 'Boîte de vitesses';
 
   @override
   String get catalogFieldPower => 'Puissance';
@@ -1249,7 +1249,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get privateSalesGaragePrivacy =>
-      'Votre garage reste privé. Seules les informations saisies ici seront publiées.';
+      'Votre garage reste privé. Seuls les détails du véhicule et ses photos sont publiés.';
 
   @override
   String get privateSalesPriceLabel => 'Prix en FCFA';
@@ -1262,13 +1262,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'État du véhicule et informations utiles';
 
   @override
-  String get privateSalesSellerNameLabel => 'Nom affiché aux acheteurs';
+  String get privateSalesSellerNameLabel => 'Nom du vendeur';
 
   @override
   String get privateSalesPhoneLabel => 'Téléphone avec indicatif';
 
   @override
-  String get privateSalesWhatsappOptIn => 'Être contacté sur WhatsApp';
+  String get privateSalesWhatsappOptIn =>
+      'Autoriser AutoParc à me joindre sur WhatsApp';
 
   @override
   String get privateSalesSaveDraft => 'Enregistrer le brouillon';
@@ -1298,7 +1299,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get privateSalesPhoneCallNotice =>
-      'Une personne d’AutoParc vous appellera au numéro indiqué pour confirmer que l’annonce vient bien de vous. Votre numéro ne sera affiché aux acheteurs qu’après cet appel.';
+      'Une personne d’AutoParc vous appellera au numéro indiqué pour confirmer que l’annonce vient bien de vous. Votre numéro reste réservé à AutoParc.';
 
   @override
   String get privateSalesOwnerConfirmation =>
@@ -1306,7 +1307,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get privateSalesContactConsent =>
-      'J’accepte que mon nom affiché et mon téléphone vérifié soient publics sur cette annonce.';
+      'J’autorise AutoParc à me contacter au sujet de cette annonce. Mon nom et mon numéro ne sont pas rendus publics.';
 
   @override
   String get privateSalesSubmit => 'Envoyer pour validation';
@@ -1349,6 +1350,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get privateSalesContactWhatsapp => 'Contacter sur WhatsApp';
+
+  @override
+  String get privateSalesAutoParcContactNotice =>
+      'Pour cette annonce, contactez AutoParc. Les coordonnées du vendeur restent privées.';
+
+  @override
+  String get privateSalesCallAutoParc => 'Appeler AutoParc';
+
+  @override
+  String get privateSalesWhatsappAutoParc => 'WhatsApp AutoParc';
+
+  @override
+  String privateSalesAutoParcMessage(String title, String url) {
+    return 'Bonjour AutoParc, je souhaite des informations sur cette annonce : $title\n$url';
+  }
 
   @override
   String get privateSalesBrandRequiredLabel => 'Marque *';
@@ -1399,7 +1415,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get privateSalesClearColour => 'Effacer la couleur';
 
   @override
-  String get privateSalesTransmissionOptional => 'Boîte (facultatif)';
+  String get privateSalesTransmissionOptional =>
+      'Boîte de vitesses (facultatif)';
 
   @override
   String get privateSalesTransmissionDualClutch => 'Double embrayage';
@@ -3436,7 +3453,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get vehiclesTransmissionLabel => 'Transmission';
 
   @override
-  String get vehiclesDrivetrainLabel => 'Transmission des roues';
+  String get vehiclesDrivetrainLabel => 'Roues motrices';
 
   @override
   String get vehiclesPowerLabel => 'Puissance (ch)';
@@ -4276,11 +4293,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get vehiclesReferenceDriveRearWheel => 'Propulsion arrière';
 
   @override
-  String get vehiclesReferenceDriveAllWheel =>
-      'Transmission intégrale permanente';
+  String get vehiclesReferenceDriveAllWheel => 'Transmission intégrale (AWD)';
 
   @override
-  String get vehiclesReferenceDriveFourWheel => '4x4 débrayable';
+  String get vehiclesReferenceDriveFourWheel => 'Quatre roues motrices (4WD)';
 
   @override
   String get vehiclesReferenceColourWhite => 'Blanc';
@@ -5376,4 +5392,288 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get shellContactSettings => 'Paramètres · Contact AutoParc';
+
+  @override
+  String get inspectionBadgeLabel => 'Inspecté par AutoParc';
+
+  @override
+  String get inspectionAttentionLabel => 'Points à prévoir';
+
+  @override
+  String get inspectionBlockingLabel => 'Défauts bloquants signalés';
+
+  @override
+  String get inspectionReportTitle => 'Rapport d’inspection';
+
+  @override
+  String get inspectionScopeNote =>
+      'Constat à la date et au kilométrage indiqués, limité aux points ci-dessous.';
+
+  @override
+  String get inspectionDateLabel => 'Date du contrôle';
+
+  @override
+  String get inspectionMileageLabel => 'Kilométrage relevé';
+
+  @override
+  String get inspectionValidUntilLabel => 'Valable jusqu’au';
+
+  @override
+  String inspectionCheckedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count points contrôlés',
+      one: '1 point contrôlé',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get inspectionSummaryLabel => 'Compte rendu';
+
+  @override
+  String get inspectionStatusOk => 'Contrôlé : aucun défaut relevé';
+
+  @override
+  String get inspectionStatusAttention => 'À prévoir';
+
+  @override
+  String get inspectionStatusBlocking => 'Défaut bloquant';
+
+  @override
+  String get inspectionStatusNotChecked => 'Non contrôlé';
+
+  @override
+  String get inspectionReportUnavailable =>
+      'Ce rapport n’est plus disponible. Actualisez la fiche du véhicule.';
+
+  @override
+  String get inspectionClose => 'Fermer';
+
+  @override
+  String get inspectionAdd => 'Enregistrer une inspection';
+
+  @override
+  String get inspectionReplace => 'Enregistrer une nouvelle inspection';
+
+  @override
+  String get inspectionWithdraw => 'Retirer l’inspection';
+
+  @override
+  String get inspectionHistory => 'Historique des inspections';
+
+  @override
+  String get inspectionHistoryActive => 'Inspection en cours';
+
+  @override
+  String get inspectionHistoryWithdrawn => 'Retirée';
+
+  @override
+  String get inspectionHistorySuperseded => 'Remplacée';
+
+  @override
+  String get inspectionHistoryExpired => 'Validité expirée';
+
+  @override
+  String get inspectionHistoryInactive => 'Inspection inactive';
+
+  @override
+  String get inspectionMore => 'Voir les inspections précédentes';
+
+  @override
+  String get inspectionFormTitle => 'Inspection AutoParc';
+
+  @override
+  String get inspectionFormIntro =>
+      'À remplir après un contrôle physique du véhicule. Sélectionnez uniquement les points réellement contrôlés et consignez les défauts constatés.';
+
+  @override
+  String get inspectionDateFuture =>
+      'La date du contrôle ne peut pas être dans le futur.';
+
+  @override
+  String get inspectionMileageRequired =>
+      'Indiquez le kilométrage relevé en kilomètres.';
+
+  @override
+  String get inspectionSummaryRequired =>
+      'Renseignez le compte rendu du contrôle.';
+
+  @override
+  String get inspectionPointLabel => 'Point de contrôle';
+
+  @override
+  String get inspectionPointHint => 'Ex. freinage, moteur, carrosserie';
+
+  @override
+  String get inspectionPointNote => 'Observation (facultatif)';
+
+  @override
+  String get inspectionPointStatus => 'Résultat du contrôle';
+
+  @override
+  String get inspectionPointRequired => 'Nommez le point de contrôle.';
+
+  @override
+  String get inspectionAddPoint => 'Ajouter un point de contrôle';
+
+  @override
+  String get inspectionRemovePoint => 'Supprimer ce point';
+
+  @override
+  String get inspectionAtLeastOneChecked =>
+      'Contrôlez au moins un point avant d’enregistrer l’inspection.';
+
+  @override
+  String get inspectionConfirmation =>
+      'Je confirme qu’AutoParc a physiquement contrôlé ce véhicule et que ce rapport décrit les points vérifiés.';
+
+  @override
+  String get inspectionConfirmationRequired =>
+      'Confirmez le contrôle physique du véhicule.';
+
+  @override
+  String get inspectionSave => 'Enregistrer l’inspection';
+
+  @override
+  String get inspectionSaved => 'Inspection enregistrée.';
+
+  @override
+  String get inspectionValidityOptional =>
+      'Préciser une fin de validité (facultatif)';
+
+  @override
+  String get inspectionValidityDateError =>
+      'Choisissez une fin de validité postérieure au contrôle.';
+
+  @override
+  String get inspectionChooseDate => 'Choisir une date';
+
+  @override
+  String get inspectionWithdrawTitle => 'Retirer cette inspection ?';
+
+  @override
+  String get inspectionWithdrawReason => 'Motif du retrait';
+
+  @override
+  String get inspectionWithdrawReasonRequired =>
+      'Indiquez le motif du retrait.';
+
+  @override
+  String get inspectionWithdrawConfirm => 'Retirer';
+
+  @override
+  String get inspectionWithdrawn => 'Inspection retirée.';
+
+  @override
+  String get faultDeclarationTitle => 'État déclaré';
+
+  @override
+  String get faultDeclarationUnknown => 'Non renseigné';
+
+  @override
+  String get faultDeclarationNoneSeller =>
+      'Aucun défaut déclaré par le vendeur';
+
+  @override
+  String get faultDeclarationHasFaults => 'Des défauts sont déclarés';
+
+  @override
+  String get faultDeclarationSellerNote =>
+      'Informations déclarées par le vendeur. Elles ne constituent pas un contrôle AutoParc.';
+
+  @override
+  String faultDeclarationDate(String date) {
+    return 'Déclaration du $date';
+  }
+
+  @override
+  String faultDeclarationUnresolvedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count défauts non réparés déclarés',
+      one: '1 défaut non réparé déclaré',
+      zero: 'Aucun défaut non réparé déclaré',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get faultDeclarationUnrepaired => 'Non réparé';
+
+  @override
+  String get faultDeclarationDetailsUnavailable =>
+      'Des défauts ont été déclarés. Contactez AutoParc pour consulter les détails.';
+
+  @override
+  String get faultDeclarationPrivateSubmitRequired =>
+      'Renseignez l’état du véhicule : aucun défaut déclaré ou une liste de défauts.';
+
+  @override
+  String get faultDeclarationListRequired =>
+      'Ajoutez au moins un défaut ou choisissez explicitement un autre état.';
+
+  @override
+  String get faultDeclarationInvalidFault =>
+      'Vérifiez les défauts déclarés avant d’enregistrer.';
+
+  @override
+  String get faultDeclarationFilterNoUnrepaired =>
+      'Sans défaut non réparé déclaré';
+
+  @override
+  String get faultDeclarationChoiceHint =>
+      'Choisissez explicitement l’état déclaré. Une liste vide ne vaut pas une déclaration d’absence de défaut.';
+
+  @override
+  String get faultDeclarationAdd => 'Ajouter un défaut';
+
+  @override
+  String get faultDeclarationEdit => 'Modifier le défaut';
+
+  @override
+  String get faultDeclarationStatusLabel => 'Statut déclaré';
+
+  @override
+  String get faultDeclarationClearTitle => 'Effacer les défauts saisis ?';
+
+  @override
+  String get faultDeclarationClearMessage =>
+      'Choisir « Aucun défaut déclaré » retirera les défauts saisis de cette déclaration.';
+
+  @override
+  String get faultDeclarationClearConfirm => 'Effacer et continuer';
+
+  @override
+  String get faultDeclarationReadOnlyNotice =>
+      'Ce défaut est géré par AutoParc. Sa modification est réservée au personnel.';
+
+  @override
+  String get faultDeclarationReadOnlyBlocksNone =>
+      'Des défauts gérés par AutoParc restent présents. Vous ne pouvez pas effacer cette liste.';
+
+  @override
+  String get faultDeclarationKeepFaultsBeforeUnknown =>
+      'Retirez d’abord les défauts modifiables pour passer à « Non renseigné ». Les défauts gérés par AutoParc restent conservés.';
+
+  @override
+  String get faultDeclarationChangedElsewhere =>
+      'La déclaration a été actualisée pendant la saisie. Vérifiez son contenu avant de réessayer.';
+
+  @override
+  String get faultDeclarationFaultLimit =>
+      'La déclaration est limitée à 100 défauts.';
+
+  @override
+  String get faultDeclarationTitleTooLong =>
+      'L’intitulé ne doit pas dépasser 180 caractères.';
+
+  @override
+  String get faultDeclarationDescriptionTooLong =>
+      'La description ne doit pas dépasser 5 000 caractères.';
+
+  @override
+  String get faultDeclarationApply => 'Appliquer';
 }
