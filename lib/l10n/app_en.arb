@@ -2545,5 +2545,9 @@
   "faultDeclarationApply": "Apply",
   "vehiclesSavedTransmissionType": "Saved gearbox: {type}",
   "catalogTransmissionAutomatedManual": "Automated manual (AMT)",
-  "catalogTransmissionECvt": "Hybrid e-CVT"
+  "catalogTransmissionECvt": "Hybrid e-CVT",
+  "catalogValidatedByAutoParc": "Validated by AutoParc",
+  "@catalogValidatedByAutoParc": {
+    "description": "Filter for vehicles inspected and validated by AutoParc."
+  }
 }

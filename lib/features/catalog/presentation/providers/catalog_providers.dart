@@ -29,7 +29,7 @@ class VehicleFilter {
   final int? locationId;
   final bool? customsCleared; // true = uniquement les importés dédouanés
   final bool? deal;           // true = uniquement les véhicules mis en avant
-  final bool? withoutFaults;
+  final bool? validatedByAutoParc;
 
   /// null | 'registered' | 'unregistered'
   ///
@@ -53,7 +53,7 @@ class VehicleFilter {
     this.locationId,
     this.customsCleared,
     this.deal,
-    this.withoutFaults,
+    this.validatedByAutoParc,
     this.registrationStatus,
   });
 
@@ -70,7 +70,7 @@ class VehicleFilter {
     int? locationId,
     bool? customsCleared,
     bool? deal,
-    bool? withoutFaults,
+    bool? validatedByAutoParc,
     String? registrationStatus,
     bool clearSearch = false,
     bool clearAvailability = false,
@@ -100,7 +100,7 @@ class VehicleFilter {
         locationId:     clearLocation       ? null : (locationId   ?? this.locationId),
         customsCleared: clearCustomsCleared ? null : (customsCleared ?? this.customsCleared),
         deal:           clearDeal           ? null : (deal           ?? this.deal),
-        withoutFaults: clearWithoutFaults ? null : (withoutFaults ?? this.withoutFaults),
+        validatedByAutoParc: clearValidatedByAutoParc ? null : (validatedByAutoParc ?? this.validatedByAutoParc),
         registrationStatus: clearRegistrationStatus
             ? null
             : (registrationStatus ?? this.registrationStatus),
@@ -264,7 +264,7 @@ class VehicleListNotifier extends AutoDisposeNotifier<PagedState<CatalogVehicleI
         customsCleared: filter.customsCleared,
         registrationStatus: filter.registrationStatus,
         deal:           filter.deal,
-        withoutFaults: filter.withoutFaults,
+        validatedByAutoParc: filter.validatedByAutoParc,
       );
       _page = nextPage;
       // Offset pages can overlap when a new listing enters the feed. Keep

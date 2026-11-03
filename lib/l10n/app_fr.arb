@@ -7228,5 +7228,9 @@
   "catalogTransmissionECvt": "Hybride e-CVT",
   "@catalogTransmissionECvt": {
     "description": "Transmission hybride de type e-CVT, distincte de la CVT mécanique."
+  },
+  "catalogValidatedByAutoParc": "Validés par AutoParc",
+  "@catalogValidatedByAutoParc": {
+    "description": "Filter for vehicles inspected and validated by AutoParc."
   }
 }
