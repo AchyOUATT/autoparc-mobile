@@ -201,7 +201,7 @@
   "catalogBodyLabelTruck": "Truck",
   "catalogBodyLabelOther": "Other",
   "catalogTransmissionManual": "Manual",
-  "catalogTransmissionCvt": "CVT",
+  "catalogTransmissionCvt": "Continuously variable (CVT)",
   "catalogTransmissionAutomatic": "Automatic",
   "catalogPhotosTooltip": "Photos",
   "catalogPartDeleteTitle": "Delete this part?",
@@ -416,7 +416,7 @@
   "privateSalesClearDrivetrain": "Clear drivetrain",
   "privateSalesClearColour": "Clear colour",
   "privateSalesTransmissionOptional": "Gearbox (optional)",
-  "privateSalesTransmissionDualClutch": "Dual-clutch",
+  "privateSalesTransmissionDualClutch": "Dual-clutch (DCT)",
   "privateSalesTransmissionSingleSpeed": "Single-speed",
   "privateSalesClearTransmission": "Clear transmission",
   "privateSalesReviewReason": "Changes needed: {reason}",
@@ -1547,7 +1547,7 @@
   "vehiclesTechnicalTitle": "Technical specifications",
   "vehiclesEngineTypeLabel": "Powertrain type *",
   "vehiclesEngineTypeRequired": "Powertrain is required",
-  "vehiclesTransmissionLabel": "Transmission",
+  "vehiclesTransmissionLabel": "Gearbox",
   "vehiclesDrivetrainLabel": "Driven wheels",
   "vehiclesPowerLabel": "Power (hp)",
   "vehiclesFeaturesTitle": "Equipment & options",
@@ -2542,5 +2542,8 @@
   "faultDeclarationFaultLimit": "A declaration can contain up to 100 faults.",
   "faultDeclarationTitleTooLong": "The title must not exceed 180 characters.",
   "faultDeclarationDescriptionTooLong": "The description must not exceed 5,000 characters.",
-  "faultDeclarationApply": "Apply"
+  "faultDeclarationApply": "Apply",
+  "vehiclesSavedTransmissionType": "Saved gearbox: {type}",
+  "catalogTransmissionAutomatedManual": "Automated manual (AMT)",
+  "catalogTransmissionECvt": "Hybrid e-CVT"
 }

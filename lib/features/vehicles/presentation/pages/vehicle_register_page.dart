@@ -31,6 +31,7 @@ import '../../../../core/api/api_exception.dart';
 import '../widgets/vehicle_reference_dropdown.dart';
 import '../widgets/fault_declaration_widget.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../widgets/transmission_selector.dart';
 import '../../../../shared/presentation/pages/media_upload_page.dart';
 import '../../../../shared/data/media_repository.dart';
 import '../../../../features/catalog/data/models/vehicle.dart';
@@ -150,7 +151,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   set _engineType(EngineTypeRef? value) => _classification.engineType = value;
   DrivetrainRef? get _drivetrain => _classification.drivetrain;
   set _drivetrain(DrivetrainRef? value) => _classification.drivetrain = value;
-  String _transmission = 'automatic';
+  String _transmission = 'automatic'; // Gearbox family, separate from wheel drive.
   final _powerCtrl = TextEditingController();
   final _seatsCtrl = TextEditingController(text: '5');
   final _doorsCtrl = TextEditingController(text: '4');
@@ -1236,27 +1237,14 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           ),
           const SizedBox(height: 12),
 
-          // Boîte de vitesses
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              l10n.catalogFieldTransmission,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          _ChoiceGroup<String>(
-            options: vehicleTransmissionCodes
-                .map((code) => (value: code, label: transmissionLabel(code, l10n)))
-                .toList(),
-            selected: _transmission,
-            onChanged: (v) => setState(() => _transmission = v),
+          TransmissionSelector(
+            label: l10n.vehiclesTransmissionLabel,
+            value: _transmission,
+            onChanged: (value) => setState(() => _transmission = value ?? ''),
           ),
           const SizedBox(height: 16),
 
-          // Roues motrices, indépendantes du type de boîte.
+          // Roues motrices
           VehicleReferenceDropdown<DrivetrainRef>(
             label: l10n.vehiclesDrivetrainLabel,
             items: refs.drivetrains,
@@ -1751,7 +1739,9 @@ class _StepControls extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: 20, bottom: 8),
-      child: Row(
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 8,
         children: [
           FilledButton(
             onPressed: submitting ? null : details.onStepContinue,
@@ -1766,7 +1756,6 @@ class _StepControls extends StatelessWidget {
                   )
                 : Text(isLast ? l10n.catalogFeaturesSave : l10n.vehiclesNext),
           ),
-          const SizedBox(width: 12),
           if (details.stepIndex > 0)
             OutlinedButton(
               onPressed: details.onStepCancel,

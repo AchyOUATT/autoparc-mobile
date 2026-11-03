@@ -947,11 +947,11 @@
   },
   "catalogTransmissionManual": "Manuelle",
   "@catalogTransmissionManual": {
-    "description": "Valeur de la ligne « Boîte ». La transmission est le seul champ technique que le serveur envoie en CODE (`manual` / `cvt` / `automatic`) et non déjà rédigé — d'où ces trois clés, là où « Motorisation » n'en a aucune."
+    "description": "Type de boîte de vitesses. Les codes et libellés des familles sont partagés par les formulaires et les fiches."
   },
-  "catalogTransmissionCvt": "CVT",
+  "catalogTransmissionCvt": "Variation continue (CVT)",
   "@catalogTransmissionCvt": {
-    "description": "Valeur de la ligne « Boîte ». Sigle identique dans les deux langues. Voir catalogTransmissionManual."
+    "description": "Boîte mécanique à variation continue, distincte du système hybride e-CVT."
   },
   "catalogTransmissionAutomatic": "Automatique",
   "@catalogTransmissionAutomatic": {
@@ -1875,7 +1875,7 @@
   "@privateSalesFuel": {
     "description": "Libellé du carburant dans l’identité du véhicule."
   },
-  "privateSalesDrivetrain": "Motricité",
+  "privateSalesDrivetrain": "Roues motrices",
   "@privateSalesDrivetrain": {
     "description": "Libellé de motricité dans l’identité du véhicule."
   },
@@ -1907,8 +1907,12 @@
   "@privateSalesAutoParcMessage": {
     "description": "Message WhatsApp public adressé à AutoParc, sans coordonnées personnelles du vendeur.",
     "placeholders": {
-      "title": { "type": "String" },
-      "url": { "type": "String" }
+      "title": {
+        "type": "String"
+      },
+      "url": {
+        "type": "String"
+      }
     }
   },
   "privateSalesBrandRequiredLabel": "Marque *",
@@ -1975,7 +1979,7 @@
   "@privateSalesTransmissionOptional": {
     "description": "Libellé du choix facultatif de boîte."
   },
-  "privateSalesTransmissionDualClutch": "Double embrayage",
+  "privateSalesTransmissionDualClutch": "Double embrayage (DCT)",
   "@privateSalesTransmissionDualClutch": {
     "description": "Type de boîte à double embrayage."
   },
@@ -4713,7 +4717,7 @@
   "@vehiclesEngineTypeRequired": {
     "description": "Validation de motorisation."
   },
-  "vehiclesTransmissionLabel": "Transmission",
+  "vehiclesTransmissionLabel": "Boîte de vitesses",
   "@vehiclesTransmissionLabel": {
     "description": "Titre du choix de boîte."
   },
@@ -5829,13 +5833,13 @@
   "@vehiclesReferenceDriveRearWheel": {
     "description": "Roues motrices du référentiel identifiées par leur code stable."
   },
-  "vehiclesReferenceDriveAllWheel": "Transmission intégrale (AWD)",
+  "vehiclesReferenceDriveAllWheel": "Intégrale (AWD)",
   "@vehiclesReferenceDriveAllWheel": {
-    "description": "Roues motrices du référentiel identifiées par leur code stable."
+    "description": "Motricité AWD, sans présumer un fonctionnement permanent ou à la demande."
   },
-  "vehiclesReferenceDriveFourWheel": "Quatre roues motrices (4WD)",
+  "vehiclesReferenceDriveFourWheel": "4×4 (4WD)",
   "@vehiclesReferenceDriveFourWheel": {
-    "description": "Roues motrices du référentiel identifiées par leur code stable."
+    "description": "Motricité 4WD, sans présumer que le système soit débrayable ou permanent."
   },
   "vehiclesReferenceColourWhite": "Blanc",
   "@vehiclesReferenceColourWhite": {
@@ -7207,5 +7211,22 @@
         "type": "int"
       }
     }
+  },
+  "vehiclesSavedTransmissionType": "Boîte enregistrée : {type}",
+  "@vehiclesSavedTransmissionType": {
+    "description": "Type de boîte enregistré que cette version de l’application ne reconnaît pas.",
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "catalogTransmissionAutomatedManual": "Robotisée (AMT)",
+  "@catalogTransmissionAutomatedManual": {
+    "description": "Boîte manuelle robotisée à simple embrayage, distincte du double embrayage."
+  },
+  "catalogTransmissionECvt": "Hybride e-CVT",
+  "@catalogTransmissionECvt": {
+    "description": "Transmission hybride de type e-CVT, distincte de la CVT mécanique."
   }
 }

@@ -163,7 +163,9 @@ void main() {
     AccessoryFilter filtreInitial = const AccessoryFilter(),
   }) async {
     final container = ProviderContainer(overrides: [
-      authProvider.overrideWith((_) => _FauxAuth(_admin())),
+      // Ces règles concernent le catalogue public ; le personnel garde les
+      // catégories des indisponibles (accessory_availability_test.dart).
+      authProvider.overrideWith((_) => _FauxAuth(const AuthState())),
       catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
       catalogRefsProvider.overrideWith((_) async => refs),
       categoriesAccessoiresOccupeesProvider.overrideWith((_) async => occupees),

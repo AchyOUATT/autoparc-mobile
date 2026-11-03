@@ -3313,6 +3313,7 @@ class _Depot implements CatalogRepository {
 
   @override
   Future<PaginatedResponse<Accessory>> getAccessories({
+    bool forStaff = false,
     int page = 1,
     int perPage = 20,
     String? search,

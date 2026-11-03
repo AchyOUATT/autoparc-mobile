@@ -154,7 +154,7 @@ class Vehicle extends Equatable {
   ///
   /// Nullables jusqu'au dernier : ces champs sont facultatifs à la saisie, et
   /// un zéro affiché à la place d'un vide dirait quelque chose de faux.
-  final String? transmission; // manual/automatic/cvt/dual_clutch/single_speed
+  final String? transmission; // Gearbox family code (see transmissionCodes).
   final int? powerHp;
   final int? seats;
   final int? doors;

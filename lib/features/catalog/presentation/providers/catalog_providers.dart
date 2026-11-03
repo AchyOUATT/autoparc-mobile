@@ -7,6 +7,7 @@ import '../../data/models/accessory.dart';
 import '../../data/models/part.dart';
 import '../../data/models/part_category.dart';
 import '../../data/models/manufacturer.dart';
+import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../../features/garage/data/garage_repository.dart';
 import '../../../../features/garage/data/models/garage_compatibility.dart';
 import '../../../../shared/models/paged_state.dart';
@@ -317,56 +318,67 @@ class AccessoryListNotifier extends AutoDisposeNotifier<PagedState<Accessory>> {
   static const _perPage = 20;
   int _page = 0;
   bool _fetching = false;
+  int _generation = 0;
 
   @override
   PagedState<Accessory> build() {
     ref.watch(accessoryFilterProvider);
+    ref.watch(authProvider.select((auth) => auth.isStaff));
+    final generation = ++_generation;
+    ref.onDispose(() => _generation++);
     _page = 0;
     _fetching = false;
-    Future.microtask(_fetchNext);
+    Future.microtask(() {
+      if (generation == _generation) _fetchNext();
+    });
     return const PagedState.loading();
   }
 
   Future<void> _fetchNext() async {
     if (_fetching) return;
     _fetching = true;
+    final generation = _generation;
+    final forStaff = ref.read(authProvider).isStaff;
     final nextPage = _page + 1;
-    final isFirst  = nextPage == 1;
+    final isFirst = nextPage == 1;
 
     state = state.copyWith(
-      isLoading:     isFirst,
+      isLoading: isFirst,
       isLoadingMore: !isFirst,
-      clearError:    true,
+      clearError: true,
     );
 
     try {
       final filter = ref.read(accessoryFilterProvider);
-      final resp   = await ref.read(catalogRepositoryProvider).getAccessories(
-        page:       nextPage,
-        perPage:    _perPage,
-        search:     filter.search,
-        category:   filter.category,
-        priceMax:   filter.priceMax,
-        city:       filter.city,
-        locationId: filter.locationId,
-      );
+      final resp = await ref
+          .read(catalogRepositoryProvider)
+          .getAccessories(
+            forStaff: forStaff,
+            page: nextPage,
+            perPage: _perPage,
+            search: filter.search,
+            category: filter.category,
+            priceMax: filter.priceMax,
+            city: filter.city,
+            locationId: filter.locationId,
+          );
+      // Une déconnexion, un filtre ou un rafraîchissement a pu remplacer
+      // cette liste pendant l’appel : sa réponse ne doit plus être affichée.
+      if (generation != _generation) return;
       _page = nextPage;
       state = state.copyWith(
-        items:         isFirst ? resp.data : [...state.items, ...resp.data],
-        total:         resp.total,
-        hasMore:       resp.hasNextPage,
-        isLoading:     false,
+        items: isFirst ? resp.data : [...state.items, ...resp.data],
+        total: resp.total,
+        hasMore: resp.hasNextPage,
+        isLoading: false,
         isLoadingMore: false,
-        clearError:    true,
+        clearError: true,
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoading:     false,
-        isLoadingMore: false,
-        error:         e,
-      );
+      if (generation != _generation) return;
+      state = state.copyWith(isLoading: false, isLoadingMore: false, error: e);
     } finally {
-      _fetching = false;
+      if (generation == _generation) _fetching = false;
     }
   }
 
@@ -376,6 +388,7 @@ class AccessoryListNotifier extends AutoDisposeNotifier<PagedState<Accessory>> {
   }
 
   Future<void> refresh() async {
+    _generation++;
     _page = 0;
     _fetching = false;
     state = const PagedState.loading();
@@ -486,7 +499,8 @@ final dealCountProvider = FutureProvider<int>((ref) async {
 
 final accessoryDetailProvider =
     FutureProvider.autoDispose.family<Accessory, int>((ref, id) async {
-  return ref.read(catalogRepositoryProvider).getAccessory(id);
+  final forStaff = ref.watch(authProvider.select((auth) => auth.isStaff));
+  return ref.read(catalogRepositoryProvider).getAccessory(id, forStaff: forStaff);
 });
 
 final partDetailProvider =

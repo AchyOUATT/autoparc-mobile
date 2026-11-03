@@ -35,4 +35,4 @@ Vérifications : `staff_inspection_module_test.dart`,
 et `auth_capabilities_test.dart`. Les libellés sont présents en français et en
 anglais dans les ARB et leurs fichiers générés.
 
-Déployer l’API avec sa migration `2026_11_02_000001` avant cette version mobile.
+Déployer l’API avec sa migration `2026_11_02_000002` avant cette version mobile.

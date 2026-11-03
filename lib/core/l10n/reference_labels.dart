@@ -13,27 +13,50 @@ String referenceFuelLabel(String? code, String fallback, AppLocalizations l10n) 
       _ => fallback,
     };
 
-String referenceDrivetrainLabel(String? code, String fallback, AppLocalizations l10n) =>
-    switch (code ?? const {
-      'FWD': 'FWD',
-      'RWD': 'RWD',
-      'AWD': 'AWD',
-      '4WD': '4WD',
-      'Traction avant': 'FWD',
-      'Propulsion arrière': 'RWD',
-      'Transmission intégrale permanente': 'AWD',
-      'Transmission intégrale (AWD)': 'AWD',
-      'All-wheel drive (AWD)': 'AWD',
-      '4x4 débrayable': '4WD',
-      'Quatre roues motrices (4WD)': '4WD',
-      'Four-wheel drive (4WD)': '4WD',
-    }[fallback]) {
+/// The code wins over legacy labels in either language, including cached rows.
+/// AWD/4WD alone do not document a permanent or selectable operating mode.
+String referenceDrivetrainLabel(
+  String? code,
+  String fallback,
+  AppLocalizations l10n,
+) {
+  final explicitCode = code?.trim();
+  final normalizedCode = explicitCode == null || explicitCode.isEmpty
+      ? _legacyDrivetrainCode(fallback)
+      : explicitCode.toUpperCase();
+  return switch (normalizedCode) {
     'FWD' => l10n.vehiclesReferenceDriveFrontWheel,
     'RWD' => l10n.vehiclesReferenceDriveRearWheel,
     'AWD' => l10n.vehiclesReferenceDriveAllWheel,
     '4WD' => l10n.vehiclesReferenceDriveFourWheel,
-      _ => fallback,
-    };
+    _ => fallback,
+  };
+}
+
+String? _legacyDrivetrainCode(String label) {
+  final text = label.trim();
+  final code = text.toUpperCase();
+  if (const {'FWD', 'RWD', 'AWD', '4WD'}.contains(code)) return code;
+  return const {
+    'Traction avant': 'FWD',
+    'Propulsion': 'RWD',
+    'Propulsion arrière': 'RWD',
+    'Intégrale permanente': 'AWD',
+    'Transmission intégrale permanente': 'AWD',
+    '4x4 enclenchable': '4WD',
+    '4x4 débrayable': '4WD',
+    'Intégrale (AWD)': 'AWD',
+    'Transmission intégrale (AWD)': 'AWD',
+    '4×4 (4WD)': '4WD',
+    'Quatre roues motrices (4WD)': '4WD',
+    'Front-wheel drive': 'FWD',
+    'Rear-wheel drive': 'RWD',
+    'All-wheel drive': 'AWD',
+    'Selectable four-wheel drive': '4WD',
+    'All-wheel drive (AWD)': 'AWD',
+    'Four-wheel drive (4WD)': '4WD',
+  }[text];
+}
 
 /// Colours do not have a stable code in the API. Match only exact seeded names.
 String referenceColourLabel(String name, AppLocalizations l10n) => switch (name) {

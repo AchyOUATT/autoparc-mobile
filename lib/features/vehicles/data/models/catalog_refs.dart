@@ -38,7 +38,7 @@ class ModelRef {
   final String? defaultVehicleType;  // passenger | utility | heavy
   final int?    defaultSeats;
   final int?    defaultDoors;
-  final String? defaultTransmission; // Code Transmission du backend.
+  final String? defaultTransmission; // Gearbox family code (see transmissionCodes).
   final int?    defaultPowerHp;
 
   /// Le référentiel propose-t-il encore cette génération au choix ?

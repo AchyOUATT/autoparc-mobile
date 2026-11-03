@@ -1,5 +1,5 @@
-import '../../../l10n/app_localizations.dart';
 import '../../../core/l10n/transmission_labels.dart';
+import '../../../l10n/app_localizations.dart';
 import '../data/private_listing_repository.dart';
 
 /// Les libellés suivent la langue de l'écran, jamais le modèle de données.

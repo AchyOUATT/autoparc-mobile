@@ -1,5 +1,4 @@
 import '../../../../core/l10n/reference_labels.dart';
-import '../../../../core/l10n/transmission_labels.dart';
 import 'package:flutter/material.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../data/models/catalog_refs.dart';
 import '../../data/models/vehicle_classification_selection.dart';
 import 'vehicle_reference_dropdown.dart';
+import 'transmission_selector.dart';
 
 /// Vehicle identity uses the same selectors and dependency transitions as registration.
 /// Submission stays with the caller, so this widget cannot create stock or publish a listing.
@@ -250,26 +250,12 @@ class VehicleIdentityFields extends StatelessWidget {
         if (color != null)
           _clear(l10n.privateSalesClearColour, () => onColorChanged(null)),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          key: ValueKey('private-sale-transmission-${transmission ?? 'none'}'),
-          initialValue: transmission,
-          isExpanded: true,
-          decoration: InputDecoration(
-            labelText: l10n.privateSalesTransmissionOptional,
-          ),
-          items: vehicleTransmissionCodes
-              .map((code) => DropdownMenuItem(
-                value: code,
-                child: Text(transmissionLabel(code, l10n)),
-              ))
-              .toList(),
-          onChanged: enabled ? onTransmissionChanged : null,
+        TransmissionSelector(
+          label: l10n.privateSalesTransmissionOptional,
+          value: transmission,
+          enabled: enabled,
+          onChanged: onTransmissionChanged,
         ),
-        if (transmission != null)
-          _clear(
-            l10n.privateSalesClearTransmission,
-            () => onTransmissionChanged(null),
-          ),
         const SizedBox(height: 16),
       ],
     );

@@ -1289,16 +1289,16 @@ abstract class AppLocalizations {
   /// **'Autre'**
   String get catalogBodyLabelOther;
 
-  /// Valeur de la ligne « Boîte ». La transmission est le seul champ technique que le serveur envoie en CODE (`manual` / `cvt` / `automatic`) et non déjà rédigé — d'où ces trois clés, là où « Motorisation » n'en a aucune.
+  /// Type de boîte de vitesses. Les codes et libellés des familles sont partagés par les formulaires et les fiches.
   ///
   /// In fr, this message translates to:
   /// **'Manuelle'**
   String get catalogTransmissionManual;
 
-  /// Valeur de la ligne « Boîte ». Sigle identique dans les deux langues. Voir catalogTransmissionManual.
+  /// Boîte mécanique à variation continue, distincte du système hybride e-CVT.
   ///
   /// In fr, this message translates to:
-  /// **'CVT'**
+  /// **'Variation continue (CVT)'**
   String get catalogTransmissionCvt;
 
   /// Valeur de la ligne « Boîte ». Voir catalogTransmissionManual.
@@ -2448,7 +2448,7 @@ abstract class AppLocalizations {
   /// Libellé de motricité dans l’identité du véhicule.
   ///
   /// In fr, this message translates to:
-  /// **'Motricité'**
+  /// **'Roues motrices'**
   String get privateSalesDrivetrain;
 
   /// Indication d’une vérification du numéro par le personnel.
@@ -2592,7 +2592,7 @@ abstract class AppLocalizations {
   /// Type de boîte à double embrayage.
   ///
   /// In fr, this message translates to:
-  /// **'Double embrayage'**
+  /// **'Double embrayage (DCT)'**
   String get privateSalesTransmissionDualClutch;
 
   /// Type de transmission à rapport unique.
@@ -6092,7 +6092,7 @@ abstract class AppLocalizations {
   /// Titre du choix de boîte.
   ///
   /// In fr, this message translates to:
-  /// **'Transmission'**
+  /// **'Boîte de vitesses'**
   String get vehiclesTransmissionLabel;
 
   /// Libellé de la motricité.
@@ -7601,16 +7601,16 @@ abstract class AppLocalizations {
   /// **'Propulsion arrière'**
   String get vehiclesReferenceDriveRearWheel;
 
-  /// Roues motrices du référentiel identifiées par leur code stable.
+  /// Motricité AWD, sans présumer un fonctionnement permanent ou à la demande.
   ///
   /// In fr, this message translates to:
-  /// **'Transmission intégrale (AWD)'**
+  /// **'Intégrale (AWD)'**
   String get vehiclesReferenceDriveAllWheel;
 
-  /// Roues motrices du référentiel identifiées par leur code stable.
+  /// Motricité 4WD, sans présumer que le système soit débrayable ou permanent.
   ///
   /// In fr, this message translates to:
-  /// **'Quatre roues motrices (4WD)'**
+  /// **'4×4 (4WD)'**
   String get vehiclesReferenceDriveFourWheel;
 
   /// Couleur standard exacte de ColorsSeeder ; les couleurs personnalisées sont conservées.
@@ -10078,6 +10078,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Appliquer'**
   String get faultDeclarationApply;
+
+  /// Type de boîte enregistré que cette version de l’application ne reconnaît pas.
+  ///
+  /// In fr, this message translates to:
+  /// **'Boîte enregistrée : {type}'**
+  String vehiclesSavedTransmissionType(String type);
+
+  /// Boîte manuelle robotisée à simple embrayage, distincte du double embrayage.
+  ///
+  /// In fr, this message translates to:
+  /// **'Robotisée (AMT)'**
+  String get catalogTransmissionAutomatedManual;
+
+  /// Transmission hybride de type e-CVT, distincte de la CVT mécanique.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hybride e-CVT'**
+  String get catalogTransmissionECvt;
 }
 
 class _AppLocalizationsDelegate

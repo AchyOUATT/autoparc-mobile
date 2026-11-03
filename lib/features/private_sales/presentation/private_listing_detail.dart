@@ -86,7 +86,7 @@ class PrivateListingDetail extends ConsumerWidget {
                     l10n,
                   ),
                   'drivetrain' => referenceDrivetrainLabel(
-                    null,
+                    listing.identityText('drivetrain_code'),
                     listing.identityText(entry.key),
                     l10n,
                   ),
