@@ -760,6 +760,11 @@ class AppDrawer extends ConsumerWidget {
               label: AppLocalizations.of(context).shellPartnerApplications,
               onTap: () { _close(context); context.push('/partner-applications'); },
             ),
+            if (privateSalesEnabled && auth.canManageCatalog) _DrawerTile(
+              icon: Icons.fact_check_outlined,
+              label: l10n.privateSalesReviewTitle,
+              onTap: () { _close(context); context.push('/private-listing-reviews'); },
+            ),
             _DrawerTile(
               icon: Icons.list_alt_outlined,
               label: l10n.shellClientNeeds,

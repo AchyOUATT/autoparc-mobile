@@ -21,7 +21,6 @@ import '../../../inspections/presentation/staff_inspection_widgets.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
 import '../providers/home_providers.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../private_sales/data/private_listing_repository.dart';
 
 /// Accueil.
 ///
@@ -64,18 +63,6 @@ class HomePage extends ConsumerWidget {
             if (!auth.isStaff) const _MyVehicleSection(),
             const _DealsSection(),
             const _BrowseSection(),
-            if (privateSalesEnabled) Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(AppLocalizations.of(context).privateSalesHomeTitle, style: Theme.of(context).textTheme.titleLarge),
-                 Text(AppLocalizations.of(context).privateSalesHomeBody),
-                const SizedBox(height: 8),
-                Wrap(spacing: 8, children: [
-                  if (!auth.isStaff) FilledButton.icon(onPressed: () => context.push('/sell'), icon: const Icon(Icons.sell_outlined), label:  Text(AppLocalizations.of(context).privateSalesSellTitle)),
-                  OutlinedButton(onPressed: () => context.push('/private-listings'), child:  Text(AppLocalizations.of(context).privateSalesBrowseAction)),
-                  if (auth.canManageCatalog) TextButton(onPressed: () => context.push('/private-listing-reviews'), child:  Text(AppLocalizations.of(context).privateSalesReviewTitle)),
-                ]),
-              ],
-            ))),
             const SizedBox(height: 8),
             const _NeedPrompt(),
           ],
