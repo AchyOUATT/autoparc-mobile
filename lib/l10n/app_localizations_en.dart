@@ -5684,4 +5684,59 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get catalogValidatedByAutoParc => 'Validated by AutoParc';
+
+  @override
+  String get passwordRecoveryForgot => 'Forgot password?';
+
+  @override
+  String get passwordRecoveryTitle => 'Recover my account';
+
+  @override
+  String get passwordRecoveryIntro =>
+      'Receive an email link to choose a new password.';
+
+  @override
+  String get passwordRecoveryAccountType => 'Which account do you use?';
+
+  @override
+  String get passwordRecoveryClient => 'Client';
+
+  @override
+  String get passwordRecoveryStaff => 'AutoParc staff';
+
+  @override
+  String get passwordRecoveryPartner => 'Partner account';
+
+  @override
+  String get passwordRecoveryPartnerHelp =>
+      'Enter the email associated with your partner account. If you registered with a phone number only, contact AutoParc for assisted recovery.';
+
+  @override
+  String get passwordRecoveryGoogleHelp =>
+      'If you sign in with Google, use “Continue with Google”. Recover your Google password through Google.';
+
+  @override
+  String get passwordRecoverySend => 'Send reset link';
+
+  @override
+  String get passwordRecoveryConfirmation =>
+      'If a matching account can receive a link, you will receive a password reset email. Please also check your spam folder.';
+
+  @override
+  String get passwordRecoveryBackToLogin => 'Back to sign in';
+
+  @override
+  String get passwordRecoveryRateLimited =>
+      'Too many requests. Wait a few minutes before trying again.';
+
+  @override
+  String get passwordRecoveryUnavailable =>
+      'Email recovery is currently unavailable. Try again later or contact AutoParc.';
+
+  @override
+  String get passwordRecoverySupportTitle => 'Need help?';
+
+  @override
+  String get passwordRecoverySupportHelp =>
+      'Contact AutoParc if your account has no email address or you can no longer access it. Your identity must be checked before account recovery.';
 }
