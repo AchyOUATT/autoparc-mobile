@@ -2553,5 +2553,21 @@
   "catalogValidatedByAutoParc": "Validated by AutoParc",
   "@catalogValidatedByAutoParc": {
     "description": "Filter for vehicles inspected and validated by AutoParc."
-  }
+  },
+  "passwordRecoveryForgot": "Forgot password?",
+  "passwordRecoveryTitle": "Recover my account",
+  "passwordRecoveryIntro": "Receive an email link to choose a new password.",
+  "passwordRecoveryAccountType": "Which account do you use?",
+  "passwordRecoveryClient": "Client",
+  "passwordRecoveryStaff": "AutoParc staff",
+  "passwordRecoveryPartner": "Partner account",
+  "passwordRecoveryPartnerHelp": "Enter the email associated with your partner account. If you registered with a phone number only, contact AutoParc for assisted recovery.",
+  "passwordRecoveryGoogleHelp": "If you sign in with Google, use “Continue with Google”. Recover your Google password through Google.",
+  "passwordRecoverySend": "Send reset link",
+  "passwordRecoveryConfirmation": "If a matching account can receive a link, you will receive a password reset email. Please also check your spam folder.",
+  "passwordRecoveryBackToLogin": "Back to sign in",
+  "passwordRecoveryRateLimited": "Too many requests. Wait a few minutes before trying again.",
+  "passwordRecoveryUnavailable": "Email recovery is currently unavailable. Try again later or contact AutoParc.",
+  "passwordRecoverySupportTitle": "Need help?",
+  "passwordRecoverySupportHelp": "Contact AutoParc if your account has no email address or you can no longer access it. Your identity must be checked before account recovery."
 }

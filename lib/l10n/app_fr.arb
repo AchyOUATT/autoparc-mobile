@@ -7239,5 +7239,21 @@
   "catalogValidatedByAutoParc": "Validés par AutoParc",
   "@catalogValidatedByAutoParc": {
     "description": "Filter for vehicles inspected and validated by AutoParc."
-  }
+  },
+  "passwordRecoveryForgot": "Mot de passe oublié ?",
+  "passwordRecoveryTitle": "Récupérer mon compte",
+  "passwordRecoveryIntro": "Recevez un lien par email pour choisir un nouveau mot de passe.",
+  "passwordRecoveryAccountType": "Quel espace utilisez-vous ?",
+  "passwordRecoveryClient": "Client",
+  "passwordRecoveryStaff": "Personnel AutoParc",
+  "passwordRecoveryPartner": "Compte partenaire",
+  "passwordRecoveryPartnerHelp": "Saisissez l’email associé à votre compte partenaire. Si vous vous êtes inscrit uniquement avec un téléphone, contactez AutoParc pour une récupération assistée.",
+  "passwordRecoveryGoogleHelp": "Si vous vous connectez avec Google, utilisez « Continuer avec Google ». Le mot de passe Google se récupère auprès de Google.",
+  "passwordRecoverySend": "Envoyer le lien",
+  "passwordRecoveryConfirmation": "Si un compte correspondant peut recevoir un lien, vous recevrez un email de réinitialisation. Vérifiez aussi vos courriers indésirables.",
+  "passwordRecoveryBackToLogin": "Retour à la connexion",
+  "passwordRecoveryRateLimited": "Trop de demandes. Patientez quelques minutes avant de réessayer.",
+  "passwordRecoveryUnavailable": "La récupération par email est indisponible pour le moment. Réessayez plus tard ou contactez AutoParc.",
+  "passwordRecoverySupportTitle": "Besoin d’aide ?",
+  "passwordRecoverySupportHelp": "Contactez AutoParc si vous n’avez pas d’email associé au compte ou si vous n’y avez plus accès. Votre identité devra être vérifiée avant toute récupération."
 }

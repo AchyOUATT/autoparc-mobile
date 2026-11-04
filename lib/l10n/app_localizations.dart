@@ -10126,6 +10126,102 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Validés par AutoParc'**
   String get catalogValidatedByAutoParc;
+
+  /// No description provided for @passwordRecoveryForgot.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mot de passe oublié ?'**
+  String get passwordRecoveryForgot;
+
+  /// No description provided for @passwordRecoveryTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Récupérer mon compte'**
+  String get passwordRecoveryTitle;
+
+  /// No description provided for @passwordRecoveryIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recevez un lien par email pour choisir un nouveau mot de passe.'**
+  String get passwordRecoveryIntro;
+
+  /// No description provided for @passwordRecoveryAccountType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quel espace utilisez-vous ?'**
+  String get passwordRecoveryAccountType;
+
+  /// No description provided for @passwordRecoveryClient.
+  ///
+  /// In fr, this message translates to:
+  /// **'Client'**
+  String get passwordRecoveryClient;
+
+  /// No description provided for @passwordRecoveryStaff.
+  ///
+  /// In fr, this message translates to:
+  /// **'Personnel AutoParc'**
+  String get passwordRecoveryStaff;
+
+  /// No description provided for @passwordRecoveryPartner.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compte partenaire'**
+  String get passwordRecoveryPartner;
+
+  /// No description provided for @passwordRecoveryPartnerHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez l’email associé à votre compte partenaire. Si vous vous êtes inscrit uniquement avec un téléphone, contactez AutoParc pour une récupération assistée.'**
+  String get passwordRecoveryPartnerHelp;
+
+  /// No description provided for @passwordRecoveryGoogleHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Si vous vous connectez avec Google, utilisez « Continuer avec Google ». Le mot de passe Google se récupère auprès de Google.'**
+  String get passwordRecoveryGoogleHelp;
+
+  /// No description provided for @passwordRecoverySend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer le lien'**
+  String get passwordRecoverySend;
+
+  /// No description provided for @passwordRecoveryConfirmation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Si un compte correspondant peut recevoir un lien, vous recevrez un email de réinitialisation. Vérifiez aussi vos courriers indésirables.'**
+  String get passwordRecoveryConfirmation;
+
+  /// No description provided for @passwordRecoveryBackToLogin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retour à la connexion'**
+  String get passwordRecoveryBackToLogin;
+
+  /// No description provided for @passwordRecoveryRateLimited.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trop de demandes. Patientez quelques minutes avant de réessayer.'**
+  String get passwordRecoveryRateLimited;
+
+  /// No description provided for @passwordRecoveryUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'La récupération par email est indisponible pour le moment. Réessayez plus tard ou contactez AutoParc.'**
+  String get passwordRecoveryUnavailable;
+
+  /// No description provided for @passwordRecoverySupportTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Besoin d’aide ?'**
+  String get passwordRecoverySupportTitle;
+
+  /// No description provided for @passwordRecoverySupportHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contactez AutoParc si vous n’avez pas d’email associé au compte ou si vous n’y avez plus accès. Votre identité devra être vérifiée avant toute récupération.'**
+  String get passwordRecoverySupportHelp;
 }
 
 class _AppLocalizationsDelegate

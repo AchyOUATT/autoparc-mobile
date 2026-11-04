@@ -8,6 +8,7 @@ import 'partner_notifications_page.dart';
 import 'partner_session.dart';
 import 'partner_localizations.dart';
 import '../../../core/api/api_exception.dart';
+import '../../auth/presentation/pages/password_recovery_page.dart';
 
 class PartnerAccountPage extends ConsumerStatefulWidget {
   const PartnerAccountPage({super.key});
@@ -211,10 +212,8 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
           ],
           // ── À L’INSCRIPTION, L’ADRESSE EST FACULTATIVE ──────────────────────
           //
-          // Elle ne servait qu’à se connecter : aucun courriel n’est envoyé nulle
-          // part, toutes les notifications passent dans l’application. C’est le
-          // numéro de téléphone qui identifie désormais un partenaire, et c’est
-          // la seule chose que tout vendeur a.
+          // L'adresse sert aussi à récupérer le mot de passe. Sans adresse,
+          // le partenaire peut demander une récupération assistée à AutoParc.
           //
           // ── À LA CONNEXION, LE CHAMP ACCEPTE LES DEUX ───────────────────────
           //
@@ -314,6 +313,24 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
               },
             ),
           ),
+          if (!_register)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                key: const Key('partner-forgot-password'),
+                onPressed: session.loading
+                    ? null
+                    : () => Navigator.of(context).push<void>(
+                        MaterialPageRoute(
+                          builder: (_) => PasswordRecoveryPage(
+                            initialEmail: _email.text,
+                            partner: true,
+                          ),
+                        ),
+                      ),
+                child: Text(AppLocalizations.of(context).passwordRecoveryForgot),
+              ),
+            ),
           if (_register)
             Padding(
               padding: const EdgeInsets.only(bottom: 14),

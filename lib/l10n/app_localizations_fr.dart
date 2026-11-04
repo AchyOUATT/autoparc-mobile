@@ -5704,4 +5704,59 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get catalogValidatedByAutoParc => 'Validés par AutoParc';
+
+  @override
+  String get passwordRecoveryForgot => 'Mot de passe oublié ?';
+
+  @override
+  String get passwordRecoveryTitle => 'Récupérer mon compte';
+
+  @override
+  String get passwordRecoveryIntro =>
+      'Recevez un lien par email pour choisir un nouveau mot de passe.';
+
+  @override
+  String get passwordRecoveryAccountType => 'Quel espace utilisez-vous ?';
+
+  @override
+  String get passwordRecoveryClient => 'Client';
+
+  @override
+  String get passwordRecoveryStaff => 'Personnel AutoParc';
+
+  @override
+  String get passwordRecoveryPartner => 'Compte partenaire';
+
+  @override
+  String get passwordRecoveryPartnerHelp =>
+      'Saisissez l’email associé à votre compte partenaire. Si vous vous êtes inscrit uniquement avec un téléphone, contactez AutoParc pour une récupération assistée.';
+
+  @override
+  String get passwordRecoveryGoogleHelp =>
+      'Si vous vous connectez avec Google, utilisez « Continuer avec Google ». Le mot de passe Google se récupère auprès de Google.';
+
+  @override
+  String get passwordRecoverySend => 'Envoyer le lien';
+
+  @override
+  String get passwordRecoveryConfirmation =>
+      'Si un compte correspondant peut recevoir un lien, vous recevrez un email de réinitialisation. Vérifiez aussi vos courriers indésirables.';
+
+  @override
+  String get passwordRecoveryBackToLogin => 'Retour à la connexion';
+
+  @override
+  String get passwordRecoveryRateLimited =>
+      'Trop de demandes. Patientez quelques minutes avant de réessayer.';
+
+  @override
+  String get passwordRecoveryUnavailable =>
+      'La récupération par email est indisponible pour le moment. Réessayez plus tard ou contactez AutoParc.';
+
+  @override
+  String get passwordRecoverySupportTitle => 'Besoin d’aide ?';
+
+  @override
+  String get passwordRecoverySupportHelp =>
+      'Contactez AutoParc si vous n’avez pas d’email associé au compte ou si vous n’y avez plus accès. Votre identité devra être vérifiée avant toute récupération.';
 }
