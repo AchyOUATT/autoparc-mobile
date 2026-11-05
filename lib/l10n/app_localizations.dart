@@ -10126,6 +10126,312 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Validés par AutoParc'**
   String get catalogValidatedByAutoParc;
+
+  /// No description provided for @garageEngineDetailsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détails du moteur — facultatif'**
+  String get garageEngineDetailsTitle;
+
+  /// No description provided for @garageEngineDetailsHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renseignez uniquement ce que vous connaissez. La cylindrée en litres ne donne pas la cylindrée exacte en cm³. Ces détails ne confirment pas à eux seuls la compatibilité des pièces.'**
+  String get garageEngineDetailsHelp;
+
+  /// No description provided for @garageEngineLitres.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cylindrée indiquée (L)'**
+  String get garageEngineLitres;
+
+  /// No description provided for @garageEngineCc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cylindrée exacte (cm³)'**
+  String get garageEngineCc;
+
+  /// No description provided for @garageEngineCylinders.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nombre de cylindres'**
+  String get garageEngineCylinders;
+
+  /// No description provided for @garageEngineLayout.
+  ///
+  /// In fr, this message translates to:
+  /// **'Disposition des cylindres'**
+  String get garageEngineLayout;
+
+  /// No description provided for @garageEngineInline.
+  ///
+  /// In fr, this message translates to:
+  /// **'En ligne'**
+  String get garageEngineInline;
+
+  /// No description provided for @garageEngineV.
+  ///
+  /// In fr, this message translates to:
+  /// **'En V'**
+  String get garageEngineV;
+
+  /// No description provided for @garageEngineBoxer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Boxer'**
+  String get garageEngineBoxer;
+
+  /// No description provided for @garageEngineW.
+  ///
+  /// In fr, this message translates to:
+  /// **'En W'**
+  String get garageEngineW;
+
+  /// No description provided for @garageEngineOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre'**
+  String get garageEngineOther;
+
+  /// No description provided for @garageEngineUnspecified.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non renseigné'**
+  String get garageEngineUnspecified;
+
+  /// No description provided for @garageEngineCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code moteur'**
+  String get garageEngineCode;
+
+  /// No description provided for @garageEnginePower.
+  ///
+  /// In fr, this message translates to:
+  /// **'Puissance (ch)'**
+  String get garageEnginePower;
+
+  /// No description provided for @garageEngineNumberInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez un nombre positif dans la plage indiquée.'**
+  String get garageEngineNumberInvalid;
+
+  /// No description provided for @garageEngineCodeInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'20 caractères maximum.'**
+  String get garageEngineCodeInvalid;
+
+  /// No description provided for @garageEngineAddDetails.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compléter les détails du moteur'**
+  String get garageEngineAddDetails;
+
+  /// No description provided for @garageEngineCylindersValue.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} cylindres'**
+  String garageEngineCylindersValue(int count);
+
+  /// No description provided for @garageEnginePowerValue.
+  ///
+  /// In fr, this message translates to:
+  /// **'{power} ch'**
+  String garageEnginePowerValue(int power);
+
+  /// No description provided for @vehiclesModelsBodyFilterActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modèles correspondant à la carrosserie choisie.'**
+  String get vehiclesModelsBodyFilterActive;
+
+  /// No description provided for @vehiclesModelsBodyFilterEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun modèle de cette carrosserie n’est renseigné pour cette marque.'**
+  String get vehiclesModelsBodyFilterEmpty;
+
+  /// No description provided for @vehiclesModelsBodyFilterShowAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Afficher tous les modèles'**
+  String get vehiclesModelsBodyFilterShowAll;
+
+  /// No description provided for @vehiclesModelsBodyFilterRestore.
+  ///
+  /// In fr, this message translates to:
+  /// **'Filtrer par carrosserie'**
+  String get vehiclesModelsBodyFilterRestore;
+
+  /// No description provided for @vehiclesModelsBodyFilterRetained.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre modèle actuel est conservé. Sa carrosserie diffère ou n’est pas précisée au catalogue.'**
+  String get vehiclesModelsBodyFilterRetained;
+
+  /// No description provided for @garageConsumptionRecommendationClosest.
+  ///
+  /// In fr, this message translates to:
+  /// **'Référence la plus proche'**
+  String get garageConsumptionRecommendationClosest;
+
+  /// No description provided for @garageConsumptionRecommendationTied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Références à départager'**
+  String get garageConsumptionRecommendationTied;
+
+  /// No description provided for @garageConsumptionRecommendationNeedsDetails.
+  ///
+  /// In fr, this message translates to:
+  /// **'Précisez la version du moteur'**
+  String get garageConsumptionRecommendationNeedsDetails;
+
+  /// No description provided for @garageConsumptionRecommendationProvisional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les informations connues ne permettent pas de recommander une référence unique. Ces valeurs restent des points de comparaison.'**
+  String get garageConsumptionRecommendationProvisional;
+
+  /// No description provided for @garageConsumptionRecommendationNotice.
+  ///
+  /// In fr, this message translates to:
+  /// **'La sélection ne confirme pas à elle seule que cette référence correspond au véhicule.'**
+  String get garageConsumptionRecommendationNotice;
+
+  /// No description provided for @garageConsumptionRecommendationNoEligible.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune des références proposées ne correspond aux caractéristiques connues.'**
+  String get garageConsumptionRecommendationNoEligible;
+
+  /// No description provided for @garageConsumptionRecommendationTieCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} références sont aussi proches. Les trois premières sont affichées.'**
+  String garageConsumptionRecommendationTieCount(int count);
+
+  /// No description provided for @garageConsumptionRecommendationCurrent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Référence actuellement sélectionnée'**
+  String get garageConsumptionRecommendationCurrent;
+
+  /// No description provided for @garageConsumptionRecommendationShowAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir toutes les références'**
+  String get garageConsumptionRecommendationShowAll;
+
+  /// No description provided for @garageConsumptionRecommendationShowLess.
+  ///
+  /// In fr, this message translates to:
+  /// **'Revenir aux références ciblées'**
+  String get garageConsumptionRecommendationShowLess;
+
+  /// No description provided for @garageConsumptionRecommendationOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autres références'**
+  String get garageConsumptionRecommendationOther;
+
+  /// No description provided for @garageConsumptionRecommendationConflict.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écart avec les caractéristiques connues : {details}.'**
+  String garageConsumptionRecommendationConflict(String details);
+
+  /// No description provided for @garageConsumptionRecommendationConflictGeneric.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écart avec les caractéristiques connues. Consultez les détails avant de modifier le véhicule.'**
+  String get garageConsumptionRecommendationConflictGeneric;
+
+  /// No description provided for @garageConsumptionRecommendationBasedOn.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rapprochée grâce à : {details}.'**
+  String garageConsumptionRecommendationBasedOn(String details);
+
+  /// No description provided for @garageConsumptionRecommendationMissing.
+  ///
+  /// In fr, this message translates to:
+  /// **'À préciser : {details}.'**
+  String garageConsumptionRecommendationMissing(String details);
+
+  /// No description provided for @garageConsumptionRecommendationRefine.
+  ///
+  /// In fr, this message translates to:
+  /// **'Préciser les détails du moteur'**
+  String get garageConsumptionRecommendationRefine;
+
+  /// No description provided for @garageConsumptionRecommendationEngineCode.
+  ///
+  /// In fr, this message translates to:
+  /// **'code moteur'**
+  String get garageConsumptionRecommendationEngineCode;
+
+  /// No description provided for @garageConsumptionRecommendationDisplacement.
+  ///
+  /// In fr, this message translates to:
+  /// **'cylindrée'**
+  String get garageConsumptionRecommendationDisplacement;
+
+  /// No description provided for @garageConsumptionRecommendationCylinders.
+  ///
+  /// In fr, this message translates to:
+  /// **'cylindres'**
+  String get garageConsumptionRecommendationCylinders;
+
+  /// No description provided for @garageConsumptionRecommendationPower.
+  ///
+  /// In fr, this message translates to:
+  /// **'puissance'**
+  String get garageConsumptionRecommendationPower;
+
+  /// No description provided for @garageConsumptionRecommendationFuel.
+  ///
+  /// In fr, this message translates to:
+  /// **'carburant'**
+  String get garageConsumptionRecommendationFuel;
+
+  /// No description provided for @garageConsumptionRecommendationDrive.
+  ///
+  /// In fr, this message translates to:
+  /// **'roues motrices'**
+  String get garageConsumptionRecommendationDrive;
+
+  /// No description provided for @garageConsumptionRecommendationTrim.
+  ///
+  /// In fr, this message translates to:
+  /// **'finition'**
+  String get garageConsumptionRecommendationTrim;
+
+  /// No description provided for @garageConsumptionRecommendationModelYear.
+  ///
+  /// In fr, this message translates to:
+  /// **'millésime'**
+  String get garageConsumptionRecommendationModelYear;
+
+  /// No description provided for @garageConsumptionRecommendationMarket.
+  ///
+  /// In fr, this message translates to:
+  /// **'marché d’origine'**
+  String get garageConsumptionRecommendationMarket;
+
+  /// No description provided for @garageConsumptionRecommendationTransmission.
+  ///
+  /// In fr, this message translates to:
+  /// **'boîte de vitesses'**
+  String get garageConsumptionRecommendationTransmission;
+
+  /// No description provided for @garageConsumptionRecommendationVersion.
+  ///
+  /// In fr, this message translates to:
+  /// **'version'**
+  String get garageConsumptionRecommendationVersion;
 }
 
 class _AppLocalizationsDelegate

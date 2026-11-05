@@ -12,6 +12,12 @@ class Motorisation extends Equatable {
   final String? transmissionCode;
   final double? engineL;
   final int? cylinders;
+  final int? recommendationRank;
+  final List<String> matchedCriteria;
+  final List<String> missingCriteria;
+  final bool hasDiscriminatingMatch;
+  final bool recommendationEligible;
+  final List<String> conflictingCriteria;
 
   /// Les trois cotes, la provenance et le cycle d'essai.
   final VehicleConsumption consumption;
@@ -25,6 +31,12 @@ class Motorisation extends Equatable {
     this.transmissionCode,
     this.engineL,
     this.cylinders,
+    this.recommendationRank,
+    this.matchedCriteria = const [],
+    this.missingCriteria = const [],
+    this.hasDiscriminatingMatch = false,
+    this.recommendationEligible = true,
+    this.conflictingCriteria = const [],
     required this.consumption,
   });
 
@@ -36,6 +48,10 @@ class Motorisation extends Equatable {
         ? json['source'] as Map<String, dynamic>
         : const <String, dynamic>{};
 
+    final recommendation = json['recommendation'] is Map<String, dynamic>
+        ? json['recommendation'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+
     return Motorisation(
       id: json['id'] as int,
       label: json['label'] as String? ?? '',
@@ -45,6 +61,25 @@ class Motorisation extends Equatable {
       transmissionCode: json['transmission_code'] as String?,
       engineL: _double(json['engine_l']),
       cylinders: json['cylinders'] as int?,
+      recommendationRank: recommendation['rank'] as int?,
+      matchedCriteria:
+          (recommendation['matched_criteria'] as List?)
+              ?.whereType<String>()
+              .toList() ??
+          const [],
+      missingCriteria:
+          (recommendation['missing_criteria'] as List?)
+              ?.whereType<String>()
+              .toList() ??
+          const [],
+      hasDiscriminatingMatch:
+          recommendation['has_discriminating_match'] == true,
+      recommendationEligible: recommendation['eligible'] != false,
+      conflictingCriteria:
+          (recommendation['conflicting_criteria'] as List?)
+              ?.whereType<String>()
+              .toList() ??
+          const [],
       consumption: VehicleConsumption.fromJson({
         ...json,
         ...conso,

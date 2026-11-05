@@ -7239,5 +7239,98 @@
   "catalogValidatedByAutoParc": "Validés par AutoParc",
   "@catalogValidatedByAutoParc": {
     "description": "Filter for vehicles inspected and validated by AutoParc."
+  },
+  "garageEngineDetailsTitle": "Détails du moteur — facultatif",
+  "garageEngineDetailsHelp": "Renseignez uniquement ce que vous connaissez. La cylindrée en litres ne donne pas la cylindrée exacte en cm³. Ces détails ne confirment pas à eux seuls la compatibilité des pièces.",
+  "garageEngineLitres": "Cylindrée indiquée (L)",
+  "garageEngineCc": "Cylindrée exacte (cm³)",
+  "garageEngineCylinders": "Nombre de cylindres",
+  "garageEngineLayout": "Disposition des cylindres",
+  "garageEngineInline": "En ligne",
+  "garageEngineV": "En V",
+  "garageEngineBoxer": "Boxer",
+  "garageEngineW": "En W",
+  "garageEngineOther": "Autre",
+  "garageEngineUnspecified": "Non renseigné",
+  "garageEngineCode": "Code moteur",
+  "garageEnginePower": "Puissance (ch)",
+  "garageEngineNumberInvalid": "Saisissez un nombre positif dans la plage indiquée.",
+  "garageEngineCodeInvalid": "20 caractères maximum.",
+  "garageEngineAddDetails": "Compléter les détails du moteur",
+  "garageEngineCylindersValue": "{count} cylindres",
+  "garageEnginePowerValue": "{power} ch",
+  "@garageEngineCylindersValue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@garageEnginePowerValue": {
+    "placeholders": {
+      "power": {
+        "type": "int"
+      }
+    }
+  },
+  "vehiclesModelsBodyFilterActive": "Modèles correspondant à la carrosserie choisie.",
+  "vehiclesModelsBodyFilterEmpty": "Aucun modèle de cette carrosserie n’est renseigné pour cette marque.",
+  "vehiclesModelsBodyFilterShowAll": "Afficher tous les modèles",
+  "vehiclesModelsBodyFilterRestore": "Filtrer par carrosserie",
+  "vehiclesModelsBodyFilterRetained": "Votre modèle actuel est conservé. Sa carrosserie diffère ou n’est pas précisée au catalogue.",
+  "garageConsumptionRecommendationClosest": "Référence la plus proche",
+  "garageConsumptionRecommendationTied": "Références à départager",
+  "garageConsumptionRecommendationNeedsDetails": "Précisez la version du moteur",
+  "garageConsumptionRecommendationProvisional": "Les informations connues ne permettent pas de recommander une référence unique. Ces valeurs restent des points de comparaison.",
+  "garageConsumptionRecommendationNotice": "La sélection ne confirme pas à elle seule que cette référence correspond au véhicule.",
+  "garageConsumptionRecommendationNoEligible": "Aucune des références proposées ne correspond aux caractéristiques connues.",
+  "garageConsumptionRecommendationTieCount": "{count} références sont aussi proches. Les trois premières sont affichées.",
+  "garageConsumptionRecommendationCurrent": "Référence actuellement sélectionnée",
+  "garageConsumptionRecommendationShowAll": "Voir toutes les références",
+  "garageConsumptionRecommendationShowLess": "Revenir aux références ciblées",
+  "garageConsumptionRecommendationOther": "Autres références",
+  "garageConsumptionRecommendationConflict": "Écart avec les caractéristiques connues : {details}.",
+  "garageConsumptionRecommendationConflictGeneric": "Écart avec les caractéristiques connues. Consultez les détails avant de modifier le véhicule.",
+  "garageConsumptionRecommendationBasedOn": "Rapprochée grâce à : {details}.",
+  "garageConsumptionRecommendationMissing": "À préciser : {details}.",
+  "garageConsumptionRecommendationRefine": "Préciser les détails du moteur",
+  "garageConsumptionRecommendationEngineCode": "code moteur",
+  "garageConsumptionRecommendationDisplacement": "cylindrée",
+  "garageConsumptionRecommendationCylinders": "cylindres",
+  "garageConsumptionRecommendationPower": "puissance",
+  "garageConsumptionRecommendationFuel": "carburant",
+  "garageConsumptionRecommendationDrive": "roues motrices",
+  "garageConsumptionRecommendationTrim": "finition",
+  "garageConsumptionRecommendationModelYear": "millésime",
+  "garageConsumptionRecommendationMarket": "marché d’origine",
+  "garageConsumptionRecommendationTransmission": "boîte de vitesses",
+  "garageConsumptionRecommendationVersion": "version",
+  "@garageConsumptionRecommendationTieCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@garageConsumptionRecommendationConflict": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "@garageConsumptionRecommendationBasedOn": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "@garageConsumptionRecommendationMissing": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -1,3 +1,4 @@
+import '../widgets/engine_details.dart';
 import '../garage_labels.dart';
 import '../../../../core/l10n/reference_labels.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -399,6 +400,8 @@ class _VehicleCard extends ConsumerWidget {
               ],
             ),
           ),
+
+          EngineDetailsTile(vehicle: vehicle),
 
           // ── Échéances d'entretien ─────────────────────────────────
           //

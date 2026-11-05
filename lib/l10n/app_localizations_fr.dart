@@ -5704,4 +5704,184 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get catalogValidatedByAutoParc => 'Validés par AutoParc';
+
+  @override
+  String get garageEngineDetailsTitle => 'Détails du moteur — facultatif';
+
+  @override
+  String get garageEngineDetailsHelp =>
+      'Renseignez uniquement ce que vous connaissez. La cylindrée en litres ne donne pas la cylindrée exacte en cm³. Ces détails ne confirment pas à eux seuls la compatibilité des pièces.';
+
+  @override
+  String get garageEngineLitres => 'Cylindrée indiquée (L)';
+
+  @override
+  String get garageEngineCc => 'Cylindrée exacte (cm³)';
+
+  @override
+  String get garageEngineCylinders => 'Nombre de cylindres';
+
+  @override
+  String get garageEngineLayout => 'Disposition des cylindres';
+
+  @override
+  String get garageEngineInline => 'En ligne';
+
+  @override
+  String get garageEngineV => 'En V';
+
+  @override
+  String get garageEngineBoxer => 'Boxer';
+
+  @override
+  String get garageEngineW => 'En W';
+
+  @override
+  String get garageEngineOther => 'Autre';
+
+  @override
+  String get garageEngineUnspecified => 'Non renseigné';
+
+  @override
+  String get garageEngineCode => 'Code moteur';
+
+  @override
+  String get garageEnginePower => 'Puissance (ch)';
+
+  @override
+  String get garageEngineNumberInvalid =>
+      'Saisissez un nombre positif dans la plage indiquée.';
+
+  @override
+  String get garageEngineCodeInvalid => '20 caractères maximum.';
+
+  @override
+  String get garageEngineAddDetails => 'Compléter les détails du moteur';
+
+  @override
+  String garageEngineCylindersValue(int count) {
+    return '$count cylindres';
+  }
+
+  @override
+  String garageEnginePowerValue(int power) {
+    return '$power ch';
+  }
+
+  @override
+  String get vehiclesModelsBodyFilterActive =>
+      'Modèles correspondant à la carrosserie choisie.';
+
+  @override
+  String get vehiclesModelsBodyFilterEmpty =>
+      'Aucun modèle de cette carrosserie n’est renseigné pour cette marque.';
+
+  @override
+  String get vehiclesModelsBodyFilterShowAll => 'Afficher tous les modèles';
+
+  @override
+  String get vehiclesModelsBodyFilterRestore => 'Filtrer par carrosserie';
+
+  @override
+  String get vehiclesModelsBodyFilterRetained =>
+      'Votre modèle actuel est conservé. Sa carrosserie diffère ou n’est pas précisée au catalogue.';
+
+  @override
+  String get garageConsumptionRecommendationClosest =>
+      'Référence la plus proche';
+
+  @override
+  String get garageConsumptionRecommendationTied => 'Références à départager';
+
+  @override
+  String get garageConsumptionRecommendationNeedsDetails =>
+      'Précisez la version du moteur';
+
+  @override
+  String get garageConsumptionRecommendationProvisional =>
+      'Les informations connues ne permettent pas de recommander une référence unique. Ces valeurs restent des points de comparaison.';
+
+  @override
+  String get garageConsumptionRecommendationNotice =>
+      'La sélection ne confirme pas à elle seule que cette référence correspond au véhicule.';
+
+  @override
+  String get garageConsumptionRecommendationNoEligible =>
+      'Aucune des références proposées ne correspond aux caractéristiques connues.';
+
+  @override
+  String garageConsumptionRecommendationTieCount(int count) {
+    return '$count références sont aussi proches. Les trois premières sont affichées.';
+  }
+
+  @override
+  String get garageConsumptionRecommendationCurrent =>
+      'Référence actuellement sélectionnée';
+
+  @override
+  String get garageConsumptionRecommendationShowAll =>
+      'Voir toutes les références';
+
+  @override
+  String get garageConsumptionRecommendationShowLess =>
+      'Revenir aux références ciblées';
+
+  @override
+  String get garageConsumptionRecommendationOther => 'Autres références';
+
+  @override
+  String garageConsumptionRecommendationConflict(String details) {
+    return 'Écart avec les caractéristiques connues : $details.';
+  }
+
+  @override
+  String get garageConsumptionRecommendationConflictGeneric =>
+      'Écart avec les caractéristiques connues. Consultez les détails avant de modifier le véhicule.';
+
+  @override
+  String garageConsumptionRecommendationBasedOn(String details) {
+    return 'Rapprochée grâce à : $details.';
+  }
+
+  @override
+  String garageConsumptionRecommendationMissing(String details) {
+    return 'À préciser : $details.';
+  }
+
+  @override
+  String get garageConsumptionRecommendationRefine =>
+      'Préciser les détails du moteur';
+
+  @override
+  String get garageConsumptionRecommendationEngineCode => 'code moteur';
+
+  @override
+  String get garageConsumptionRecommendationDisplacement => 'cylindrée';
+
+  @override
+  String get garageConsumptionRecommendationCylinders => 'cylindres';
+
+  @override
+  String get garageConsumptionRecommendationPower => 'puissance';
+
+  @override
+  String get garageConsumptionRecommendationFuel => 'carburant';
+
+  @override
+  String get garageConsumptionRecommendationDrive => 'roues motrices';
+
+  @override
+  String get garageConsumptionRecommendationTrim => 'finition';
+
+  @override
+  String get garageConsumptionRecommendationModelYear => 'millésime';
+
+  @override
+  String get garageConsumptionRecommendationMarket => 'marché d’origine';
+
+  @override
+  String get garageConsumptionRecommendationTransmission => 'boîte de vitesses';
+
+  @override
+  String get garageConsumptionRecommendationVersion => 'version';
 }

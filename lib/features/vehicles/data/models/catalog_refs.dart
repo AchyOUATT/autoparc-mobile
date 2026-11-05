@@ -14,6 +14,15 @@ class BrandRef {
   );
 }
 
+/// Shared by catalogue defaults and manual selections in the registration form.
+/// An unspecified or custom body does not determine a vehicle category.
+String? vehicleTypeForBodyStyle(String? bodyStyle) => switch (bodyStyle) {
+  'sedan' || 'hatchback' || 'suv' || 'estate' || 'coupe' || 'convertible' => 'passenger',
+  'pickup' || 'van' || 'minibus' => 'utility',
+  'bus' || 'truck' => 'heavy',
+  _ => null,
+};
+
 class ModelRef {
   final int id;
   final int brandId;
@@ -172,26 +181,8 @@ class ModelRef {
 
   /// Déduit le type de véhicule ('passenger' | 'utility' | 'heavy') à partir
   /// du body style inféré. Retourne null si inconnu.
-  String? get inferredVehicleType {
-    switch (inferredBodyStyle) {
-      case 'sedan':
-      case 'hatchback':
-      case 'suv':
-      case 'estate':
-      case 'coupe':
-      case 'convertible':
-        return 'passenger';
-      case 'pickup':
-      case 'van':
-      case 'minibus':
-        return 'utility';
-      case 'bus':
-      case 'truck':
-        return 'heavy';
-      default:
-        return null; // 'other' ou inconnu → staff choisit manuellement
-    }
-  }
+  String? get inferredVehicleType => vehicleTypeForBodyStyle(inferredBodyStyle);
+
 }
 
 class TrimRef {
@@ -345,8 +336,13 @@ class CatalogRefs {
   /// `vehicleModels` reste entier, et c'est voulu : un véhicule déjà
   /// enregistré sur une génération depuis désactivée doit continuer de
   /// s'afficher avec son nom. On filtre ce qu'on PROPOSE, pas ce qu'on LIT.
-  List<ModelRef> modelsForBrand(int brandId) =>
-      vehicleModels.where((m) => m.brandId == brandId && m.isActive).toList();
+  /// Le filtre facultatif utilise la carrosserie normalisée ; les données
+  /// sans carrosserie restent accessibles en demandant la liste complète.
+  List<ModelRef> modelsForBrand(int brandId, {String? bodyStyle}) =>
+      vehicleModels.where((m) =>
+          m.brandId == brandId && m.isActive &&
+          (bodyStyle == null || bodyStyle == 'other' || m.inferredBodyStyle == bodyStyle))
+          .toList();
 
   List<TrimRef> trimsForModel(int modelId) =>
       trims.where((t) => t.vehicleModelId == modelId).toList();

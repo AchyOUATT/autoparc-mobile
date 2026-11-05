@@ -1,3 +1,4 @@
+import '../widgets/engine_details.dart';
 import '../../../../core/l10n/reference_labels.dart';
 import '../garage_labels.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -32,6 +33,7 @@ class AddVehicleToGaragePage extends ConsumerStatefulWidget {
 class _AddVehicleToGaragePageState
     extends ConsumerState<AddVehicleToGaragePage> {
   final _formKey = GlobalKey<FormState>();
+  final _engineDetails = EngineDetailsController();
   bool _submitting = false;
 
   // Champs de formulaire
@@ -46,7 +48,10 @@ class _AddVehicleToGaragePageState
 
   /// Manufacturer engine code only; a VIN descriptor is not this code.
   String? get _engineCode => _classification.engineCode;
-  set _engineCode(String? value) => _classification.engineCode = value;
+  set _engineCode(String? value) {
+    _classification.engineCode = value;
+    _engineDetails.code.text = value ?? '';
+  }
 
   /// Le modèle est tapé à la main, faute de le trouver dans la liste.
   ///
@@ -68,6 +73,7 @@ class _AddVehicleToGaragePageState
 
   @override
   void dispose() {
+    _engineDetails.dispose();
     for (final c in [
       _yearCtrl,
       _modelLibreCtrl,
@@ -95,7 +101,9 @@ class _AddVehicleToGaragePageState
   void _applyVinResult(VinDecodeResult result, CatalogRefs refs) {
     _prefilledFields.clear();
     _classification.selectModel(null);
+    _engineDetails.code.text = _engineCode ?? '';
     _classification.clearModelDetails();
+    _engineDetails.code.text = _engineCode ?? '';
     _modelLibreCtrl.clear();
     _modeleHorsListe = false;
 
@@ -112,6 +120,7 @@ class _AddVehicleToGaragePageState
           .firstOrNull;
       if (brand != null) {
         _classification.selectBrand(brand);
+        _engineDetails.code.text = _engineCode ?? '';
         _prefilledFields.add('brand');
       }
     }
@@ -124,6 +133,7 @@ class _AddVehicleToGaragePageState
           .firstOrNull;
       if (model != null) {
         _classification.selectModel(model);
+        _engineDetails.code.text = _engineCode ?? '';
         _prefilledFields.add('model');
       }
     }
@@ -211,6 +221,7 @@ class _AddVehicleToGaragePageState
         allowFreeModel: true,
         modelLibre: modeleLibre,
       ),
+      ..._engineDetails.toPayload(),
       'manufacturing_year': int.parse(_yearCtrl.text),
       if (_color != null) 'color_id': _color!.id,
       if (_nicknameCtrl.text.trim().isNotEmpty)
@@ -401,6 +412,7 @@ class _AddVehicleToGaragePageState
                   onChanged: (b) => setState(() {
                     if (_brand?.id == b?.id) return;
                     _classification.selectBrand(b);
+                    _engineDetails.code.text = _engineCode ?? '';
                     _modelLibreCtrl.clear();
                     _prefilledFields.remove('engine');
                     _prefilledFields.remove('brand');
@@ -449,6 +461,7 @@ class _AddVehicleToGaragePageState
                         ? null
                         : (m) => setState(() {
                             _classification.selectModel(m);
+                            _engineDetails.code.text = _engineCode ?? '';
                             _prefilledFields.remove('engine');
                             _prefilledFields.remove('model');
                           }),
@@ -505,7 +518,9 @@ class _AddVehicleToGaragePageState
                     // justement d'abandonner.
                     if (_modeleHorsListe) {
                       _classification.selectModel(null);
+                      _engineDetails.code.text = _engineCode ?? '';
                       _classification.clearModelDetails();
+                      _engineDetails.code.text = _engineCode ?? '';
                       _prefilledFields.remove('engine');
                       _prefilledFields.remove('model');
                     } else {
@@ -588,6 +603,7 @@ class _AddVehicleToGaragePageState
                   ),
                   onSelect: (m) => setState(() {
                     _classification.selectModel(m);
+                    _engineDetails.code.text = _engineCode ?? '';
                     _prefilledFields.remove('engine');
                     _prefilledFields.remove('model');
                   }),
@@ -661,7 +677,16 @@ class _AddVehicleToGaragePageState
                   ),
                   items: refs.engineTypes
                       .map(
-                        (e) => DropdownMenuItem(value: e, child: Text(referenceFuelLabel(e.code, e.label, AppLocalizations.of(context)))),
+                        (e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(
+                            referenceFuelLabel(
+                              e.code,
+                              e.label,
+                              AppLocalizations.of(context),
+                            ),
+                          ),
+                        ),
                       )
                       .toList(),
                   onChanged: (e) => setState(() {
@@ -669,6 +694,22 @@ class _AddVehicleToGaragePageState
                     _prefilledFields.remove('engine');
                   }),
                 ),
+              ),
+
+              const SizedBox(height: 12),
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                maintainState: true,
+                title: Text(
+                  AppLocalizations.of(context).garageEngineDetailsTitle,
+                ),
+                children: [
+                  EngineDetailsFields(
+                    controller: _engineDetails,
+                    onCodeChanged: (value) =>
+                        setState(() => _classification.engineCode = value),
+                  ),
+                ],
               ),
 
               // Conséquence, dite ici et non à l'enregistrement : la personne
@@ -700,7 +741,17 @@ class _AddVehicleToGaragePageState
                   AppLocalizations.of(context).garageSelectPlaceholder,
                 ),
                 items: refs.colors
-                    .map((c) => DropdownMenuItem(value: c, child: Text(referenceColourLabel(c.name, AppLocalizations.of(context)))))
+                    .map(
+                      (c) => DropdownMenuItem(
+                        value: c,
+                        child: Text(
+                          referenceColourLabel(
+                            c.name,
+                            AppLocalizations.of(context),
+                          ),
+                        ),
+                      ),
+                    )
                     .toList(),
                 onChanged: (c) => setState(() => _color = c),
               ),
@@ -1310,7 +1361,10 @@ class _GenerationHint extends StatelessWidget {
                 child: Text(
                   garageModelYears(AppLocalizations.of(context), modele) == null
                       ? AppLocalizations.of(context).garageGenerationMismatch(
-                          referenceModelDisplayName(modele, AppLocalizations.of(context)),
+                          referenceModelDisplayName(
+                            modele,
+                            AppLocalizations.of(context),
+                          ),
                           (annee).toString(),
                         )
                       : AppLocalizations.of(

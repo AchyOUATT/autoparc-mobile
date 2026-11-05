@@ -56,6 +56,12 @@ class GarageRepository {
     int? drivetrainId,
     int? trimId,
     String? engineCode,
+    int? modelYear,
+    String? specificationMarket,
+    int? engineDisplacementCc,
+    double? engineDisplacementL,
+    int? cylinders,
+    int? powerHp,
   }) async {
     final json = await _client.get(
       Endpoints.catalogMotorisations,
@@ -66,6 +72,15 @@ class GarageRepository {
         if (drivetrainId != null) 'drivetrain_id': drivetrainId,
         if (trimId != null) 'trim_id': trimId,
         if (engineCode?.isNotEmpty == true) 'engine_code': engineCode,
+        if (modelYear != null) 'model_year': modelYear,
+        if (specificationMarket?.isNotEmpty == true)
+          'specification_market': specificationMarket,
+        if (engineDisplacementCc != null)
+          'engine_displacement_cc': engineDisplacementCc,
+        if (engineDisplacementL != null)
+          'engine_displacement_l': engineDisplacementL,
+        if (cylinders != null) 'cylinders': cylinders,
+        if (powerHp != null) 'power_hp': powerHp,
       },
     );
 

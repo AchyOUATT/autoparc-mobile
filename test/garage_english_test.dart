@@ -67,6 +67,12 @@ class _Repository implements GarageRepository {
     int? drivetrainId,
     int? trimId,
     String? engineCode,
+    int? modelYear,
+    String? specificationMarket,
+    int? engineDisplacementCc,
+    double? engineDisplacementL,
+    int? cylinders,
+    int? powerHp,
   }) async => [
     Motorisation.fromJson({
       'id': 1,

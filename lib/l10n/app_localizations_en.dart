@@ -5684,4 +5684,182 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get catalogValidatedByAutoParc => 'Validated by AutoParc';
+
+  @override
+  String get garageEngineDetailsTitle => 'Engine details — optional';
+
+  @override
+  String get garageEngineDetailsHelp =>
+      'Enter only what you know. Litres do not specify the exact displacement in cm³. These details alone do not confirm parts compatibility.';
+
+  @override
+  String get garageEngineLitres => 'Stated displacement (L)';
+
+  @override
+  String get garageEngineCc => 'Exact displacement (cm³)';
+
+  @override
+  String get garageEngineCylinders => 'Number of cylinders';
+
+  @override
+  String get garageEngineLayout => 'Cylinder layout';
+
+  @override
+  String get garageEngineInline => 'Inline';
+
+  @override
+  String get garageEngineV => 'V';
+
+  @override
+  String get garageEngineBoxer => 'Boxer';
+
+  @override
+  String get garageEngineW => 'W';
+
+  @override
+  String get garageEngineOther => 'Other';
+
+  @override
+  String get garageEngineUnspecified => 'Not specified';
+
+  @override
+  String get garageEngineCode => 'Engine code';
+
+  @override
+  String get garageEnginePower => 'Power (metric hp)';
+
+  @override
+  String get garageEngineNumberInvalid =>
+      'Enter a positive number within the stated range.';
+
+  @override
+  String get garageEngineCodeInvalid => '20 characters maximum.';
+
+  @override
+  String get garageEngineAddDetails => 'Add engine details';
+
+  @override
+  String garageEngineCylindersValue(int count) {
+    return '$count cylinders';
+  }
+
+  @override
+  String garageEnginePowerValue(int power) {
+    return '$power metric hp';
+  }
+
+  @override
+  String get vehiclesModelsBodyFilterActive =>
+      'Models matching the selected body style.';
+
+  @override
+  String get vehiclesModelsBodyFilterEmpty =>
+      'No models with this body style are listed for this make.';
+
+  @override
+  String get vehiclesModelsBodyFilterShowAll => 'Show all models';
+
+  @override
+  String get vehiclesModelsBodyFilterRestore => 'Filter by body style';
+
+  @override
+  String get vehiclesModelsBodyFilterRetained =>
+      'Your current model is retained. Its catalogue body style differs or is unspecified.';
+
+  @override
+  String get garageConsumptionRecommendationClosest => 'Closest reference';
+
+  @override
+  String get garageConsumptionRecommendationTied => 'References to distinguish';
+
+  @override
+  String get garageConsumptionRecommendationNeedsDetails =>
+      'Clarify the engine version';
+
+  @override
+  String get garageConsumptionRecommendationProvisional =>
+      'The known details do not identify a single reference. These values remain comparisons.';
+
+  @override
+  String get garageConsumptionRecommendationNotice =>
+      'Selecting a reference does not by itself confirm it applies to this vehicle.';
+
+  @override
+  String get garageConsumptionRecommendationNoEligible =>
+      'None of these references matches the known characteristics.';
+
+  @override
+  String garageConsumptionRecommendationTieCount(int count) {
+    return '$count references are equally close. The first three are shown.';
+  }
+
+  @override
+  String get garageConsumptionRecommendationCurrent =>
+      'Currently selected reference';
+
+  @override
+  String get garageConsumptionRecommendationShowAll => 'See all references';
+
+  @override
+  String get garageConsumptionRecommendationShowLess =>
+      'Back to targeted references';
+
+  @override
+  String get garageConsumptionRecommendationOther => 'Other references';
+
+  @override
+  String garageConsumptionRecommendationConflict(String details) {
+    return 'Conflict with known characteristics: $details.';
+  }
+
+  @override
+  String get garageConsumptionRecommendationConflictGeneric =>
+      'Conflicts with known characteristics. Check the details before changing the vehicle.';
+
+  @override
+  String garageConsumptionRecommendationBasedOn(String details) {
+    return 'Matched using: $details.';
+  }
+
+  @override
+  String garageConsumptionRecommendationMissing(String details) {
+    return 'Details to clarify: $details.';
+  }
+
+  @override
+  String get garageConsumptionRecommendationRefine => 'Refine engine details';
+
+  @override
+  String get garageConsumptionRecommendationEngineCode => 'engine code';
+
+  @override
+  String get garageConsumptionRecommendationDisplacement => 'displacement';
+
+  @override
+  String get garageConsumptionRecommendationCylinders => 'cylinders';
+
+  @override
+  String get garageConsumptionRecommendationPower => 'power';
+
+  @override
+  String get garageConsumptionRecommendationFuel => 'fuel';
+
+  @override
+  String get garageConsumptionRecommendationDrive => 'drivetrain';
+
+  @override
+  String get garageConsumptionRecommendationTrim => 'trim';
+
+  @override
+  String get garageConsumptionRecommendationModelYear => 'model year';
+
+  @override
+  String get garageConsumptionRecommendationMarket =>
+      'original specification market';
+
+  @override
+  String get garageConsumptionRecommendationTransmission => 'gearbox';
+
+  @override
+  String get garageConsumptionRecommendationVersion => 'version';
 }

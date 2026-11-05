@@ -30,9 +30,16 @@ class OwnedVehicle extends Equatable {
   /// ou saisi manuellement. Optionnel : améliore la précision de la recherche
   /// de pièces compatibles quand il est présent.
   final String? engineCode;
+  final int? engineDisplacementCc;
+  final double? engineDisplacementL;
+  final int? cylinders;
+  final String? engineLayout;
+  final int? powerHp;
   final String? plateNumber;
   final int? mileageKm;
   final int year;
+  final int? modelYear;
+  final String? specificationMarket;
   final OwnedVehicleIdentity identity;
   final bool compatibilityReady;
   final bool? engineDataProvided;
@@ -87,9 +94,16 @@ class OwnedVehicle extends Equatable {
     this.modelLibre,
     this.vin,
     this.engineCode,
+    this.engineDisplacementCc,
+    this.engineDisplacementL,
+    this.cylinders,
+    this.engineLayout,
+    this.powerHp,
     this.plateNumber,
     this.mileageKm,
     required this.year,
+    this.modelYear,
+    this.specificationMarket,
     required this.identity,
     required this.compatibilityReady,
     this.engineDataProvided,
@@ -121,9 +135,16 @@ class OwnedVehicle extends Equatable {
     modelLibre: json['model_libre'] as String?,
     vin: json['vin'] as String?,
     engineCode: json['engine_code'] as String?,
+    engineDisplacementCc: json['engine_displacement_cc'] as int?,
+    engineDisplacementL: _double(json['engine_displacement_l']),
+    cylinders: json['cylinders'] as int?,
+    engineLayout: json['engine_layout'] as String?,
+    powerHp: json['power_hp'] as int?,
     plateNumber: json['plate_number'] as String?,
     mileageKm: json['mileage_km'] as int?,
     year: json['year'] as int,
+    modelYear: json['model_year'] as int?,
+    specificationMarket: json['specification_market'] as String?,
     identity: OwnedVehicleIdentity.fromJson(
       json['identity'] as Map<String, dynamic>,
     ),

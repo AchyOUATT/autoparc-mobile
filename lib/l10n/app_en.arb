@@ -2553,5 +2553,98 @@
   "catalogValidatedByAutoParc": "Validated by AutoParc",
   "@catalogValidatedByAutoParc": {
     "description": "Filter for vehicles inspected and validated by AutoParc."
+  },
+  "garageEngineDetailsTitle": "Engine details — optional",
+  "garageEngineDetailsHelp": "Enter only what you know. Litres do not specify the exact displacement in cm³. These details alone do not confirm parts compatibility.",
+  "garageEngineLitres": "Stated displacement (L)",
+  "garageEngineCc": "Exact displacement (cm³)",
+  "garageEngineCylinders": "Number of cylinders",
+  "garageEngineLayout": "Cylinder layout",
+  "garageEngineInline": "Inline",
+  "garageEngineV": "V",
+  "garageEngineBoxer": "Boxer",
+  "garageEngineW": "W",
+  "garageEngineOther": "Other",
+  "garageEngineUnspecified": "Not specified",
+  "garageEngineCode": "Engine code",
+  "garageEnginePower": "Power (metric hp)",
+  "garageEngineNumberInvalid": "Enter a positive number within the stated range.",
+  "garageEngineCodeInvalid": "20 characters maximum.",
+  "garageEngineAddDetails": "Add engine details",
+  "garageEngineCylindersValue": "{count} cylinders",
+  "garageEnginePowerValue": "{power} metric hp",
+  "@garageEngineCylindersValue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@garageEnginePowerValue": {
+    "placeholders": {
+      "power": {
+        "type": "int"
+      }
+    }
+  },
+  "vehiclesModelsBodyFilterActive": "Models matching the selected body style.",
+  "vehiclesModelsBodyFilterEmpty": "No models with this body style are listed for this make.",
+  "vehiclesModelsBodyFilterShowAll": "Show all models",
+  "vehiclesModelsBodyFilterRestore": "Filter by body style",
+  "vehiclesModelsBodyFilterRetained": "Your current model is retained. Its catalogue body style differs or is unspecified.",
+  "garageConsumptionRecommendationClosest": "Closest reference",
+  "garageConsumptionRecommendationTied": "References to distinguish",
+  "garageConsumptionRecommendationNeedsDetails": "Clarify the engine version",
+  "garageConsumptionRecommendationProvisional": "The known details do not identify a single reference. These values remain comparisons.",
+  "garageConsumptionRecommendationNotice": "Selecting a reference does not by itself confirm it applies to this vehicle.",
+  "garageConsumptionRecommendationNoEligible": "None of these references matches the known characteristics.",
+  "garageConsumptionRecommendationTieCount": "{count} references are equally close. The first three are shown.",
+  "garageConsumptionRecommendationCurrent": "Currently selected reference",
+  "garageConsumptionRecommendationShowAll": "See all references",
+  "garageConsumptionRecommendationShowLess": "Back to targeted references",
+  "garageConsumptionRecommendationOther": "Other references",
+  "garageConsumptionRecommendationConflict": "Conflict with known characteristics: {details}.",
+  "garageConsumptionRecommendationConflictGeneric": "Conflicts with known characteristics. Check the details before changing the vehicle.",
+  "garageConsumptionRecommendationBasedOn": "Matched using: {details}.",
+  "garageConsumptionRecommendationMissing": "Details to clarify: {details}.",
+  "garageConsumptionRecommendationRefine": "Refine engine details",
+  "garageConsumptionRecommendationEngineCode": "engine code",
+  "garageConsumptionRecommendationDisplacement": "displacement",
+  "garageConsumptionRecommendationCylinders": "cylinders",
+  "garageConsumptionRecommendationPower": "power",
+  "garageConsumptionRecommendationFuel": "fuel",
+  "garageConsumptionRecommendationDrive": "drivetrain",
+  "garageConsumptionRecommendationTrim": "trim",
+  "garageConsumptionRecommendationModelYear": "model year",
+  "garageConsumptionRecommendationMarket": "original specification market",
+  "garageConsumptionRecommendationTransmission": "gearbox",
+  "garageConsumptionRecommendationVersion": "version",
+  "@garageConsumptionRecommendationTieCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@garageConsumptionRecommendationConflict": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "@garageConsumptionRecommendationBasedOn": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "@garageConsumptionRecommendationMissing": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
   }
 }

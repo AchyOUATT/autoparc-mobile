@@ -10,7 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/models/vehicle.dart';
-import '../../../garage/presentation/widgets/consumption_reference_details.dart';
+import '../../../garage/presentation/widgets/consumption_reference_candidates.dart';
 import '../../data/models/promotion.dart';
 import '../promotion_affichage.dart';
 import '../providers/catalog_providers.dart';
@@ -441,9 +441,7 @@ class _VehicleDetailView extends ConsumerWidget {
 
                   if (vehicle.consumptionReferences.isNotEmpty)
                     ConsumptionReferenceCandidates(
-                      references: vehicle.consumptionReferences
-                          .map((candidate) => candidate.consumption)
-                          .toList(),
+                      references: vehicle.consumptionReferences,
                       vehicleYear: vehicle.identity.year,
                     ),
 

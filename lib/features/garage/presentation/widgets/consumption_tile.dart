@@ -1,5 +1,6 @@
+import 'consumption_recommendations.dart';
+import 'engine_details.dart';
 import '../garage_labels.dart';
-import '../../../../core/l10n/consumption_labels.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -479,6 +480,12 @@ Future<void> choisirMotorisation(
           drivetrainId: vehicle.drivetrainId,
           trimId: vehicle.trimId,
           engineCode: vehicle.engineCode,
+          modelYear: vehicle.modelYear,
+          specificationMarket: vehicle.specificationMarket,
+          engineDisplacementCc: vehicle.engineDisplacementCc,
+          engineDisplacementL: vehicle.engineDisplacementL,
+          cylinders: vehicle.cylinders,
+          powerHp: vehicle.powerHp,
         );
   } catch (_) {
     if (!context.mounted) return;
@@ -495,12 +502,29 @@ Future<void> choisirMotorisation(
     return;
   }
 
+  var refineRequested = false;
   final choix = await showDialog<Motorisation>(
     context: context,
-    builder: (ctx) => _DialogueMotorisation(vehicle: vehicle, options: options),
+    builder: (ctx) => ConsumptionRecommendationsDialog(
+      vehicle: vehicle,
+      options: options,
+      onRefine: () {
+        refineRequested = true;
+        Navigator.pop(ctx);
+      },
+    ),
   );
 
-  if (choix == null || !context.mounted) return;
+  if (!context.mounted) return;
+  if (refineRequested) {
+    final saved = await showEngineDetailsDialog(context, vehicle);
+    if (!saved || !context.mounted) return;
+    final vehicles = ref.read(garageProvider).valueOrNull ?? const <OwnedVehicle>[];
+    final updated = vehicles.where((v) => v.id == vehicle.id).firstOrNull;
+    await choisirMotorisation(context, ref, updated ?? vehicle);
+    return;
+  }
+  if (choix == null) return;
 
   final erreur = await ref.read(garageProvider.notifier).updateVehicle(
     vehicle.id,
@@ -510,124 +534,6 @@ Future<void> choisirMotorisation(
   if (!context.mounted) return;
 
   _dire(context, erreur ?? l10n.garageConsumptionSaved, erreur: erreur != null);
-}
-
-class _DialogueMotorisation extends StatelessWidget {
-  final OwnedVehicle vehicle;
-  final List<Motorisation> options;
-
-  const _DialogueMotorisation({required this.vehicle, required this.options});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final l10n = AppLocalizations.of(context);
-
-    return AlertDialog(
-      title: Text(
-        l10n.garageConsumptionVersionTitle(
-          vehicle.identity.model ?? vehicle.designation,
-        ),
-      ),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.garageConsumptionChooseInstruction,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: cs.outline),
-            ),
-            const SizedBox(height: 8),
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: options.length,
-                itemBuilder: (_, i) {
-                  final m = options[i];
-                  final reference = m.consumption;
-                  final mixte = reference.sourceCombinedL100km;
-
-                  final choisie = m.id == vehicle.motorisationId;
-
-                  return ListTile(
-                    onTap: () => Navigator.pop(context, m),
-                    title: Text(
-                      [
-                        if (reference.sourceModel?.isNotEmpty == true)
-                          reference.sourceModel!,
-                        consumptionEngineLabel(
-                          m.label,
-                          l10n,
-                          engineL: m.engineL,
-                          cylinders: m.cylinders,
-                          transmissionCode: m.transmissionCode,
-                        ),
-                        if (reference.powerKw != null)
-                          '${reference.powerKw} kW',
-                      ].join(' · '),
-                    ),
-                    subtitle: Text(
-                      [
-                        consumptionMatchLabel(l10n, reference),
-                        l10n.garageConsumptionVehicleYear(vehicle.year),
-                        consumptionYearLabel(l10n, reference),
-                        reference.market?.isNotEmpty == true
-                            ? l10n.garageConsumptionMarket(reference.market!)
-                            : l10n.garageConsumptionMarketUnknown,
-                        if (m.fuel != null)
-                          consumptionFuelLabel(m.fuel!, l10n, code: m.fuelCode),
-                        if (mixte != null)
-                          l10n.garageConsumptionSourceValue(
-                            _nombre(context, mixte),
-                          ),
-                        if (reference.source.isNotEmpty)
-                          consumptionSourceLabel(
-                            reference.source,
-                            l10n,
-                            code: reference.sourceCode,
-                          ),
-                        if (reference.cycle.isNotEmpty)
-                          consumptionCycleLabel(
-                            reference.cycle,
-                            l10n,
-                            code: reference.cycleCode,
-                          ),
-                      ].join(' · '),
-                    ),
-                    trailing: IconButton(
-                      tooltip: l10n.garageConsumptionDetails,
-                      onPressed: () => showConsumptionReferenceDetails(
-                        context,
-                        reference,
-                        vehicleYear: vehicle.year,
-                      ),
-                      icon: Icon(
-                        choisie
-                            ? Icons.check_circle_outline
-                            : Icons.info_outline,
-                        color: choisie ? cs.primary : null,
-                      ),
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(l10n.commonCancel),
-        ),
-      ],
-    );
-  }
 }
 
 /// « 8,2 » et non « 8.2 » : la virgule décimale est celle du français.
