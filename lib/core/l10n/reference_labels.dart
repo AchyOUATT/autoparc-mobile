@@ -172,5 +172,7 @@ String? referenceModelYears(ModelRef model, AppLocalizations l10n) {
 String referenceModelDisplayName(ModelRef model, AppLocalizations l10n) {
   final years = referenceModelYears(model, l10n);
   final details = [if (model.generation != null) model.generation!, if (years != null) years];
-  return details.isEmpty ? model.name : '${model.name} (${details.join(', ')})';
+  return details.isEmpty
+      ? model.commercialName
+      : '${model.commercialName} (${details.join(', ')})';
 }

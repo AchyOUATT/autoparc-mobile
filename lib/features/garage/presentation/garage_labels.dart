@@ -30,7 +30,9 @@ String garageModelDisplayName(AppLocalizations l10n, ModelRef model) {
     if (model.generation != null) model.generation!,
     if (garageModelYears(l10n, model) != null) garageModelYears(l10n, model)!,
   ];
-  return details.isEmpty ? model.name : '${model.name} (${details.join(', ')})';
+  return details.isEmpty
+      ? model.commercialName
+      : '${model.commercialName} (${details.join(', ')})';
 }
 
 String? fuelExclusionLabel(AppLocalizations l10n, String? code) =>
