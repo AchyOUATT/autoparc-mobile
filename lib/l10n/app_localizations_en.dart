@@ -5014,6 +5014,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String garageConsumptionSingle(String value) {
+    return '$value L/100 km';
+  }
+
+  @override
   String get garageConsumptionSourceCanada => 'Natural Resources Canada';
 
   @override

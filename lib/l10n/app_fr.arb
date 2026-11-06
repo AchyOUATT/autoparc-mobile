@@ -6784,6 +6784,15 @@
       }
     }
   },
+  "garageConsumptionSingle": "{value} l/100 km",
+  "@garageConsumptionSingle": {
+    "description": "Consommation officielle réduite à une seule valeur — la fourchette quand ses deux bornes se confondent. En minuscule comme la fourchette : c'est la forme que l'application a toujours écrite en français.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "garageConsumptionSourceCanada": "Ressources naturelles Canada",
   "@garageConsumptionSourceCanada": {
     "description": "Organisme canadien source des cotes officielles, code nrcan."

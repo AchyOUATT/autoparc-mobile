@@ -2197,6 +2197,14 @@
       }
     }
   },
+  "garageConsumptionSingle": "{value} L/100 km",
+  "@garageConsumptionSingle": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "garageConsumptionSourceCanada": "Natural Resources Canada",
   "garageConsumptionSourceEurope": "European Environment Agency",
   "garageConsumptionCycleCanadianFive": "Canadian five-cycle equivalent protocol",

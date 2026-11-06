@@ -9029,6 +9029,12 @@ abstract class AppLocalizations {
   /// **'{min} à {max} l/100 km'**
   String garageConsumptionRange(String min, String max);
 
+  /// Consommation officielle réduite à une seule valeur — la fourchette quand ses deux bornes se confondent. En minuscule comme la fourchette : c'est la forme que l'application a toujours écrite en français.
+  ///
+  /// In fr, this message translates to:
+  /// **'{value} l/100 km'**
+  String garageConsumptionSingle(String value);
+
   /// Organisme canadien source des cotes officielles, code nrcan.
   ///
   /// In fr, this message translates to:
