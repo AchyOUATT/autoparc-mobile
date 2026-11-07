@@ -5862,4 +5862,79 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get garageConsumptionRecommendationVersion => 'version';
+
+  @override
+  String get heavyConfigurationTitle =>
+      'Heavy vehicle configuration — optional';
+
+  @override
+  String get heavyConfigurationDetailsTitle => 'Heavy vehicle configuration';
+
+  @override
+  String get heavyConfigurationHelp =>
+      'Enter only known information from the vehicle documents. These details are owner-declared.';
+
+  @override
+  String get heavyConfigurationDeclared => 'Owner-declared details';
+
+  @override
+  String get heavyConfigurationVersion => 'Commercial version';
+
+  @override
+  String get heavyConfigurationCab => 'Cab';
+
+  @override
+  String get heavyConfigurationAxles => 'Axle configuration';
+
+  @override
+  String get heavyConfigurationAxlesHelp =>
+      'Copy the exact notation (e.g. 6x2/4 or 6x2*4).';
+
+  @override
+  String get heavyConfigurationChassis => 'Chassis type';
+
+  @override
+  String get heavyConfigurationUnspecified => 'Not specified';
+
+  @override
+  String get heavyConfigurationTractor => 'Tractor unit';
+
+  @override
+  String get heavyConfigurationRigid => 'Rigid truck';
+
+  @override
+  String get heavyConfigurationOther => 'Other';
+
+  @override
+  String get heavyConfigurationBodyUse => 'Body / use';
+
+  @override
+  String get heavyConfigurationEmission => 'Emissions standard';
+
+  @override
+  String get heavyConfigurationPtac => 'GVWR (kg)';
+
+  @override
+  String get heavyConfigurationPtacHelp =>
+      'Gross vehicle weight rating, as stated on the vehicle documents.';
+
+  @override
+  String get heavyConfigurationPtra => 'GCWR (kg)';
+
+  @override
+  String get heavyConfigurationPtraHelp =>
+      'Gross combination weight rating, as stated on the vehicle documents.';
+
+  @override
+  String get heavyConfigurationMassInvalid =>
+      'Enter a whole number between 1 and 1,000,000 kg.';
+
+  @override
+  String get heavyConfigurationTrainMassTooSmall =>
+      'GCWR must be greater than or equal to GVWR.';
+
+  @override
+  String heavyConfigurationTextTooLong(int max) {
+    return 'Enter at most $max characters.';
+  }
 }

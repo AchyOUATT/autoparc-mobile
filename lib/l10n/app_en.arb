@@ -2646,5 +2646,34 @@
         "type": "String"
       }
     }
+  },
+  "heavyConfigurationTitle": "Heavy vehicle configuration — optional",
+  "heavyConfigurationDetailsTitle": "Heavy vehicle configuration",
+  "heavyConfigurationHelp": "Enter only known information from the vehicle documents. These details are owner-declared.",
+  "heavyConfigurationDeclared": "Owner-declared details",
+  "heavyConfigurationVersion": "Commercial version",
+  "heavyConfigurationCab": "Cab",
+  "heavyConfigurationAxles": "Axle configuration",
+  "heavyConfigurationAxlesHelp": "Copy the exact notation (e.g. 6x2/4 or 6x2*4).",
+  "heavyConfigurationChassis": "Chassis type",
+  "heavyConfigurationUnspecified": "Not specified",
+  "heavyConfigurationTractor": "Tractor unit",
+  "heavyConfigurationRigid": "Rigid truck",
+  "heavyConfigurationOther": "Other",
+  "heavyConfigurationBodyUse": "Body / use",
+  "heavyConfigurationEmission": "Emissions standard",
+  "heavyConfigurationPtac": "GVWR (kg)",
+  "heavyConfigurationPtacHelp": "Gross vehicle weight rating, as stated on the vehicle documents.",
+  "heavyConfigurationPtra": "GCWR (kg)",
+  "heavyConfigurationPtraHelp": "Gross combination weight rating, as stated on the vehicle documents.",
+  "heavyConfigurationMassInvalid": "Enter a whole number between 1 and 1,000,000 kg.",
+  "heavyConfigurationTrainMassTooSmall": "GCWR must be greater than or equal to GVWR.",
+  "heavyConfigurationTextTooLong": "Enter at most {max} characters.",
+  "@heavyConfigurationTextTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
   }
 }

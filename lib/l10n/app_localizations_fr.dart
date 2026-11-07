@@ -5884,4 +5884,79 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get garageConsumptionRecommendationVersion => 'version';
+
+  @override
+  String get heavyConfigurationTitle =>
+      'Configuration poids lourd — facultatif';
+
+  @override
+  String get heavyConfigurationDetailsTitle => 'Configuration poids lourd';
+
+  @override
+  String get heavyConfigurationHelp =>
+      'Renseignez uniquement les informations connues, à partir des documents du véhicule. Ces données sont déclarées.';
+
+  @override
+  String get heavyConfigurationDeclared => 'Données déclarées';
+
+  @override
+  String get heavyConfigurationVersion => 'Version commerciale';
+
+  @override
+  String get heavyConfigurationCab => 'Cabine';
+
+  @override
+  String get heavyConfigurationAxles => 'Configuration des essieux';
+
+  @override
+  String get heavyConfigurationAxlesHelp =>
+      'Recopiez la notation exacte (ex. 6x2/4 ou 6x2*4).';
+
+  @override
+  String get heavyConfigurationChassis => 'Type de châssis';
+
+  @override
+  String get heavyConfigurationUnspecified => 'Non renseigné';
+
+  @override
+  String get heavyConfigurationTractor => 'Tracteur routier';
+
+  @override
+  String get heavyConfigurationRigid => 'Porteur';
+
+  @override
+  String get heavyConfigurationOther => 'Autre';
+
+  @override
+  String get heavyConfigurationBodyUse => 'Carrosserie / usage';
+
+  @override
+  String get heavyConfigurationEmission => 'Norme antipollution';
+
+  @override
+  String get heavyConfigurationPtac => 'PTAC (kg)';
+
+  @override
+  String get heavyConfigurationPtacHelp =>
+      'Poids total autorisé en charge, indiqué sur les documents du véhicule.';
+
+  @override
+  String get heavyConfigurationPtra => 'PTRA (kg)';
+
+  @override
+  String get heavyConfigurationPtraHelp =>
+      'Poids total roulant autorisé, indiqué sur les documents du véhicule.';
+
+  @override
+  String get heavyConfigurationMassInvalid =>
+      'Saisissez un entier entre 1 et 1 000 000 kg.';
+
+  @override
+  String get heavyConfigurationTrainMassTooSmall =>
+      'Le PTRA doit être supérieur ou égal au PTAC.';
+
+  @override
+  String heavyConfigurationTextTooLong(int max) {
+    return 'Saisissez au maximum $max caractères.';
+  }
 }

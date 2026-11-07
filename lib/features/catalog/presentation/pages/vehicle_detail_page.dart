@@ -1,3 +1,4 @@
+import '../../../vehicles/presentation/widgets/heavy_vehicle_configuration.dart';
 import '../catalog_reference_labels.dart';
 import '../../../../core/l10n/reference_labels.dart';
 import 'package:flutter/material.dart';
@@ -439,6 +440,12 @@ class _VehicleDetailView extends ConsumerWidget {
                       ),
                   ]),
 
+                  if (vehicle.vehicleType == 'heavy' &&
+                      !vehicle.heavyConfiguration.isEmpty)
+                    HeavyVehicleConfigurationDetails(
+                      configuration: vehicle.heavyConfiguration,
+                    ),
+
                   if (vehicle.consumptionReferences.isNotEmpty)
                     ConsumptionReferenceCandidates(
                       references: vehicle.consumptionReferences,
@@ -502,7 +509,9 @@ class _VehicleDetailView extends ConsumerWidget {
                   // ── Pannes (staff seulement) ────────────────────
                   if (!isStaff) ...[
                     const Divider(height: 32),
-                    DeclaredFaultsSection(declaration: vehicle.faultDeclaration),
+                    DeclaredFaultsSection(
+                      declaration: vehicle.faultDeclaration,
+                    ),
                   ],
                   if (isStaff) ...[
                     const Divider(height: 32),

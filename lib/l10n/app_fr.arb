@@ -7332,5 +7332,34 @@
         "type": "String"
       }
     }
+  },
+  "heavyConfigurationTitle": "Configuration poids lourd — facultatif",
+  "heavyConfigurationDetailsTitle": "Configuration poids lourd",
+  "heavyConfigurationHelp": "Renseignez uniquement les informations connues, à partir des documents du véhicule. Ces données sont déclarées.",
+  "heavyConfigurationDeclared": "Données déclarées",
+  "heavyConfigurationVersion": "Version commerciale",
+  "heavyConfigurationCab": "Cabine",
+  "heavyConfigurationAxles": "Configuration des essieux",
+  "heavyConfigurationAxlesHelp": "Recopiez la notation exacte (ex. 6x2/4 ou 6x2*4).",
+  "heavyConfigurationChassis": "Type de châssis",
+  "heavyConfigurationUnspecified": "Non renseigné",
+  "heavyConfigurationTractor": "Tracteur routier",
+  "heavyConfigurationRigid": "Porteur",
+  "heavyConfigurationOther": "Autre",
+  "heavyConfigurationBodyUse": "Carrosserie / usage",
+  "heavyConfigurationEmission": "Norme antipollution",
+  "heavyConfigurationPtac": "PTAC (kg)",
+  "heavyConfigurationPtacHelp": "Poids total autorisé en charge, indiqué sur les documents du véhicule.",
+  "heavyConfigurationPtra": "PTRA (kg)",
+  "heavyConfigurationPtraHelp": "Poids total roulant autorisé, indiqué sur les documents du véhicule.",
+  "heavyConfigurationMassInvalid": "Saisissez un entier entre 1 et 1 000 000 kg.",
+  "heavyConfigurationTrainMassTooSmall": "Le PTRA doit être supérieur ou égal au PTAC.",
+  "heavyConfigurationTextTooLong": "Saisissez au maximum {max} caractères.",
+  "@heavyConfigurationTextTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
   }
 }

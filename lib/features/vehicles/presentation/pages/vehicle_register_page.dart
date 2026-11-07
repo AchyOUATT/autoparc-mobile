@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import '../widgets/heavy_vehicle_configuration.dart';
+
 import '../../../catalog/presentation/catalog_reference_labels.dart';
 import '../../../../core/l10n/reference_labels.dart';
 import '../../../../core/l10n/transmission_labels.dart';
@@ -195,11 +197,16 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   /// au prix. La promotion chiffree est l'outil du vendeur tiers.
   espace.PromotionSaisie _promotion = const espace.PromotionSaisie();
   final _descriptionCtrl = TextEditingController();
+  late final HeavyVehicleConfigurationController _heavyConfiguration;
+  final _heavyConfigurationExpansion = ExpansibleController();
 
   @override
   void initState() {
     super.initState();
     final e = _existing;
+    _heavyConfiguration = HeavyVehicleConfigurationController(
+      value: e?.heavyConfiguration,
+    );
     _faultDeclaration = e?.faultDeclaration ?? const FaultDeclaration.unknown();
     _faultsReady = e == null;
     _faultBaseline = jsonEncode(_faultDeclaration.toPayload());
@@ -290,18 +297,22 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         final rows = await ref.read(vehicleFaultRepositoryProvider).getFaults(existing.id);
         declaration = FaultDeclaration.fromJson({
           'state': existing.faultDeclaration.state,
-          'faults': rows.map((fault) => {
-            'id': fault.id,
-            'category': fault.category,
-            'title': fault.title,
-            'description': fault.description,
-            'severity': fault.severity,
-            'status': fault.status,
-            'affects_drivability': fault.affectsDrivability,
-            'is_safety_critical': fault.isSafetyCritical,
-            'disclosed_to_buyer': fault.disclosedToBuyer,
-            'editable': true,
-          }).toList(),
+          'faults': rows
+              .map(
+                (fault) => {
+                  'id': fault.id,
+                  'category': fault.category,
+                  'title': fault.title,
+                  'description': fault.description,
+                  'severity': fault.severity,
+                  'status': fault.status,
+                  'affects_drivability': fault.affectsDrivability,
+                  'is_safety_critical': fault.isSafetyCritical,
+                  'disclosed_to_buyer': fault.disclosedToBuyer,
+                  'editable': true,
+                },
+              )
+              .toList(),
         });
       }
       if (!mounted || generation != _faultLoadGeneration || !_canDeclareFaults) return;
@@ -338,7 +349,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(messageFor(_faultsLoadError!, l10n: l10n)),
-                  TextButton(onPressed: _loadFaultDeclaration, child: Text(l10n.commonRetry)),
+                  TextButton(
+                    onPressed: _loadFaultDeclaration,
+                    child: Text(l10n.commonRetry),
+                  ),
                 ],
               )
             else
@@ -360,6 +374,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
   @override
   void dispose() {
+    _heavyConfiguration.dispose();
+    _heavyConfigurationExpansion.dispose();
     for (final c in [
       _vinCtrl,
       _plateCtrl,
@@ -402,8 +418,13 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   ///     appliqué : un VIN de cinq caractères partait au serveur.
   ///
   /// Les règles vivent désormais là où elles s'affichent : sous le champ.
-  bool _validerLEtape(int etape) =>
-      _clefsDEtape[etape].currentState?.validate() ?? true;
+  bool _validerLEtape(int etape) {
+    final valid = _clefsDEtape[etape].currentState?.validate() ?? true;
+    if (!valid && etape == 2 && _vehicleType == 'heavy') {
+      _heavyConfigurationExpansion.expand();
+    }
+    return valid;
+  }
 
   /// La première étape qui ne passe pas, ou -1 si toutes passent.
   ///
@@ -576,6 +597,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   }
 
   Map<String, dynamic> _buildPayload() {
+    final heavyConfiguration = _heavyConfiguration.toValue();
     final bool forSale = _availability == 'sale' || _availability == 'both';
     final bool forRent = _availability == 'rent' || _availability == 'both';
     final bool hasPlate = _plateCtrl.text.trim().isNotEmpty;
@@ -593,6 +615,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       if (_canDeclareFaults && _faultsReady && _faultsDirty)
         ..._faultDeclaration.toPayload(),
       'vehicle_type': _vehicleType,
+      if (_vehicleType == 'heavy')
+        'heavy_configuration': heavyConfiguration.isEmpty
+            ? null
+            : heavyConfiguration.toJson(),
       if (_bodyStyle != null || _classificationChanged)
         'body_style': _bodyStyle,
       if (_vinCtrl.text.trim().isNotEmpty) 'vin': _vinCtrl.text.trim(),
@@ -1115,7 +1141,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     return Step(
       title: Text(l10n.vehiclesIdentityTitle),
       subtitle: _brand != null
-          ? Text(_model == null ? _brand!.name : referenceModelDisplayName(_model!, l10n))
+          ? Text(
+              _model == null
+                  ? _brand!.name
+                  : referenceModelDisplayName(_model!, l10n),
+            )
           : null,
       isActive: _step >= 1,
       content: Form(
@@ -1141,7 +1171,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
             // Modèle
             VehicleReferenceDropdown<ModelRef>(
-              key: ValueKey('vehicle-model-${_brand?.id}-${_model?.id}-$_modelBodyFilter'),
+              key: ValueKey(
+                'vehicle-model-${_brand?.id}-${_model?.id}-$_modelBodyFilter',
+              ),
               label: l10n.vehiclesModelLabel,
               items: models,
               value: _model,
@@ -1208,9 +1240,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                     _showAllModelsForBody = !_showAllModelsForBody;
                     if (!_showAllModelsForBody) _clearModelWithConflictingBody();
                   }),
-                  child: Text(_showAllModelsForBody
-                      ? l10n.vehiclesModelsBodyFilterRestore
-                      : l10n.vehiclesModelsBodyFilterShowAll),
+                  child: Text(
+                    _showAllModelsForBody
+                        ? l10n.vehiclesModelsBodyFilterRestore
+                        : l10n.vehiclesModelsBodyFilterShowAll,
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -1408,6 +1442,23 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               ),
             ],
           ),
+
+          if (_vehicleType == 'heavy') ...[
+            const SizedBox(height: 16),
+            ExpansionTile(
+              key: const ValueKey('heavy-configuration-section'),
+              controller: _heavyConfigurationExpansion,
+              initiallyExpanded: true,
+              maintainState: true,
+              tilePadding: EdgeInsets.zero,
+              title: Text(l10n.heavyConfigurationTitle),
+              children: [
+                HeavyVehicleConfigurationFields(
+                  controller: _heavyConfiguration,
+                ),
+              ],
+            ),
+          ],
 
           _faultDeclarationEditor(),
 

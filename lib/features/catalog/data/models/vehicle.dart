@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
+
 import '../../../../core/utils/mileage.dart';
+import '../../../vehicles/data/models/heavy_vehicle_configuration.dart';
 
 import 'promotion.dart';
 import '../../../garage/data/models/motorisation.dart';
@@ -164,6 +166,7 @@ class Vehicle extends Equatable {
   final int? torqueNm;
   final int? gearCount;
   final String? engineCode;
+  final HeavyVehicleConfiguration heavyConfiguration;
 
   /// Consommation mixte, en L/100 km.
   final double? combinedL100km;
@@ -226,6 +229,7 @@ class Vehicle extends Equatable {
     this.torqueNm,
     this.gearCount,
     this.engineCode,
+    this.heavyConfiguration = const HeavyVehicleConfiguration(),
     this.combinedL100km,
     this.officialConsumption,
     this.consumptionReferences = const [],
@@ -345,6 +349,11 @@ class Vehicle extends Equatable {
       torqueNm: _asInt(technique?['torque_nm']),
       gearCount: _asInt(technique?['gear_count']),
       engineCode: technique?['engine_code'] as String?,
+      heavyConfiguration: HeavyVehicleConfiguration.fromJson(
+        technique?['heavy_configuration'] is Map<String, dynamic>
+            ? technique!['heavy_configuration'] as Map<String, dynamic>
+            : const <String, dynamic>{},
+      ),
       combinedL100km: _asDouble(
         (json['consumption'] as Map<String, dynamic>?)?['combined_l_100km'],
       ),
@@ -418,7 +427,13 @@ class Vehicle extends Equatable {
   bool get isPassenger => vehicleType == 'passenger';
 
   @override
-  List<Object?> get props => [id, reference, inspection, faultDeclaration];
+  List<Object?> get props => [
+    id,
+    reference,
+    inspection,
+    faultDeclaration,
+    heavyConfiguration,
+  ];
 }
 
 // ── Identité ──────────────────────────────────────────────────────

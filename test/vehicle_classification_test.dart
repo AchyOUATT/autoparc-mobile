@@ -41,6 +41,27 @@ const refs = CatalogRefs(
   colors: [], features: [], locations: [],
 );
 
+const scania = BrandRef(id: 23, name: 'Scania', isActive: true);
+const scaniaR = ModelRef(id: 24, brandId: 23, name: 'R-Series',
+    bodyType: 'truck', defaultVehicleType: 'heavy');
+final heavyRefs = CatalogRefs(
+  brands: [...refs.brands, scania],
+  vehicleModels: [...refs.vehicleModels, scaniaR],
+  trims: refs.trims, engineTypes: refs.engineTypes,
+  drivetrains: refs.drivetrains, colors: refs.colors,
+  features: refs.features, locations: refs.locations,
+);
+const declaredHeavyConfiguration = <String, dynamic>{
+  'version_label': 'R 450',
+  'cab_label': 'CR20 Highline',
+  'axle_configuration': '6x2/4',
+  'chassis_type': 'tractor',
+  'body_use': 'Transport routier',
+  'emission_standard': 'Euro VI',
+  'ptac_kg': 26000,
+  'ptra_kg': 44000,
+};
+
 const knownSedan = ModelRef(id: 21, brandId: 3, name: 'Camry', bodyType: 'berline');
 const knownSuv = ModelRef(id: 22, brandId: 3, name: 'RAV4', bodyType: 'suv');
 const knownSedanTrim = TrimRef(id: 31, vehicleModelId: 21, name: 'Sedan trim');
@@ -71,6 +92,24 @@ Map<String, dynamic> vehicleJson() {
     'year': 2016,
   });
   (payload['technical'] as Map<String, dynamic>)['engine_code'] = '2ZR-FE';
+  return payload;
+}
+
+Map<String, dynamic> heavyVehicleJson({
+  Map<String, dynamic>? configuration = declaredHeavyConfiguration,
+}) {
+  final payload = vehicleJson()..addAll({
+    'vehicle_type': 'heavy', 'body_style': 'truck',
+    'brand_id': scania.id, 'vehicle_model_id': scaniaR.id,
+    'trim_id': null, 'engine_type_id': diesel.id, 'drivetrain_id': null,
+  });
+  (payload['identity'] as Map<String, dynamic>).addAll({
+    'brand': scania.name, 'model': scaniaR.name, 'trim': null,
+  });
+  (payload['technical'] as Map<String, dynamic>).addAll({
+    'engine_code': null, 'seats': null, 'doors': null,
+    'heavy_configuration': configuration,
+  });
   return payload;
 }
 
@@ -146,6 +185,37 @@ void main() {
     expect(vehicle.drivetrainId, 6);
   });
 
+  test('legacy vehicle resources default to an empty heavy configuration', () {
+    expect(Vehicle.fromJson(vehicleJson()).heavyConfiguration.isEmpty, isTrue);
+    expect(Vehicle.fromJson(heavyVehicleJson(configuration: null))
+        .heavyConfiguration.isEmpty, isTrue);
+    expect(Vehicle.fromJson(heavyVehicleJson(configuration: {}))
+        .heavyConfiguration.isEmpty, isTrue);
+    expect(Vehicle.fromJson(vehicleJson()..remove('technical'))
+        .heavyConfiguration.isEmpty, isTrue);
+  });
+
+  test('vehicle parsing preserves the declared heavy configuration exactly', () {
+    final vehicle = Vehicle.fromJson(heavyVehicleJson());
+    expect(vehicle.heavyConfiguration.toJson(), declaredHeavyConfiguration);
+    expect(vehicle.engineCode, isNull);
+    expect(vehicle.powerHp, isNull);
+    expect(vehicle.cylinders, isNull);
+    expect(vehicle.engineDisplacementCc, isNull);
+  });
+
+  test('vehicle equality includes changes to the heavy configuration', () {
+    final original = Vehicle.fromJson(heavyVehicleJson());
+    final unchanged = Vehicle.fromJson(heavyVehicleJson());
+    final changed = Vehicle.fromJson(heavyVehicleJson(configuration: {
+      ...declaredHeavyConfiguration, 'cab_label': 'CR20N',
+    }));
+    expect(original.heavyConfiguration, unchanged.heavyConfiguration);
+    expect(original, unchanged);
+    expect(original.heavyConfiguration, isNot(changed.heavyConfiguration));
+    expect(original, isNot(changed));
+  });
+
   test('public partner vehicle tolerates private reference and IDs being absent', () {
     final json = vehicleJson();
     for (final key in ['reference', 'brand_id', 'vehicle_model_id', 'trim_id',
@@ -218,6 +288,23 @@ void main() {
   Future<void> chooseCategory(WidgetTester tester, String label) async {
     tester.widget<ChoiceChip>(categoryChip(label)).onSelected!(true);
     await tester.pumpAndSettle();
+  }
+
+  Finder heavyField(String key) =>
+      find.byKey(ValueKey(key), skipOffstage: false);
+
+  String heavyText(WidgetTester tester, String key) =>
+      tester.widget<TextFormField>(heavyField(key)).controller!.text;
+
+  void editHeavyText(WidgetTester tester, String key, String value) {
+    tester.widget<TextFormField>(heavyField(key)).controller!.text = value;
+  }
+
+  Future<void> saveRegistration(WidgetTester tester) async {
+    for (var step = 0; step < 4; step++) {
+      tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+      await tester.pumpAndSettle();
+    }
   }
 
   void expectCategory(WidgetTester tester, String label) =>
@@ -341,6 +428,144 @@ void main() {
     expect(repo.payload!['engine_code'], '2ZR-FE');
     expect(repo.payload!['seats'], 7);
     expect(repo.payload!['doors'], 4);
+  });
+
+  testWidgets('heavy configuration follows the selected body and model', (tester) async {
+    await showRegistration(tester, _VehicleRepository());
+    expect(heavyField('heavy-configuration-section'), findsNothing);
+    await chooseBody(tester, 'truck');
+    expect(heavyField('heavy-configuration-section'), findsOneWidget);
+    final section = tester.widget<ExpansionTile>(heavyField('heavy-configuration-section'));
+    expect(section.initiallyExpanded, isTrue);
+    expect(section.maintainState, isTrue);
+    await chooseCategory(tester, 'Utilitaire');
+    expect(heavyField('heavy-configuration-section'), findsNothing);
+    await choose<BrandRef>(tester, mercedes);
+    await choose<ModelRef>(tester, actros);
+    expectCategory(tester, 'Poids lourd');
+    expect(heavyField('heavy-configuration-section'), findsOneWidget);
+    await chooseCategory(tester, 'Particulier');
+    expect(heavyField('heavy-configuration-section'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('editing restores and submits declared Scania configuration unchanged', (tester) async {
+    final repo = _VehicleRepository();
+    await showRegistration(tester, repo, existingJson: heavyVehicleJson(), references: heavyRefs);
+    expect(heavyText(tester, 'heavy-version'), 'R 450');
+    expect(heavyText(tester, 'heavy-cab'), 'CR20 Highline');
+    expect(heavyText(tester, 'heavy-axles'), '6x2/4');
+    expect(heavyText(tester, 'heavy-body-use'), 'Transport routier');
+    expect(heavyText(tester, 'heavy-emission'), 'Euro VI');
+    expect(heavyText(tester, 'heavy-ptac'), '26000');
+    expect(heavyText(tester, 'heavy-ptra'), '44000');
+    expect(tester.state<FormFieldState<String>>(heavyField('heavy-chassis')).value, 'tractor');
+    await saveRegistration(tester);
+    expect(repo.payload, isNotNull);
+    expect(repo.payload!['heavy_configuration'], declaredHeavyConfiguration);
+    final returned = heavyVehicleJson(configuration:
+        Map<String, dynamic>.from(repo.payload!['heavy_configuration'] as Map));
+    expect(Vehicle.fromJson(returned).heavyConfiguration.toJson(), declaredHeavyConfiguration);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('blank heavy fields explicitly clear a saved configuration', (tester) async {
+    final repo = _VehicleRepository();
+    await showRegistration(tester, repo, existingJson: heavyVehicleJson(), references: heavyRefs);
+    for (final key in ['heavy-version', 'heavy-cab', 'heavy-axles',
+      'heavy-body-use', 'heavy-emission', 'heavy-ptac', 'heavy-ptra']) {
+      editHeavyText(tester, key, '');
+    }
+    tester.widget<DropdownButtonFormField<String>>(heavyField('heavy-chassis')).onChanged!(null);
+    await tester.pumpAndSettle();
+    await saveRegistration(tester);
+    expect(repo.payload, isNotNull);
+    expect(repo.payload!.containsKey('heavy_configuration'), isTrue);
+    expect(repo.payload!['heavy_configuration'], isNull);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('hidden heavy data and invalid masses never affect a passenger submission', (tester) async {
+    final repo = _VehicleRepository();
+    await showRegistration(tester, repo, existingJson: heavyVehicleJson(), references: heavyRefs);
+    editHeavyText(tester, 'heavy-ptac', 'invalid');
+    editHeavyText(tester, 'heavy-ptra', '-1');
+    await chooseCategory(tester, 'Particulier');
+    expect(heavyField('heavy-configuration-section'), findsNothing);
+    await chooseBody(tester, 'other');
+    await saveRegistration(tester);
+    expect(repo.payload, isNotNull);
+    expect(repo.payload!['vehicle_type'], 'passenger');
+    expect(repo.payload!.containsKey('heavy_configuration'), isFalse);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('invalid folded heavy masses reopen the section and block the technical step', (tester) async {
+    final repo = _VehicleRepository();
+    await showRegistration(tester, repo, existingJson: heavyVehicleJson(), references: heavyRefs);
+    for (var step = 0; step < 2; step++) {
+      tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+      await tester.pumpAndSettle();
+    }
+    editHeavyText(tester, 'heavy-ptra', '25000');
+    final expansion = tester.widget<ExpansionTile>(heavyField('heavy-configuration-section')).controller!;
+    expansion.collapse();
+    await tester.pumpAndSettle();
+    expect(expansion.isExpanded, isFalse);
+    tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+    await tester.pumpAndSettle();
+    expect(tester.widget<Stepper>(find.byType(Stepper)).currentStep, 2);
+    expect(expansion.isExpanded, isTrue);
+    final error = tester.state<FormFieldState<String>>(heavyField('heavy-ptra')).errorText;
+    expect(error, isNotNull);
+    expect(find.text(error!), findsOneWidget);
+    expect(repo.payload, isNull);
+    editHeavyText(tester, 'heavy-ptra', '44000');
+    for (var step = 0; step < 2; step++) {
+      tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+      await tester.pumpAndSettle();
+    }
+    expect(repo.payload, isNotNull);
+    expect((repo.payload!['heavy_configuration'] as Map)['ptra_kg'], 44000);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('switching categories preserves an unfinished heavy configuration', (tester) async {
+    await showRegistration(tester, _VehicleRepository(), existingJson: heavyVehicleJson(), references: heavyRefs);
+    editHeavyText(tester, 'heavy-version', 'R 500');
+    editHeavyText(tester, 'heavy-cab', 'CR20N');
+    editHeavyText(tester, 'heavy-axles', '6x2/4');
+    editHeavyText(tester, 'heavy-ptac', '27000');
+    editHeavyText(tester, 'heavy-ptra', '45000');
+    tester.widget<DropdownButtonFormField<String>>(heavyField('heavy-chassis')).onChanged!('rigid');
+    await tester.pumpAndSettle();
+    await chooseCategory(tester, 'Particulier');
+    await chooseCategory(tester, 'Poids lourd');
+    expect(heavyText(tester, 'heavy-version'), 'R 500');
+    expect(heavyText(tester, 'heavy-cab'), 'CR20N');
+    expect(heavyText(tester, 'heavy-axles'), '6x2/4');
+    expect(heavyText(tester, 'heavy-ptac'), '27000');
+    expect(heavyText(tester, 'heavy-ptra'), '45000');
+    expect(tester.state<FormFieldState<String>>(heavyField('heavy-chassis')).value, 'rigid');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a heavy version is optional and never supplies engine or weight facts', (tester) async {
+    final repo = _VehicleRepository();
+    await showRegistration(tester, repo,
+        existingJson: heavyVehicleJson(configuration: null), references: heavyRefs);
+    editHeavyText(tester, 'heavy-version', 'R 450 6x2');
+    await saveRegistration(tester);
+    expect(repo.payload, isNotNull);
+    expect(repo.payload!['heavy_configuration'], {
+      'version_label': 'R 450 6x2', 'cab_label': null,
+      'axle_configuration': null, 'chassis_type': null, 'body_use': null,
+      'emission_standard': null, 'ptac_kg': null, 'ptra_kg': null,
+    });
+    for (final key in ['engine_code', 'power_hp', 'engine_displacement_cc', 'cylinders']) {
+      expect(repo.payload![key], isNull, reason: '$key must remain undeclared');
+    }
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('manual heavy category clears an incompatible body without inventing a truck', (tester) async {

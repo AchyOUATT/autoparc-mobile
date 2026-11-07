@@ -10432,6 +10432,138 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'version'**
   String get garageConsumptionRecommendationVersion;
+
+  /// No description provided for @heavyConfigurationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Configuration poids lourd — facultatif'**
+  String get heavyConfigurationTitle;
+
+  /// No description provided for @heavyConfigurationDetailsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Configuration poids lourd'**
+  String get heavyConfigurationDetailsTitle;
+
+  /// No description provided for @heavyConfigurationHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renseignez uniquement les informations connues, à partir des documents du véhicule. Ces données sont déclarées.'**
+  String get heavyConfigurationHelp;
+
+  /// No description provided for @heavyConfigurationDeclared.
+  ///
+  /// In fr, this message translates to:
+  /// **'Données déclarées'**
+  String get heavyConfigurationDeclared;
+
+  /// No description provided for @heavyConfigurationVersion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Version commerciale'**
+  String get heavyConfigurationVersion;
+
+  /// No description provided for @heavyConfigurationCab.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cabine'**
+  String get heavyConfigurationCab;
+
+  /// No description provided for @heavyConfigurationAxles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Configuration des essieux'**
+  String get heavyConfigurationAxles;
+
+  /// No description provided for @heavyConfigurationAxlesHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recopiez la notation exacte (ex. 6x2/4 ou 6x2*4).'**
+  String get heavyConfigurationAxlesHelp;
+
+  /// No description provided for @heavyConfigurationChassis.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type de châssis'**
+  String get heavyConfigurationChassis;
+
+  /// No description provided for @heavyConfigurationUnspecified.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non renseigné'**
+  String get heavyConfigurationUnspecified;
+
+  /// No description provided for @heavyConfigurationTractor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tracteur routier'**
+  String get heavyConfigurationTractor;
+
+  /// No description provided for @heavyConfigurationRigid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Porteur'**
+  String get heavyConfigurationRigid;
+
+  /// No description provided for @heavyConfigurationOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre'**
+  String get heavyConfigurationOther;
+
+  /// No description provided for @heavyConfigurationBodyUse.
+  ///
+  /// In fr, this message translates to:
+  /// **'Carrosserie / usage'**
+  String get heavyConfigurationBodyUse;
+
+  /// No description provided for @heavyConfigurationEmission.
+  ///
+  /// In fr, this message translates to:
+  /// **'Norme antipollution'**
+  String get heavyConfigurationEmission;
+
+  /// No description provided for @heavyConfigurationPtac.
+  ///
+  /// In fr, this message translates to:
+  /// **'PTAC (kg)'**
+  String get heavyConfigurationPtac;
+
+  /// No description provided for @heavyConfigurationPtacHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Poids total autorisé en charge, indiqué sur les documents du véhicule.'**
+  String get heavyConfigurationPtacHelp;
+
+  /// No description provided for @heavyConfigurationPtra.
+  ///
+  /// In fr, this message translates to:
+  /// **'PTRA (kg)'**
+  String get heavyConfigurationPtra;
+
+  /// No description provided for @heavyConfigurationPtraHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Poids total roulant autorisé, indiqué sur les documents du véhicule.'**
+  String get heavyConfigurationPtraHelp;
+
+  /// No description provided for @heavyConfigurationMassInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez un entier entre 1 et 1 000 000 kg.'**
+  String get heavyConfigurationMassInvalid;
+
+  /// No description provided for @heavyConfigurationTrainMassTooSmall.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le PTRA doit être supérieur ou égal au PTAC.'**
+  String get heavyConfigurationTrainMassTooSmall;
+
+  /// No description provided for @heavyConfigurationTextTooLong.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez au maximum {max} caractères.'**
+  String heavyConfigurationTextTooLong(int max);
 }
 
 class _AppLocalizationsDelegate
