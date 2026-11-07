@@ -47,7 +47,7 @@ class VehicleFeature extends Equatable {
   factory VehicleFeature.fromJson(Map<String, dynamic> json) => VehicleFeature(
     id: json['id'] as int,
     name: json['name'] as String,
-    category: json['category'] as String,
+    category: json['category'] as String? ?? 'autre',
   );
 
   @override
@@ -74,6 +74,8 @@ class Vehicle extends Equatable {
   final String? bodyStyle; // 'sedan' | 'suv' | 'pickup' | 'minibus' | 'bus' | …
   final VehicleIdentity identity;
   final VehicleCommercial commercial;
+  final String? description;
+  final Map<String, double> partnerProposedPrices;
   final VehicleImport? import_;
   final int faultsCount;
 
@@ -209,6 +211,8 @@ class Vehicle extends Equatable {
     this.bodyStyle,
     required this.identity,
     required this.commercial,
+    this.description,
+    this.partnerProposedPrices = const {},
     this.import_,
     required this.faultsCount,
     this.inspection,
@@ -312,6 +316,8 @@ class Vehicle extends Equatable {
       commercial: VehicleCommercial.fromJson(
         json['commercial'] as Map<String, dynamic>,
       ),
+      description: json['description'] as String?,
+      partnerProposedPrices: _readPartnerProposedPrices(json['partner_pricing']),
       import_: json['import'] != null
           ? VehicleImport.fromJson(json['import'] as Map<String, dynamic>)
           : null,
@@ -426,6 +432,10 @@ class Vehicle extends Equatable {
   bool get isHeavy => vehicleType == 'heavy';
   bool get isPassenger => vehicleType == 'passenger';
 
+  /// Private seller inputs; public prices already include the shop margin.
+  double? proposedPriceExcludingCommission(String field) =>
+      partnerProposedPrices[field];
+
   @override
   List<Object?> get props => [
     id,
@@ -433,7 +443,21 @@ class Vehicle extends Equatable {
     inspection,
     faultDeclaration,
     heavyConfiguration,
+    description,
+    partnerProposedPrices,
   ];
+}
+
+Map<String, double> _readPartnerProposedPrices(Object? metadata) {
+  if (metadata is! Map || metadata['prix_proposes'] is! Map) return const {};
+  final prices = metadata['prix_proposes'] as Map;
+  final result = <String, double>{};
+  for (final entry in prices.entries) {
+    if (entry.key is! String) continue;
+    final price = double.tryParse('${entry.value}');
+    if (price != null && price.isFinite) result[entry.key as String] = price;
+  }
+  return Map.unmodifiable(result);
 }
 
 // ── Identité ──────────────────────────────────────────────────────

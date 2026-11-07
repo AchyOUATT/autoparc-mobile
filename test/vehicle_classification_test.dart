@@ -703,36 +703,45 @@ void main() {
     expect(repo.payload!['consumption_combined'], isNull);
   });
 
-  for (final monthlyOnly in [true, false]) {
-    testWidgets('rental accepts ${monthlyOnly ? 'monthly' : 'daily'} rate alone and clears the removed rate', (tester) async {
+  for (final rate in ['daily', 'weekly', 'monthly']) {
+    testWidgets('rental accepts $rate rate alone and clears the removed rates', (tester) async {
       final json = vehicleJson();
       (json['commercial'] as Map<String, dynamic>).addAll({
         'availability': 'rent',
         'rental_daily_rate': '25000.00',
+        'rental_weekly_rate': '150000.00',
         'rental_monthly_rate': '450000.00',
       });
       final repo = _VehicleRepository();
       await showRegistration(tester, repo, existingJson: json);
-      final clearedRate = find.byWidgetPredicate((widget) => widget is TextField &&
-        widget.decoration?.labelText == (monthlyOnly ? 'Tarif journalier' : 'Tarif mensuel'),
-        skipOffstage: false);
-      tester.widget<TextField>(clearedRate).controller!.clear();
+      for (final entry in {
+        'daily': 'Tarif journalier',
+        'weekly': 'Tarif hebdomadaire',
+        'monthly': 'Tarif mensuel',
+      }.entries) {
+        if (entry.key == rate) continue;
+        final clearedRate = find.byWidgetPredicate((widget) => widget is TextField &&
+          widget.decoration?.labelText == entry.value, skipOffstage: false);
+        tester.widget<TextField>(clearedRate).controller!.clear();
+      }
       for (var step = 0; step < 4; step++) {
         tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
         await tester.pumpAndSettle();
       }
       expect(repo.payload, isNotNull);
-      expect(repo.payload!['rental_daily_rate'], monthlyOnly ? null : 25000);
-      expect(repo.payload!['rental_monthly_rate'], monthlyOnly ? 450000 : null);
+      expect(repo.payload!['rental_daily_rate'], rate == 'daily' ? 25000 : null);
+      expect(repo.payload!['rental_weekly_rate'], rate == 'weekly' ? 150000 : null);
+      expect(repo.payload!['rental_monthly_rate'], rate == 'monthly' ? 450000 : null);
       expect(repo.payload!.containsKey('rental_daily_rate'), isTrue);
       expect(repo.payload!.containsKey('rental_monthly_rate'), isTrue);
+      expect(repo.payload!.containsKey('rental_weekly_rate'), isTrue);
     });
   }
 
-  testWidgets('rental refuses submission when daily and monthly rates are empty', (tester) async {
+  testWidgets('rental refuses submission when daily, weekly and monthly rates are empty', (tester) async {
     final json = vehicleJson();
     (json['commercial'] as Map<String, dynamic>).addAll({
-      'availability': 'rent', 'rental_daily_rate': null, 'rental_monthly_rate': null,
+      'availability': 'rent', 'rental_daily_rate': null, 'rental_weekly_rate': null, 'rental_monthly_rate': null,
     });
     final repo = _VehicleRepository();
     await showRegistration(tester, repo, existingJson: json);
@@ -746,10 +755,11 @@ void main() {
     // passe. La règle est la même ; c'est son `validator:` qui la porte,
     // maintenant que chaque étape a son propre `Form` et qu'il s'exécute.
     //
-    // Deux occurrences : la règle vaut pour le tarif journalier comme pour
-    // le mensuel, et chacun porte son message. C'est voulu — corriger l'un
+    // La règle vaut pour les trois tarifs, et chacun porte son message.
+    // Corriger l'un
     // suffit, et laisser l'autre muet désignerait un seul coupable.
-    expect(find.text('Saisissez un tarif journalier ou mensuel'), findsWidgets);
+    final l10n = AppLocalizations.of(tester.element(find.byType(VehicleRegisterPage)));
+    expect(find.text(l10n.vehiclesRentalRateRequired), findsWidgets);
   });
 
   testWidgets('changing brand in garage clears its previous model and fuel', (tester) async {

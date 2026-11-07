@@ -3524,11 +3524,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get vehiclesRentalRateRequired =>
-      'Saisissez un tarif journalier ou mensuel';
+      'Saisissez un tarif journalier, hebdomadaire ou mensuel';
 
   @override
   String get vehiclesRentalRateHint =>
-      'Renseignez au moins un tarif : par jour ou par mois.';
+      'Renseignez au moins un tarif : par jour, par semaine ou par mois.';
 
   @override
   String get vehiclesDepositLabel => 'Caution';
@@ -5958,5 +5958,91 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String heavyConfigurationTextTooLong(int max) {
     return 'Saisissez au maximum $max caractères.';
+  }
+
+  @override
+  String get vehicleRegistrationEntryTitle => 'Ajouter un véhicule';
+
+  @override
+  String get vehicleRegistrationChoosePurpose =>
+      'Que souhaitez-vous proposer ?';
+
+  @override
+  String get vehicleRegistrationSaleTitle => 'Mettre un véhicule en vente';
+
+  @override
+  String get vehicleRegistrationSaleHelp =>
+      'Renseignez le véhicule et les informations utiles à sa vente.';
+
+  @override
+  String get vehicleRegistrationRentalTitle => 'Mettre un véhicule en location';
+
+  @override
+  String get vehicleRegistrationRentalHelp =>
+      'Un formulaire court pour le véhicule et ses tarifs de location.';
+
+  @override
+  String get rentalVehicleCreateTitle => 'Mettre en location';
+
+  @override
+  String get rentalVehicleEditTitle => 'Modifier la location';
+
+  @override
+  String get rentalVehicleIntro =>
+      'Renseignez le véhicule et au moins un tarif. Vous pourrez ajouter les photos après l’enregistrement.';
+
+  @override
+  String get rentalVehicleIdentityTitle => 'Le véhicule';
+
+  @override
+  String get rentalVehicleRatesTitle => 'Tarifs de location';
+
+  @override
+  String get rentalVehicleOptionalTitle =>
+      'Informations complémentaires — facultatif';
+
+  @override
+  String get rentalVehiclePickupPlace => 'Lieu de retrait';
+
+  @override
+  String get rentalVehiclePickupPlaceHelp =>
+      'Ville, quartier ou adresse où récupérer le véhicule.';
+
+  @override
+  String get rentalVehicleRateRequired =>
+      'Renseignez un tarif journalier, hebdomadaire ou mensuel.';
+
+  @override
+  String get rentalVehicleSave => 'Enregistrer la location';
+
+  @override
+  String get rentalVehicleOptionalHint =>
+      'La boîte, les places et les informations complémentaires sont facultatives.';
+
+  @override
+  String get rentalVehicleSeatsInvalid =>
+      'Saisissez un nombre de places entre 1 et 70.';
+
+  @override
+  String get commonPerWeekSuffix => '/semaine';
+
+  @override
+  String get vehiclesWeeklyRateLabel => 'Tarif hebdomadaire';
+
+  @override
+  String get rentalVehicleEquipmentTitle =>
+      'Équipements et accessoires — facultatif';
+
+  @override
+  String get rentalVehicleEquipmentHelp =>
+      'Cochez uniquement les équipements et accessoires inclus. Cette section peut rester vide.';
+
+  @override
+  String get rentalVehicleOtherEquipmentHelp =>
+      'Précisez ici les accessoires, services ou autres informations non proposés dans la liste.';
+
+  @override
+  String partnerAccountsRentalWeekly(String amount) {
+    return 'Location : $amount / semaine';
   }
 }

@@ -7,7 +7,7 @@ import '../data/lecture_json.dart' as json;
 import '../data/partner_repository.dart';
 import '../../catalog/data/models/vehicle.dart';
 import '../../vehicles/presentation/pages/vehicle_form_mode.dart';
-import '../../vehicles/presentation/pages/vehicle_register_page.dart';
+import '../../vehicles/presentation/pages/vehicle_registration_page.dart';
 import 'marge_recapitulatif.dart';
 import 'partner_listing_form.dart';
 import 'partner_media_page.dart';
@@ -77,25 +77,13 @@ class _PartnerListingsPageState extends ConsumerState<PartnerListingsPage> {
           ? null
           : await ref.read(partnerRepositoryProvider).listing(widget.kind, id);
       if (!mounted) return;
-      // ── UN VEHICULE PASSE PAR LE FORMULAIRE DU PERSONNEL ──────────────
-      //
-      // Le meme ecran, en mode partenaire. L'espace partenaire avait le sien,
-      // de 441 lignes contre 1521, et neuf champs que le personnel
-      // renseignait sans que le partenaire puisse meme les voir. L'ecart
-      // n'etait pas une decision, c'etait une derive : deux ecrans ecrits
-      // separement, que rien ne tenait synchronises.
-      //
-      // `VehicleFormMode.partenaire` retire les trois champs que le serveur
-      // refuse — `deal_type`, `location_id`, `partner_id` — de la charge ET de
-      // l'ecran. Voir ce mode pour le detail.
-      //
-      // Pieces et accessoires gardent `PartnerListingFormPage` : leur
-      // formulaire du back-office n'est pas le meme ecran, et l'unifier est un
-      // autre chantier.
+      // Le choix vente/location et l'edition utilisent les memes parcours que
+      // le personnel. Le mode partenaire conserve leurs champs autorises et
+      // le resultat de sauvegarde revient sur cette route pour rafraichir.
       final saved = await Navigator.of(context).push<bool>(
         MaterialPageRoute(
           builder: (_) => widget.kind == PartnerListingKind.vehicles
-              ? VehicleRegisterPage(
+              ? VehicleRegistrationPage(
                   mode: VehicleFormMode.partenaire,
                   existing: detail == null ? null : Vehicle.fromJson(detail),
                 )
@@ -463,7 +451,10 @@ class _PartnerListingsPageState extends ConsumerState<PartnerListingsPage> {
     final commercial =
         item['commercial'] as Map? ?? item['pricing'] as Map? ?? const {};
     final stock = item['stock'] as Map?;
-    final price = commercial['sale_price'] ?? commercial['selling_price'];
+    final price = widget.kind == PartnerListingKind.vehicles &&
+            commercial['availability'] == 'rent'
+        ? null
+        : commercial['sale_price'] ?? commercial['selling_price'];
     final marge = _margeDe(item);
     final media = partnerMaps(item['media']);
     final cover = media.isEmpty
@@ -521,16 +512,20 @@ class _PartnerListingsPageState extends ConsumerState<PartnerListingsPage> {
                     context,
                   ).partnerAccountsStockSummary('${stock['quantity'] ?? '—'}'),
                 if (commercial['availability'] == 'rent' ||
-                    commercial['availability'] == 'both')
-                  commercial['rental_daily_rate'] != null
-                      ? AppLocalizations.of(context).partnerAccountsRentalDaily(
-                          _montant(commercial['rental_daily_rate']),
-                        )
-                      : AppLocalizations.of(
-                          context,
-                        ).partnerAccountsRentalMonthly(
-                          _montant(commercial['rental_monthly_rate'] ?? 0),
-                        ),
+                    commercial['availability'] == 'both') ...[
+                  if (commercial['rental_daily_rate'] != null)
+                    AppLocalizations.of(context).partnerAccountsRentalDaily(
+                      _montant(commercial['rental_daily_rate']),
+                    ),
+                  if (commercial['rental_weekly_rate'] != null)
+                    AppLocalizations.of(context).partnerAccountsRentalWeekly(
+                      _montant(commercial['rental_weekly_rate']),
+                    ),
+                  if (commercial['rental_monthly_rate'] != null)
+                    AppLocalizations.of(context).partnerAccountsRentalMonthly(
+                      _montant(commercial['rental_monthly_rate']),
+                    ),
+                ],
               ].join('\n'),
             ),
             trailing: PopupMenuButton<String>(

@@ -62,11 +62,13 @@ class VehicleRegisterPage extends ConsumerStatefulWidget {
   /// garde le comportement du back-office, et c'est l'espace partenaire qui
   /// demande explicitement l'autre.
   final VehicleFormMode mode;
+  final bool saleOnly;
 
   const VehicleRegisterPage({
     super.key,
     this.existing,
     this.mode = VehicleFormMode.personnel,
+    this.saleOnly = false,
   });
 
   @override
@@ -177,6 +179,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   int? _selectedPartnerId;
   final _salePriceCtrl = TextEditingController();
   final _rentalDailyCtrl = TextEditingController();
+  final _rentalWeeklyCtrl = TextEditingController();
   final _rentalMonthlyCtrl = TextEditingController();
   final _rentalDepositCtrl = TextEditingController();
   final _mileageCtrl = TextEditingController();
@@ -224,15 +227,21 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       if (e.identity.year != null) _yearCtrl.text = e.identity.year.toString();
       _condition = e.commercial.condition;
       _mileageCtrl.text = e.mileageKm?.toString() ?? '';
-      _availability = e.commercial.availability;
+      _availability = widget.saleOnly ? 'sale' : e.commercial.availability;
       _negotiable = e.commercial.priceNegotiable;
       _dealType = e.commercial.dealType ?? '';
+      double originalPrice(String field, double publicPrice) =>
+          widget.mode.estPartenaire
+              ? e.proposedPriceExcludingCommission(field) ?? publicPrice
+              : publicPrice;
       if (e.commercial.salePrice != null)
-        _salePriceCtrl.text = _fmtPrice(e.commercial.salePrice!);
+        _salePriceCtrl.text = _fmtPrice(originalPrice('sale_price', e.commercial.salePrice!));
       if (e.commercial.rentalDailyRate != null)
-        _rentalDailyCtrl.text = _fmtPrice(e.commercial.rentalDailyRate!);
+        _rentalDailyCtrl.text = _fmtPrice(originalPrice('rental_daily_rate', e.commercial.rentalDailyRate!));
+      if (e.commercial.rentalWeeklyRate != null)
+        _rentalWeeklyCtrl.text = _fmtPrice(originalPrice('rental_weekly_rate', e.commercial.rentalWeeklyRate!));
       if (e.commercial.rentalMonthlyRate != null)
-        _rentalMonthlyCtrl.text = _fmtPrice(e.commercial.rentalMonthlyRate!);
+        _rentalMonthlyCtrl.text = _fmtPrice(originalPrice('rental_monthly_rate', e.commercial.rentalMonthlyRate!));
       if (e.commercial.rentalDeposit != null)
         _rentalDepositCtrl.text = _fmtPrice(e.commercial.rentalDeposit!);
       if (e.commercial.site != null) _siteCtrl.text = e.commercial.site!;
@@ -385,6 +394,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       _doorsCtrl,
       _salePriceCtrl,
       _rentalDailyCtrl,
+      _rentalWeeklyCtrl,
       _rentalMonthlyCtrl,
       _rentalDepositCtrl,
       _mileageCtrl,
@@ -662,18 +672,23 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         'sale_price': int.parse(
           _salePriceCtrl.text.replaceAll(RegExp(r'\s'), ''),
         ),
-      if (_existing != null ||
-          forRent && _rentalDailyCtrl.text.trim().isNotEmpty)
+      if (!widget.saleOnly && (_existing != null ||
+          forRent && _rentalDailyCtrl.text.trim().isNotEmpty))
         'rental_daily_rate': forRent
             ? _parsePrice(_rentalDailyCtrl.text)
             : null,
-      if (_existing != null ||
-          forRent && _rentalMonthlyCtrl.text.trim().isNotEmpty)
+      if (!widget.saleOnly && (_existing != null ||
+          forRent && _rentalWeeklyCtrl.text.trim().isNotEmpty))
+        'rental_weekly_rate': forRent
+            ? _parsePrice(_rentalWeeklyCtrl.text)
+            : null,
+      if (!widget.saleOnly && (_existing != null ||
+          forRent && _rentalMonthlyCtrl.text.trim().isNotEmpty))
         'rental_monthly_rate': forRent
             ? _parsePrice(_rentalMonthlyCtrl.text)
             : null,
-      if (_existing != null ||
-          forRent && _rentalDepositCtrl.text.trim().isNotEmpty)
+      if (!widget.saleOnly && (_existing != null ||
+          forRent && _rentalDepositCtrl.text.trim().isNotEmpty))
         'rental_deposit': forRent ? _parsePrice(_rentalDepositCtrl.text) : null,
       if (_siteCtrl.text.isNotEmpty) 'site': _siteCtrl.text.trim(),
       if (_descriptionCtrl.text.isNotEmpty)
@@ -742,6 +757,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
   bool get _rentalRatesMissing =>
       _rentalDailyCtrl.text.trim().isEmpty &&
+      _rentalWeeklyCtrl.text.trim().isEmpty &&
       _rentalMonthlyCtrl.text.trim().isEmpty;
 
   int? _parsePrice(String value) =>
@@ -822,7 +838,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _existing != null ? l10n.vehiclesEditTitle : l10n.vehiclesCreateTitle,
+          _existing != null ? l10n.vehiclesEditTitle : widget.saleOnly
+              ? l10n.vehicleRegistrationSaleTitle : l10n.vehiclesCreateTitle,
         ),
         centerTitle: false,
         actions: [
@@ -1622,25 +1639,27 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                 ),
             ],
 
-            // Disponibilité
-            Text(
-              l10n.vehiclesAvailabilityLabel,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+            if (!widget.saleOnly) ...[
+              // Disponibilité
+              Text(
+                l10n.vehiclesAvailabilityLabel,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            _ChoiceGroup<String>(
-              options: [
-                (value: 'sale', label: l10n.vehiclesForSale),
-                (value: 'rent', label: l10n.vehiclesForRent),
-                (value: 'both', label: l10n.vehiclesForBoth),
+              const SizedBox(height: 6),
+              _ChoiceGroup<String>(
+                options: [
+                  (value: 'sale', label: l10n.vehiclesForSale),
+                  (value: 'rent', label: l10n.vehiclesForRent),
+                  (value: 'both', label: l10n.vehiclesForBoth),
               ],
-              selected: _availability,
-              onChanged: (v) => setState(() => _availability = v),
-            ),
-            const SizedBox(height: 16),
+                selected: _availability,
+                onChanged: (v) => setState(() => _availability = v),
+              ),
+              const SizedBox(height: 16),
 
+            ],
             // Mise en avant commerciale — la vitrine est a la boutique.
             if (widget.mode.peutChoisirLaBoutique) ...[
               Text(
@@ -1721,6 +1740,21 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               ),
               const SizedBox(height: 12),
               _marge(_rentalDailyCtrl, libelle: l10n.vehiclesBuyerRateLabel),
+              TextFormField(
+                controller: _rentalWeeklyCtrl,
+                decoration: InputDecoration(
+                  labelText: l10n.vehiclesWeeklyRateLabel,
+                  suffixText: 'FCFA${l10n.commonPerWeekSuffix}',
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [_ThousandsSeparatorFormatter()],
+                validator: (_) => forRent && _rentalRatesMissing
+                    ? l10n.vehiclesRentalRateRequired
+                    : null,
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 12),
+              _marge(_rentalWeeklyCtrl, libelle: l10n.vehiclesBuyerRateLabel),
               TextFormField(
                 controller: _rentalMonthlyCtrl,
                 decoration: InputDecoration(

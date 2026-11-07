@@ -6236,13 +6236,13 @@ abstract class AppLocalizations {
   /// Validation de présence d’un des deux tarifs.
   ///
   /// In fr, this message translates to:
-  /// **'Saisissez un tarif journalier ou mensuel'**
+  /// **'Saisissez un tarif journalier, hebdomadaire ou mensuel'**
   String get vehiclesRentalRateRequired;
 
   /// Aide des tarifs de location.
   ///
   /// In fr, this message translates to:
-  /// **'Renseignez au moins un tarif : par jour ou par mois.'**
+  /// **'Renseignez au moins un tarif : par jour, par semaine ou par mois.'**
   String get vehiclesRentalRateHint;
 
   /// Libellé de la caution de location.
@@ -10564,6 +10564,150 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Saisissez au maximum {max} caractères.'**
   String heavyConfigurationTextTooLong(int max);
+
+  /// No description provided for @vehicleRegistrationEntryTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un véhicule'**
+  String get vehicleRegistrationEntryTitle;
+
+  /// No description provided for @vehicleRegistrationChoosePurpose.
+  ///
+  /// In fr, this message translates to:
+  /// **'Que souhaitez-vous proposer ?'**
+  String get vehicleRegistrationChoosePurpose;
+
+  /// No description provided for @vehicleRegistrationSaleTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre un véhicule en vente'**
+  String get vehicleRegistrationSaleTitle;
+
+  /// No description provided for @vehicleRegistrationSaleHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renseignez le véhicule et les informations utiles à sa vente.'**
+  String get vehicleRegistrationSaleHelp;
+
+  /// No description provided for @vehicleRegistrationRentalTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre un véhicule en location'**
+  String get vehicleRegistrationRentalTitle;
+
+  /// No description provided for @vehicleRegistrationRentalHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un formulaire court pour le véhicule et ses tarifs de location.'**
+  String get vehicleRegistrationRentalHelp;
+
+  /// No description provided for @rentalVehicleCreateTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre en location'**
+  String get rentalVehicleCreateTitle;
+
+  /// No description provided for @rentalVehicleEditTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier la location'**
+  String get rentalVehicleEditTitle;
+
+  /// No description provided for @rentalVehicleIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renseignez le véhicule et au moins un tarif. Vous pourrez ajouter les photos après l’enregistrement.'**
+  String get rentalVehicleIntro;
+
+  /// No description provided for @rentalVehicleIdentityTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le véhicule'**
+  String get rentalVehicleIdentityTitle;
+
+  /// No description provided for @rentalVehicleRatesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tarifs de location'**
+  String get rentalVehicleRatesTitle;
+
+  /// No description provided for @rentalVehicleOptionalTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Informations complémentaires — facultatif'**
+  String get rentalVehicleOptionalTitle;
+
+  /// No description provided for @rentalVehiclePickupPlace.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lieu de retrait'**
+  String get rentalVehiclePickupPlace;
+
+  /// No description provided for @rentalVehiclePickupPlaceHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ville, quartier ou adresse où récupérer le véhicule.'**
+  String get rentalVehiclePickupPlaceHelp;
+
+  /// No description provided for @rentalVehicleRateRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renseignez un tarif journalier, hebdomadaire ou mensuel.'**
+  String get rentalVehicleRateRequired;
+
+  /// No description provided for @rentalVehicleSave.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer la location'**
+  String get rentalVehicleSave;
+
+  /// No description provided for @rentalVehicleOptionalHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'La boîte, les places et les informations complémentaires sont facultatives.'**
+  String get rentalVehicleOptionalHint;
+
+  /// No description provided for @rentalVehicleSeatsInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez un nombre de places entre 1 et 70.'**
+  String get rentalVehicleSeatsInvalid;
+
+  /// No description provided for @commonPerWeekSuffix.
+  ///
+  /// In fr, this message translates to:
+  /// **'/semaine'**
+  String get commonPerWeekSuffix;
+
+  /// No description provided for @vehiclesWeeklyRateLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tarif hebdomadaire'**
+  String get vehiclesWeeklyRateLabel;
+
+  /// No description provided for @rentalVehicleEquipmentTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipements et accessoires — facultatif'**
+  String get rentalVehicleEquipmentTitle;
+
+  /// No description provided for @rentalVehicleEquipmentHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cochez uniquement les équipements et accessoires inclus. Cette section peut rester vide.'**
+  String get rentalVehicleEquipmentHelp;
+
+  /// No description provided for @rentalVehicleOtherEquipmentHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Précisez ici les accessoires, services ou autres informations non proposés dans la liste.'**
+  String get rentalVehicleOtherEquipmentHelp;
+
+  /// No description provided for @partnerAccountsRentalWeekly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Location : {amount} / semaine'**
+  String partnerAccountsRentalWeekly(String amount);
 }
 
 class _AppLocalizationsDelegate

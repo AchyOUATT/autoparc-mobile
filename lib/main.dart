@@ -38,7 +38,7 @@ import 'features/garage/presentation/pages/garage_page.dart';
 import 'features/cart/presentation/pages/cart_page.dart';
 import 'features/catalog/presentation/pages/add_part_page.dart';
 import 'features/catalog/presentation/pages/add_accessory_page.dart';
-import 'features/vehicles/presentation/pages/vehicle_register_page.dart';
+import 'features/vehicles/presentation/pages/vehicle_registration_page.dart';
 import 'features/needs/presentation/pages/submit_need_page.dart';
 import 'features/needs/presentation/pages/needs_list_page.dart';
 import 'features/needs/presentation/pages/client_needs_page.dart';
@@ -176,7 +176,7 @@ GoRouter _buildRouter({required bool onboardingDone}) => GoRouter(
     GoRoute(path: '/cart', builder: (_, __) => const CartPage()),
 
     // ── Routes statiques AVANT les routes paramétrées ──────────────
-    GoRoute(path: '/vehicles/new',    builder: (_, __) => const VehicleRegisterPage()),
+    GoRoute(path: '/vehicles/new',    builder: (_, __) => const VehicleRegistrationPage()),
     GoRoute(path: '/parts/new',       builder: (_, __) => const AddPartPage()),
     GoRoute(path: '/accessories/new', builder: (_, __) => const AddAccessoryPage()),
 
@@ -280,7 +280,7 @@ GoRouter _buildRouter({required bool onboardingDone}) => GoRouter(
       path: '/vehicles/:id/edit',
       builder: (_, state) {
         final vehicle = state.extra as Vehicle?;
-        return VehicleRegisterPage(existing: vehicle);
+        return VehicleRegistrationPage(existing: vehicle);
       },
     ),
     GoRoute(

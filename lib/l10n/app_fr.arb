@@ -4813,11 +4813,11 @@
   "@vehiclesMonthlyRateLabel": {
     "description": "Libellé du tarif mensuel."
   },
-  "vehiclesRentalRateRequired": "Saisissez un tarif journalier ou mensuel",
+  "vehiclesRentalRateRequired": "Saisissez un tarif journalier, hebdomadaire ou mensuel",
   "@vehiclesRentalRateRequired": {
     "description": "Validation de présence d’un des deux tarifs."
   },
-  "vehiclesRentalRateHint": "Renseignez au moins un tarif : par jour ou par mois.",
+  "vehiclesRentalRateHint": "Renseignez au moins un tarif : par jour, par semaine ou par mois.",
   "@vehiclesRentalRateHint": {
     "description": "Aide des tarifs de location."
   },
@@ -7359,6 +7359,37 @@
     "placeholders": {
       "max": {
         "type": "int"
+      }
+    }
+  },
+  "vehicleRegistrationEntryTitle": "Ajouter un véhicule",
+  "vehicleRegistrationChoosePurpose": "Que souhaitez-vous proposer ?",
+  "vehicleRegistrationSaleTitle": "Mettre un véhicule en vente",
+  "vehicleRegistrationSaleHelp": "Renseignez le véhicule et les informations utiles à sa vente.",
+  "vehicleRegistrationRentalTitle": "Mettre un véhicule en location",
+  "vehicleRegistrationRentalHelp": "Un formulaire court pour le véhicule et ses tarifs de location.",
+  "rentalVehicleCreateTitle": "Mettre en location",
+  "rentalVehicleEditTitle": "Modifier la location",
+  "rentalVehicleIntro": "Renseignez le véhicule et au moins un tarif. Vous pourrez ajouter les photos après l’enregistrement.",
+  "rentalVehicleIdentityTitle": "Le véhicule",
+  "rentalVehicleRatesTitle": "Tarifs de location",
+  "rentalVehicleOptionalTitle": "Informations complémentaires — facultatif",
+  "rentalVehiclePickupPlace": "Lieu de retrait",
+  "rentalVehiclePickupPlaceHelp": "Ville, quartier ou adresse où récupérer le véhicule.",
+  "rentalVehicleRateRequired": "Renseignez un tarif journalier, hebdomadaire ou mensuel.",
+  "rentalVehicleSave": "Enregistrer la location",
+  "rentalVehicleOptionalHint": "La boîte, les places et les informations complémentaires sont facultatives.",
+  "rentalVehicleSeatsInvalid": "Saisissez un nombre de places entre 1 et 70.",
+  "commonPerWeekSuffix": "/semaine",
+  "vehiclesWeeklyRateLabel": "Tarif hebdomadaire",
+  "rentalVehicleEquipmentTitle": "Équipements et accessoires — facultatif",
+  "rentalVehicleEquipmentHelp": "Cochez uniquement les équipements et accessoires inclus. Cette section peut rester vide.",
+  "rentalVehicleOtherEquipmentHelp": "Précisez ici les accessoires, services ou autres informations non proposés dans la liste.",
+  "partnerAccountsRentalWeekly": "Location : {amount} / semaine",
+  "@partnerAccountsRentalWeekly": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
       }
     }
   }

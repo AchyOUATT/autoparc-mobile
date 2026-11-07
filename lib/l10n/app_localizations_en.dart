@@ -3508,11 +3508,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get vehiclesMonthlyRateLabel => 'Monthly rate';
 
   @override
-  String get vehiclesRentalRateRequired => 'Enter a daily or monthly rate';
+  String get vehiclesRentalRateRequired =>
+      'Enter a daily, weekly or monthly rate';
 
   @override
   String get vehiclesRentalRateHint =>
-      'Enter at least one rate: daily or monthly.';
+      'Enter at least one rate: per day, per week or per month.';
 
   @override
   String get vehiclesDepositLabel => 'Deposit';
@@ -5936,5 +5937,90 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String heavyConfigurationTextTooLong(int max) {
     return 'Enter at most $max characters.';
+  }
+
+  @override
+  String get vehicleRegistrationEntryTitle => 'Add a vehicle';
+
+  @override
+  String get vehicleRegistrationChoosePurpose =>
+      'What would you like to offer?';
+
+  @override
+  String get vehicleRegistrationSaleTitle => 'List a vehicle for sale';
+
+  @override
+  String get vehicleRegistrationSaleHelp =>
+      'Enter the vehicle and the details needed to sell it.';
+
+  @override
+  String get vehicleRegistrationRentalTitle => 'List a vehicle for rent';
+
+  @override
+  String get vehicleRegistrationRentalHelp =>
+      'A short form for the vehicle and its rental rates.';
+
+  @override
+  String get rentalVehicleCreateTitle => 'List for rent';
+
+  @override
+  String get rentalVehicleEditTitle => 'Edit rental listing';
+
+  @override
+  String get rentalVehicleIntro =>
+      'Enter the vehicle and at least one rate. You can add photos after saving.';
+
+  @override
+  String get rentalVehicleIdentityTitle => 'Vehicle';
+
+  @override
+  String get rentalVehicleRatesTitle => 'Rental rates';
+
+  @override
+  String get rentalVehicleOptionalTitle => 'Additional details — optional';
+
+  @override
+  String get rentalVehiclePickupPlace => 'Pickup location';
+
+  @override
+  String get rentalVehiclePickupPlaceHelp =>
+      'City, area or address where the vehicle can be collected.';
+
+  @override
+  String get rentalVehicleRateRequired =>
+      'Enter a daily, weekly or monthly rate.';
+
+  @override
+  String get rentalVehicleSave => 'Save rental listing';
+
+  @override
+  String get rentalVehicleOptionalHint =>
+      'Transmission, seats and additional details are optional.';
+
+  @override
+  String get rentalVehicleSeatsInvalid =>
+      'Enter a number of seats between 1 and 70.';
+
+  @override
+  String get commonPerWeekSuffix => '/week';
+
+  @override
+  String get vehiclesWeeklyRateLabel => 'Weekly rate';
+
+  @override
+  String get rentalVehicleEquipmentTitle =>
+      'Equipment and accessories — optional';
+
+  @override
+  String get rentalVehicleEquipmentHelp =>
+      'Select only the equipment and accessories included. You can leave this section empty.';
+
+  @override
+  String get rentalVehicleOtherEquipmentHelp =>
+      'Use this description for accessories, services or other details not listed above.';
+
+  @override
+  String partnerAccountsRentalWeekly(String amount) {
+    return 'Rental: $amount / week';
   }
 }

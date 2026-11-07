@@ -1571,8 +1571,8 @@
   "vehiclesSalePriceRequired": "Sale price is required",
   "vehiclesDailyRateLabel": "Daily rate",
   "vehiclesMonthlyRateLabel": "Monthly rate",
-  "vehiclesRentalRateRequired": "Enter a daily or monthly rate",
-  "vehiclesRentalRateHint": "Enter at least one rate: daily or monthly.",
+  "vehiclesRentalRateRequired": "Enter a daily, weekly or monthly rate",
+  "vehiclesRentalRateHint": "Enter at least one rate: per day, per week or per month.",
   "vehiclesDepositLabel": "Deposit",
   "vehiclesNegotiable": "Negotiable price",
   "vehiclesBranchLabel": "Branch / showroom",
@@ -2673,6 +2673,37 @@
     "placeholders": {
       "max": {
         "type": "int"
+      }
+    }
+  },
+  "vehicleRegistrationEntryTitle": "Add a vehicle",
+  "vehicleRegistrationChoosePurpose": "What would you like to offer?",
+  "vehicleRegistrationSaleTitle": "List a vehicle for sale",
+  "vehicleRegistrationSaleHelp": "Enter the vehicle and the details needed to sell it.",
+  "vehicleRegistrationRentalTitle": "List a vehicle for rent",
+  "vehicleRegistrationRentalHelp": "A short form for the vehicle and its rental rates.",
+  "rentalVehicleCreateTitle": "List for rent",
+  "rentalVehicleEditTitle": "Edit rental listing",
+  "rentalVehicleIntro": "Enter the vehicle and at least one rate. You can add photos after saving.",
+  "rentalVehicleIdentityTitle": "Vehicle",
+  "rentalVehicleRatesTitle": "Rental rates",
+  "rentalVehicleOptionalTitle": "Additional details — optional",
+  "rentalVehiclePickupPlace": "Pickup location",
+  "rentalVehiclePickupPlaceHelp": "City, area or address where the vehicle can be collected.",
+  "rentalVehicleRateRequired": "Enter a daily, weekly or monthly rate.",
+  "rentalVehicleSave": "Save rental listing",
+  "rentalVehicleOptionalHint": "Transmission, seats and additional details are optional.",
+  "rentalVehicleSeatsInvalid": "Enter a number of seats between 1 and 70.",
+  "commonPerWeekSuffix": "/week",
+  "vehiclesWeeklyRateLabel": "Weekly rate",
+  "rentalVehicleEquipmentTitle": "Equipment and accessories — optional",
+  "rentalVehicleEquipmentHelp": "Select only the equipment and accessories included. You can leave this section empty.",
+  "rentalVehicleOtherEquipmentHelp": "Use this description for accessories, services or other details not listed above.",
+  "partnerAccountsRentalWeekly": "Rental: {amount} / week",
+  "@partnerAccountsRentalWeekly": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
       }
     }
   }

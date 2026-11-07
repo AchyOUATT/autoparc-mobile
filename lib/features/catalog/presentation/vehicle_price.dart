@@ -2,13 +2,15 @@ import '../../../core/utils/currency_format.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/models/vehicle.dart';
 
-/// Rates retain their own period; no daily/monthly conversion is inferred.
+/// Rates retain their own period; no daily/weekly/monthly conversion is inferred.
 List<String> vehicleRentalPriceLabels(
   VehicleCommercial commercial,
   AppLocalizations l10n,
 ) => !commercial.isForRent ? const [] : [
   if (commercial.rentalDailyRate != null)
     '${formatXofShort(commercial.rentalDailyRate)}${l10n.commonPerDaySuffix}',
+  if (commercial.rentalWeeklyRate != null)
+    '${formatXofShort(commercial.rentalWeeklyRate)}${l10n.commonPerWeekSuffix}',
   if (commercial.rentalMonthlyRate != null)
     '${formatXofShort(commercial.rentalMonthlyRate)}${l10n.commonPerMonthSuffix}',
 ];
