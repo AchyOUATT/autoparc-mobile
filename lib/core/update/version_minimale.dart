@@ -422,3 +422,20 @@ final espacePartenaireOuvertProvider = Provider<bool>(
         orElse: () => false,
       ),
 );
+
+/// L'espace partenaire est-il FERMÉ, de source sûre ?
+///
+/// Ce n'est pas la négation du précédent, et la différence est tout l'objet :
+/// « ouvert » est faux tant qu'on ne sait rien ; « fermé » n'est vrai que
+/// quand le serveur a RÉPONDU et a dit non. Trois états, donc : ouvert, fermé,
+/// inconnu — et l'inconnu ne doit pas se lire comme un refus. La page
+/// partenaire remplace son formulaire par un panneau d'explication sur
+/// « fermé » seulement ; sur « inconnu », elle montre le formulaire, et c'est
+/// un éventuel 503 qui tranchera.
+final espacePartenaireFermeProvider = Provider<bool>(
+  (ref) => ref.watch(plancherDeVersionProvider).maybeWhen(
+        data: (plancher) =>
+            plancher != null && !plancher.espacePartenaireOuvert,
+        orElse: () => false,
+      ),
+);

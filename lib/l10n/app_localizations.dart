@@ -1851,6 +1851,282 @@ abstract class AppLocalizations {
   /// **'Ajoutez vos véhicules pour retrouver instantanément les pièces détachées compatibles.\nVotre historique vous suit à chaque visite.'**
   String get onboardingGarageBody;
 
+  /// Titre de la question du premier lancement, AVANT la démonstration : « je cherche » ou « je vends ». « AutoParc » est le nom de la marque et reste tel quel dans les deux langues.
+  ///
+  /// In fr, this message translates to:
+  /// **'Bienvenue sur AutoParc'**
+  String get onboardingProfileTitle;
+
+  /// Sous le titre. La seconde phrase est une promesse tenue par l'application : le vendeur revient à l'accueil acheteur par « Pas maintenant », l'acheteur ouvre l'espace partenaire depuis le menu.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dites-nous ce qui vous amène. Vous pourrez changer d\'avis plus tard.'**
+  String get onboardingProfileSubtitle;
+
+  /// Titre de la première carte. Une ACTIVITÉ plutôt qu'un verbe de commerce : « Acheter » aurait exclu celui qui vient comparer, ou faire suivre sa voiture.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je cherche'**
+  String get onboardingProfileBuyTitle;
+
+  /// Corps de la première carte.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un véhicule, des pièces ou des accessoires pour ma voiture.'**
+  String get onboardingProfileBuyBody;
+
+  /// Titre de la seconde carte. Mène à l'inscription d'un compte partenaire, et non à la vente d'une voiture de particulier — c'est le corps qui le dit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je vends'**
+  String get onboardingProfileSellTitle;
+
+  /// Corps de la seconde carte. Le double rôle — vendre ET acheter — est dit noir sur blanc, parce qu'un garage achète aussi des pièces et que la question ne doit pas lui faire croire qu'il renonce au catalogue. C'est le plus long texte de l'écran, donc celui qui décide de sa hauteur.
+  ///
+  /// In fr, this message translates to:
+  /// **'Des véhicules, des pièces ou des accessoires. Garage, revendeur ou particulier : vous ouvrez un compte vendeur, et vous pouvez aussi acheter.'**
+  String get onboardingProfileSellBody;
+
+  /// Lien discret sous les deux cartes. Même chemin que « Je cherche » : le catalogue est le défaut universel, et le menu garde l'espace partenaire.
+  ///
+  /// In fr, this message translates to:
+  /// **'Je ne sais pas encore'**
+  String get onboardingProfileUndecided;
+
+  /// Bouton de bascule de langue en haut de la question du premier lancement, qui porte le nom de L'AUTRE langue dans sa propre graphie : « English » sur l'écran français, « Français » sur l'écran anglais. La question n'est pas passable et le tiroir — seul autre endroit où changer de langue — n'est pas encore accessible.
+  ///
+  /// In fr, this message translates to:
+  /// **'English'**
+  String get onboardingProfileOtherLanguage;
+
+  /// Titre de la page d'accueil d'un partenaire connecté, qui remplace l'accueil acheteur. Le catalogue reste dans les onglets du bas.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tableau de bord'**
+  String get partnerDashboardTitle;
+
+  /// Première ligne du résumé d'un inventaire sur le tableau de bord : le nombre d'annonces non archivées.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucune annonce} =1{1 annonce} other{{count} annonces}}'**
+  String partnerDashboardTotal(int count);
+
+  /// Le nombre d'annonces publiées, dans le résumé d'un inventaire. « Publiée » au sens du bouton Publier de la liste : le partenaire l'a décidé, que le catalogue la montre ou non.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 publiée} other{{count} publiées}}'**
+  String partnerDashboardPublished(int count);
+
+  /// Le nombre d'annonces non publiées, dans le résumé d'un inventaire. Le même mot que la pastille « Brouillon » de la liste des annonces.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 brouillon} other{{count} brouillons}}'**
+  String partnerDashboardDrafts(int count);
+
+  /// À la place des compteurs quand le serveur ne les rend pas — réseau coupé, ou serveur antérieur à la route. Les cartes restent navigables ; seul le chiffre manque, et il est remplacé par un tiret.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compteurs indisponibles'**
+  String get partnerDashboardCountsUnavailable;
+
+  /// Titre de la courte liste, trois lignes au plus, de ce qui mérite l'attention du partenaire : annonces sans photo, ruptures, brouillons, promotions qui finissent.
+  ///
+  /// In fr, this message translates to:
+  /// **'À faire'**
+  String get partnerDashboardTodoTitle;
+
+  /// Ligne « À faire ». Une annonce publiée sans photo est en ligne mais ne se vend pas : c'est la première ligne de la liste.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 annonce publiée sans photo} other{{count} annonces publiées sans photo}}'**
+  String partnerDashboardTodoWithoutPhoto(int count);
+
+  /// Ligne « À faire », pièces et accessoires seulement : publiés et pourtant indisponibles ou à quantité nulle.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 article publié en rupture} other{{count} articles publiés en rupture}}'**
+  String partnerDashboardTodoOutOfStock(int count);
+
+  /// Ligne « À faire », pièces et accessoires seulement : publiés, en stock, mais sous le seuil d'alerte.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 article en stock faible} other{{count} articles en stock faible}}'**
+  String partnerDashboardTodoLowStock(int count);
+
+  /// Ligne « À faire » : des annonces créées mais jamais publiées.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 brouillon jamais publié} other{{count} brouillons jamais publiés}}'**
+  String partnerDashboardTodoDrafts(int count);
+
+  /// Ligne « À faire » : des promotions en cours dont la fin est à moins de trois jours — « cette semaine » est la lecture qu'en fait le vendeur, le seuil exact est celui du serveur.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =1{1 promotion se termine cette semaine} other{{count} promotions se terminent cette semaine}}'**
+  String partnerDashboardTodoPromotionEnding(int count);
+
+  /// Titre de la rangée de recherche en bas du tableau de bord : les trois tuiles Véhicules / Accessoires / Pièces de l'accueil acheteur, parce qu'un partenaire cherche aussi comme tout le monde.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rechercher dans le catalogue'**
+  String get partnerDashboardSearchTitle;
+
+  /// Titre du tableau de bord d'un partenaire dont l'inscription n'est pas encore approuvée. Il remplace les compteurs, qu'il n'a pas encore.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre demande est en cours d\'examen'**
+  String get partnerDashboardPendingTitle;
+
+  /// Répond aux trois questions qu'un vendeur en attente se pose : qui examine, comment il le saura, et ce qu'il peut faire. « Le bouton ci-dessous » est « Vérifier mon statut », clé partnerAccountsCheckStatus.
+  ///
+  /// In fr, this message translates to:
+  /// **'AutoParc vérifie vos coordonnées et vous appelle si besoin. L\'application vérifie votre statut à chaque ouverture, et le bouton ci-dessous le fait tout de suite.'**
+  String get partnerDashboardPendingBody;
+
+  /// Sous le corps de l'attente : ce que le vendeur peut faire d'utile avant l'approbation.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attendant : parcourez le catalogue et préparez les photos de vos premiers articles.'**
+  String get partnerDashboardPendingMeanwhile;
+
+  /// Tuile du tableau de bord en attente, qui ouvre la feuille de contact d'AutoParc — téléphone, WhatsApp, courriel. Un vendeur en attente n'avait jusque-là aucun moyen de joindre la boutique : la feuille n'était atteignable que par le bloc client du tiroir.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nous contacter'**
+  String get partnerDashboardContactUs;
+
+  /// Affiché UNE fois, en tête du tableau de bord, aux partenaires qui connaissaient l'ancien accueil : leur page d'ouverture change sans qu'on leur ait posé de question. Disparaît sur « OK » et ne revient pas.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre accueil est maintenant votre tableau de bord. Le catalogue reste dans les onglets du bas.'**
+  String get partnerDashboardWelcomeNotice;
+
+  /// Ferme la ligne de bienvenue du tableau de bord. Identique dans les deux langues, à dessein.
+  ///
+  /// In fr, this message translates to:
+  /// **'OK'**
+  String get partnerDashboardWelcomeDismiss;
+
+  /// Titre du panneau qui remplace le formulaire d'inscription quand le serveur dit que l'espace partenaire est fermé, ou qu'un appel partenaire rend 503. Un panneau et non une ligne rouge sous un formulaire rempli : c'est souvent le tout premier contact d'un vendeur avec l'application.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les inscriptions vendeurs ne sont pas encore ouvertes'**
+  String get partnerAccountsClosedTitle;
+
+  /// Corps du panneau « espace fermé ». « Espace partenaire » est la tuile du tiroir, clé shellPartnerSpace : les deux textes doivent rester accordés.
+  ///
+  /// In fr, this message translates to:
+  /// **'AutoParc les activera dès que l\'équipe pourra traiter les demandes. Vous retrouverez cette page dans le menu, sous « Espace partenaire ».'**
+  String get partnerAccountsClosedBody;
+
+  /// Bouton du panneau « espace fermé », qui ramène au catalogue. Le second bouton est « Réessayer », clé commonRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parcourir le catalogue'**
+  String get partnerAccountsClosedBrowse;
+
+  /// Titre de l'onglet Inscription quand on y arrive par la question du premier lancement (`?inscription=1`). Il remplace « Présentez votre entreprise », qui parle à une entreprise alors que le vendeur type est un particulier ou un petit revendeur. Le français de l'autre chemin ne bouge pas.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créez votre compte vendeur'**
+  String get partnerAccountsSellerIntroTitle;
+
+  /// Sous le titre de l'onglet Inscription, par le chemin du premier lancement. Annonce les trois étapes et le repli du nom : sans entreprise, l'annonce porte le nom du responsable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos coordonnées, un mot de passe, et AutoParc valide votre compte. Vos annonces porteront votre nom ou celui de votre entreprise.'**
+  String get partnerAccountsSellerIntroBody;
+
+  /// Sous le bouton d'inscription, par le chemin du premier lancement. Remplace « La publication devient disponible après validation de votre entreprise. » pour la même raison que le titre.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous pourrez publier dès que votre compte est validé.'**
+  String get partnerAccountsSellerIntroFooter;
+
+  /// Titre de la carte en tête de l'accueil acheteur, pour qui a répondu « Je vends » au premier lancement sans avoir fini d'ouvrir son compte. Elle REMPLACE la carte « Enregistrez votre véhicule » : un vendeur n'a pas à enregistrer sa voiture d'abord, et deux cartes d'appel empilées repousseraient les bonnes affaires sous le pli. COURT, POUR TENIR SUR UNE LIGNE À 320 POINTS : la version longue — « Vous vendez des pièces ou des véhicules ? » — se repliait juste avant son point d'interrogation, et le banc de géométrie lisait une coupure dans le mot. Ce que la carte propose est dans le corps.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous vendez ?'**
+  String get homeSellerTitle;
+
+  /// Corps de la carte « Vous vendez ? ».
+  ///
+  /// In fr, this message translates to:
+  /// **'Pièces, accessoires ou véhicules : ouvrez votre compte vendeur pour publier vos annonces.'**
+  String get homeSellerBody;
+
+  /// Bouton principal de la carte « Vous vendez ? », vers l'onglet Inscription de l'espace partenaire.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir mon compte'**
+  String get homeSellerOpenAccount;
+
+  /// Second bouton de la carte « Vous vendez ? », vers l'onglet Connexion : un vendeur qui s'est déconnecté a un compte, et l'envoyer à l'inscription lui ferait en créer un second.
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'ai déjà un compte'**
+  String get homeSellerHaveAccount;
+
+  /// Troisième bouton de la carte « Vous vendez ? ». Il enregistre le profil ACHETEUR : la carte ne revient pas, et c'est aussi le chemin pour revenir sur la réponse du premier lancement.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas maintenant'**
+  String get homeSellerNotNow;
+
+  /// Titre de la carte en tête de l'accueil quand une session partenaire restaurée a été rejetée par le serveur — compte refusé, suspendu ou désactivé. Sans elle, le partenaire retombait sur l'accueil acheteur en « Visiteur », sans un mot.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre session vendeur a été fermée'**
+  String get homeSellerSessionClosedTitle;
+
+  /// Corps de la carte « session fermée ». La reconnexion montre le motif : le serveur le rend avec le refus.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reconnectez-vous pour connaître l\'état de votre compte.'**
+  String get homeSellerSessionClosedBody;
+
+  /// Bouton principal de la carte « session fermée », vers l'onglet Connexion de l'espace partenaire.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se reconnecter'**
+  String get homeSellerSignInAgain;
+
+  /// Second bouton de la carte « session fermée », qui la retire jusqu'à la prochaine session.
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'ai compris'**
+  String get homeSellerUnderstood;
+
+  /// Bandeau en tête de l'accueil quand le coffre porte une session partenaire d'avant le profil enregistré, et que le serveur n'a pas pu la confirmer. Le bouton du bandeau est « Réessayer », clé commonRetry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Session vendeur à confirmer'**
+  String get homeSellerSessionToConfirm;
+
+  /// Seconde ligne de l'en-tête du tiroir pendant une session partenaire approuvée, sous le nom de l'entreprise ou du responsable — là où le personnel lit « Personnel — {role} » et le client son adresse.
+  ///
+  /// In fr, this message translates to:
+  /// **'Partenaire'**
+  String get shellAccountPartner;
+
+  /// La même ligne pour une session partenaire non encore approuvée.
+  ///
+  /// In fr, this message translates to:
+  /// **'Partenaire — en attente'**
+  String get shellAccountPartnerPending;
+
+  /// Tuile du bloc PARTENAIRE du tiroir, qui ramène à l'accueil — le tableau de bord.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tableau de bord'**
+  String get shellPartnerDashboard;
+
+  /// Tuile du bloc PARTENAIRE du tiroir, vers le hub de l'espace partenaire et ses trois inventaires.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes annonces'**
+  String get shellPartnerListings;
+
   /// Titre du bloc qui ÉNUMÈRE les véhicules qu'une pièce ou un accessoire déclare. Il complète catalogGarageSectionTitle, qui confronte l'article au garage du client : l'un énumère, l'autre confronte. Les deux existent parce que le second ne dit rien à qui achète pour la voiture d'un proche, compare avant d'enregistrer son véhicule, ou dont le modèle n'est pas au référentiel.
   ///
   /// In fr, this message translates to:

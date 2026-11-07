@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/api/api_exception.dart';
+import '../../../../core/demarrage.dart';
 import '../../../../core/providers/shell_scaffold_provider.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/brand_logo.dart';
@@ -19,6 +20,8 @@ import '../../../garage/presentation/widgets/engine_prompt.dart';
 import '../../../garage/presentation/widgets/mileage_dialog.dart';
 import '../../../inspections/presentation/staff_inspection_widgets.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
+import '../../../onboarding/data/profil_service.dart';
+import '../../../partner_accounts/presentation/partner_session.dart';
 import '../providers/home_providers.dart';
 import '../../../../l10n/app_localizations.dart';
 
@@ -59,10 +62,14 @@ class HomePage extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
           children: [
+            // Une session vendeur rejetée, ou un coffre qui n'a pas pu être
+            // confirmé : l'accueil acheteur le DIT en tête, au lieu de
+            // retomber sur « Visiteur » sans un mot.
+            const _SessionVendeur(),
             // Le personnel n'a pas de garage : on lui montre la vitrine.
             if (!auth.isStaff) const _MyVehicleSection(),
             const _DealsSection(),
-            const _BrowseSection(),
+            const BrowseSection(),
             const SizedBox(height: 8),
             const _NeedPrompt(),
           ],
@@ -82,7 +89,20 @@ class _MyVehicleSection extends ConsumerWidget {
     // Un visiteur non connecté n'a pas de garage : l'interroger lui vaudrait
     // un 401, et l'invitation lui annoncerait « votre session a expiré » —
     // pour une session qu'il n'a jamais ouverte.
-    if (!ref.watch(authProvider).isClient) return const _AddVehicleCard();
+    if (!ref.watch(authProvider).isClient) {
+      // Qui a répondu « Je vends » au premier lancement et n'a pas (encore)
+      // de session partenaire lit la carte vendeur À LA PLACE de l'invitation
+      // à enregistrer sa voiture : il n'a pas à l'enregistrer d'abord, et
+      // deux cartes d'appel empilées repousseraient les bonnes affaires sous
+      // le pli à 320 points. Dès qu'une session existe — quel que soit son
+      // statut —, l'accueil n'est plus celui-ci (voir `AccueilSelonProfil`) :
+      // c'est LUI qui garantit « sans session », et une seconde garde ici
+      // serait inatteignable, donc intuable par un banc.
+      final vendeur =
+          ref.watch(profilUtilisateurProvider) == ProfilUtilisateur.vendeur;
+
+      return vendeur ? const _CarteVendeur() : const _AddVehicleCard();
+    }
 
     final garage = ref.watch(garageProvider);
 
@@ -493,6 +513,193 @@ class _AddVehicleCard extends StatelessWidget {
   }
 }
 
+// ── Le vendeur qui n'a pas fini d'ouvrir son compte ───────────────────
+
+/// « Vous vendez ? » — la carte du profil vendeur sans session partenaire.
+///
+/// Trois sorties, parce que trois cas : ouvrir un compte (l'onglet
+/// Inscription), en avoir déjà un (l'onglet Connexion — un vendeur qui s'est
+/// déconnecté a un compte, et l'envoyer à l'inscription lui en ferait créer un
+/// second), ou ne pas vendre finalement. « Pas maintenant » écrit le profil
+/// ACHETEUR : la carte ne revient pas, et c'est le chemin promis par le
+/// sous-titre de la question du premier lancement pour changer d'avis.
+///
+/// Pas sous le drapeau « espace partenaire ouvert » : il est faux tant que le
+/// serveur n'a pas répondu, et le reste toute la session après un démarrage à
+/// froid. Une carte qui apparaît un jour et pas le lendemain se lit comme un
+/// bogue. La page partenaire sait expliquer un espace fermé ; la carte peut y
+/// mener sans crainte.
+class _CarteVendeur extends ConsumerWidget {
+  const _CarteVendeur();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
+
+    return Card(
+      key: const Key('accueil-carte-vendeur'),
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: cs.primary),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+        child: Column(
+          children: [
+            Icon(Icons.storefront_outlined, size: 34, color: cs.primary),
+            const SizedBox(height: 10),
+            Text(
+              l10n.homeSellerTitle,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              l10n.homeSellerBody,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(height: 14),
+            FilledButton(
+              key: const Key('accueil-vendeur-ouvrir'),
+              onPressed: () => context.push(cheminInscriptionVendeur),
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+              child: Text(l10n.homeSellerOpenAccount),
+            ),
+            // Deux liens sous le bouton, qui passent l'un sous l'autre quand
+            // le texte grossit : `Wrap`, et non `Row`, pour qu'aucun des deux
+            // ne se coupe à 320 points.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                TextButton(
+                  key: const Key('accueil-vendeur-connexion'),
+                  onPressed: () => context.push('/partner'),
+                  child: Text(l10n.homeSellerHaveAccount),
+                ),
+                TextButton(
+                  key: const Key('accueil-vendeur-pas-maintenant'),
+                  onPressed: () => ref
+                      .read(profilUtilisateurProvider.notifier)
+                      .definir(ProfilUtilisateur.acheteur),
+                  child: Text(l10n.homeSellerNotNow),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Ce que l'accueil acheteur dit d'une session vendeur qui n'a pas tenu.
+///
+/// Deux cas, et rien dans tous les autres :
+///
+///  - REJETÉE (`deniedStatus`) : le serveur a fermé la session — compte
+///    refusé, suspendu ou désactivé — et le coffre est vidé. Sans cette
+///    carte, le partenaire retombait sur « Visiteur » sans un mot, après avoir
+///    vu son tableau de bord. La reconnexion montre le motif.
+///  - À CONFIRMER (`restoreFailed` sans profil) : un coffre d'avant le profil
+///    enregistré, que le serveur n'a pas pu confirmer — lenteur, coupure. Un
+///    bandeau et « Réessayer », le seul endroit de l'accueil où relancer la
+///    lecture.
+class _SessionVendeur extends ConsumerWidget {
+  const _SessionVendeur();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(partnerSessionProvider);
+    final l10n = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
+
+    if (session.deniedStatus != null) {
+      final statut = switch (session.deniedStatus) {
+        'rejected' => l10n.partnerAccountsRejectedTitle,
+        'suspended' => l10n.partnerAccountsSuspendedTitle,
+        _ => null,
+      };
+      final motif = session.reviewReason;
+
+      return Card(
+        key: const Key('accueil-session-vendeur-fermee'),
+        margin: const EdgeInsets.only(bottom: 8),
+        color: cs.errorContainer,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.homeSellerSessionClosedTitle,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: cs.onErrorContainer,
+                ),
+              ),
+              if (statut != null) ...[
+                const SizedBox(height: 4),
+                Text(statut, style: TextStyle(color: cs.onErrorContainer)),
+              ],
+              if (motif != null && motif.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  l10n.partnerAccountsReason(motif),
+                  style: TextStyle(color: cs.onErrorContainer),
+                ),
+              ],
+              const SizedBox(height: 6),
+              Text(
+                l10n.homeSellerSessionClosedBody,
+                style: TextStyle(color: cs.onErrorContainer),
+              ),
+              Wrap(
+                alignment: WrapAlignment.end,
+                children: [
+                  TextButton(
+                    key: const Key('accueil-session-vendeur-compris'),
+                    onPressed: ref.read(partnerSessionProvider.notifier).clearNotice,
+                    child: Text(l10n.homeSellerUnderstood),
+                  ),
+                  TextButton(
+                    key: const Key('accueil-session-vendeur-reconnexion'),
+                    onPressed: () => context.push('/partner'),
+                    child: Text(l10n.homeSellerSignInAgain),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (session.restoreFailed && session.profile == null) {
+      return Card(
+        key: const Key('accueil-session-vendeur-a-confirmer'),
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          leading: const Icon(Icons.sync_problem_outlined),
+          title: Text(l10n.homeSellerSessionToConfirm),
+          trailing: TextButton(
+            key: const Key('accueil-session-vendeur-reessayer'),
+            onPressed: ref.read(partnerSessionProvider.notifier).restore,
+            child: Text(l10n.commonRetry),
+          ),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+}
+
 // ── Pièces pour ce véhicule ───────────────────────────────────────────
 
 class _CompatiblePartsSection extends ConsumerWidget {
@@ -899,8 +1106,13 @@ class _DealTile extends StatelessWidget {
 
 // ── Parcourir ─────────────────────────────────────────────────────────
 
-class _BrowseSection extends StatelessWidget {
-  const _BrowseSection();
+/// Publique : le tableau de bord partenaire la pose aussi, en bas de page,
+/// parce qu'un partenaire cherche comme tout le monde — et ce doit être LA
+/// MÊME rangée, avec la même borne d'échelle, plutôt que trois tuiles neuves
+/// qui tomberaient à 320 points dès l'échelle 1,5 (voir le commentaire du
+/// `build`).
+class BrowseSection extends StatelessWidget {
+  const BrowseSection({super.key});
 
   @override
   Widget build(BuildContext context) {

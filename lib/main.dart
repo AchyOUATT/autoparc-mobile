@@ -8,14 +8,16 @@ import 'package:image_picker_android/image_picker_android.dart';
 import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/demarrage.dart';
 import 'core/l10n/langue.dart';
 import 'core/l10n/tuile_langue.dart';
 import 'core/theme/app_theme.dart';
 import 'core/update/ecran_mise_a_jour.dart';
 import 'core/utils/currency_format.dart';
 import 'core/update/version_minimale.dart';
-import 'core/utils/lien_externe.dart';
+
 import 'core/contact/autoparc_contact_provider.dart';
+import 'core/contact/feuille_contact.dart';
 import 'core/widgets/navigation_bar_theme.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
@@ -28,7 +30,7 @@ import 'features/catalog/presentation/pages/part_detail_page.dart';
 import 'features/catalog/presentation/pages/part_list_page.dart';
 import 'features/catalog/presentation/pages/vehicle_detail_page.dart';
 import 'features/catalog/presentation/pages/vehicle_list_page.dart';
-import 'features/home/presentation/pages/home_page.dart';
+import 'features/home/presentation/pages/accueil_selon_profil.dart';
 import 'features/garage/data/models/owned_vehicle.dart';
 import 'features/garage/presentation/pages/add_vehicle_to_garage_page.dart';
 import 'features/garage/presentation/pages/compatible_parts_page.dart';
@@ -44,12 +46,14 @@ import 'features/needs/presentation/pages/needs_list_page.dart';
 import 'features/needs/presentation/pages/client_needs_page.dart';
 import 'features/notifications/presentation/pages/notifications_page.dart';
 import 'features/notifications/presentation/providers/notifications_provider.dart';
-import 'core/utils/contact_info.dart';
+
 import 'core/services/fcm_service.dart';
 import 'core/api/api_client.dart';
 import 'core/diagnostics/error_journal.dart';
 import 'shared/presentation/pages/media_upload_page.dart';
 import 'features/onboarding/data/onboarding_service.dart';
+import 'features/onboarding/data/profil_service.dart';
+import 'features/onboarding/presentation/pages/choix_de_profil_page.dart';
 import 'features/onboarding/presentation/pages/onboarding_page.dart';
 import 'features/partners/data/models/partner.dart';
 import 'features/partners/presentation/pages/partner_list_page.dart';
@@ -59,6 +63,7 @@ import 'features/private_sales/data/private_listing_repository.dart';
 import 'features/private_sales/presentation/private_listings_page.dart';
 import 'features/private_sales/presentation/private_listing_form.dart';
 import 'features/partner_accounts/presentation/partner_applications_page.dart';
+import 'features/partner_accounts/presentation/partner_notifications_page.dart';
 import 'features/settings/presentation/contact_settings_page.dart';
 import 'core/providers/shell_scaffold_provider.dart';
 import 'core/local/catalog_local_cache.dart';
@@ -116,9 +121,23 @@ Future<void> main() async {
   // `SharedPreferences`, déjà chargée.
   final langue = await LangueService.lire();
 
+  // Le profil déclaré et la session partenaire, pour la même raison que les
+  // deux lectures au-dessus : la PREMIÈRE trame doit être la bonne. Sans la
+  // session, un partenaire verrait l'accueil acheteur pendant la lecture du
+  // coffre, puis son tableau de bord — un clignotement à chaque lancement.
+  // Un coffre qui ne répond pas dans les temps ne bloque pas le démarrage :
+  // voir `sessionPartenaireAuDemarrage`.
+  final profil = await ProfilService.lire();
+  final sessionPartenaire =
+      await sessionPartenaireAuDemarrage(SecurePartnerTokenStore());
+
   runApp(
     ProviderScope(
-      overrides: [localeInitialeProvider.overrideWithValue(langue)],
+      overrides: [
+        localeInitialeProvider.overrideWithValue(langue),
+        profilInitialProvider.overrideWithValue(profil),
+        sessionPartenaireInitialeProvider.overrideWithValue(sessionPartenaire),
+      ],
       child: AutoParcApp(onboardingDone: onboardingDone),
     ),
   );
@@ -126,8 +145,15 @@ Future<void> main() async {
 
 // ── Routeur ────────────────────────────────────────────────────────
 
-GoRouter _buildRouter({required bool onboardingDone}) => GoRouter(
-  initialLocation: onboardingDone ? '/' : '/onboarding',
+// La destination de départ, le paramètre `?inscription=1` et le double saut du
+// vendeur vivent dans `core/demarrage.dart` : des fonctions pures, que les
+// bancs appellent directement au lieu d'en recopier la règle.
+/// Public, et non privé, pour que `test/demarrage_test.dart` CONSTRUISE le
+/// vrai routeur et tienne ses invariants — les routes du premier lancement
+/// existent, aucune n'a d'`onExit`, et les redirections sont nommées —, sans le
+/// monter : le seul banc qui monte `AutoParcApp` est `skip` (Firebase).
+GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
+  initialLocation: destinationDeDepart(demoVue: onboardingDone),
   routes: [
     if (privateSalesEnabled) ...[
       GoRoute(path: '/private-listings', builder: (_, __) => const PrivateListingsPage()),
@@ -135,6 +161,12 @@ GoRouter _buildRouter({required bool onboardingDone}) => GoRouter(
       GoRoute(path: '/private-listing-reviews', builder: (_, __) => const PrivateListingsPage(mode: PrivateListingMode.review)),
       GoRoute(path: '/sell', builder: (_, state) => PrivateListingForm(vehicle: state.extra is OwnedVehicle ? state.extra as OwnedVehicle : null)),
     ],
+    // La question du premier lancement, AVANT la démonstration : voir
+    // `destinationDeDepart` dans core/demarrage.dart.
+    GoRoute(
+      path: '/bienvenue',
+      builder: (_, _) => const ChoixDeProfilPage(),
+    ),
     GoRoute(
       path: '/onboarding',
       builder: (_, __) => const OnboardingPage(),
@@ -145,7 +177,19 @@ GoRouter _buildRouter({required bool onboardingDone}) => GoRouter(
     ),
     GoRoute(
       path: '/partner',
-      builder: (_, __) => const PartnerAccountPage(),
+      // `?inscription=1` : le vendeur qui vient de répondre à la question du
+      // premier lancement arrive sur l'onglet Inscription. Un paramètre de
+      // requête et non `extra`, pour que le chemin se suffise — il est aussi
+      // la cible de la carte « Vous vendez ? » de l'accueil.
+      builder: (_, state) => PartnerAccountPage(
+        inscription: inscriptionDemandee(state.uri),
+      ),
+    ),
+    // La boîte aux lettres du partenaire a sa route : le tiroir y mène
+    // directement, sans passer par le hub de l'espace partenaire.
+    GoRoute(
+      path: '/partner/demandes',
+      builder: (_, _) => const PartnerNotificationsPage(),
     ),
     GoRoute(
       path: '/partner-applications',
@@ -160,7 +204,9 @@ GoRouter _buildRouter({required bool onboardingDone}) => GoRouter(
     ShellRoute(
       builder: (context, state, child) => _AppShell(child: child),
       routes: [
-        GoRoute(path: '/',            builder: (_, __) => const HomePage()),
+        // L'accueil dépend de qui tient le téléphone : tableau de bord pour un
+        // partenaire, accueil acheteur sinon — voir `AccueilSelonProfil`.
+        GoRoute(path: '/',            builder: (_, _) => const AccueilSelonProfil()),
         // La recherche véhicules quitte la racine : elle sert l'acheteur de
         // passage, quand l'accueil sert le propriétaire, qui lui revient.
         GoRoute(path: '/vehicles',    builder: (_, __) => const VehicleListPage()),
@@ -351,7 +397,7 @@ class AutoParcApp extends ConsumerStatefulWidget {
 
 class _AutoParcAppState extends ConsumerState<AutoParcApp>
     with WidgetsBindingObserver {
-  late final GoRouter _routeur = _buildRouter(
+  late final GoRouter _routeur = routeurAutoParc(
     onboardingDone: widget.onboardingDone,
   );
 
@@ -678,6 +724,9 @@ class AppDrawer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth   = ref.watch(authProvider);
     final unread = ref.watch(unreadCountProvider).valueOrNull ?? 0;
+    final sessionPartenaire = ref.watch(partnerSessionProvider);
+    final partenaire = sessionPartenaire.profile;
+    final profil = ref.watch(profilUtilisateurProvider);
     final cs     = Theme.of(context).colorScheme;
     final l10n   = AppLocalizations.of(context);
 
@@ -690,7 +739,12 @@ class AppDrawer extends ConsumerWidget {
           UserAccountsDrawerHeader(
             decoration: BoxDecoration(color: cs.primary),
             accountName: Text(
-              auth.isAuthenticated ? auth.displayName : l10n.shellAccountGuest,
+              // Le partenaire a sa propre session, hors d'`authProvider` : son
+              // nom vient de son profil, le même repli que l'espace partenaire
+              // (l'entreprise, sinon le responsable).
+              auth.isAuthenticated
+                  ? auth.displayName
+                  : partenaire?.displayName ?? l10n.shellAccountGuest,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             // ── LA LIGNE « SESSION A CONFIRMER » ────────────────────────
@@ -729,14 +783,26 @@ class AppDrawer extends ConsumerWidget {
                     // ce lot, et il est écrit dans lib/l10n/CONVENTION.md.
                     auth.isStaff  ? l10n.shellAccountStaff(auth.staffUser?.role ?? '') :
                     auth.isClient ? (auth.firebaseUser?.email ?? '') :
-                    l10n.shellAccountNotSignedIn,
+                    // Le partenaire suit la règle du personnel : « Session à
+                    // confirmer… » tant que le profil n'est qu'une lecture du
+                    // coffre, puis son statut.
+                    partenaire != null
+                        ? (sessionPartenaire.sessionAConfirmer
+                              ? l10n.shellSessionToConfirm
+                              : partenaire.approved
+                              ? l10n.shellAccountPartner
+                              : l10n.shellAccountPartnerPending)
+                        : l10n.shellAccountNotSignedIn,
                   ),
             currentAccountPicture: CircleAvatar(
               backgroundColor: cs.onPrimary.withAlpha(40),
               child: Text(
-                auth.isAuthenticated && auth.displayName.isNotEmpty
-                    ? auth.displayName[0].toUpperCase()
-                    : '?',
+                switch (auth.isAuthenticated
+                    ? auth.displayName
+                    : partenaire?.displayName ?? '') {
+                  '' => '?',
+                  final nom => nom[0].toUpperCase(),
+                },
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -847,7 +913,7 @@ class AppDrawer extends ConsumerWidget {
               label: l10n.shellContact,
               onTap: () {
                 _close(context);
-                _showContactSheet(context, ref);
+                afficherFeuilleContact(context, ref);
               },
             ),
             const Divider(),
@@ -870,9 +936,65 @@ class AppDrawer extends ConsumerWidget {
           ],
 
           // ════════════════════════════════════════════════════════
-          // ANONYME
+          // PARTENAIRE — sa propre session, hors d'`authProvider`
           // ════════════════════════════════════════════════════════
-          if (!auth.isAuthenticated) ...[
+          //
+          // Gaté sur le PROFIL, jamais sur le drapeau serveur ni sur
+          // `loading` : un partenaire connecté doit toujours pouvoir se
+          // déconnecter, même si `GET /api/app/version` n'a pas répondu — et
+          // `loading` dure jusqu'à soixante secondes pendant une déconnexion
+          // à froid. Il s'empile SOUS le bloc du personnel quand les deux
+          // sessions existent sur le même téléphone : personnel d'abord,
+          // partenaire ensuite, la même priorité que l'accueil
+          // (`AccueilSelonProfil`).
+          if (partenaire != null) ...[
+            _DrawerTile(
+              icon: Icons.dashboard_outlined,
+              label: l10n.shellPartnerDashboard,
+              onTap: () { _close(context); context.go('/'); },
+            ),
+            _DrawerTile(
+              icon: Icons.storefront_outlined,
+              label: l10n.shellPartnerListings,
+              onTap: () { _close(context); context.push('/partner'); },
+            ),
+            _DrawerTile(
+              icon: Icons.campaign_outlined,
+              label: l10n.partnerAccountsCustomerRequests,
+              badge: ref.watch(partnerUnreadCountProvider).valueOrNull ?? 0,
+              onTap: () { _close(context); context.push('/partner/demandes'); },
+            ),
+            _DrawerTile(
+              icon: Icons.phone_outlined,
+              label: l10n.shellContact,
+              onTap: () {
+                _close(context);
+                afficherFeuilleContact(context, ref);
+              },
+            ),
+            const Divider(),
+            _DrawerTile(
+              icon: Icons.logout,
+              label: l10n.shellSignOut,
+              color: cs.error,
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(l10n.shellSignedOut),
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+                _close(context);
+                ref.read(partnerSessionProvider.notifier).logout();
+              },
+            ),
+          ],
+
+          // ════════════════════════════════════════════════════════
+          // ANONYME — ni session du personnel, ni client, ni partenaire
+          // ════════════════════════════════════════════════════════
+          if (!auth.isAuthenticated && partenaire == null) ...[
             if (privateSalesEnabled) _DrawerTile(
               icon: Icons.directions_car_outlined, label: AppLocalizations.of(context).privateSalesBrowseTitle,
               onTap: () { _close(context); context.push('/private-listings'); },
@@ -932,7 +1054,16 @@ class AppDrawer extends ConsumerWidget {
           // Ce n'est pas la sécurité : le serveur rend 503 sur tout le groupe
           // de routes partenaire, y compris aux binaires qui ignorent ce champ.
           // Ceci n'évite que l'entrée morte.
-          if (ref.watch(espacePartenaireOuvertProvider)) _DrawerTile(
+          //
+          // DEUX EXCEPTIONS au drapeau, depuis la question du premier
+          // lancement : un profil VENDEUR voit toujours l'entrée — elle mène
+          // au panneau « pas encore ouvert » de la page, pas à un refus brut,
+          // et le drapeau reste faux toute la session après un démarrage à
+          // froid — ; et une session partenaire en cours ne la voit plus, le
+          // bloc PARTENAIRE ci-dessus porte déjà « Mes annonces ».
+          if (partenaire == null &&
+              (ref.watch(espacePartenaireOuvertProvider) ||
+                  profil == ProfilUtilisateur.vendeur)) _DrawerTile(
             icon: Icons.storefront_outlined,
             label: AppLocalizations.of(context).shellPartnerSpace,
             onTap: () { _close(context); context.push('/partner'); },
@@ -943,74 +1074,6 @@ class AppDrawer extends ConsumerWidget {
     );
   }
 
-  void _showContactSheet(BuildContext context, WidgetRef ref) {
-    ref.read(autoparcContactProvider.notifier).refresh();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (contexteFeuille) => Consumer(builder: (context, ref, _) {
-        final l10n = AppLocalizations.of(contexteFeuille);
-        final contact = ref.watch(autoparcContactProvider);
-
-        return SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(l10n.shellContact,
-                style: Theme.of(context).textTheme.titleLarge
-                    ?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
-            _ContactTile(
-              icon: Icons.phone_outlined,
-              label: l10n.shellContactPhone,
-              value: contact.phoneDisplay,
-              onTap: () => ouvrirLien(
-                context,
-                contact.phoneUri,
-                valeurACopier: contact.phoneDisplay,
-                ceQuiNePeutPasSOuvrir: l10n.shellContactDialerTarget,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _ContactTile(
-              icon: Icons.chat_outlined,
-              iconColor: const Color(0xFF25D366),
-              label: 'WhatsApp',
-              value: contact.phoneDisplay,
-              onTap: () => ouvrirLien(
-                context,
-                contact.whatsappUri,
-                valeurACopier: contact.phoneDisplay,
-                // « WhatsApp » reste en dur, et n'a pas de clé : c'est un nom
-                // de marque, identique dans les deux langues, et lui donner une
-                // clé inviterait un traducteur à le traduire.
-                ceQuiNePeutPasSOuvrir: 'WhatsApp',
-              ),
-            ),
-            const SizedBox(height: 12),
-            _ContactTile(
-              icon: Icons.email_outlined,
-              label: l10n.shellContactEmail,
-              value: kContactEmail,
-              onTap: () => ouvrirLien(
-                context,
-                Uri.parse('mailto:$kContactEmail'),
-                valeurACopier: kContactEmail,
-                ceQuiNePeutPasSOuvrir: l10n.shellContactMailTarget,
-              ),
-            ),
-          ],
-        ),
-      );
-      }),
-    );
-  }
 }
 
 // ── Tuile drawer ──────────────────────────────────────────────────
@@ -1041,32 +1104,4 @@ class _DrawerTile extends StatelessWidget {
       onTap: onTap,
     );
   }
-}
-
-// ── Tuile contact ─────────────────────────────────────────────────
-
-class _ContactTile extends StatelessWidget {
-  final IconData icon;
-  final Color?   iconColor;
-  final String   label;
-  final String   value;
-  final VoidCallback onTap;
-
-  const _ContactTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.onTap,
-    this.iconColor,
-  });
-
-  @override
-  Widget build(BuildContext context) => ListTile(
-    leading: Icon(icon,
-        color: iconColor ?? Theme.of(context).colorScheme.primary),
-    title:    Text(label),
-    subtitle: Text(value),
-    onTap:    onTap,
-    contentPadding: EdgeInsets.zero,
-  );
 }
