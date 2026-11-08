@@ -3588,6 +3588,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get vehiclesBodyStyleLabel => 'Body style *';
 
   @override
+  String get vehiclesBodyStyleReselect =>
+      'The vehicle type changed or the model suggests an incompatible body style. Choose a suitable body style.';
+
+  @override
+  String get vehiclesModelTypeMismatch =>
+      'This model does not match the selected vehicle type. Choose a compatible model.';
+
+  @override
   String get vehiclesBodyStyleHint => 'Saloon, SUV, pickup…';
 
   @override

@@ -1,3 +1,4 @@
+import 'package:flutter/rendering.dart';
 import 'dart:convert';
 
 import '../widgets/heavy_vehicle_configuration.dart';
@@ -97,6 +98,15 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   /// message apparaît SOUS le champ fautif au lieu d'une bannière qui passe.
   final _clefsDEtape = List.generate(4, (_) => GlobalKey<FormState>());
   int _step = 0;
+  late final _stepScrollController = _StepScrollController(
+    _scheduleStepFrame,
+    () {
+      if (!_applyingStepFrame) _stepToFrame = null;
+    },
+  );
+  int? _stepToFrame;
+  bool _stepFrameScheduled = false;
+  bool _applyingStepFrame = false;
   bool _submitting = false;
   bool _refsInitialized = false; // pré-sélection refs (mode édition)
   FaultDeclaration _faultDeclaration = const FaultDeclaration.unknown();
@@ -116,6 +126,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   // ── Step 0 — Type & Identification ───────────────────────────────
   String _vehicleType = 'passenger'; // 'passenger' | 'utility' | 'heavy'
   String? _bodyStyle; // 'sedan' | 'suv' | 'pickup' | …
+  bool _vehicleTypeChosen = false;
+  bool _bodyStyleNeedsReselection = false;
   bool _showAllModelsForBody = false;
 
   String? get _modelBodyFilter =>
@@ -233,16 +245,24 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       _dealType = e.commercial.dealType ?? '';
       double originalPrice(String field, double publicPrice) =>
           widget.mode.estPartenaire
-              ? e.proposedPriceExcludingCommission(field) ?? publicPrice
-              : publicPrice;
+          ? e.proposedPriceExcludingCommission(field) ?? publicPrice
+          : publicPrice;
       if (e.commercial.salePrice != null)
-        _salePriceCtrl.text = _fmtPrice(originalPrice('sale_price', e.commercial.salePrice!));
+        _salePriceCtrl.text = _fmtPrice(
+          originalPrice('sale_price', e.commercial.salePrice!),
+        );
       if (e.commercial.rentalDailyRate != null)
-        _rentalDailyCtrl.text = _fmtPrice(originalPrice('rental_daily_rate', e.commercial.rentalDailyRate!));
+        _rentalDailyCtrl.text = _fmtPrice(
+          originalPrice('rental_daily_rate', e.commercial.rentalDailyRate!),
+        );
       if (e.commercial.rentalWeeklyRate != null)
-        _rentalWeeklyCtrl.text = _fmtPrice(originalPrice('rental_weekly_rate', e.commercial.rentalWeeklyRate!));
+        _rentalWeeklyCtrl.text = _fmtPrice(
+          originalPrice('rental_weekly_rate', e.commercial.rentalWeeklyRate!),
+        );
       if (e.commercial.rentalMonthlyRate != null)
-        _rentalMonthlyCtrl.text = _fmtPrice(originalPrice('rental_monthly_rate', e.commercial.rentalMonthlyRate!));
+        _rentalMonthlyCtrl.text = _fmtPrice(
+          originalPrice('rental_monthly_rate', e.commercial.rentalMonthlyRate!),
+        );
       if (e.commercial.rentalDeposit != null)
         _rentalDepositCtrl.text = _fmtPrice(e.commercial.rentalDeposit!);
       if (e.commercial.site != null) _siteCtrl.text = e.commercial.site!;
@@ -390,6 +410,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
   @override
   void dispose() {
+    _stepToFrame = null;
+    _stepScrollController.dispose();
     _heavyConfiguration.dispose();
     _heavyConfigurationExpansion.dispose();
     for (final c in [
@@ -490,15 +512,53 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     );
   }
 
+  void _changeStep(int next) {
+    if (_submitting || next == _step) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    _stepToFrame = next;
+    setState(() => _step = next);
+  }
+
+  void _scheduleStepFrame() {
+    if (!mounted || _stepToFrame == null || _stepFrameScheduled) return;
+    _stepFrameScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _stepFrameScheduled = false;
+      if (!mounted ||
+          _stepToFrame != _step ||
+          !_stepScrollController.hasClients) {
+        return;
+      }
+      final renderObject = _clefsDEtape[_step].currentContext
+          ?.findRenderObject();
+      if (renderObject == null || !renderObject.attached) return;
+      final position = _stepScrollController.position;
+      final offset = RenderAbstractViewport.of(renderObject)
+          .getOffsetToReveal(renderObject, 0)
+          .offset
+          .clamp(position.minScrollExtent, position.maxScrollExtent)
+          .toDouble();
+      if ((position.pixels - offset).abs() > 0.5) {
+        _applyingStepFrame = true;
+        try {
+          position.jumpTo(offset);
+        } finally {
+          _applyingStepFrame = false;
+        }
+      }
+    });
+  }
+
   /// Appelé par le bouton Suivant / Enregistrer du Stepper.
   Future<void> _onContinue(CatalogRefs refs) async {
     if (_submitting) return;
+    _stepToFrame = null; // A blocked validation must not reset the viewport.
     // Avancer d'une étape → n'éprouver que l'étape courante. Les suivantes
     // sont montées mais vides, et les exiger ici interdirait d'avancer.
     if (_step < 3) {
       if (_validerLEtape(_step)) {
         ScaffoldMessenger.of(context).clearSnackBars();
-        setState(() => _step++);
+        _changeStep(_step + 1);
       } else {
         _expliquerLEtape(_step);
       }
@@ -518,7 +578,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     final fautive = _premiereEtapeFautive();
 
     if (fautive != -1) {
-      setState(() => _step = fautive);
+      _changeStep(fautive);
       _expliquerLEtape(fautive);
 
       return;
@@ -707,23 +767,27 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         'sale_price': int.parse(
           _salePriceCtrl.text.replaceAll(RegExp(r'\s'), ''),
         ),
-      if (!widget.saleOnly && (_existing != null ||
-          forRent && _rentalDailyCtrl.text.trim().isNotEmpty))
+      if (!widget.saleOnly &&
+          (_existing != null ||
+              forRent && _rentalDailyCtrl.text.trim().isNotEmpty))
         'rental_daily_rate': forRent
             ? _parsePrice(_rentalDailyCtrl.text)
             : null,
-      if (!widget.saleOnly && (_existing != null ||
-          forRent && _rentalWeeklyCtrl.text.trim().isNotEmpty))
+      if (!widget.saleOnly &&
+          (_existing != null ||
+              forRent && _rentalWeeklyCtrl.text.trim().isNotEmpty))
         'rental_weekly_rate': forRent
             ? _parsePrice(_rentalWeeklyCtrl.text)
             : null,
-      if (!widget.saleOnly && (_existing != null ||
-          forRent && _rentalMonthlyCtrl.text.trim().isNotEmpty))
+      if (!widget.saleOnly &&
+          (_existing != null ||
+              forRent && _rentalMonthlyCtrl.text.trim().isNotEmpty))
         'rental_monthly_rate': forRent
             ? _parsePrice(_rentalMonthlyCtrl.text)
             : null,
-      if (!widget.saleOnly && (_existing != null ||
-          forRent && _rentalDepositCtrl.text.trim().isNotEmpty))
+      if (!widget.saleOnly &&
+          (_existing != null ||
+              forRent && _rentalDepositCtrl.text.trim().isNotEmpty))
         'rental_deposit': forRent ? _parsePrice(_rentalDepositCtrl.text) : null,
       if (_siteCtrl.text.isNotEmpty) 'site': _siteCtrl.text.trim(),
       if (_descriptionCtrl.text.isNotEmpty)
@@ -813,15 +877,33 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     }
   }
 
+  bool get _preserveHistoricalBody =>
+      _existing != null &&
+      _vehicleType == _existing!.vehicleType &&
+      _bodyStyle == _existing!.bodyStyle;
+
+  bool _bodyFitsType(String? body) =>
+      body == 'other' || vehicleTypeForBodyStyle(body) == _vehicleType;
+
   void _selectVehicleType(String value) {
+    _vehicleTypeChosen = true;
+    if (_vehicleType == value) return;
     _vehicleType = value;
-    final bodyType = vehicleTypeForBodyStyle(_bodyStyle);
-    if (bodyType != null && bodyType != value) _bodyStyle = null;
+    if (_bodyStyle != null && !_bodyFitsType(_bodyStyle)) {
+      _bodyStyle = null;
+      _bodyStyleNeedsReselection = true;
+    }
+    final modelType = _model?.resolvedVehicleType;
+    if (modelType != null && modelType != value) {
+      _classification.selectModel(null);
+      _resetModelTechnicalFields();
+    }
     if (value == 'heavy') _clearInitialPassengerDefaults();
   }
 
   void _selectBodyStyle(String? value) {
     _bodyStyle = value;
+    _bodyStyleNeedsReselection = false;
     _showAllModelsForBody = false;
     _clearModelWithConflictingBody();
     final vehicleType = vehicleTypeForBodyStyle(value);
@@ -877,8 +959,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _existing != null ? l10n.vehiclesEditTitle : widget.saleOnly
-              ? l10n.vehicleRegistrationSaleTitle : l10n.vehiclesCreateTitle,
+          _existing != null
+              ? l10n.vehiclesEditTitle
+              : widget.saleOnly
+              ? l10n.vehicleRegistrationSaleTitle
+              : l10n.vehiclesCreateTitle,
         ),
         centerTitle: false,
         actions: [
@@ -962,24 +1047,36 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         constraints: const BoxConstraints(maxWidth: 700),
         // PAS de `Form` ici : il envelopperait les quatre étapes, que le
         // `Stepper` monte toutes. Chacune porte le sien — voir `_clefsDEtape`.
-        child: Stepper(
-          currentStep: _step,
-          type: StepperType.vertical,
-          onStepContinue: () => _onContinue(refs),
-          onStepCancel: () {
-            if (_step > 0) setState(() => _step--);
-          },
-          controlsBuilder: (context, details) => _StepControls(
-            details: details,
-            isLast: _step == 3,
-            submitting: _submitting,
+        child: Listener(
+          // Stop anchoring as soon as the user interacts with the new step.
+          onPointerDown: (_) => _stepToFrame = null,
+          child: Focus(
+            canRequestFocus: false,
+            skipTraversal: true,
+            onFocusChange: (focused) {
+              if (focused) _stepToFrame = null;
+            },
+            child: Stepper(
+              controller: _stepScrollController,
+              currentStep: _step,
+              type: StepperType.vertical,
+              onStepContinue: () => _onContinue(refs),
+              onStepCancel: () {
+                if (_step > 0) _changeStep(_step - 1);
+              },
+              controlsBuilder: (context, details) => _StepControls(
+                details: details,
+                isLast: _step == 3,
+                submitting: _submitting,
+              ),
+              steps: [
+                _buildStep1(),
+                _buildStep2(refs),
+                _buildStep3(refs),
+                _buildStep4(refs),
+              ],
+            ),
           ),
-          steps: [
-            _buildStep1(),
-            _buildStep2(refs),
-            _buildStep3(refs),
-            _buildStep4(refs),
-          ],
         ),
       ),
     );
@@ -1030,61 +1127,89 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             isExpanded: true,
             decoration: InputDecoration(
               labelText: l10n.vehiclesBodyStyleLabel,
-              hintText: l10n.vehiclesBodyStyleHint,
+              hintText: switch (_vehicleType) {
+                'utility' =>
+                  '${l10n.catalogBodyLabelPickup}, ${l10n.catalogBodyLabelVan}',
+                'heavy' =>
+                  '${l10n.catalogBodyLabelBus}, ${l10n.catalogBodyLabelTruck}',
+                _ =>
+                  '${l10n.catalogBodyLabelSedan}, ${l10n.catalogBodyLabelSuv}',
+              },
+              helper: _bodyStyleNeedsReselection
+                  ? Text(l10n.vehiclesBodyStyleReselect)
+                  : null,
               prefixIcon: Icon(Icons.directions_car_outlined),
             ),
-            items: [
-              DropdownMenuItem(
-                value: 'sedan',
-                child: Text(l10n.catalogBodyLabelSedan),
-              ),
-              DropdownMenuItem(
-                value: 'hatchback',
-                child: Text(l10n.catalogBodyLabelHatchback),
-              ),
-              DropdownMenuItem(
-                value: 'suv',
-                child: Text(l10n.catalogBodyLabelSuv),
-              ),
-              DropdownMenuItem(
-                value: 'estate',
-                child: Text(l10n.catalogBodyLabelEstate),
-              ),
-              DropdownMenuItem(
-                value: 'coupe',
-                child: Text(l10n.catalogBodyLabelCoupe),
-              ),
-              DropdownMenuItem(
-                value: 'convertible',
-                child: Text(l10n.catalogBodyLabelConvertible),
-              ),
-              DropdownMenuItem(
-                value: 'pickup',
-                child: Text(l10n.catalogBodyLabelPickup),
-              ),
-              DropdownMenuItem(
-                value: 'van',
-                child: Text(l10n.catalogBodyLabelVan),
-              ),
-              DropdownMenuItem(
-                value: 'minibus',
-                child: Text(l10n.catalogBodyLabelMinibus),
-              ),
-              DropdownMenuItem(
-                value: 'bus',
-                child: Text(l10n.catalogBodyLabelBus),
-              ),
-              DropdownMenuItem(
-                value: 'truck',
-                child: Text(l10n.catalogBodyLabelTruck),
-              ),
-              DropdownMenuItem(
-                value: 'other',
-                child: Text(l10n.vehiclesFaultCategoryOther),
-              ),
-            ],
+            items:
+                [
+                      DropdownMenuItem(
+                        value: 'sedan',
+                        child: Text(l10n.catalogBodyLabelSedan),
+                      ),
+                      DropdownMenuItem(
+                        value: 'hatchback',
+                        child: Text(l10n.catalogBodyLabelHatchback),
+                      ),
+                      DropdownMenuItem(
+                        value: 'suv',
+                        child: Text(l10n.catalogBodyLabelSuv),
+                      ),
+                      DropdownMenuItem(
+                        value: 'estate',
+                        child: Text(l10n.catalogBodyLabelEstate),
+                      ),
+                      DropdownMenuItem(
+                        value: 'coupe',
+                        child: Text(l10n.catalogBodyLabelCoupe),
+                      ),
+                      DropdownMenuItem(
+                        value: 'convertible',
+                        child: Text(l10n.catalogBodyLabelConvertible),
+                      ),
+                      DropdownMenuItem(
+                        value: 'pickup',
+                        child: Text(l10n.catalogBodyLabelPickup),
+                      ),
+                      DropdownMenuItem(
+                        value: 'van',
+                        child: Text(l10n.catalogBodyLabelVan),
+                      ),
+                      DropdownMenuItem(
+                        value: 'minibus',
+                        child: Text(l10n.catalogBodyLabelMinibus),
+                      ),
+                      DropdownMenuItem(
+                        value: 'bus',
+                        child: Text(l10n.catalogBodyLabelBus),
+                      ),
+                      DropdownMenuItem(
+                        value: 'truck',
+                        child: Text(l10n.catalogBodyLabelTruck),
+                      ),
+                      DropdownMenuItem(
+                        value: 'other',
+                        child: Text(l10n.vehiclesFaultCategoryOther),
+                      ),
+                      if (_preserveHistoricalBody &&
+                          _bodyStyle != null &&
+                          _bodyStyle != 'other' &&
+                          vehicleTypeForBodyStyle(_bodyStyle) == null)
+                        DropdownMenuItem(
+                          value: _bodyStyle,
+                          child: Text(_bodyStyle!),
+                        ),
+                    ]
+                    .where(
+                      (item) =>
+                          _bodyFitsType(item.value) ||
+                          (_preserveHistoricalBody && item.value == _bodyStyle),
+                    )
+                    .toList(),
             onChanged: (v) => setState(() => _selectBodyStyle(v)),
-            validator: (v) => v == null ? l10n.vehiclesBodyStyleRequired : null,
+            validator: (v) =>
+                v == null || (!_bodyFitsType(v) && !_preserveHistoricalBody)
+                ? l10n.vehiclesBodyStyleRequired
+                : null,
           ),
           const SizedBox(height: 16),
 
@@ -1188,7 +1313,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     final filteredModels = _brand != null
         ? refs.modelsForBrand(_brand!.id, bodyStyle: _modelBodyFilter)
         : <ModelRef>[];
-    final retainCurrentModel = _model != null &&
+    final retainCurrentModel =
+        _model != null &&
         !filteredModels.any((model) => model.id == _model!.id);
     // Keep a saved/unknown identity readable without offering other mismatches.
     final models = [if (retainCurrentModel) _model!, ...filteredModels];
@@ -1236,17 +1362,31 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               itemLabel: (m) => referenceModelDisplayName(m, l10n),
               onChanged: (m) => setState(() {
                 if (_model?.id == m?.id) return;
+                final modelType = m?.resolvedVehicleType;
+                if (_vehicleTypeChosen &&
+                    modelType != null &&
+                    modelType != _vehicleType) {
+                  _classification.selectModel(null);
+                  _resetModelTechnicalFields();
+                  _snackError(l10n.vehiclesModelTypeMismatch);
+                  return;
+                }
                 _classification.selectModel(m);
                 _resetModelTechnicalFields();
                 if (m == null) return;
 
                 // Carrosserie : valeur DB ou inférence depuis body_type
-                final style = m.inferredBodyStyle;
-                if (style != null) _bodyStyle = style;
-
-                // Type de véhicule : valeur DB en priorité, sinon inférence
                 final vtype = m.resolvedVehicleType;
-                if (vtype != null) _vehicleType = vtype;
+                if (vtype != null && !_vehicleTypeChosen) _vehicleType = vtype;
+                final style = m.inferredBodyStyle;
+                if (style != null && _bodyFitsType(style)) {
+                  _bodyStyle = style;
+                  _bodyStyleNeedsReselection = false;
+                } else if (style != null ||
+                    (_bodyStyle != null && !_bodyFitsType(_bodyStyle))) {
+                  _bodyStyle = null;
+                  _bodyStyleNeedsReselection = true;
+                }
                 // A truck must not inherit the passenger car's seat/door defaults.
                 if (vtype == 'heavy') {
                   _seatsCtrl.clear();
@@ -1278,7 +1418,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             ),
             const SizedBox(height: 12),
 
-            if (_brand != null && _bodyStyle != null && _bodyStyle != 'other') ...[
+            if (_brand != null &&
+                _bodyStyle != null &&
+                _bodyStyle != 'other') ...[
               if (_modelBodyFilter != null)
                 Text(l10n.vehiclesModelsBodyFilterActive),
               if (_modelBodyFilter != null && filteredModels.isEmpty)
@@ -1294,7 +1436,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                   key: const ValueKey('vehicle-model-body-filter'),
                   onPressed: () => setState(() {
                     _showAllModelsForBody = !_showAllModelsForBody;
-                    if (!_showAllModelsForBody) _clearModelWithConflictingBody();
+                    if (!_showAllModelsForBody)
+                      _clearModelWithConflictingBody();
                   }),
                   child: Text(
                     _showAllModelsForBody
@@ -1693,12 +1836,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                   (value: 'sale', label: l10n.vehiclesForSale),
                   (value: 'rent', label: l10n.vehiclesForRent),
                   (value: 'both', label: l10n.vehiclesForBoth),
-              ],
+                ],
                 selected: _availability,
                 onChanged: (v) => setState(() => _availability = v),
               ),
               const SizedBox(height: 16),
-
             ],
             // Mise en avant commerciale — la vitrine est a la boutique.
             if (widget.mode.peutChoisirLaBoutique) ...[
@@ -2227,4 +2369,64 @@ String titreErreurEnregistrement(ApiException e, {AppLocalizations? l10n}) {
     final int c when c >= 500 => l10n.vehiclesErrorServerTitle,
     _ => l10n.vehiclesSaveFailed,
   };
+}
+
+/// Notify the page after viewport layout while Stepper bodies expand/collapse
+/// and the keyboard resizes the viewport. The correction runs after layout,
+/// never inside it, and needs no timer guesses about animation duration.
+class _StepScrollController extends ScrollController {
+  _StepScrollController(this.onLayout, this.onScrollRequested);
+  final VoidCallback onLayout;
+  final VoidCallback onScrollRequested;
+
+  @override
+  ScrollPosition createScrollPosition(
+    ScrollPhysics physics,
+    ScrollContext context,
+    ScrollPosition? oldPosition,
+  ) => _StepScrollPosition(
+    physics: physics,
+    context: context,
+    oldPosition: oldPosition,
+    onLayout: onLayout,
+    onScrollRequested: onScrollRequested,
+  );
+}
+
+class _StepScrollPosition extends ScrollPositionWithSingleContext {
+  _StepScrollPosition({
+    required super.physics,
+    required super.context,
+    super.oldPosition,
+    required this.onLayout,
+    required this.onScrollRequested,
+  });
+  final VoidCallback onLayout;
+  final VoidCallback onScrollRequested;
+
+  @override
+  void jumpTo(double value) {
+    onScrollRequested();
+    super.jumpTo(value);
+  }
+
+  @override
+  Future<void> animateTo(
+    double to, {
+    required Duration duration,
+    required Curve curve,
+  }) {
+    onScrollRequested();
+    return super.animateTo(to, duration: duration, curve: curve);
+  }
+
+  @override
+  bool applyContentDimensions(double minScrollExtent, double maxScrollExtent) {
+    final accepted = super.applyContentDimensions(
+      minScrollExtent,
+      maxScrollExtent,
+    );
+    onLayout();
+    return accepted;
+  }
 }

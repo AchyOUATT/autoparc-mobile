@@ -4854,6 +4854,10 @@
   "@vehiclesBodyStyleLabel": {
     "description": "Champ obligatoire de carrosserie."
   },
+  "vehiclesBodyStyleReselect": "Le type de véhicule a changé ou le modèle propose une carrosserie incompatible. Choisissez une carrosserie adaptée.",
+  "vehiclesModelTypeMismatch": "Ce modèle ne correspond pas au type de véhicule choisi. Sélectionnez un modèle compatible.",
+  "@vehiclesBodyStyleReselect": {"description": "Aide sous Carrosserie après retrait d’une valeur incompatible avec le type choisi, sans remplacement automatique."},
+  "@vehiclesModelTypeMismatch": {"description": "Message éphémère du formulaire véhicule quand un modèle contredit le type choisi explicitement ; le type choisi reste inchangé."},
   "vehiclesBodyStyleHint": "Berline, SUV, Pickup…",
   "@vehiclesBodyStyleHint": {
     "description": "Exemples de carrosseries."

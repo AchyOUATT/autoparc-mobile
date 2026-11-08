@@ -1,3 +1,5 @@
+import 'package:auto/features/partner_accounts/data/partner_repository.dart'
+    as espace;
 import 'package:auto/features/vehicles/presentation/pages/vehicle_form_mode.dart';
 import 'package:auto/features/partner_accounts/presentation/partner_session.dart';
 import 'dart:convert';
@@ -112,6 +114,16 @@ class _Depot extends VehicleAdminRepository {
   }
 }
 
+class _DepotPartenaire extends espace.PartnerRepository {
+  @override
+  Future<Map<String, dynamic>> listing(
+    espace.PartnerListingKind kind,
+    int id,
+  ) async => {
+    'fault_declaration': {'state': 'unknown', 'faults': []},
+  };
+}
+
 class _Annuaire extends PartnerRepository {
   _Annuaire() : super(ApiClient());
 
@@ -143,12 +155,14 @@ Future<void> _ouvrir(
   Vehicle? existant, {
   Locale locale = const Locale('fr'),
   VehicleFormMode mode = VehicleFormMode.personnel,
+  CatalogRefs references = _refs,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         partnerSessionProvider.overrideWith((_) => _SessionVide()),
-        catalogRefsProvider.overrideWith((_) async => _refs),
+        espace.partnerRepositoryProvider.overrideWithValue(_DepotPartenaire()),
+        catalogRefsProvider.overrideWith((_) async => references),
         countriesProvider.overrideWith((_) async => <CountryRef>[]),
         vehicleAdminRepositoryProvider.overrideWithValue(depot),
         partnerRepositoryProvider.overrideWithValue(_Annuaire()),
@@ -190,6 +204,392 @@ void _ecrire(WidgetTester tester, String libelle, String valeur) {
 }
 
 void main() {
+  testWidgets('disposing during a step transition cancels framing safely', (
+    tester,
+  ) async {
+    await _ouvrir(tester, _Depot(), _vehicule());
+    tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+    await tester.pump(const Duration(milliseconds: 16));
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final mode in VehicleFormMode.values) {
+    for (final locale in [const Locale('fr'), const Locale('en')]) {
+      testWidgets(
+        'model defaults respect category and payload: $mode $locale',
+        (tester) async {
+          const suv = ModelRef(
+            id: 11,
+            brandId: 3,
+            name: 'SUV example',
+            bodyType: 'suv',
+            defaultVehicleType: 'passenger',
+          );
+          const contradictory = ModelRef(
+            id: 12,
+            brandId: 3,
+            name: 'Legacy example',
+            bodyType: 'sedan',
+            defaultVehicleType: 'heavy',
+          );
+          const bus = ModelRef(
+            id: 13,
+            brandId: 3,
+            name: 'Bus example',
+            bodyType: 'bus',
+            defaultVehicleType: 'heavy',
+          );
+          const references = CatalogRefs(
+            brands: [_marque],
+            vehicleModels: [suv, contradictory, bus],
+            trims: [],
+            engineTypes: [_motorisation],
+            drivetrains: [],
+            colors: [],
+            features: [],
+            locations: [],
+          );
+          final depot = _Depot();
+          await _ouvrir(
+            tester,
+            depot,
+            _vehicule(),
+            mode: mode,
+            locale: locale,
+            references: references,
+          );
+          final l = await AppLocalizations.delegate.load(locale);
+          final body = find.byWidgetPredicate(
+            (w) =>
+                w is DropdownButtonFormField<String> &&
+                w.decoration.labelText == l.vehiclesBodyStyleLabel,
+            skipOffstage: false,
+          );
+          final model = find.byWidgetPredicate(
+            (w) => w is DropdownButtonFormField<ModelRef>,
+            skipOffstage: false,
+          );
+          tester
+              .widget<ChoiceChip>(
+                find.byWidgetPredicate(
+                  (w) =>
+                      w is ChoiceChip &&
+                      w.label is Text &&
+                      (w.label as Text).data == l.vehiclesTypeHeavy,
+                ),
+              )
+              .onSelected!(true);
+          await tester.pumpAndSettle();
+          expect(tester.state<FormFieldState<String>>(body).value, isNull);
+          expect(tester.state<FormFieldState<ModelRef>>(model).value, isNull);
+          tester.widget<DropdownButtonFormField<ModelRef>>(model).onChanged!(
+            suv,
+          );
+          await tester.pumpAndSettle();
+          expect(tester.state<FormFieldState<ModelRef>>(model).value, isNull);
+          expect(find.text(l.vehiclesModelTypeMismatch), findsOneWidget);
+          tester.widget<DropdownButtonFormField<ModelRef>>(model).onChanged!(
+            contradictory,
+          );
+          await tester.pumpAndSettle();
+          expect(tester.state<FormFieldState<String>>(body).value, isNull);
+          expect(find.text(l.vehiclesBodyStyleReselect), findsOneWidget);
+          tester.widget<DropdownButtonFormField<ModelRef>>(model).onChanged!(
+            bus,
+          );
+          await tester.pumpAndSettle();
+          expect(tester.state<FormFieldState<String>>(body).value, 'bus');
+          expect(tester.state<FormFieldState<ModelRef>>(model).value, bus);
+          expect(find.text(l.vehiclesBodyStyleReselect), findsNothing);
+          tester
+              .widget<DropdownButtonFormField<EngineTypeRef>>(
+                find.byWidgetPredicate(
+                  (w) => w is DropdownButtonFormField<EngineTypeRef>,
+                  skipOffstage: false,
+                ),
+              )
+              .onChanged!(_motorisation);
+          await tester.pumpAndSettle();
+          if (mode == VehicleFormMode.personnel) {
+            await _enregistrer(tester);
+            expect(depot.charge?['vehicle_type'], 'heavy');
+            expect(depot.charge?['body_style'], 'bus');
+            expect(depot.charge?['vehicle_model_id'], bus.id);
+          }
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'body options follow category and explain reselection: $mode $locale',
+        (tester) async {
+          await _ouvrir(tester, _Depot(), null, mode: mode, locale: locale);
+          final l = await AppLocalizations.delegate.load(locale);
+          Finder field() => find.byWidgetPredicate(
+            (w) =>
+                w is DropdownButtonFormField<String> &&
+                w.decoration.labelText == l.vehiclesBodyStyleLabel,
+            skipOffstage: false,
+          );
+          DropdownButtonFormField<String> body() => tester.widget(field());
+          Future<void> type(String label) async {
+            tester
+                .widget<ChoiceChip>(
+                  find.byWidgetPredicate(
+                    (w) =>
+                        w is ChoiceChip &&
+                        w.label is Text &&
+                        (w.label as Text).data == label,
+                  ),
+                )
+                .onSelected!(true);
+            await tester.pumpAndSettle();
+          }
+
+          List<String?> options() => tester
+              .widget<DropdownButton<String>>(
+                find.descendant(
+                  of: field(),
+                  matching: find.byWidgetPredicate(
+                    (w) => w is DropdownButton<String>,
+                  ),
+                  skipOffstage: false,
+                ),
+              )
+              .items!
+              .map((item) => item.value)
+              .toList();
+          expect(options(), [
+            'sedan',
+            'hatchback',
+            'suv',
+            'estate',
+            'coupe',
+            'convertible',
+            'other',
+          ]);
+          await type(l.vehiclesTypeUtility);
+          expect(options(), ['pickup', 'van', 'minibus', 'other']);
+          body().onChanged!('van');
+          await tester.pumpAndSettle();
+          await type(l.vehiclesTypeHeavy);
+          expect(options(), ['bus', 'truck', 'other']);
+          expect(
+            body().decoration.hintText,
+            '${l.catalogBodyLabelBus}, ${l.catalogBodyLabelTruck}',
+          );
+          expect(tester.state<FormFieldState<String>>(field()).value, isNull);
+          expect(find.text(l.vehiclesBodyStyleReselect), findsOneWidget);
+          tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+          await tester.pumpAndSettle();
+          expect(tester.widget<Stepper>(find.byType(Stepper)).currentStep, 0);
+          expect(
+            find.textContaining(l.vehiclesBodyStyleRequired),
+            findsWidgets,
+          );
+          body().onChanged!('bus');
+          await tester.pumpAndSettle();
+          expect(tester.state<FormFieldState<String>>(field()).value, 'bus');
+          expect(find.text(l.vehiclesBodyStyleReselect), findsNothing);
+          await type(l.vehiclesTypePassenger);
+          expect(options(), [
+            'sedan',
+            'hatchback',
+            'suv',
+            'estate',
+            'coupe',
+            'convertible',
+            'other',
+          ]);
+          expect(tester.state<FormFieldState<String>>(field()).value, isNull);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'historical body stays until category changes: $mode $locale',
+        (tester) async {
+          final depot = _Depot();
+          final existing = _vehicule(
+            retouche: (j) => j
+              ..['vehicle_type'] = 'heavy'
+              ..['body_style'] = 'sedan',
+          );
+          await _ouvrir(tester, depot, existing, mode: mode, locale: locale);
+          final l = await AppLocalizations.delegate.load(locale);
+          final field = find.byWidgetPredicate(
+            (w) =>
+                w is DropdownButtonFormField<String> &&
+                w.decoration.labelText == l.vehiclesBodyStyleLabel,
+            skipOffstage: false,
+          );
+          expect(tester.state<FormFieldState<String>>(field).value, 'sedan');
+          expect(
+            tester
+                .widget<DropdownButton<String>>(
+                  find.descendant(
+                    of: field,
+                    matching: find.byWidgetPredicate(
+                      (w) => w is DropdownButton<String>,
+                    ),
+                    skipOffstage: false,
+                  ),
+                )
+                .items!
+                .map((i) => i.value),
+            containsAll(['sedan', 'bus', 'truck', 'other']),
+          );
+          tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+          await tester.pumpAndSettle();
+          expect(tester.widget<Stepper>(find.byType(Stepper)).currentStep, 1);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'keyboard closes on change; refused validation keeps viewport: $mode $locale',
+        (tester) async {
+          tester.view.physicalSize = const Size(360, 640);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.reset);
+          await _ouvrir(
+            tester,
+            _Depot(),
+            _vehicule(),
+            mode: mode,
+            locale: locale,
+          );
+          final l = await AppLocalizations.delegate.load(locale);
+          final vin = _champ(l.vehiclesVinOptional);
+          final beforeVin = tester.widget<TextField>(vin).controller!.text;
+          await Scrollable.ensureVisible(tester.element(vin));
+          await tester.showKeyboard(vin);
+          tester.view.viewInsets = const FakeViewPadding(bottom: 260);
+          await tester.pumpAndSettle();
+          tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+          await tester.pump();
+          expect(tester.testTextInput.isVisible, isFalse);
+          tester.view.viewInsets = const FakeViewPadding(bottom: 120);
+          await tester.pump(const Duration(milliseconds: 50));
+          tester.view.viewInsets = const FakeViewPadding();
+          await tester.pumpAndSettle();
+          final stepper = tester.widget<Stepper>(find.byType(Stepper));
+          final form = find.byKey(stepper.steps[1].content.key!);
+          expect(stepper.currentStep, 1);
+          expect(
+            tester.getTopLeft(form).dy,
+            closeTo(tester.getTopLeft(find.byType(Stepper)).dy, 1),
+          );
+          expect(tester.widget<TextField>(vin).controller!.text, beforeVin);
+          await tester.drag(find.byType(Stepper), const Offset(0, -60));
+          await tester.pumpAndSettle();
+          _ecrire(tester, l.vehiclesManufactureYearLabel, '1900');
+          final next = find
+              .descendant(
+                of: find
+                    .ancestor(of: form, matching: find.byType(Column))
+                    .first,
+                matching: find.byType(FilledButton),
+              )
+              .first;
+          await Scrollable.ensureVisible(tester.element(next));
+          await tester.pumpAndSettle();
+          final position = Scrollable.of(tester.element(form)).position;
+          final before = position.pixels;
+          expect(before, greaterThan(144));
+          tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+          await tester.pumpAndSettle();
+          expect(tester.widget<Stepper>(find.byType(Stepper)).currentStep, 1);
+          expect(position.pixels, closeTo(before, 1));
+          expect(find.byType(SnackBar), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
+  for (final mode in VehicleFormMode.values) {
+    for (final editing in [false, true]) {
+      testWidgets('step viewport starts at new content: $mode edit=$editing', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(360, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await _ouvrir(
+          tester,
+          _Depot(),
+          editing ? _vehicule() : null,
+          mode: mode,
+        );
+        final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
+        if (!editing) {
+          tester
+              .widget<DropdownButtonFormField<String>>(
+                find.byWidgetPredicate(
+                  (w) =>
+                      w is DropdownButtonFormField<String> &&
+                      w.decoration.labelText == l10n.vehiclesBodyStyleLabel,
+                  skipOffstage: false,
+                ),
+              )
+              .onChanged!('sedan');
+          await tester.pumpAndSettle();
+        }
+        Future<void> control(bool next) async {
+          await tester.drag(find.byType(Stepper), const Offset(0, -60));
+          await tester.pumpAndSettle();
+          final current = tester.widget<Stepper>(find.byType(Stepper));
+          final form = find.byKey(
+            current.steps[current.currentStep].content.key!,
+          );
+          final button = find.descendant(
+            of: find.ancestor(of: form, matching: find.byType(Column)).first,
+            matching: find.byType(FilledButton),
+          );
+          // Stepper controls are siblings of the Form, in its enclosing Column.
+          await Scrollable.ensureVisible(
+            tester.element(button.first),
+            alignment: 0.8,
+          );
+          await tester.pumpAndSettle();
+          final position = Scrollable.of(tester.element(form)).position;
+          if (current.steps[current.currentStep].content.key !=
+                  current.steps[0].content.key ||
+              next) {
+            expect(position.maxScrollExtent, greaterThan(0));
+          }
+          if (next) {
+            current.onStepContinue!();
+          } else {
+            current.onStepCancel!();
+          }
+          await tester.pumpAndSettle();
+          final changed = tester.widget<Stepper>(find.byType(Stepper));
+          expect(changed.currentStep, current.currentStep + (next ? 1 : -1));
+          final start = tester
+              .getTopLeft(
+                find.byKey(changed.steps[changed.currentStep].content.key!),
+              )
+              .dy;
+          final viewport = tester.getRect(find.byType(Stepper));
+          expect(start, greaterThanOrEqualTo(viewport.top - 1));
+          expect(start, lessThanOrEqualTo(viewport.top + 24));
+          expect(tester.takeException(), isNull);
+        }
+
+        await control(true);
+        if (editing) {
+          await control(true);
+          await control(true);
+        }
+        while (tester.widget<Stepper>(find.byType(Stepper)).currentStep > 0) {
+          await control(false);
+        }
+      });
+    }
+  }
   for (final locale in [const Locale('fr'), const Locale('en')]) {
     for (final mode in VehicleFormMode.values) {
       testWidgets('blocked next explains every current error: $locale $mode', (

@@ -6239,6 +6239,18 @@ abstract class AppLocalizations {
   /// **'Carrosserie *'**
   String get vehiclesBodyStyleLabel;
 
+  /// Aide sous Carrosserie après retrait d’une valeur incompatible avec le type choisi, sans remplacement automatique.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le type de véhicule a changé ou le modèle propose une carrosserie incompatible. Choisissez une carrosserie adaptée.'**
+  String get vehiclesBodyStyleReselect;
+
+  /// Message éphémère du formulaire véhicule quand un modèle contredit le type choisi explicitement ; le type choisi reste inchangé.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce modèle ne correspond pas au type de véhicule choisi. Sélectionnez un modèle compatible.'**
+  String get vehiclesModelTypeMismatch;
+
   /// Exemples de carrosseries.
   ///
   /// In fr, this message translates to:

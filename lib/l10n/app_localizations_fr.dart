@@ -3605,6 +3605,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get vehiclesBodyStyleLabel => 'Carrosserie *';
 
   @override
+  String get vehiclesBodyStyleReselect =>
+      'Le type de véhicule a changé ou le modèle propose une carrosserie incompatible. Choisissez une carrosserie adaptée.';
+
+  @override
+  String get vehiclesModelTypeMismatch =>
+      'Ce modèle ne correspond pas au type de véhicule choisi. Sélectionnez un modèle compatible.';
+
+  @override
   String get vehiclesBodyStyleHint => 'Berline, SUV, Pickup…';
 
   @override
