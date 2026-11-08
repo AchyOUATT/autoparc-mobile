@@ -1572,6 +1572,8 @@
   "vehiclesTypeUtility": "Commercial vehicle",
   "vehiclesTypeHeavy": "Heavy vehicle",
   "vehiclesBodyStyleLabel": "Body style *",
+  "vehiclesBodyStyleReselect": "The vehicle type changed or the model suggests an incompatible body style. Choose a suitable body style.",
+  "vehiclesModelTypeMismatch": "This model does not match the selected vehicle type. Choose a compatible model.",
   "vehiclesBodyStyleHint": "Saloon, SUV, pickup…",
   "vehiclesBodyStyleRequired": "Select a body style",
   "vehiclesVinOptional": "VIN (optional)",
