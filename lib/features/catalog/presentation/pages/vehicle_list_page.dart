@@ -1,3 +1,4 @@
+import 'package:auto/core/widgets/scrollable_center.dart';
 import '../../../../core/l10n/reference_labels.dart';
 import 'dart:math' as math;
 
@@ -336,7 +337,10 @@ class _FilterChips extends ConsumerWidget {
                   ),
                 ),
                 itemBuilder: (context) => [
-                  PopupMenuItem(value: '', child: Text(l10n.needsFilterAllTypes)),
+                  PopupMenuItem(
+                    value: '',
+                    child: Text(l10n.needsFilterAllTypes),
+                  ),
                   for (final type in _equipmentTypes)
                     PopupMenuItem(
                       value: type,
@@ -2144,7 +2148,7 @@ class _ErrorView extends StatelessWidget {
   final VoidCallback onRetry;
   const _ErrorView({required this.error, required this.onRetry});
   @override
-  Widget build(BuildContext context) => Center(
+  Widget build(BuildContext context) => ScrollableCenter(
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [

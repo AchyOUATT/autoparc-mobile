@@ -1,3 +1,4 @@
+import 'package:auto/core/widgets/scrollable_center.dart';
 import 'package:flutter/material.dart';
 import '../../../l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -539,7 +540,7 @@ class _LoadFailed extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
 
-    return Center(
+    return ScrollableCenter(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -581,7 +582,7 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Center(
+    return ScrollableCenter(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -593,10 +594,7 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 16),
           Text(l10n.mediaEmpty, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
-          Text(
-            l10n.mediaEmptyHint,
-            textAlign: TextAlign.center,
-          ),
+          Text(l10n.mediaEmptyHint, textAlign: TextAlign.center),
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: onAdd,

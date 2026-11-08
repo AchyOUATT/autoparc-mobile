@@ -51,13 +51,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         child: OrientationBuilder(
           builder: (context, orientation) {
             final isLandscape = orientation == Orientation.landscape;
-            // Align topCenter : la colonne occupe toute la hauteur disponible
-            // sans centrage vertical qui gaspille de l'espace sur petit écran.
+            // The header, feedback and form must scroll together: keeping the
+            // header fixed can leave no height for fields above the keyboard.
             return Align(
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
-                child: Padding(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -125,7 +125,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  messageFor(auth.error!, l10n: AppLocalizations.of(context)),
+                                  messageFor(
+                                    auth.error!,
+                                    l10n: AppLocalizations.of(context),
+                                  ),
                                   style: TextStyle(
                                     color: Theme.of(
                                       context,
@@ -143,7 +146,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           child: OutlinedButton.icon(
                             onPressed: () => context.push('/partner'),
                             icon: const Icon(Icons.business_outlined),
-                            label: Text(AppLocalizations.of(context).authOpenPartnerSpace),
+                            label: Text(
+                              AppLocalizations.of(context).authOpenPartnerSpace,
+                            ),
                           ),
                         ),
 
@@ -151,7 +156,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       // Personnel et clients saisissent la même chose : c'est
                       // à l'application de reconnaître qui se présente, pas à
                       // la personne de se classer elle-même.
-                      Expanded(child: _LoginForm(isLoading: auth.isLoading)),
+                      _LoginForm(isLoading: auth.isLoading),
                     ],
                   ),
                 ),
@@ -206,185 +211,179 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
-    return SingleChildScrollView(
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 8),
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 8),
 
-            // ── Toggle connexion / inscription ──────────────────────
-            //
-            // SANS ICÔNE ET SANS COCHE DE SÉLECTION, ET C'EST UNE MESURE.
-            //
-            // `SegmentedButton` donne à ses deux segments la MÊME largeur, et
-            // tout ce qu'une icône y prend est retiré au libellé. À 320 points
-            // d'écran, les 24 points de remplissage de la colonne laissent 272
-            // à la bande, donc 136 par segment — dont le libellé ne recevait que
-            // 94,0 avec l'icône et la coche.
-            //
-            // « Se connecter » en réclame 124,6 à l'échelle 1,5, et le seul mot
-            // « connecter » en réclame 95,1 : UN POINT DE TROP. Le moteur n'a
-            // alors aucune césure légale et coupe DANS le mot, sur trois lignes,
-            // en ne laissant qu'un segment insécable de 24,1 points. Ni
-            // `didExceedMaxLines` ni la comparaison « segment insécable contre
-            // largeur reçue » ne voient ce cas : les deux restaient verts sur un
-            // libellé de bouton cassé en plein milieu. C'est le défaut que
-            // `coupeDansLeMot` a fait apparaître quand il est entré dans
-            // `aucuneTroncature` — voir test/support/mesures.dart.
-            //
-            // L'anglais, lui, ne tombait pas : « Sign in » / « Register »
-            // tiennent à toutes les échelles. Le défaut est donc une mise en
-            // page trop serrée et non un libellé trop long, et c'est la mise en
-            // page qui cède.
-            //
-            // CE QUE L'ON PERD : deux pictogrammes qui redisaient leur libellé,
-            // et la coche de sélection. Le fond rempli du segment actif reste
-            // l'affordance de Material pour « celui-ci est choisi », et il ne
-            // dépend d'aucune largeur.
-            SegmentedButton<bool>(
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(value: false, label: Text(l10n.authSignInTab)),
-                ButtonSegment(value: true, label: Text(l10n.authRegisterTab)),
-              ],
-              selected: {_isRegister},
-              onSelectionChanged: (s) => setState(() {
-                _isRegister = s.first;
-                _formKey.currentState?.reset();
-              }),
+          // ── Toggle connexion / inscription ──────────────────────
+          //
+          // SANS ICÔNE ET SANS COCHE DE SÉLECTION, ET C'EST UNE MESURE.
+          //
+          // `SegmentedButton` donne à ses deux segments la MÊME largeur, et
+          // tout ce qu'une icône y prend est retiré au libellé. À 320 points
+          // d'écran, les 24 points de remplissage de la colonne laissent 272
+          // à la bande, donc 136 par segment — dont le libellé ne recevait que
+          // 94,0 avec l'icône et la coche.
+          //
+          // « Se connecter » en réclame 124,6 à l'échelle 1,5, et le seul mot
+          // « connecter » en réclame 95,1 : UN POINT DE TROP. Le moteur n'a
+          // alors aucune césure légale et coupe DANS le mot, sur trois lignes,
+          // en ne laissant qu'un segment insécable de 24,1 points. Ni
+          // `didExceedMaxLines` ni la comparaison « segment insécable contre
+          // largeur reçue » ne voient ce cas : les deux restaient verts sur un
+          // libellé de bouton cassé en plein milieu. C'est le défaut que
+          // `coupeDansLeMot` a fait apparaître quand il est entré dans
+          // `aucuneTroncature` — voir test/support/mesures.dart.
+          //
+          // L'anglais, lui, ne tombait pas : « Sign in » / « Register »
+          // tiennent à toutes les échelles. Le défaut est donc une mise en
+          // page trop serrée et non un libellé trop long, et c'est la mise en
+          // page qui cède.
+          //
+          // CE QUE L'ON PERD : deux pictogrammes qui redisaient leur libellé,
+          // et la coche de sélection. Le fond rempli du segment actif reste
+          // l'affordance de Material pour « celui-ci est choisi », et il ne
+          // dépend d'aucune largeur.
+          SegmentedButton<bool>(
+            showSelectedIcon: false,
+            segments: [
+              ButtonSegment(value: false, label: Text(l10n.authSignInTab)),
+              ButtonSegment(value: true, label: Text(l10n.authRegisterTab)),
+            ],
+            selected: {_isRegister},
+            onSelectionChanged: (s) => setState(() {
+              _isRegister = s.first;
+              _formKey.currentState?.reset();
+            }),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── Email ───────────────────────────────────────────────
+          TextFormField(
+            controller: _emailCtrl,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: l10n.authEmail,
+              prefixIcon: const Icon(Icons.email_outlined),
+              border: const OutlineInputBorder(),
             ),
+            validator: (v) =>
+                (v == null || !v.contains('@')) ? l10n.authEmailInvalid : null,
+          ),
 
-            const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
-            // ── Email ───────────────────────────────────────────────
-            TextFormField(
-              controller: _emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(
-                labelText: l10n.authEmail,
-                prefixIcon: const Icon(Icons.email_outlined),
-                border: const OutlineInputBorder(),
+          // ── Mot de passe ────────────────────────────────────────
+          TextFormField(
+            controller: _passCtrl,
+            obscureText: _obscure,
+            textInputAction: _isRegister
+                ? TextInputAction.next
+                : TextInputAction.done,
+            onFieldSubmitted: (_) {
+              if (!_isRegister) _submit();
+            },
+            decoration: InputDecoration(
+              labelText: l10n.authPassword,
+              prefixIcon: const Icon(Icons.lock_outline),
+              border: const OutlineInputBorder(),
+              suffixIcon: IconButton(
+                icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                onPressed: () => setState(() => _obscure = !_obscure),
               ),
-              validator: (v) => (v == null || !v.contains('@'))
-                  ? l10n.authEmailInvalid
-                  : null,
             ),
+            validator: (v) =>
+                (v == null || v.length < 6) ? l10n.authPasswordTooShort : null,
+          ),
 
-            const SizedBox(height: 16),
-
-            // ── Mot de passe ────────────────────────────────────────
-            TextFormField(
-              controller: _passCtrl,
-              obscureText: _obscure,
-              textInputAction: _isRegister
-                  ? TextInputAction.next
-                  : TextInputAction.done,
-              onFieldSubmitted: (_) {
-                if (!_isRegister) _submit();
-              },
-              decoration: InputDecoration(
-                labelText: l10n.authPassword,
-                prefixIcon: const Icon(Icons.lock_outline),
-                border: const OutlineInputBorder(),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscure ? Icons.visibility : Icons.visibility_off,
-                  ),
-                  onPressed: () => setState(() => _obscure = !_obscure),
-                ),
-              ),
-              validator: (v) => (v == null || v.length < 6)
-                  ? l10n.authPasswordTooShort
-                  : null,
-            ),
-
-            if (!_isRegister)
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  key: const Key('forgot-password'),
-                  onPressed: widget.isLoading
-                      ? null
-                      : () => Navigator.of(context).push<void>(
-                          MaterialPageRoute(
-                            builder: (_) => PasswordRecoveryPage(
-                              initialEmail: _emailCtrl.text,
-                            ),
+          if (!_isRegister)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                key: const Key('forgot-password'),
+                onPressed: widget.isLoading
+                    ? null
+                    : () => Navigator.of(context).push<void>(
+                        MaterialPageRoute(
+                          builder: (_) => PasswordRecoveryPage(
+                            initialEmail: _emailCtrl.text,
                           ),
                         ),
-                  child: Text(l10n.passwordRecoveryForgot),
-                ),
-              ),
-
-            // ── Confirmation (inscription uniquement) ───────────────
-            if (_isRegister) ...[
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _confirmCtrl,
-                obscureText: _obscure,
-                textInputAction: TextInputAction.done,
-                onFieldSubmitted: (_) => _submit(),
-                decoration: InputDecoration(
-                  labelText: l10n.authPasswordConfirm,
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  border: const OutlineInputBorder(),
-                ),
-                validator: (v) =>
-                    v != _passCtrl.text ? l10n.authPasswordMismatch : null,
-              ),
-            ],
-
-            const SizedBox(height: 24),
-
-            // ── Bouton principal ────────────────────────────────────
-            FilledButton(
-              onPressed: widget.isLoading ? null : _submit,
-              child: widget.isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(
-                      _isRegister ? l10n.authCreateAccount : l10n.authSignInTab,
-                    ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Row(
-                children: [
-                  const Expanded(child: Divider()),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(l10n.authOrSeparator),
-                  ),
-                  const Expanded(child: Divider()),
-                ],
+                      ),
+                child: Text(l10n.passwordRecoveryForgot),
               ),
             ),
 
-            // ── Google Sign-In ──────────────────────────────────────
-            OutlinedButton.icon(
-              onPressed: widget.isLoading
-                  ? null
-                  : () => ref.read(authProvider.notifier).signInWithGoogle(),
-              icon: const Icon(Icons.g_mobiledata, size: 28),
-              label: Text(l10n.authContinueWithGoogle),
-            ),
-
+          // ── Confirmation (inscription uniquement) ───────────────
+          if (_isRegister) ...[
             const SizedBox(height: 16),
-
-            // ── Parcourir sans compte ───────────────────────────────
-            TextButton(
-              onPressed: () => context.go('/'),
-              child: Text(l10n.authBrowseWithoutAccount),
+            TextFormField(
+              controller: _confirmCtrl,
+              obscureText: _obscure,
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => _submit(),
+              decoration: InputDecoration(
+                labelText: l10n.authPasswordConfirm,
+                prefixIcon: const Icon(Icons.lock_outline),
+                border: const OutlineInputBorder(),
+              ),
+              validator: (v) =>
+                  v != _passCtrl.text ? l10n.authPasswordMismatch : null,
             ),
           ],
-        ),
+
+          const SizedBox(height: 24),
+
+          // ── Bouton principal ────────────────────────────────────
+          FilledButton(
+            onPressed: widget.isLoading ? null : _submit,
+            child: widget.isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    _isRegister ? l10n.authCreateAccount : l10n.authSignInTab,
+                  ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Row(
+              children: [
+                const Expanded(child: Divider()),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(l10n.authOrSeparator),
+                ),
+                const Expanded(child: Divider()),
+              ],
+            ),
+          ),
+
+          // ── Google Sign-In ──────────────────────────────────────
+          OutlinedButton.icon(
+            onPressed: widget.isLoading
+                ? null
+                : () => ref.read(authProvider.notifier).signInWithGoogle(),
+            icon: const Icon(Icons.g_mobiledata, size: 28),
+            label: Text(l10n.authContinueWithGoogle),
+          ),
+
+          const SizedBox(height: 16),
+
+          // ── Parcourir sans compte ───────────────────────────────
+          TextButton(
+            onPressed: () => context.go('/'),
+            child: Text(l10n.authBrowseWithoutAccount),
+          ),
+        ],
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:auto/core/widgets/scrollable_center.dart';
 import '../../../../core/l10n/langue.dart';
 import 'package:intl/intl.dart';
 import '../needs_labels.dart';
@@ -50,7 +51,8 @@ class ClientNeedsPage extends ConsumerWidget {
       ),
       body: needsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
+        error: (e, _) => ScrollableCenter(
+          padding: const EdgeInsets.only(bottom: 80),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -286,7 +288,8 @@ class _EmptyView extends StatelessWidget {
   const _EmptyView({required this.onAdd});
 
   @override
-  Widget build(BuildContext context) => Center(
+  Widget build(BuildContext context) => ScrollableCenter(
+    padding: const EdgeInsets.only(bottom: 80),
     child: Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
