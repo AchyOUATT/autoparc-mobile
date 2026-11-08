@@ -493,6 +493,7 @@
   "@catalogGarageFitmentUnknownModel": {
     "description": "Remplace l'infobulle précédente quand le véhicule du garage porte un modèle tapé à la main : le catalogue ne le connaît pas, la puce est grisée, et son motif est dit plutôt que tu — une puce inerte et sans explication se lit comme une panne."
   },
+  "catalogGarageInviteBody": "Ajoutez votre véhicule au garage pour affiner vos recherches.",
   "catalogGarageFitmentChip": "Compatibles",
   "@catalogGarageFitmentChip": {
     "description": "Puce du bandeau de garage qui restreint la liste aux pièces compatibles avec le véhicule choisi. Elle vit dans un bandeau dont la hauteur a été rabaissée sous les 48 points de cible tactile standard, donc sa largeur est comptée : « Fitting only » déborderait, « Fitting » tient."
@@ -1398,6 +1399,238 @@
   "onboardingGarageBody": "Ajoutez vos véhicules pour retrouver instantanément les pièces détachées compatibles.\nVotre historique vous suit à chaque visite.",
   "@onboardingGarageBody": {
     "description": "Corps de la dernière diapositive. Le retour à la ligne sépare le bénéfice immédiat de celui qui dure."
+  },
+  "onboardingProfileTitle": "Bienvenue sur AutoParc",
+  "@onboardingProfileTitle": {
+    "description": "Titre de la question du premier lancement, AVANT la démonstration : « je cherche » ou « je vends ». « AutoParc » est le nom de la marque et reste tel quel dans les deux langues."
+  },
+  "onboardingProfileSubtitle": "Dites-nous ce qui vous amène. Vous pourrez changer d'avis plus tard.",
+  "@onboardingProfileSubtitle": {
+    "description": "Sous le titre. La seconde phrase est une promesse tenue par l'application : le vendeur revient à l'accueil acheteur par « Pas maintenant », l'acheteur ouvre l'espace partenaire depuis le menu."
+  },
+  "onboardingProfileBuyTitle": "Je cherche",
+  "@onboardingProfileBuyTitle": {
+    "description": "Titre de la première carte. Une ACTIVITÉ plutôt qu'un verbe de commerce : « Acheter » aurait exclu celui qui vient comparer, ou faire suivre sa voiture."
+  },
+  "onboardingProfileBuyBody": "Un véhicule, des pièces ou des accessoires pour ma voiture.",
+  "@onboardingProfileBuyBody": {
+    "description": "Corps de la première carte."
+  },
+  "onboardingProfileSellTitle": "Je vends",
+  "@onboardingProfileSellTitle": {
+    "description": "Titre de la seconde carte. Mène à l'inscription d'un compte partenaire, et non à la vente d'une voiture de particulier — c'est le corps qui le dit."
+  },
+  "onboardingProfileSellBody": "Des véhicules, des pièces ou des accessoires. Garage, revendeur ou particulier : vous ouvrez un compte vendeur, et vous pouvez aussi acheter.",
+  "@onboardingProfileSellBody": {
+    "description": "Corps de la seconde carte. Le double rôle — vendre ET acheter — est dit noir sur blanc, parce qu'un garage achète aussi des pièces et que la question ne doit pas lui faire croire qu'il renonce au catalogue. C'est le plus long texte de l'écran, donc celui qui décide de sa hauteur."
+  },
+  "onboardingProfileUndecided": "Je ne sais pas encore",
+  "@onboardingProfileUndecided": {
+    "description": "Lien discret sous les deux cartes. Même chemin que « Je cherche » : le catalogue est le défaut universel, et le menu garde l'espace partenaire."
+  },
+  "onboardingProfileOtherLanguage": "English",
+  "@onboardingProfileOtherLanguage": {
+    "description": "Bouton de bascule de langue en haut de la question du premier lancement, qui porte le nom de L'AUTRE langue dans sa propre graphie : « English » sur l'écran français, « Français » sur l'écran anglais. La question n'est pas passable et le tiroir — seul autre endroit où changer de langue — n'est pas encore accessible."
+  },
+  "partnerDashboardTitle": "Tableau de bord",
+  "@partnerDashboardTitle": {
+    "description": "Titre de la page d'accueil d'un partenaire connecté, qui remplace l'accueil acheteur. Le catalogue reste dans les onglets du bas."
+  },
+  "partnerDashboardTotal": "{count, plural, =0{Aucune annonce} =1{1 annonce} other{{count} annonces}}",
+  "@partnerDashboardTotal": {
+    "description": "Première ligne du résumé d'un inventaire sur le tableau de bord : le nombre d'annonces non archivées.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "partnerDashboardPublished": "{count, plural, =0{0 publiée} =1{1 publiée} other{{count} publiées}}",
+  "@partnerDashboardPublished": {
+    "description": "Le nombre d'annonces publiées, dans le résumé d'un inventaire. « Publiée » au sens du bouton Publier de la liste : le partenaire l'a décidé, que le catalogue la montre ou non.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "partnerDashboardDrafts": "{count, plural, =0{0 brouillon} =1{1 brouillon} other{{count} brouillons}}",
+  "@partnerDashboardDrafts": {
+    "description": "Le nombre d'annonces non publiées, dans le résumé d'un inventaire. Le même mot que la pastille « Brouillon » de la liste des annonces. LE CAS ZÉRO EST ÉCRIT : en français, zéro tombe dans la catégorie « one » de l'ICU, et sans `=0` la branche `=1` — « 1 brouillon » — s'affichait pour zéro. Même règle pour partnerDashboardPublished.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "partnerDashboardCountsUnavailable": "Compteurs indisponibles",
+  "@partnerDashboardCountsUnavailable": {
+    "description": "À la place des compteurs quand le serveur ne les rend pas — réseau coupé, ou serveur antérieur à la route. Les cartes restent navigables ; seul le chiffre manque, et il est remplacé par un tiret."
+  },
+  "partnerDashboardTodoTitle": "À faire",
+  "@partnerDashboardTodoTitle": {
+    "description": "Titre de la courte liste, trois lignes au plus, de ce qui mérite l'attention du partenaire : annonces sans photo, ruptures, brouillons, promotions qui finissent."
+  },
+  "partnerDashboardTodoWithoutPhoto": "{count, plural, =1{1 annonce publiée sans photo} other{{count} annonces publiées sans photo}}",
+  "@partnerDashboardTodoWithoutPhoto": {
+    "description": "Ligne « À faire ». Une annonce publiée sans photo est en ligne mais ne se vend pas : c'est la première ligne de la liste.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "partnerDashboardTodoOutOfStock": "{count, plural, =1{1 article publié en rupture} other{{count} articles publiés en rupture}}",
+  "@partnerDashboardTodoOutOfStock": {
+    "description": "Ligne « À faire », pièces et accessoires seulement : publiés et pourtant indisponibles ou à quantité nulle.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "partnerDashboardTodoLowStock": "{count, plural, =1{1 article en stock faible} other{{count} articles en stock faible}}",
+  "@partnerDashboardTodoLowStock": {
+    "description": "Ligne « À faire », pièces et accessoires seulement : publiés, en stock, mais sous le seuil d'alerte.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "partnerDashboardTodoDrafts": "{count, plural, =1{1 brouillon non publié} other{{count} brouillons non publiés}}",
+  "@partnerDashboardTodoDrafts": {
+    "description": "Ligne « À faire » : des annonces non publiées — jamais publiées, ou dépubliées. Pas « jamais » : une annonce dépubliée par le bouton Dépublier a été en ligne.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "partnerDashboardTodoPromotionEnding": "{count, plural, =1{1 promotion se termine dans moins de 3 jours} other{{count} promotions se terminent dans moins de 3 jours}}",
+  "@partnerDashboardTodoPromotionEnding": {
+    "description": "Ligne « À faire » : des promotions en cours dont la fin est à moins de trois jours — le seuil exact du serveur (`promotion_ending_soon`), écrit tel quel : « cette semaine » aurait compté six jours de plus que le chiffre.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "partnerDashboardSearchTitle": "Rechercher dans le catalogue",
+  "@partnerDashboardSearchTitle": {
+    "description": "Titre de la rangée de recherche en bas du tableau de bord : les trois tuiles Véhicules / Accessoires / Pièces de l'accueil acheteur, parce qu'un partenaire cherche aussi comme tout le monde."
+  },
+  "partnerDashboardPendingTitle": "Votre demande est en cours d'examen",
+  "@partnerDashboardPendingTitle": {
+    "description": "Titre du tableau de bord d'un partenaire dont l'inscription n'est pas encore approuvée. Il remplace les compteurs, qu'il n'a pas encore."
+  },
+  "partnerDashboardPendingBody": "AutoParc vérifie vos coordonnées et vous appelle si besoin. L'application vérifie votre statut à chaque ouverture, et le bouton ci-dessous le fait tout de suite.",
+  "@partnerDashboardPendingBody": {
+    "description": "Répond aux trois questions qu'un vendeur en attente se pose : qui examine, comment il le saura, et ce qu'il peut faire. « Le bouton ci-dessous » est « Vérifier mon statut », clé partnerAccountsCheckStatus."
+  },
+  "partnerDashboardPendingMeanwhile": "En attendant : parcourez le catalogue et préparez les photos de vos premiers articles.",
+  "@partnerDashboardPendingMeanwhile": {
+    "description": "Sous le corps de l'attente : ce que le vendeur peut faire d'utile avant l'approbation."
+  },
+  "partnerDashboardContactUs": "Nous contacter",
+  "@partnerDashboardContactUs": {
+    "description": "Tuile du tableau de bord en attente, qui ouvre la feuille de contact d'AutoParc — téléphone, WhatsApp, courriel. Un vendeur en attente n'avait jusque-là aucun moyen de joindre la boutique : la feuille n'était atteignable que par le bloc client du tiroir."
+  },
+  "partnerDashboardWelcomeNotice": "Votre accueil est maintenant votre tableau de bord. Le catalogue reste dans les onglets du bas.",
+  "@partnerDashboardWelcomeNotice": {
+    "description": "Affiché UNE fois, en tête du tableau de bord, aux partenaires qui connaissaient l'ancien accueil : leur page d'ouverture change sans qu'on leur ait posé de question. Disparaît sur « OK » et ne revient pas."
+  },
+  "partnerDashboardWelcomeDismiss": "OK",
+  "@partnerDashboardWelcomeDismiss": {
+    "description": "Ferme la ligne de bienvenue du tableau de bord. Identique dans les deux langues, à dessein."
+  },
+  "partnerAccountsClosedTitle": "L'espace vendeur est fermé pour le moment",
+  "@partnerAccountsClosedTitle": {
+    "description": "Titre du panneau qui remplace le formulaire d'inscription quand le serveur dit que l'espace partenaire est fermé, ou qu'un appel partenaire rend 503. Un panneau et non une ligne rouge sous un formulaire rempli : c'est souvent le tout premier contact d'un vendeur avec l'application."
+  },
+  "partnerAccountsClosedBody": "AutoParc le rouvrira dès que possible. Vous retrouverez cette page dans le menu, sous « Espace partenaire ».",
+  "@partnerAccountsClosedBody": {
+    "description": "Corps du panneau « espace fermé ». « Espace partenaire » est la tuile du tiroir, clé shellPartnerSpace : les deux textes doivent rester accordés."
+  },
+  "partnerAccountsClosedBrowse": "Parcourir le catalogue",
+  "@partnerAccountsClosedBrowse": {
+    "description": "Bouton du panneau « espace fermé », qui ramène au catalogue. Le second bouton est « Réessayer », clé commonRetry."
+  },
+  "partnerAccountsSellerIntroTitle": "Créez votre compte vendeur",
+  "@partnerAccountsSellerIntroTitle": {
+    "description": "Titre de l'onglet Inscription quand on y arrive par la question du premier lancement (`?inscription=1`). Il remplace « Présentez votre entreprise », qui parle à une entreprise alors que le vendeur type est un particulier ou un petit revendeur. Le français de l'autre chemin ne bouge pas."
+  },
+  "partnerAccountsSellerIntroBody": "Vos coordonnées, un mot de passe, et AutoParc valide votre compte. Vos annonces porteront votre nom ou celui de votre entreprise.",
+  "@partnerAccountsSellerIntroBody": {
+    "description": "Sous le titre de l'onglet Inscription, par le chemin du premier lancement. Annonce les trois étapes et le repli du nom : sans entreprise, l'annonce porte le nom du responsable."
+  },
+  "partnerAccountsSellerIntroFooter": "Vous pourrez publier dès que votre compte est validé.",
+  "@partnerAccountsSellerIntroFooter": {
+    "description": "Sous le bouton d'inscription, par le chemin du premier lancement. Remplace « La publication devient disponible après validation de votre entreprise. » pour la même raison que le titre."
+  },
+  "homeSellerTitle": "Vous vendez ?",
+  "@homeSellerTitle": {
+    "description": "Titre de la carte en tête de l'accueil acheteur, pour qui a répondu « Je vends » au premier lancement sans avoir fini d'ouvrir son compte. Elle REMPLACE la carte « Enregistrez votre véhicule » : un vendeur n'a pas à enregistrer sa voiture d'abord, et deux cartes d'appel empilées repousseraient les bonnes affaires sous le pli. COURT, POUR TENIR SUR UNE LIGNE À 320 POINTS : la version longue — « Vous vendez des pièces ou des véhicules ? » — se repliait juste avant son point d'interrogation, et le banc de géométrie lisait une coupure dans le mot. Ce que la carte propose est dans le corps."
+  },
+  "homeSellerBody": "Pièces, accessoires ou véhicules : ouvrez votre compte vendeur pour publier vos annonces.",
+  "@homeSellerBody": {
+    "description": "Corps de la carte « Vous vendez ? »."
+  },
+  "homeSellerOpenAccount": "Ouvrir mon compte",
+  "@homeSellerOpenAccount": {
+    "description": "Bouton principal de la carte « Vous vendez ? », vers l'onglet Inscription de l'espace partenaire."
+  },
+  "homeSellerHaveAccount": "J'ai déjà un compte",
+  "@homeSellerHaveAccount": {
+    "description": "Second bouton de la carte « Vous vendez ? », vers l'onglet Connexion : un vendeur qui s'est déconnecté a un compte, et l'envoyer à l'inscription lui ferait en créer un second."
+  },
+  "homeSellerNotNow": "Pas maintenant",
+  "@homeSellerNotNow": {
+    "description": "Troisième bouton de la carte « Vous vendez ? ». Il enregistre le profil ACHETEUR : la carte ne revient pas, et c'est aussi le chemin pour revenir sur la réponse du premier lancement."
+  },
+  "homeSellerSessionClosedTitle": "Votre session vendeur a été fermée",
+  "@homeSellerSessionClosedTitle": {
+    "description": "Titre de la carte en tête de l'accueil quand une session partenaire restaurée a été rejetée par le serveur — compte refusé, suspendu ou désactivé. Sans elle, le partenaire retombait sur l'accueil acheteur en « Visiteur », sans un mot."
+  },
+  "homeSellerSessionClosedBody": "Reconnectez-vous pour connaître l'état de votre compte.",
+  "@homeSellerSessionClosedBody": {
+    "description": "Corps de la carte « session fermée ». La reconnexion montre le motif : le serveur le rend avec le refus."
+  },
+  "homeSellerSignInAgain": "Se reconnecter",
+  "@homeSellerSignInAgain": {
+    "description": "Bouton principal de la carte « session fermée », vers l'onglet Connexion de l'espace partenaire."
+  },
+  "homeSellerUnderstood": "J'ai compris",
+  "@homeSellerUnderstood": {
+    "description": "Second bouton de la carte « session fermée », qui la retire jusqu'à la prochaine session."
+  },
+  "homeSellerSessionToConfirm": "Session vendeur à confirmer",
+  "@homeSellerSessionToConfirm": {
+    "description": "Bandeau en tête de l'accueil quand le coffre porte une session partenaire d'avant le profil enregistré, et que le serveur n'a pas pu la confirmer. Le bouton du bandeau est « Réessayer », clé commonRetry."
+  },
+  "shellAccountPartner": "Partenaire",
+  "@shellAccountPartner": {
+    "description": "Seconde ligne de l'en-tête du tiroir pendant une session partenaire approuvée, sous le nom de l'entreprise ou du responsable — là où le personnel lit « Personnel — {role} » et le client son adresse."
+  },
+  "shellAccountPartnerPending": "Partenaire — en attente",
+  "@shellAccountPartnerPending": {
+    "description": "La même ligne pour une session partenaire non encore approuvée."
+  },
+  "shellPartnerDashboard": "Tableau de bord",
+  "@shellPartnerDashboard": {
+    "description": "Tuile du bloc PARTENAIRE du tiroir, qui ramène à l'accueil — le tableau de bord."
+  },
+  "shellPartnerSignOut": "Se déconnecter du compte partenaire",
+  "@shellPartnerSignOut": {
+    "description": "Tuile de déconnexion du bloc PARTENAIRE du tiroir. Nommée, et non « Se déconnecter » : le bloc du personnel peut être ouvert au-dessus avec sa propre tuile de déconnexion, et deux boutons identiques feraient fermer la mauvaise session."
+  },
+  "partnerDashboardSpaceClosed": "L'espace vendeur est fermé pour le moment. Vos annonces restent en ligne ; vos inventaires reviendront à sa réouverture.",
+  "@partnerDashboardSpaceClosed": {
+    "description": "Carte en tête du tableau de bord quand un appel partenaire a rendu 503 — espace refermé pour maintenance — alors qu'une session est au coffre. Remplace le texte brut du serveur, qui parlait d'inscription à un partenaire inscrit. Les annonces publiées restent visibles : le catalogue public n'est pas derrière le drapeau."
+  },
+  "shellPartnerListings": "Mes annonces",
+  "@shellPartnerListings": {
+    "description": "Tuile du bloc PARTENAIRE du tiroir, vers le hub de l'espace partenaire et ses trois inventaires."
   },
   "catalogFitmentsTitle": "Véhicules compatibles",
   "@catalogFitmentsTitle": {
@@ -6780,6 +7013,15 @@
         "type": "String"
       },
       "max": {
+        "type": "String"
+      }
+    }
+  },
+  "garageConsumptionSingle": "{value} l/100 km",
+  "@garageConsumptionSingle": {
+    "description": "Consommation officielle réduite à une seule valeur — la fourchette quand ses deux bornes se confondent. En minuscule comme la fourchette : c'est la forme que l'application a toujours écrite en français.",
+    "placeholders": {
+      "value": {
         "type": "String"
       }
     }

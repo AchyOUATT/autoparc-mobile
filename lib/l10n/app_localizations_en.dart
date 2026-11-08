@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -363,6 +364,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get catalogGarageFitmentUnknownModel =>
       'Model not in the catalogue: no fitment data';
+
+  @override
+  String get catalogGarageInviteBody =>
+      'Add your vehicle to your garage to refine your searches.';
 
   @override
   String get catalogGarageFitmentChip => 'Fitting';
@@ -985,6 +990,230 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get onboardingGarageBody =>
       'Add your vehicles to find the spare parts that fit them straight away.\nYour history follows you on every visit.';
+
+  @override
+  String get onboardingProfileTitle => 'Welcome to AutoParc';
+
+  @override
+  String get onboardingProfileSubtitle =>
+      'Tell us what brings you here. You can change your mind later.';
+
+  @override
+  String get onboardingProfileBuyTitle => 'I\'m looking';
+
+  @override
+  String get onboardingProfileBuyBody =>
+      'A vehicle, parts or accessories for my car.';
+
+  @override
+  String get onboardingProfileSellTitle => 'I\'m selling';
+
+  @override
+  String get onboardingProfileSellBody =>
+      'Vehicles, parts or accessories. Garage, dealer or private seller: you open a seller account, and you can buy too.';
+
+  @override
+  String get onboardingProfileUndecided => 'I don\'t know yet';
+
+  @override
+  String get onboardingProfileOtherLanguage => 'Français';
+
+  @override
+  String get partnerDashboardTitle => 'Dashboard';
+
+  @override
+  String partnerDashboardTotal(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count listings',
+      one: '1 listing',
+      zero: 'No listings',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String partnerDashboardPublished(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count published',
+      one: '1 published',
+      zero: '0 published',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String partnerDashboardDrafts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count drafts',
+      one: '1 draft',
+      zero: '0 drafts',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get partnerDashboardCountsUnavailable => 'Counts unavailable';
+
+  @override
+  String get partnerDashboardTodoTitle => 'To do';
+
+  @override
+  String partnerDashboardTodoWithoutPhoto(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count published listings without a photo',
+      one: '1 published listing without a photo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String partnerDashboardTodoOutOfStock(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count published items out of stock',
+      one: '1 published item out of stock',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String partnerDashboardTodoLowStock(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items low on stock',
+      one: '1 item low on stock',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String partnerDashboardTodoDrafts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unpublished drafts',
+      one: '1 unpublished draft',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String partnerDashboardTodoPromotionEnding(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count promotions end within 3 days',
+      one: '1 promotion ends within 3 days',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get partnerDashboardSearchTitle => 'Search the catalogue';
+
+  @override
+  String get partnerDashboardPendingTitle => 'Your request is being reviewed';
+
+  @override
+  String get partnerDashboardPendingBody =>
+      'AutoParc checks your details and calls you if needed. The app checks your status every time it opens, and the button below checks it right away.';
+
+  @override
+  String get partnerDashboardPendingMeanwhile =>
+      'In the meantime, browse the catalogue and get the photos of your first items ready.';
+
+  @override
+  String get partnerDashboardContactUs => 'Contact us';
+
+  @override
+  String get partnerDashboardWelcomeNotice =>
+      'Your home screen is now your dashboard. The catalogue stays in the tabs at the bottom.';
+
+  @override
+  String get partnerDashboardWelcomeDismiss => 'OK';
+
+  @override
+  String get partnerAccountsClosedTitle => 'The seller area is closed for now';
+
+  @override
+  String get partnerAccountsClosedBody =>
+      'AutoParc will reopen it as soon as possible. You will find this page again in the menu, under “Partner area”.';
+
+  @override
+  String get partnerAccountsClosedBrowse => 'Browse the catalogue';
+
+  @override
+  String get partnerAccountsSellerIntroTitle => 'Create your seller account';
+
+  @override
+  String get partnerAccountsSellerIntroBody =>
+      'Your contact details, a password, and AutoParc validates your account. Your listings will carry your name or your company\'s.';
+
+  @override
+  String get partnerAccountsSellerIntroFooter =>
+      'You can publish as soon as your account is validated.';
+
+  @override
+  String get homeSellerTitle => 'Do you sell?';
+
+  @override
+  String get homeSellerBody =>
+      'Parts, accessories or vehicles: open your seller account to publish your listings.';
+
+  @override
+  String get homeSellerOpenAccount => 'Open my account';
+
+  @override
+  String get homeSellerHaveAccount => 'I already have an account';
+
+  @override
+  String get homeSellerNotNow => 'Not now';
+
+  @override
+  String get homeSellerSessionClosedTitle =>
+      'Your seller session has been closed';
+
+  @override
+  String get homeSellerSessionClosedBody =>
+      'Sign in again to see the state of your account.';
+
+  @override
+  String get homeSellerSignInAgain => 'Sign in again';
+
+  @override
+  String get homeSellerUnderstood => 'Got it';
+
+  @override
+  String get homeSellerSessionToConfirm => 'Seller session to confirm';
+
+  @override
+  String get shellAccountPartner => 'Partner';
+
+  @override
+  String get shellAccountPartnerPending => 'Partner — pending';
+
+  @override
+  String get shellPartnerDashboard => 'Dashboard';
+
+  @override
+  String get shellPartnerSignOut => 'Sign out of the partner account';
+
+  @override
+  String get partnerDashboardSpaceClosed =>
+      'The seller area is closed for now. Your listings stay online; your inventories will be back when it reopens.';
+
+  @override
+  String get shellPartnerListings => 'My listings';
 
   @override
   String get catalogFitmentsTitle => 'Compatible vehicles';
@@ -5011,6 +5240,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String garageConsumptionRange(String min, String max) {
     return '$min–$max L/100 km';
+  }
+
+  @override
+  String garageConsumptionSingle(String value) {
+    return '$value L/100 km';
   }
 
   @override

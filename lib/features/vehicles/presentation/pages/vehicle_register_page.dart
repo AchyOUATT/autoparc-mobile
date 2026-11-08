@@ -104,8 +104,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   String _faultBaseline = '';
   int _faultLoadGeneration = 0;
 
-  bool get _canDeclareFaults => widget.mode.estPartenaire ||
-      ref.read(authProvider).canManageFaults;
+  bool get _canDeclareFaults =>
+      widget.mode.estPartenaire || ref.read(authProvider).canManageFaults;
 
   Vehicle? get _existing => widget.existing;
 
@@ -151,7 +151,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   set _engineType(EngineTypeRef? value) => _classification.engineType = value;
   DrivetrainRef? get _drivetrain => _classification.drivetrain;
   set _drivetrain(DrivetrainRef? value) => _classification.drivetrain = value;
-  String _transmission = 'automatic'; // Gearbox family, separate from wheel drive.
+  String _transmission =
+      'automatic'; // Gearbox family, separate from wheel drive.
   final _powerCtrl = TextEditingController();
   final _seatsCtrl = TextEditingController(text: '5');
   final _doorsCtrl = TextEditingController(text: '4');
@@ -254,7 +255,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     _faultAccessKey = key;
     _faultLoadGeneration++;
     setState(() {
-      _faultDeclaration = _existing?.faultDeclaration ?? const FaultDeclaration.unknown();
+      _faultDeclaration =
+          _existing?.faultDeclaration ?? const FaultDeclaration.unknown();
       _faultsDirty = false;
       _faultsReady = _existing == null;
       _faultsLoading = false;
@@ -275,28 +277,36 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     try {
       final FaultDeclaration declaration;
       if (widget.mode.estPartenaire) {
-        final detail = await ref.read(espace.partnerRepositoryProvider)
+        final detail = await ref
+            .read(espace.partnerRepositoryProvider)
             .listing(espace.PartnerListingKind.vehicles, existing.id);
         declaration = FaultDeclaration.fromJson(detail['fault_declaration']);
       } else {
-        final rows = await ref.read(vehicleFaultRepositoryProvider).getFaults(existing.id);
+        final rows = await ref
+            .read(vehicleFaultRepositoryProvider)
+            .getFaults(existing.id);
         declaration = FaultDeclaration.fromJson({
           'state': existing.faultDeclaration.state,
-          'faults': rows.map((fault) => {
-            'id': fault.id,
-            'category': fault.category,
-            'title': fault.title,
-            'description': fault.description,
-            'severity': fault.severity,
-            'status': fault.status,
-            'affects_drivability': fault.affectsDrivability,
-            'is_safety_critical': fault.isSafetyCritical,
-            'disclosed_to_buyer': fault.disclosedToBuyer,
-            'editable': true,
-          }).toList(),
+          'faults': rows
+              .map(
+                (fault) => {
+                  'id': fault.id,
+                  'category': fault.category,
+                  'title': fault.title,
+                  'description': fault.description,
+                  'severity': fault.severity,
+                  'status': fault.status,
+                  'affects_drivability': fault.affectsDrivability,
+                  'is_safety_critical': fault.isSafetyCritical,
+                  'disclosed_to_buyer': fault.disclosedToBuyer,
+                  'editable': true,
+                },
+              )
+              .toList(),
         });
       }
-      if (!mounted || generation != _faultLoadGeneration || !_canDeclareFaults) return;
+      if (!mounted || generation != _faultLoadGeneration || !_canDeclareFaults)
+        return;
       setState(() {
         _faultDeclaration = declaration;
         _faultBaseline = jsonEncode(declaration.toPayload());
@@ -330,7 +340,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(messageFor(_faultsLoadError!, l10n: l10n)),
-                  TextButton(onPressed: _loadFaultDeclaration, child: Text(l10n.commonRetry)),
+                  TextButton(
+                    onPressed: _loadFaultDeclaration,
+                    child: Text(l10n.commonRetry),
+                  ),
                 ],
               )
             else
@@ -342,7 +355,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               staffStatuses: !widget.mode.estPartenaire,
               onChanged: (declaration) => setState(() {
                 _faultDeclaration = declaration;
-                _faultsDirty = jsonEncode(declaration.toPayload()) != _faultBaseline;
+                _faultsDirty =
+                    jsonEncode(declaration.toPayload()) != _faultBaseline;
               }),
             ),
         ],
@@ -576,7 +590,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     final int? mileage = _mileageCtrl.text.isNotEmpty
         ? int.tryParse(_mileageCtrl.text.replaceAll(RegExp(r'\D'), ''))
         : null;
-    final clearingMileage = _existing != null &&
+    final clearingMileage =
+        _existing != null &&
         _existing!.isRegistered == _immatricule &&
         _existing!.mileageKm != null &&
         mileage == null;
@@ -649,7 +664,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         'features': _selectedFeatureIds.toList(),
       if (widget.mode.peutChoisirLaBoutique && _selectedLocation != null)
         'location_id': _selectedLocation!.id,
-      if (widget.mode.peutChoisirLaBoutique && _selectedPartnerId != null)
+      if (widget.mode.peutChoisirLaBoutique &&
+          ref.read(authProvider).canManageCatalog &&
+          _selectedPartnerId != null)
         'partner_id': _selectedPartnerId,
       // Kilométrage → sous-objet selon le STATUT, et non plus selon la
       // présence d'une plaque :
@@ -677,9 +694,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         'deal_ends_at': _promotion.fin?.toIso8601String(),
       } else if (widget.mode.estPartenaire && _existing != null)
         'deal_price': null,
-      if (!_immatricule && (mileage != null || clearingMileage || _paysOrigine != null))
+      if (!_immatricule &&
+          (mileage != null || clearingMileage || _paysOrigine != null))
         'import': {
-          if (mileage != null || clearingMileage) 'odometer_at_import_km': mileage,
+          if (mileage != null || clearingMileage)
+            'odometer_at_import_km': mileage,
           'origin_country_id': ?_paysOrigine?.id,
         },
     };
@@ -1062,7 +1081,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     return Step(
       title: Text(l10n.vehiclesIdentityTitle),
       subtitle: _brand != null
-          ? Text(_model == null ? _brand!.name : referenceModelDisplayName(_model!, l10n))
+          ? Text(
+              _model == null
+                  ? _brand!.name
+                  : referenceModelDisplayName(_model!, l10n),
+            )
           : null,
       isActive: _step >= 1,
       content: Form(
@@ -1200,10 +1223,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   /// ligne qui annonce des tirets.
   Widget? _resumeTechnique() {
     final parts = <String>[
-      if (_engineType != null) referenceFuelLabel(_engineType!.code, _engineType!.label, l10n),
-      if (_transmission.isNotEmpty)
-        transmissionLabel(_transmission, l10n),
-      if (_drivetrain != null) referenceDrivetrainLabel(_drivetrain!.code, _drivetrain!.label, l10n),
+      if (_engineType != null)
+        referenceFuelLabel(_engineType!.code, _engineType!.label, l10n),
+      if (_transmission.isNotEmpty) transmissionLabel(_transmission, l10n),
+      if (_drivetrain != null)
+        referenceDrivetrainLabel(_drivetrain!.code, _drivetrain!.label, l10n),
       if (_powerCtrl.text.trim().isNotEmpty)
         l10n.vehiclesPowerSummary(_powerCtrl.text.trim()),
     ];
@@ -1654,8 +1678,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             //
             // Le fournisseur source est une relation de la boutique. Un
             // partenaire n'a pas a rattacher son vehicule a un tiers, et le
-            // serveur refuse `partner_id`.
-            if (widget.mode.peutChoisirLaBoutique) ...[
+            // serveur refuse `partner_id`. Le mode du formulaire ne constitue
+            // pas une autorisation : meme un lien direct vers le formulaire
+            // personnel doit verifier le role de la session.
+            if (widget.mode.peutChoisirLaBoutique &&
+                ref.watch(authProvider).canManageCatalog) ...[
               const SizedBox(height: 4),
               const Divider(),
               const SizedBox(height: 4),

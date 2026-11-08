@@ -1,3 +1,4 @@
+import '../widgets/garage_registration_prompt.dart';
 import '../../../catalog/presentation/catalog_reference_labels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -164,10 +165,10 @@ class _PartListPageState extends ConsumerState<PartListPage> {
               // Voir vehicle_list_page.dart. Sur CETTE liste le defaut etait
               // total : `PartFilter` n'avait pas de `clearSearch`, donc le
               // bouton « ✕ » ne nettoyait pas davantage que le clavier.
-              onChanged: (q) => ref.read(partFilterProvider.notifier).state =
-                  q.isEmpty
-                      ? filter.copyWith(clearSearch: true)
-                      : filter.copyWith(search: q),
+              onChanged: (q) =>
+                  ref.read(partFilterProvider.notifier).state = q.isEmpty
+                  ? filter.copyWith(clearSearch: true)
+                  : filter.copyWith(search: q),
             ),
           ),
         ),
@@ -178,6 +179,7 @@ class _PartListPageState extends ConsumerState<PartListPage> {
           _FilterBar(filter: filter, cities: cities),
           // Filtre "pour mon véhicule" — visible uniquement pour les clients connectés.
           if (!isStaff) const _GarageFilterBanner(),
+          const GarageRegistrationPrompt(),
           Expanded(
             child: _Body(paged: paged, scrollCtrl: _scrollCtrl),
           ),
@@ -286,7 +288,9 @@ class _FilterBar extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              label: Text(catalogPartCategoryLabel(c.name, AppLocalizations.of(context))),
+              label: Text(
+                catalogPartCategoryLabel(c.name, AppLocalizations.of(context)),
+              ),
               selected: filter.categoryId == c.id,
               onSelected: (_) => update(
                 (f) => f.categoryId == c.id

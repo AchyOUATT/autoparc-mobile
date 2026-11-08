@@ -51,6 +51,18 @@ void main() {
           as List<dynamic>;
 
   group('Catalogue', () {
+    test('une origine inconnue se lit sans inventer de type', () {
+      final json = Map<String, dynamic>.from(objet('part_detail')['data'] as Map);
+      for (final type in [null, 'unknown']) {
+        final part = Part.fromJson({...json, 'type': type});
+        expect(part.type, isNull);
+        expect(part.condition, json['condition']);
+      }
+      for (final type in ['oem', 'oes', 'aftermarket', 'salvage']) {
+        expect(Part.fromJson({...json, 'type': type}).type, type);
+      }
+    });
+
     test('la liste des véhicules se lit entièrement', () {
       final page = PaginatedResponse.fromJson(objet('vehicles_list'), Vehicle.fromJson);
 
