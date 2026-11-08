@@ -42,9 +42,9 @@ void main() {
           // Nul : le serveur n'a pas répondu, ou pas encore — le drapeau est
           // alors FAUX, et c'est le cas du premier lancement à froid.
           plancherDeVersionProvider.overrideWith(
-            (_) async => espaceOuvert == null
+            (_) => Stream.value(espaceOuvert == null
                 ? null
-                : PlancherDeVersion(espacePartenaireOuvert: espaceOuvert),
+                : PlancherDeVersion(espacePartenaireOuvert: espaceOuvert)),
           ),
         ],
         child: MaterialApp(
@@ -152,7 +152,7 @@ void main() {
             partnerRepositoryProvider.overrideWithValue(
               FauxDepotPartenaire()..profilAuCoffre = profilDeBanc(),
             ),
-            plancherDeVersionProvider.overrideWith((_) async => null),
+            plancherDeVersionProvider.overrideWith((_) => Stream.value(null)),
           ],
           child: MaterialApp(
             locale: const Locale('fr'),
