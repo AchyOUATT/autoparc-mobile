@@ -740,6 +740,12 @@ abstract class AppLocalizations {
   /// **'Modèle hors catalogue : compatibilité indisponible'**
   String get catalogGarageFitmentUnknownModel;
 
+  /// No description provided for @catalogGarageInviteBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoutez votre véhicule au garage pour affiner vos recherches.'**
+  String get catalogGarageInviteBody;
+
   /// Puce du bandeau de garage qui restreint la liste aux pièces compatibles avec le véhicule choisi. Elle vit dans un bandeau dont la hauteur a été rabaissée sous les 48 points de cible tactile standard, donc sa largeur est comptée : « Fitting only » déborderait, « Fitting » tient.
   ///
   /// In fr, this message translates to:

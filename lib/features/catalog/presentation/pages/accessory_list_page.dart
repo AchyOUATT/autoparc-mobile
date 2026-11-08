@@ -1,3 +1,4 @@
+import '../widgets/garage_registration_prompt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -161,8 +162,8 @@ class _AccessoryListPageState extends ConsumerState<AccessoryListPage> {
               // dans ce `copyWith`, donc effacer au clavier ne faisait rien.
               onChanged: (q) =>
                   ref.read(accessoryFilterProvider.notifier).state = q.isEmpty
-                      ? filter.copyWith(clearSearch: true)
-                      : filter.copyWith(search: q),
+                  ? filter.copyWith(clearSearch: true)
+                  : filter.copyWith(search: q),
             ),
           ),
         ),
@@ -171,6 +172,7 @@ class _AccessoryListPageState extends ConsumerState<AccessoryListPage> {
       body: Column(
         children: [
           _FilterBar(filter: filter, cities: cities),
+          const GarageRegistrationPrompt(),
           Expanded(
             child: _Body(paged: paged, scrollCtrl: _scrollCtrl),
           ),

@@ -493,6 +493,7 @@
   "@catalogGarageFitmentUnknownModel": {
     "description": "Remplace l'infobulle précédente quand le véhicule du garage porte un modèle tapé à la main : le catalogue ne le connaît pas, la puce est grisée, et son motif est dit plutôt que tu — une puce inerte et sans explication se lit comme une panne."
   },
+  "catalogGarageInviteBody": "Ajoutez votre véhicule au garage pour affiner vos recherches.",
   "catalogGarageFitmentChip": "Compatibles",
   "@catalogGarageFitmentChip": {
     "description": "Puce du bandeau de garage qui restreint la liste aux pièces compatibles avec le véhicule choisi. Elle vit dans un bandeau dont la hauteur a été rabaissée sous les 48 points de cible tactile standard, donc sa largeur est comptée : « Fitting only » déborderait, « Fitting » tient."
