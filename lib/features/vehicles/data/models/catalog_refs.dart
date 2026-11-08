@@ -28,6 +28,11 @@ class ModelRef {
   final int brandId;
   final String name;
   final String? generation;
+  final String? equipmentCategory;
+
+  bool get isEquipment =>
+      equipmentCategory != null && equipmentCategory!.isNotEmpty;
+
   /// Type de carrosserie stocké sur le modèle (peut être libre ou une valeur
   /// normalisée : 'sedan' | 'suv' | 'pickup' | 'hatchback' | 'van' | 'minibus' |
   /// 'bus' | 'estate' | 'coupe' | 'convertible' | 'truck' | 'other').
@@ -76,6 +81,7 @@ class ModelRef {
     required this.brandId,
     required this.name,
     this.generation,
+    this.equipmentCategory,
     this.bodyType,
     this.productionStart,
     this.productionEnd,
@@ -92,6 +98,7 @@ class ModelRef {
     brandId:             j['brand_id']              as int,
     name:                j['name']                  as String,
     generation:          j['generation']             as String?,
+    equipmentCategory:   j['equipment_category']     as String?,
     bodyType:            j['body_type']              as String?,
     productionStart:     j['production_start']       as int?,
     productionEnd:       j['production_end']         as int?,
@@ -177,7 +184,8 @@ class ModelRef {
   }
 
   /// Retourne le type de véhicule : valeur DB en priorité, sinon inférence.
-  String? get resolvedVehicleType => defaultVehicleType ?? inferredVehicleType;
+  String? get resolvedVehicleType =>
+      isEquipment ? null : defaultVehicleType ?? inferredVehicleType;
 
   /// Déduit le type de véhicule ('passenger' | 'utility' | 'heavy') à partir
   /// du body style inféré. Retourne null si inconnu.
@@ -338,11 +346,26 @@ class CatalogRefs {
   /// s'afficher avec son nom. On filtre ce qu'on PROPOSE, pas ce qu'on LIT.
   /// Le filtre facultatif utilise la carrosserie normalisée ; les données
   /// sans carrosserie restent accessibles en demandant la liste complète.
-  List<ModelRef> modelsForBrand(int brandId, {String? bodyStyle}) =>
-      vehicleModels.where((m) =>
-          m.brandId == brandId && m.isActive &&
-          (bodyStyle == null || bodyStyle == 'other' || m.inferredBodyStyle == bodyStyle))
-          .toList();
+  List<ModelRef> modelsForBrand(
+    int brandId, {
+    String? bodyStyle,
+    String assetKind = 'road_vehicle',
+    String? equipmentType,
+  }) => vehicleModels
+      .where(
+        (m) =>
+            m.brandId == brandId &&
+            m.isActive &&
+            (assetKind == 'equipment'
+                ? m.isEquipment &&
+                      (equipmentType == null ||
+                          m.equipmentCategory == equipmentType)
+                : !m.isEquipment) &&
+            (bodyStyle == null ||
+                bodyStyle == 'other' ||
+                m.inferredBodyStyle == bodyStyle),
+      )
+      .toList();
 
   List<TrimRef> trimsForModel(int modelId) =>
       trims.where((t) => t.vehicleModelId == modelId).toList();

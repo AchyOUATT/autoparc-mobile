@@ -10708,6 +10708,570 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Location : {amount} / semaine'**
   String partnerAccountsRentalWeekly(String amount);
+
+  /// No description provided for @equipmentDetailsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Engin et matériel'**
+  String get equipmentDetailsTitle;
+
+  /// No description provided for @equipmentDeclared.
+  ///
+  /// In fr, this message translates to:
+  /// **'Données déclarées'**
+  String get equipmentDeclared;
+
+  /// No description provided for @equipmentTypeLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type d’engin'**
+  String get equipmentTypeLabel;
+
+  /// No description provided for @equipmentTypeRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez un type d’engin.'**
+  String get equipmentTypeRequired;
+
+  /// No description provided for @equipmentTypeAgriculturalTractor.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tracteur agricole'**
+  String get equipmentTypeAgriculturalTractor;
+
+  /// No description provided for @equipmentTypeAerialPlatform.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nacelle / plateforme élévatrice'**
+  String get equipmentTypeAerialPlatform;
+
+  /// No description provided for @equipmentTypeExcavator.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pelle / mini-pelle'**
+  String get equipmentTypeExcavator;
+
+  /// No description provided for @equipmentTypeBackhoeLoader.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tractopelle'**
+  String get equipmentTypeBackhoeLoader;
+
+  /// No description provided for @equipmentTypeLoader.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chargeuse'**
+  String get equipmentTypeLoader;
+
+  /// No description provided for @equipmentTypeTelehandler.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chariot télescopique'**
+  String get equipmentTypeTelehandler;
+
+  /// No description provided for @equipmentTypeForklift.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chariot élévateur'**
+  String get equipmentTypeForklift;
+
+  /// No description provided for @equipmentTypeGenerator.
+  ///
+  /// In fr, this message translates to:
+  /// **'Groupe électrogène'**
+  String get equipmentTypeGenerator;
+
+  /// No description provided for @equipmentTypeOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre matériel'**
+  String get equipmentTypeOther;
+
+  /// No description provided for @equipmentBrand.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marque'**
+  String get equipmentBrand;
+
+  /// No description provided for @equipmentModel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modèle / désignation'**
+  String get equipmentModel;
+
+  /// No description provided for @equipmentBrandLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marque *'**
+  String get equipmentBrandLabel;
+
+  /// No description provided for @equipmentModelLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modèle ou désignation *'**
+  String get equipmentModelLabel;
+
+  /// No description provided for @equipmentBrandNotListed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ma marque n’est pas dans la liste'**
+  String get equipmentBrandNotListed;
+
+  /// No description provided for @equipmentModelNotListed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon modèle n’est pas dans la liste'**
+  String get equipmentModelNotListed;
+
+  /// No description provided for @equipmentSerialNumber.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro de série'**
+  String get equipmentSerialNumber;
+
+  /// No description provided for @equipmentRegistrationNumber.
+  ///
+  /// In fr, this message translates to:
+  /// **'Immatriculation, si applicable'**
+  String get equipmentRegistrationNumber;
+
+  /// No description provided for @equipmentParkNumber.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro de parc / chantier'**
+  String get equipmentParkNumber;
+
+  /// No description provided for @equipmentOperatingHours.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heures de fonctionnement (h)'**
+  String get equipmentOperatingHours;
+
+  /// No description provided for @equipmentHourReadingDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date du relevé (AAAA-MM-JJ)'**
+  String get equipmentHourReadingDate;
+
+  /// No description provided for @equipmentOdometerKm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compteur kilométrique (km)'**
+  String get equipmentOdometerKm;
+
+  /// No description provided for @equipmentPowerKw.
+  ///
+  /// In fr, this message translates to:
+  /// **'Puissance (kW)'**
+  String get equipmentPowerKw;
+
+  /// No description provided for @equipmentTransmission.
+  ///
+  /// In fr, this message translates to:
+  /// **'Transmission'**
+  String get equipmentTransmission;
+
+  /// No description provided for @equipmentRatedLoadKg.
+  ///
+  /// In fr, this message translates to:
+  /// **'Charge admissible (kg)'**
+  String get equipmentRatedLoadKg;
+
+  /// No description provided for @equipmentWorkingHeightM.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hauteur de travail (m)'**
+  String get equipmentWorkingHeightM;
+
+  /// No description provided for @equipmentOutreachM.
+  ///
+  /// In fr, this message translates to:
+  /// **'Déport / portée (m)'**
+  String get equipmentOutreachM;
+
+  /// No description provided for @equipmentLiftHeightM.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hauteur de levage (m)'**
+  String get equipmentLiftHeightM;
+
+  /// No description provided for @equipmentOperatingWeightKg.
+  ///
+  /// In fr, this message translates to:
+  /// **'Masse en fonctionnement (kg)'**
+  String get equipmentOperatingWeightKg;
+
+  /// No description provided for @equipmentBucketCapacityM3.
+  ///
+  /// In fr, this message translates to:
+  /// **'Volume du godet (m³)'**
+  String get equipmentBucketCapacityM3;
+
+  /// No description provided for @equipmentPtoRpm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prise de force (tr/min)'**
+  String get equipmentPtoRpm;
+
+  /// No description provided for @equipmentCabin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cabine'**
+  String get equipmentCabin;
+
+  /// No description provided for @equipmentQuickCoupler.
+  ///
+  /// In fr, this message translates to:
+  /// **'Attache rapide'**
+  String get equipmentQuickCoupler;
+
+  /// No description provided for @equipmentAttachments.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipements, outils et accessoires'**
+  String get equipmentAttachments;
+
+  /// No description provided for @equipmentEngineSerialNumber.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro de série du moteur'**
+  String get equipmentEngineSerialNumber;
+
+  /// No description provided for @equipmentTransmissionMechanical.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mécanique'**
+  String get equipmentTransmissionMechanical;
+
+  /// No description provided for @equipmentTransmissionHydrostatic.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hydrostatique'**
+  String get equipmentTransmissionHydrostatic;
+
+  /// No description provided for @equipmentTransmissionPowershift.
+  ///
+  /// In fr, this message translates to:
+  /// **'Powershift'**
+  String get equipmentTransmissionPowershift;
+
+  /// No description provided for @equipmentTransmissionElectric.
+  ///
+  /// In fr, this message translates to:
+  /// **'Électrique'**
+  String get equipmentTransmissionElectric;
+
+  /// No description provided for @equipmentTransmissionOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre'**
+  String get equipmentTransmissionOther;
+
+  /// No description provided for @equipmentCabinOpen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouverte'**
+  String get equipmentCabinOpen;
+
+  /// No description provided for @equipmentCabinClosed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fermée'**
+  String get equipmentCabinClosed;
+
+  /// No description provided for @equipmentCabinAirConditioned.
+  ///
+  /// In fr, this message translates to:
+  /// **'Climatisée'**
+  String get equipmentCabinAirConditioned;
+
+  /// No description provided for @equipmentYes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oui'**
+  String get equipmentYes;
+
+  /// No description provided for @equipmentNo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non'**
+  String get equipmentNo;
+
+  /// No description provided for @equipmentCreateSaleTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre un engin en vente'**
+  String get equipmentCreateSaleTitle;
+
+  /// No description provided for @equipmentCreateRentalTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mettre un engin en location'**
+  String get equipmentCreateRentalTitle;
+
+  /// No description provided for @equipmentEditTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier l’engin'**
+  String get equipmentEditTitle;
+
+  /// No description provided for @equipmentFormIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renseignez le type, la marque, le modèle et le tarif. Les autres informations peuvent être complétées plus tard.'**
+  String get equipmentFormIntro;
+
+  /// No description provided for @equipmentYearLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Année, si connue'**
+  String get equipmentYearLabel;
+
+  /// No description provided for @equipmentFuelLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Carburant / énergie — facultatif'**
+  String get equipmentFuelLabel;
+
+  /// No description provided for @equipmentFuelNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Énergie non renseignée'**
+  String get equipmentFuelNone;
+
+  /// No description provided for @equipmentOptionalIdentity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Identification complémentaire — facultatif'**
+  String get equipmentOptionalIdentity;
+
+  /// No description provided for @equipmentOptionalTechnical.
+  ///
+  /// In fr, this message translates to:
+  /// **'Caractéristiques techniques — facultatif'**
+  String get equipmentOptionalTechnical;
+
+  /// No description provided for @equipmentOptionalAttachments.
+  ///
+  /// In fr, this message translates to:
+  /// **'Équipements et précisions — facultatif'**
+  String get equipmentOptionalAttachments;
+
+  /// No description provided for @equipmentValueInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez un nombre positif ou nul dans l’unité indiquée.'**
+  String get equipmentValueInvalid;
+
+  /// No description provided for @equipmentDateInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez une date valide, sans dépasser aujourd’hui.'**
+  String get equipmentDateInvalid;
+
+  /// No description provided for @equipmentSave.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer l’engin'**
+  String get equipmentSave;
+
+  /// No description provided for @equipmentDocuments.
+  ///
+  /// In fr, this message translates to:
+  /// **'Documents de l’engin'**
+  String get equipmentDocuments;
+
+  /// No description provided for @equipmentUnknown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non renseigné'**
+  String get equipmentUnknown;
+
+  /// No description provided for @equipmentSalePriceRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renseignez le prix de vente.'**
+  String get equipmentSalePriceRequired;
+
+  /// No description provided for @equipmentOptionalTextHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renseignez uniquement les informations connues.'**
+  String get equipmentOptionalTextHint;
+
+  /// No description provided for @equipmentIdentityTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'L’engin'**
+  String get equipmentIdentityTitle;
+
+  /// No description provided for @equipmentPricesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tarifs et disponibilité'**
+  String get equipmentPricesTitle;
+
+  /// No description provided for @equipmentDocumentAfterSaveHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les photos et documents peuvent être ajoutés après l’enregistrement.'**
+  String get equipmentDocumentAfterSaveHint;
+
+  /// No description provided for @vehicleRegistrationFamilyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quel type de bien souhaitez-vous enregistrer ?'**
+  String get vehicleRegistrationFamilyTitle;
+
+  /// No description provided for @vehicleRegistrationRoadTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Véhicule routier'**
+  String get vehicleRegistrationRoadTitle;
+
+  /// No description provided for @vehicleRegistrationRoadHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voiture, utilitaire ou poids lourd.'**
+  String get vehicleRegistrationRoadHelp;
+
+  /// No description provided for @vehicleRegistrationEquipmentTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Engins et matériels'**
+  String get vehicleRegistrationEquipmentTitle;
+
+  /// No description provided for @vehicleRegistrationEquipmentHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tracteur agricole, nacelle, pelle, chariot ou autre matériel.'**
+  String get vehicleRegistrationEquipmentHelp;
+
+  /// No description provided for @equipmentDocumentsPrivateHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ces justificatifs sont privés. Ils ne sont pas affichés dans l’annonce publique.'**
+  String get equipmentDocumentsPrivateHint;
+
+  /// No description provided for @equipmentDocumentAdd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter un document'**
+  String get equipmentDocumentAdd;
+
+  /// No description provided for @equipmentDocumentEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun document ajouté. Cette étape est facultative.'**
+  String get equipmentDocumentEmpty;
+
+  /// No description provided for @equipmentDocumentType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type de document'**
+  String get equipmentDocumentType;
+
+  /// No description provided for @equipmentDocumentOwnership.
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre de propriété'**
+  String get equipmentDocumentOwnership;
+
+  /// No description provided for @equipmentDocumentRegistration.
+  ///
+  /// In fr, this message translates to:
+  /// **'Immatriculation'**
+  String get equipmentDocumentRegistration;
+
+  /// No description provided for @equipmentDocumentInspection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contrôle / inspection'**
+  String get equipmentDocumentInspection;
+
+  /// No description provided for @equipmentDocumentInsurance.
+  ///
+  /// In fr, this message translates to:
+  /// **'Assurance'**
+  String get equipmentDocumentInsurance;
+
+  /// No description provided for @equipmentDocumentOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre justificatif'**
+  String get equipmentDocumentOther;
+
+  /// No description provided for @equipmentDocumentExpiry.
+  ///
+  /// In fr, this message translates to:
+  /// **'Expiration — facultatif (AAAA-MM-JJ)'**
+  String get equipmentDocumentExpiry;
+
+  /// No description provided for @equipmentDocumentSelect.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir le fichier'**
+  String get equipmentDocumentSelect;
+
+  /// No description provided for @equipmentDocumentFormats.
+  ///
+  /// In fr, this message translates to:
+  /// **'PDF, JPEG, PNG ou WebP, 8 Mo maximum.'**
+  String get equipmentDocumentFormats;
+
+  /// No description provided for @equipmentDocumentTooLarge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le fichier dépasse la limite de 8 Mo.'**
+  String get equipmentDocumentTooLarge;
+
+  /// No description provided for @equipmentDocumentProvided.
+  ///
+  /// In fr, this message translates to:
+  /// **'Document fourni — non vérifié'**
+  String get equipmentDocumentProvided;
+
+  /// No description provided for @equipmentDocumentExport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer ou partager le document'**
+  String get equipmentDocumentExport;
+
+  /// No description provided for @equipmentDocumentDelete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer le document'**
+  String get equipmentDocumentDelete;
+
+  /// No description provided for @equipmentDocumentDeleteConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer ce document de l’engin ?'**
+  String get equipmentDocumentDeleteConfirm;
+
+  /// No description provided for @equipmentDocumentExpired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Document expiré'**
+  String get equipmentDocumentExpired;
+
+  /// No description provided for @equipmentDocumentSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Document ajouté'**
+  String get equipmentDocumentSaved;
+
+  /// No description provided for @equipmentDocumentDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Document supprimé'**
+  String get equipmentDocumentDeleted;
+
+  /// No description provided for @equipmentDocumentDateInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez une date valide au format AAAA-MM-JJ.'**
+  String get equipmentDocumentDateInvalid;
 }
 
 class _AppLocalizationsDelegate

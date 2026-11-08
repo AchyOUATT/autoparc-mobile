@@ -154,6 +154,7 @@ dependencies:
   # Seule la plateforme connaît donc le numéro embarqué dans l'APK — côté
   # Android il se lit dans le PackageManager, pas dans le code.
   package_info_plus: ^8.3.1
+  file_picker: ^10.3.10
 
 dev_dependencies:
   flutter_test:

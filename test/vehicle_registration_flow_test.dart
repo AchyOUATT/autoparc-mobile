@@ -4,6 +4,7 @@ import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
 import 'package:auto/features/catalog/data/models/vehicle.dart';
 import 'package:auto/features/vehicles/data/models/catalog_refs.dart';
 import 'package:auto/features/vehicles/presentation/pages/rental_vehicle_register_page.dart';
+import 'package:auto/features/vehicles/presentation/pages/equipment_register_page.dart';
 import 'package:auto/features/vehicles/presentation/pages/vehicle_form_mode.dart';
 import 'package:auto/features/vehicles/presentation/pages/vehicle_register_page.dart';
 import 'package:auto/features/vehicles/presentation/pages/vehicle_registration_page.dart';
@@ -113,6 +114,8 @@ void main() {
       );
       await tester.pump();
 
+      await tester.tap(find.byKey(const ValueKey('vehicle-registration-road')));
+      await tester.pump();
       final rental = tester.widget<RentalVehicleRegisterPage>(
         find.byType(RentalVehicleRegisterPage),
       );
@@ -133,6 +136,8 @@ void main() {
       await tester.tap(sale);
       await tester.pump();
 
+      await tester.tap(find.byKey(const ValueKey('vehicle-registration-road')));
+      await tester.pump();
       final form = tester.widget<VehicleRegisterPage>(
         find.byType(VehicleRegisterPage),
       );
@@ -142,6 +147,35 @@ void main() {
       expect(find.byType(RentalVehicleRegisterPage), findsNothing);
       expect(tester.takeException(), isNull);
     });
+  }
+
+  for (final mode in VehicleFormMode.values) {
+    for (final purpose in ['sale', 'rental']) {
+      testWidgets('new $mode $purpose can register equipment', (tester) async {
+        await _mount(tester, mode: mode);
+        final choice = find.byKey(ValueKey('vehicle-registration-$purpose'));
+        await tester.ensureVisible(choice);
+        await tester.tap(choice);
+        await tester.pump();
+        expect(
+          find.byKey(const ValueKey('vehicle-registration-family')),
+          findsOneWidget,
+        );
+        final equipment = find.byKey(
+          const ValueKey('vehicle-registration-equipment'),
+        );
+        await tester.ensureVisible(equipment);
+        await tester.tap(equipment);
+        await tester.pump();
+        final form = tester.widget<EquipmentRegisterPage>(
+          find.byType(EquipmentRegisterPage),
+        );
+        expect(form.mode, mode);
+        expect(form.initialAvailability, purpose == 'sale' ? 'sale' : 'rent');
+        expect(find.byType(VehicleRegisterPage), findsNothing);
+        expect(find.byType(RentalVehicleRegisterPage), findsNothing);
+      });
+    }
   }
 
   testWidgets('editing a rental skips the choice and preserves the vehicle', (
@@ -228,6 +262,9 @@ void main() {
       );
       await tester.pump();
       expect(completions, 0);
+
+      await tester.tap(find.byKey(const ValueKey('vehicle-registration-road')));
+      await tester.pump();
 
       Navigator.of(
         tester.element(find.byType(RentalVehicleRegisterPage)),

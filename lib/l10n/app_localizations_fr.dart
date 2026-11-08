@@ -6045,4 +6045,303 @@ class AppLocalizationsFr extends AppLocalizations {
   String partnerAccountsRentalWeekly(String amount) {
     return 'Location : $amount / semaine';
   }
+
+  @override
+  String get equipmentDetailsTitle => 'Engin et matériel';
+
+  @override
+  String get equipmentDeclared => 'Données déclarées';
+
+  @override
+  String get equipmentTypeLabel => 'Type d’engin';
+
+  @override
+  String get equipmentTypeRequired => 'Choisissez un type d’engin.';
+
+  @override
+  String get equipmentTypeAgriculturalTractor => 'Tracteur agricole';
+
+  @override
+  String get equipmentTypeAerialPlatform => 'Nacelle / plateforme élévatrice';
+
+  @override
+  String get equipmentTypeExcavator => 'Pelle / mini-pelle';
+
+  @override
+  String get equipmentTypeBackhoeLoader => 'Tractopelle';
+
+  @override
+  String get equipmentTypeLoader => 'Chargeuse';
+
+  @override
+  String get equipmentTypeTelehandler => 'Chariot télescopique';
+
+  @override
+  String get equipmentTypeForklift => 'Chariot élévateur';
+
+  @override
+  String get equipmentTypeGenerator => 'Groupe électrogène';
+
+  @override
+  String get equipmentTypeOther => 'Autre matériel';
+
+  @override
+  String get equipmentBrand => 'Marque';
+
+  @override
+  String get equipmentModel => 'Modèle / désignation';
+
+  @override
+  String get equipmentBrandLabel => 'Marque *';
+
+  @override
+  String get equipmentModelLabel => 'Modèle ou désignation *';
+
+  @override
+  String get equipmentBrandNotListed => 'Ma marque n’est pas dans la liste';
+
+  @override
+  String get equipmentModelNotListed => 'Mon modèle n’est pas dans la liste';
+
+  @override
+  String get equipmentSerialNumber => 'Numéro de série';
+
+  @override
+  String get equipmentRegistrationNumber => 'Immatriculation, si applicable';
+
+  @override
+  String get equipmentParkNumber => 'Numéro de parc / chantier';
+
+  @override
+  String get equipmentOperatingHours => 'Heures de fonctionnement (h)';
+
+  @override
+  String get equipmentHourReadingDate => 'Date du relevé (AAAA-MM-JJ)';
+
+  @override
+  String get equipmentOdometerKm => 'Compteur kilométrique (km)';
+
+  @override
+  String get equipmentPowerKw => 'Puissance (kW)';
+
+  @override
+  String get equipmentTransmission => 'Transmission';
+
+  @override
+  String get equipmentRatedLoadKg => 'Charge admissible (kg)';
+
+  @override
+  String get equipmentWorkingHeightM => 'Hauteur de travail (m)';
+
+  @override
+  String get equipmentOutreachM => 'Déport / portée (m)';
+
+  @override
+  String get equipmentLiftHeightM => 'Hauteur de levage (m)';
+
+  @override
+  String get equipmentOperatingWeightKg => 'Masse en fonctionnement (kg)';
+
+  @override
+  String get equipmentBucketCapacityM3 => 'Volume du godet (m³)';
+
+  @override
+  String get equipmentPtoRpm => 'Prise de force (tr/min)';
+
+  @override
+  String get equipmentCabin => 'Cabine';
+
+  @override
+  String get equipmentQuickCoupler => 'Attache rapide';
+
+  @override
+  String get equipmentAttachments => 'Équipements, outils et accessoires';
+
+  @override
+  String get equipmentEngineSerialNumber => 'Numéro de série du moteur';
+
+  @override
+  String get equipmentTransmissionMechanical => 'Mécanique';
+
+  @override
+  String get equipmentTransmissionHydrostatic => 'Hydrostatique';
+
+  @override
+  String get equipmentTransmissionPowershift => 'Powershift';
+
+  @override
+  String get equipmentTransmissionElectric => 'Électrique';
+
+  @override
+  String get equipmentTransmissionOther => 'Autre';
+
+  @override
+  String get equipmentCabinOpen => 'Ouverte';
+
+  @override
+  String get equipmentCabinClosed => 'Fermée';
+
+  @override
+  String get equipmentCabinAirConditioned => 'Climatisée';
+
+  @override
+  String get equipmentYes => 'Oui';
+
+  @override
+  String get equipmentNo => 'Non';
+
+  @override
+  String get equipmentCreateSaleTitle => 'Mettre un engin en vente';
+
+  @override
+  String get equipmentCreateRentalTitle => 'Mettre un engin en location';
+
+  @override
+  String get equipmentEditTitle => 'Modifier l’engin';
+
+  @override
+  String get equipmentFormIntro =>
+      'Renseignez le type, la marque, le modèle et le tarif. Les autres informations peuvent être complétées plus tard.';
+
+  @override
+  String get equipmentYearLabel => 'Année, si connue';
+
+  @override
+  String get equipmentFuelLabel => 'Carburant / énergie — facultatif';
+
+  @override
+  String get equipmentFuelNone => 'Énergie non renseignée';
+
+  @override
+  String get equipmentOptionalIdentity =>
+      'Identification complémentaire — facultatif';
+
+  @override
+  String get equipmentOptionalTechnical =>
+      'Caractéristiques techniques — facultatif';
+
+  @override
+  String get equipmentOptionalAttachments =>
+      'Équipements et précisions — facultatif';
+
+  @override
+  String get equipmentValueInvalid =>
+      'Saisissez un nombre positif ou nul dans l’unité indiquée.';
+
+  @override
+  String get equipmentDateInvalid =>
+      'Saisissez une date valide, sans dépasser aujourd’hui.';
+
+  @override
+  String get equipmentSave => 'Enregistrer l’engin';
+
+  @override
+  String get equipmentDocuments => 'Documents de l’engin';
+
+  @override
+  String get equipmentUnknown => 'Non renseigné';
+
+  @override
+  String get equipmentSalePriceRequired => 'Renseignez le prix de vente.';
+
+  @override
+  String get equipmentOptionalTextHint =>
+      'Renseignez uniquement les informations connues.';
+
+  @override
+  String get equipmentIdentityTitle => 'L’engin';
+
+  @override
+  String get equipmentPricesTitle => 'Tarifs et disponibilité';
+
+  @override
+  String get equipmentDocumentAfterSaveHint =>
+      'Les photos et documents peuvent être ajoutés après l’enregistrement.';
+
+  @override
+  String get vehicleRegistrationFamilyTitle =>
+      'Quel type de bien souhaitez-vous enregistrer ?';
+
+  @override
+  String get vehicleRegistrationRoadTitle => 'Véhicule routier';
+
+  @override
+  String get vehicleRegistrationRoadHelp =>
+      'Voiture, utilitaire ou poids lourd.';
+
+  @override
+  String get vehicleRegistrationEquipmentTitle => 'Engins et matériels';
+
+  @override
+  String get vehicleRegistrationEquipmentHelp =>
+      'Tracteur agricole, nacelle, pelle, chariot ou autre matériel.';
+
+  @override
+  String get equipmentDocumentsPrivateHint =>
+      'Ces justificatifs sont privés. Ils ne sont pas affichés dans l’annonce publique.';
+
+  @override
+  String get equipmentDocumentAdd => 'Ajouter un document';
+
+  @override
+  String get equipmentDocumentEmpty =>
+      'Aucun document ajouté. Cette étape est facultative.';
+
+  @override
+  String get equipmentDocumentType => 'Type de document';
+
+  @override
+  String get equipmentDocumentOwnership => 'Titre de propriété';
+
+  @override
+  String get equipmentDocumentRegistration => 'Immatriculation';
+
+  @override
+  String get equipmentDocumentInspection => 'Contrôle / inspection';
+
+  @override
+  String get equipmentDocumentInsurance => 'Assurance';
+
+  @override
+  String get equipmentDocumentOther => 'Autre justificatif';
+
+  @override
+  String get equipmentDocumentExpiry => 'Expiration — facultatif (AAAA-MM-JJ)';
+
+  @override
+  String get equipmentDocumentSelect => 'Choisir le fichier';
+
+  @override
+  String get equipmentDocumentFormats =>
+      'PDF, JPEG, PNG ou WebP, 8 Mo maximum.';
+
+  @override
+  String get equipmentDocumentTooLarge =>
+      'Le fichier dépasse la limite de 8 Mo.';
+
+  @override
+  String get equipmentDocumentProvided => 'Document fourni — non vérifié';
+
+  @override
+  String get equipmentDocumentExport => 'Enregistrer ou partager le document';
+
+  @override
+  String get equipmentDocumentDelete => 'Supprimer le document';
+
+  @override
+  String get equipmentDocumentDeleteConfirm =>
+      'Supprimer ce document de l’engin ?';
+
+  @override
+  String get equipmentDocumentExpired => 'Document expiré';
+
+  @override
+  String get equipmentDocumentSaved => 'Document ajouté';
+
+  @override
+  String get equipmentDocumentDeleted => 'Document supprimé';
+
+  @override
+  String get equipmentDocumentDateInvalid =>
+      'Saisissez une date valide au format AAAA-MM-JJ.';
 }

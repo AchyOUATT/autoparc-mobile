@@ -313,6 +313,7 @@ class PartnerRepository {
     String path, {
     dynamic data,
     Map<String, dynamic>? query,
+    ResponseType? responseType,
   }) async {
     final headers = <String, dynamic>{
       'Accept': 'application/json',
@@ -330,14 +331,11 @@ class PartnerRepository {
         path,
         data: data,
         queryParameters: query,
-        options: Options(method: method, headers: headers),
+        options: Options(method: method, headers: headers, responseType: responseType),
       );
       return response.data;
     } on DioException catch (error) {
-      final raw = error.response?.data;
-      final body = raw is Map
-          ? Map<String, dynamic>.from(raw)
-          : <String, dynamic>{};
+      final body = decodeApiErrorBody(error.response?.data) ?? <String, dynamic>{};
       final fields = <String, String>{};
       if (body['errors'] is Map) {
         for (final entry in (body['errors'] as Map).entries) {
@@ -600,6 +598,31 @@ class PartnerRepository {
     }
     await _request('POST', '${kind.path}/$id/media', data: form);
   }
+
+  Future<List<Map<String, dynamic>>> equipmentDocuments(int vehicleId) async =>
+      ((await _request('GET', '/partner/vehicles/$vehicleId/equipment-documents'))['data'] as List)
+          .map((item) => Map<String, dynamic>.from(item as Map)).toList();
+
+  Future<Map<String, dynamic>> uploadEquipmentDocument(int vehicleId, {
+    required String filename,
+    required List<int> bytes,
+    required Map<String, String> fields,
+  }) async {
+    final form = FormData.fromMap(fields);
+    form.files.add(MapEntry('document', MultipartFile.fromBytes(bytes, filename: filename)));
+    return Map<String, dynamic>.from((await _request(
+      'POST', '/partner/vehicles/$vehicleId/equipment-documents', data: form,
+    ))['data'] as Map);
+  }
+
+  Future<List<int>> downloadEquipmentDocument(int vehicleId, int documentId) async =>
+      List<int>.from(await _request('GET',
+        '/partner/vehicles/$vehicleId/equipment-documents/$documentId/download',
+        responseType: ResponseType.bytes,
+      ) as List);
+
+  Future<void> deleteEquipmentDocument(int vehicleId, int documentId) async =>
+      _request('DELETE', '/partner/vehicles/$vehicleId/equipment-documents/$documentId');
 
   Future<void> setCover(int mediaId) =>
       _request('PATCH', '/partner/media/$mediaId/cover');

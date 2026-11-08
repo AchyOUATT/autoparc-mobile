@@ -19,6 +19,7 @@ import '../../../garage/presentation/widgets/engine_prompt.dart';
 import '../../../garage/presentation/widgets/mileage_dialog.dart';
 import '../../../inspections/presentation/staff_inspection_widgets.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
+import '../../../vehicles/presentation/widgets/equipment_details_section.dart';
 import '../providers/home_providers.dart';
 import '../../../../l10n/app_localizations.dart';
 
@@ -833,6 +834,16 @@ class _DealTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
                     ),
+                    if (vehicle.isEquipment) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        equipmentTypeLabel(
+                          vehicle.equipmentType,
+                          AppLocalizations.of(context),
+                        ),
+                        style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                      ),
+                    ],
                     if (c.locationCity != null) ...[
                       const SizedBox(height: 2),
                       Text(

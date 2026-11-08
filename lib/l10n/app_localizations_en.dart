@@ -6023,4 +6023,298 @@ class AppLocalizationsEn extends AppLocalizations {
   String partnerAccountsRentalWeekly(String amount) {
     return 'Rental: $amount / week';
   }
+
+  @override
+  String get equipmentDetailsTitle => 'Equipment';
+
+  @override
+  String get equipmentDeclared => 'Declared information';
+
+  @override
+  String get equipmentTypeLabel => 'Equipment type';
+
+  @override
+  String get equipmentTypeRequired => 'Choose an equipment type.';
+
+  @override
+  String get equipmentTypeAgriculturalTractor => 'Agricultural tractor';
+
+  @override
+  String get equipmentTypeAerialPlatform => 'Aerial work platform';
+
+  @override
+  String get equipmentTypeExcavator => 'Excavator / mini excavator';
+
+  @override
+  String get equipmentTypeBackhoeLoader => 'Backhoe loader';
+
+  @override
+  String get equipmentTypeLoader => 'Loader';
+
+  @override
+  String get equipmentTypeTelehandler => 'Telehandler';
+
+  @override
+  String get equipmentTypeForklift => 'Forklift';
+
+  @override
+  String get equipmentTypeGenerator => 'Generator';
+
+  @override
+  String get equipmentTypeOther => 'Other equipment';
+
+  @override
+  String get equipmentBrand => 'Brand';
+
+  @override
+  String get equipmentModel => 'Model / designation';
+
+  @override
+  String get equipmentBrandLabel => 'Brand *';
+
+  @override
+  String get equipmentModelLabel => 'Model or designation *';
+
+  @override
+  String get equipmentBrandNotListed => 'My brand is not listed';
+
+  @override
+  String get equipmentModelNotListed => 'My model is not listed';
+
+  @override
+  String get equipmentSerialNumber => 'Serial number';
+
+  @override
+  String get equipmentRegistrationNumber => 'Registration, if applicable';
+
+  @override
+  String get equipmentParkNumber => 'Fleet / site number';
+
+  @override
+  String get equipmentOperatingHours => 'Operating hours (h)';
+
+  @override
+  String get equipmentHourReadingDate => 'Reading date (YYYY-MM-DD)';
+
+  @override
+  String get equipmentOdometerKm => 'Odometer (km)';
+
+  @override
+  String get equipmentPowerKw => 'Power (kW)';
+
+  @override
+  String get equipmentTransmission => 'Transmission';
+
+  @override
+  String get equipmentRatedLoadKg => 'Rated load (kg)';
+
+  @override
+  String get equipmentWorkingHeightM => 'Working height (m)';
+
+  @override
+  String get equipmentOutreachM => 'Outreach (m)';
+
+  @override
+  String get equipmentLiftHeightM => 'Lift height (m)';
+
+  @override
+  String get equipmentOperatingWeightKg => 'Operating weight (kg)';
+
+  @override
+  String get equipmentBucketCapacityM3 => 'Bucket capacity (m³)';
+
+  @override
+  String get equipmentPtoRpm => 'Power take-off (rpm)';
+
+  @override
+  String get equipmentCabin => 'Cab';
+
+  @override
+  String get equipmentQuickCoupler => 'Quick coupler';
+
+  @override
+  String get equipmentAttachments => 'Equipment, tools and attachments';
+
+  @override
+  String get equipmentEngineSerialNumber => 'Engine serial number';
+
+  @override
+  String get equipmentTransmissionMechanical => 'Mechanical';
+
+  @override
+  String get equipmentTransmissionHydrostatic => 'Hydrostatic';
+
+  @override
+  String get equipmentTransmissionPowershift => 'Powershift';
+
+  @override
+  String get equipmentTransmissionElectric => 'Electric';
+
+  @override
+  String get equipmentTransmissionOther => 'Other';
+
+  @override
+  String get equipmentCabinOpen => 'Open';
+
+  @override
+  String get equipmentCabinClosed => 'Enclosed';
+
+  @override
+  String get equipmentCabinAirConditioned => 'Air conditioned';
+
+  @override
+  String get equipmentYes => 'Yes';
+
+  @override
+  String get equipmentNo => 'No';
+
+  @override
+  String get equipmentCreateSaleTitle => 'List equipment for sale';
+
+  @override
+  String get equipmentCreateRentalTitle => 'List equipment for rent';
+
+  @override
+  String get equipmentEditTitle => 'Edit equipment';
+
+  @override
+  String get equipmentFormIntro =>
+      'Enter the type, brand, model and price. Other details can be added later.';
+
+  @override
+  String get equipmentYearLabel => 'Year, if known';
+
+  @override
+  String get equipmentFuelLabel => 'Fuel / energy — optional';
+
+  @override
+  String get equipmentFuelNone => 'Energy not specified';
+
+  @override
+  String get equipmentOptionalIdentity =>
+      'Additional identification — optional';
+
+  @override
+  String get equipmentOptionalTechnical => 'Technical details — optional';
+
+  @override
+  String get equipmentOptionalAttachments => 'Attachments and notes — optional';
+
+  @override
+  String get equipmentValueInvalid =>
+      'Enter a non-negative number in the unit shown.';
+
+  @override
+  String get equipmentDateInvalid =>
+      'Enter a valid date that is not in the future.';
+
+  @override
+  String get equipmentSave => 'Save equipment';
+
+  @override
+  String get equipmentDocuments => 'Equipment documents';
+
+  @override
+  String get equipmentUnknown => 'Not specified';
+
+  @override
+  String get equipmentSalePriceRequired => 'Enter the sale price.';
+
+  @override
+  String get equipmentOptionalTextHint => 'Enter only information you know.';
+
+  @override
+  String get equipmentIdentityTitle => 'Equipment identity';
+
+  @override
+  String get equipmentPricesTitle => 'Pricing and availability';
+
+  @override
+  String get equipmentDocumentAfterSaveHint =>
+      'Photos and documents can be added after saving.';
+
+  @override
+  String get vehicleRegistrationFamilyTitle =>
+      'What kind of asset would you like to register?';
+
+  @override
+  String get vehicleRegistrationRoadTitle => 'Road vehicle';
+
+  @override
+  String get vehicleRegistrationRoadHelp =>
+      'Car, van, utility vehicle or truck.';
+
+  @override
+  String get vehicleRegistrationEquipmentTitle => 'Equipment and machinery';
+
+  @override
+  String get vehicleRegistrationEquipmentHelp =>
+      'Agricultural tractor, platform, excavator, forklift or other equipment.';
+
+  @override
+  String get equipmentDocumentsPrivateHint =>
+      'These documents are private and are not displayed in the public listing.';
+
+  @override
+  String get equipmentDocumentAdd => 'Add a document';
+
+  @override
+  String get equipmentDocumentEmpty =>
+      'No documents added. This step is optional.';
+
+  @override
+  String get equipmentDocumentType => 'Document type';
+
+  @override
+  String get equipmentDocumentOwnership => 'Ownership document';
+
+  @override
+  String get equipmentDocumentRegistration => 'Registration';
+
+  @override
+  String get equipmentDocumentInspection => 'Inspection';
+
+  @override
+  String get equipmentDocumentInsurance => 'Insurance';
+
+  @override
+  String get equipmentDocumentOther => 'Other document';
+
+  @override
+  String get equipmentDocumentExpiry => 'Expiry — optional (YYYY-MM-DD)';
+
+  @override
+  String get equipmentDocumentSelect => 'Choose a file';
+
+  @override
+  String get equipmentDocumentFormats => 'PDF, JPEG, PNG or WebP, up to 8 MB.';
+
+  @override
+  String get equipmentDocumentTooLarge => 'The file exceeds the 8 MB limit.';
+
+  @override
+  String get equipmentDocumentProvided => 'Document provided — not verified';
+
+  @override
+  String get equipmentDocumentExport => 'Save or share document';
+
+  @override
+  String get equipmentDocumentDelete => 'Delete document';
+
+  @override
+  String get equipmentDocumentDeleteConfirm =>
+      'Delete this equipment document?';
+
+  @override
+  String get equipmentDocumentExpired => 'Expired document';
+
+  @override
+  String get equipmentDocumentSaved => 'Document added';
+
+  @override
+  String get equipmentDocumentDeleted => 'Document deleted';
+
+  @override
+  String get equipmentDocumentDateInvalid =>
+      'Enter a valid date in YYYY-MM-DD format.';
 }

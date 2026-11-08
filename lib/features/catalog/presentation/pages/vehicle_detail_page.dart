@@ -1,4 +1,5 @@
 import '../../../vehicles/presentation/widgets/heavy_vehicle_configuration.dart';
+import '../../../vehicles/presentation/widgets/equipment_details_section.dart';
 import '../catalog_reference_labels.dart';
 import '../../../../core/l10n/reference_labels.dart';
 import 'package:flutter/material.dart';
@@ -122,6 +123,7 @@ class _VehicleDetailView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final id = vehicle.identity;
+    final name = id.fullName.isEmpty ? vehicle.designation : id.fullName;
     final c = vehicle.commercial;
     final auth = ref.watch(authProvider);
     final isStaff = auth.isStaff;
@@ -133,7 +135,7 @@ class _VehicleDetailView extends ConsumerWidget {
         context: context,
         builder: (_) => AlertDialog(
           title: Text(l10n.catalogVehicleDeleteTitle),
-          content: Text(l10n.catalogVehicleDeleteBody(id.fullName)),
+          content: Text(l10n.catalogVehicleDeleteBody(name)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -219,7 +221,7 @@ class _VehicleDetailView extends ConsumerWidget {
                   // cette duplication, qui ne se voit nulle part à l'écran.
                   onPressed: () => partagerArticle(
                     context,
-                    titre: id.fullName,
+                    titre: name,
                     // `vehicle.id` et non `reference` : la route publique
                     // `/v/{id}` est indexée sur la clef primaire. La référence
                     // « VH-… » n'existe que pour les humains du parc.
@@ -259,7 +261,7 @@ class _VehicleDetailView extends ConsumerWidget {
                         extra: MediaUploadConfig(
                           type: MediaOwnerType.vehicle,
                           id: vehicle.id,
-                          title: vehicle.identity.fullName,
+                          title: name,
                         ),
                       )
                       .then((_) {
@@ -292,7 +294,7 @@ class _VehicleDetailView extends ConsumerWidget {
                 bottom: 10,
               ),
               title: Text(
-                id.fullName,
+                name,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -323,7 +325,7 @@ class _VehicleDetailView extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                   child: ProductGallery(
                     urls: vehicle.mediaUrls,
-                    titre: id.fullName,
+                    titre: name,
                     fallback: _CoverPlaceholder(slug: id.brandSlug),
                   ),
                 ),
@@ -363,101 +365,108 @@ class _VehicleDetailView extends ConsumerWidget {
                   const SizedBox(height: 20),
 
                   // ── Identité ────────────────────────────────────
-                  _SectionTitle(l10n.catalogSectionVehicle),
-                  _InfoGrid([
-                    if (id.brand != null) (l10n.catalogFieldBrand, id.brand),
-                    if (id.model != null) (l10n.catalogFieldModel, id.model),
-                    if (id.year != null) (l10n.catalogFieldYear, '${id.year}'),
-                    if (id.trim != null) (l10n.catalogFieldTrim, id.trim!),
-                    // La VALEUR reste française : la motorisation et les roues
-                    // motrices arrivent déjà rédigées du référentiel du
-                    // serveur — « Essence », « Électrique » — et c'est la
-                    // vague serveur qui les traduira. Une clé `.arb` ici ne
-                    // les traduirait pas, elle dupliquerait un texte que le
-                    // serveur continue d'écrire.
-                    if (id.engineType != null)
-                      (
-                        l10n.catalogFieldEngine,
-                        referenceFuelLabel(
-                          id.engineTypeCode,
-                          id.engineType!,
-                          l10n,
+                  if (vehicle.isEquipment)
+                    EquipmentDetailsSection(vehicle: vehicle),
+                  if (!vehicle.isEquipment) ...[
+                    _SectionTitle(l10n.catalogSectionVehicle),
+                    _InfoGrid([
+                      if (id.brand.isNotEmpty)
+                        (l10n.catalogFieldBrand, id.brand),
+                      if (id.model.isNotEmpty)
+                        (l10n.catalogFieldModel, id.model),
+                      if (id.year != null)
+                        (l10n.catalogFieldYear, '${id.year}'),
+                      if (id.trim != null) (l10n.catalogFieldTrim, id.trim!),
+                      // La VALEUR reste française : la motorisation et les roues
+                      // motrices arrivent déjà rédigées du référentiel du
+                      // serveur — « Essence », « Électrique » — et c'est la
+                      // vague serveur qui les traduira. Une clé `.arb` ici ne
+                      // les traduirait pas, elle dupliquerait un texte que le
+                      // serveur continue d'écrire.
+                      if (id.engineType != null)
+                        (
+                          l10n.catalogFieldEngine,
+                          referenceFuelLabel(
+                            id.engineTypeCode,
+                            id.engineType!,
+                            l10n,
+                          ),
                         ),
-                      ),
-                    if (id.drivetrain != null)
-                      (
-                        l10n.catalogFieldDrivetrain,
-                        referenceDrivetrainLabel(
-                          id.drivetrainCode,
-                          id.drivetrain!,
-                          l10n,
+                      if (id.drivetrain != null)
+                        (
+                          l10n.catalogFieldDrivetrain,
+                          referenceDrivetrainLabel(
+                            id.drivetrainCode,
+                            id.drivetrain!,
+                            l10n,
+                          ),
                         ),
-                      ),
-                    // Tout ce que le formulaire demande et que la fiche
-                    // n'affichait pas : le modele ne lisait du bloc technique
-                    // que le kilometrage, et jetait le reste.
-                    if (vehicle.bodyStyle != null)
-                      (
-                        l10n.catalogFieldBodyStyle,
-                        _libelleCarrosserie(l10n, vehicle.bodyStyle!),
-                      ),
-                    if (vehicle.transmission != null)
-                      (
-                        l10n.catalogFieldTransmission,
-                        libelleTransmission(l10n, vehicle.transmission!),
-                      ),
-                    if (vehicle.powerHp != null)
-                      (
-                        l10n.catalogFieldPower,
-                        l10n.catalogUnitHp(vehicle.powerHp!),
-                      ),
-                    if (vehicle.engineDisplacementCc != null)
-                      (
-                        l10n.catalogFieldDisplacement,
-                        l10n.catalogUnitCc(vehicle.engineDisplacementCc!),
-                      ),
-                    if (vehicle.cylinders != null)
-                      (l10n.catalogFieldCylinders, '${vehicle.cylinders}'),
-                    if (vehicle.torqueNm != null)
-                      (
-                        l10n.catalogFieldTorque,
-                        l10n.catalogUnitTorque(vehicle.torqueNm!),
-                      ),
-                    if (vehicle.gearCount != null)
-                      (l10n.catalogFieldGears, '${vehicle.gearCount}'),
-                    if (vehicle.seats != null)
-                      (l10n.catalogFieldSeats, '${vehicle.seats}'),
-                    if (vehicle.doors != null)
-                      (l10n.catalogFieldDoors, '${vehicle.doors}'),
-                    if (vehicle.engineCode != null)
-                      (l10n.catalogFieldEngineCode, vehicle.engineCode!),
-                    if (vehicle.combinedL100km != null)
-                      (
-                        l10n.catalogDeclaredConsumption,
-                        l10n.catalogUnitConsumption(
-                          formatDecimal(vehicle.combinedL100km!),
+                      // Tout ce que le formulaire demande et que la fiche
+                      // n'affichait pas : le modele ne lisait du bloc technique
+                      // que le kilometrage, et jetait le reste.
+                      if (vehicle.bodyStyle != null)
+                        (
+                          l10n.catalogFieldBodyStyle,
+                          _libelleCarrosserie(l10n, vehicle.bodyStyle!),
                         ),
+                      if (vehicle.transmission != null)
+                        (
+                          l10n.catalogFieldTransmission,
+                          libelleTransmission(l10n, vehicle.transmission!),
+                        ),
+                      if (vehicle.powerHp != null)
+                        (
+                          l10n.catalogFieldPower,
+                          l10n.catalogUnitHp(vehicle.powerHp!),
+                        ),
+                      if (vehicle.engineDisplacementCc != null)
+                        (
+                          l10n.catalogFieldDisplacement,
+                          l10n.catalogUnitCc(vehicle.engineDisplacementCc!),
+                        ),
+                      if (vehicle.cylinders != null)
+                        (l10n.catalogFieldCylinders, '${vehicle.cylinders}'),
+                      if (vehicle.torqueNm != null)
+                        (
+                          l10n.catalogFieldTorque,
+                          l10n.catalogUnitTorque(vehicle.torqueNm!),
+                        ),
+                      if (vehicle.gearCount != null)
+                        (l10n.catalogFieldGears, '${vehicle.gearCount}'),
+                      if (vehicle.seats != null)
+                        (l10n.catalogFieldSeats, '${vehicle.seats}'),
+                      if (vehicle.doors != null)
+                        (l10n.catalogFieldDoors, '${vehicle.doors}'),
+                      if (vehicle.engineCode != null)
+                        (l10n.catalogFieldEngineCode, vehicle.engineCode!),
+                      if (vehicle.combinedL100km != null)
+                        (
+                          l10n.catalogDeclaredConsumption,
+                          l10n.catalogUnitConsumption(
+                            formatDecimal(vehicle.combinedL100km!),
+                          ),
+                        ),
+                    ]),
+
+                    if (vehicle.vehicleType == 'heavy' &&
+                        !vehicle.heavyConfiguration.isEmpty)
+                      HeavyVehicleConfigurationDetails(
+                        configuration: vehicle.heavyConfiguration,
                       ),
-                  ]),
 
-                  if (vehicle.vehicleType == 'heavy' &&
-                      !vehicle.heavyConfiguration.isEmpty)
-                    HeavyVehicleConfigurationDetails(
-                      configuration: vehicle.heavyConfiguration,
-                    ),
+                    if (vehicle.consumptionReferences.isNotEmpty)
+                      ConsumptionReferenceCandidates(
+                        references: vehicle.consumptionReferences,
+                        vehicleYear: vehicle.identity.year,
+                      ),
 
-                  if (vehicle.consumptionReferences.isNotEmpty)
-                    ConsumptionReferenceCandidates(
-                      references: vehicle.consumptionReferences,
-                      vehicleYear: vehicle.identity.year,
-                    ),
-
-                  if (id.color != null)
-                    _ColorRow(
-                      name: referenceColourLabel(id.color!, l10n),
-                      hex: id.colorHex,
-                      finish: id.colorFinish,
-                    ),
+                    if (id.color != null)
+                      _ColorRow(
+                        name: referenceColourLabel(id.color!, l10n),
+                        hex: id.colorHex,
+                        finish: id.colorFinish,
+                      ),
+                  ],
                   _InfoGrid([(l10n.catalogFieldReference, vehicle.reference)]),
                   const SizedBox(height: 20),
 
@@ -470,7 +479,7 @@ class _VehicleDetailView extends ConsumerWidget {
                     ),
                     // Le kilométrage décrit l'usure : sa place est ici, aux
                     // côtés de la condition, plutôt que dans l'identité.
-                    if (vehicle.mileageKm != null)
+                    if (!vehicle.isEquipment && vehicle.mileageKm != null)
                       (
                         l10n.catalogFieldMileage,
                         l10n.commonMileageKm(formatEntier(vehicle.mileageKm!)),
