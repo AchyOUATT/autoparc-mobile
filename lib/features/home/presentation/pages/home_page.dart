@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/api/api_exception.dart';
+import '../../../../core/demarrage.dart';
 import '../../../../core/providers/shell_scaffold_provider.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/brand_logo.dart';
@@ -20,6 +21,8 @@ import '../../../garage/presentation/widgets/mileage_dialog.dart';
 import '../../../inspections/presentation/staff_inspection_widgets.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
 import '../../../vehicles/presentation/widgets/equipment_details_section.dart';
+import '../../../onboarding/data/profil_service.dart';
+import '../../../partner_accounts/presentation/partner_session.dart';
 import '../providers/home_providers.dart';
 import '../../../../l10n/app_localizations.dart';
 
@@ -60,10 +63,14 @@ class HomePage extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
           children: [
+            // Une session vendeur rejetée, ou un coffre qui n'a pas pu être
+            // confirmé : l'accueil acheteur le DIT en tête, au lieu de
+            // retomber sur « Visiteur » sans un mot.
+            const _SessionVendeur(),
             // Le personnel n'a pas de garage : on lui montre la vitrine.
             if (!auth.isStaff) const _MyVehicleSection(),
             const _DealsSection(),
-            const _BrowseSection(),
+            const BrowseSection(),
             const SizedBox(height: 8),
             const _NeedPrompt(),
           ],
@@ -80,10 +87,20 @@ class _MyVehicleSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Un visiteur non connecté n'a pas de garage : l'interroger lui vaudrait
-    // un 401, et l'invitation lui annoncerait « votre session a expiré » —
-    // pour une session qu'il n'a jamais ouverte.
-    if (!ref.watch(authProvider).isClient) return const _AddVehicleCard();
+    // L'accueil ne propose pas d'enregistrer un véhicule. L'ajout reste dans
+    // Mon garage ; un visiteur voit directement le catalogue, sans requête 401.
+    if (!ref.watch(authProvider).isClient) {
+      // Sauf pour qui a répondu « Je vends » au premier lancement et n'a pas
+      // (encore) de session partenaire : la carte vendeur, qui l'invite à
+      // ouvrir son compte. Dès qu'une session existe — quel que soit son
+      // statut —, l'accueil n'est plus celui-ci (voir `AccueilSelonProfil`) :
+      // c'est LUI qui garantit « sans session », et une seconde garde ici
+      // serait inatteignable, donc intuable par un banc.
+      final vendeur =
+          ref.watch(profilUtilisateurProvider) == ProfilUtilisateur.vendeur;
+
+      return vendeur ? const _CarteVendeur() : const SizedBox.shrink();
+    }
 
     final garage = ref.watch(garageProvider);
 
@@ -97,15 +114,16 @@ class _MyVehicleSection extends ConsumerWidget {
         onRetry: () => ref.invalidate(garageProvider),
       ),
       data: (vehicles) {
-        if (vehicles.isEmpty) return const _AddVehicleCard();
+        if (vehicles.isEmpty) return const SizedBox.shrink();
 
         final vehicle = ref.watch(homeVehicleProvider);
-        if (vehicle == null) return const _AddVehicleCard();
+        if (vehicle == null) return const SizedBox.shrink();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (vehicles.length > 1) _VehicleSelector(vehicles: vehicles, selected: vehicle),
+            if (vehicles.length > 1)
+              _VehicleSelector(vehicles: vehicles, selected: vehicle),
             _VehicleCard(vehicle: vehicle),
             _CompatiblePartsSection(vehicle: vehicle),
           ],
@@ -137,9 +155,9 @@ class _VehicleSelector extends ConsumerWidget {
         itemCount: vehicles.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (_, i) {
-          final v       = vehicles[i];
-          final actif   = v.id == selected.id;
-          final alerte  = !actif && needsAttention(v);
+          final v = vehicles[i];
+          final actif = v.id == selected.id;
+          final alerte = !actif && needsAttention(v);
 
           return Center(
             child: ChoiceChip(
@@ -164,9 +182,9 @@ class _VehicleCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs        = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
     final prochaine = vehicle.nextDeadline;
-    final autres    = vehicle.deadlines.where((d) => d != prochaine).take(2);
+    final autres = vehicle.deadlines.where((d) => d != prochaine).take(2);
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -199,7 +217,10 @@ class _VehicleCard extends ConsumerWidget {
                       // du nom, ce qui tenait tant qu'aucune marque n'avait
                       // d'accent : « Citroën » devenait « citro-n » et perdait
                       // son logo sans que rien ne le signale.
-                      child: BrandLogo(slug: vehicle.identity.brandSlug, size: 26),
+                      child: BrandLogo(
+                        slug: vehicle.identity.brandSlug,
+                        size: 26,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -242,11 +263,12 @@ class _VehicleCard extends ConsumerWidget {
                         // COHÉRENCE : U+202F est la ponctuation française des
                         // milliers, et c'est déjà celle du reste de
                         // l'application.
-                        AppLocalizations.of(context).commonMileageKm(
-                          formatEntier(vehicle.mileageKm!),
+                        AppLocalizations.of(
+                          context,
+                        ).commonMileageKm(formatEntier(vehicle.mileageKm!)),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
                         ),
-                        style: Theme.of(context).textTheme.bodySmall
-                            ?.copyWith(color: cs.onSurfaceVariant),
                       ),
                   ],
                 ),
@@ -277,11 +299,15 @@ class _VehicleCard extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             _libelle(AppLocalizations.of(context), d),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: d.overdue ? cs.error : cs.onSurfaceVariant,
-                              fontWeight:
-                                  d.overdue ? FontWeight.w600 : FontWeight.normal,
-                            ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: d.overdue
+                                      ? cs.error
+                                      : cs.onSurfaceVariant,
+                                  fontWeight: d.overdue
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
                           ),
                         ),
                       ],
@@ -322,13 +348,13 @@ class _UrgentDeadline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs      = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
     final depasse = deadline.overdue;
 
     // Rouge pour ce qui est déjà dépassé, ambre pour ce qui approche : la
     // nuance porte l'urgence sans texte supplémentaire.
-    final fond    = depasse ? cs.errorContainer : const Color(0xFFFAEEDA);
-    final encre   = depasse ? cs.onErrorContainer : const Color(0xFF412402);
+    final fond = depasse ? cs.errorContainer : const Color(0xFFFAEEDA);
+    final encre = depasse ? cs.onErrorContainer : const Color(0xFF412402);
 
     return Container(
       width: double.infinity,
@@ -382,7 +408,11 @@ class _NoDeadline extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.event_note_outlined, size: 18, color: cs.onSurfaceVariant),
+            Icon(
+              Icons.event_note_outlined,
+              size: 18,
+              color: cs.onSurfaceVariant,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -418,7 +448,11 @@ class _GarageUnavailable extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
         child: Row(
           children: [
-            Icon(Icons.cloud_off_outlined, size: 22, color: cs.onSurfaceVariant),
+            Icon(
+              Icons.cloud_off_outlined,
+              size: 22,
+              color: cs.onSurfaceVariant,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -426,14 +460,16 @@ class _GarageUnavailable extends StatelessWidget {
                 children: [
                   Text(
                     AppLocalizations.of(context).homeGarageUnavailable,
-                    style: Theme.of(context).textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w500),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     message,
-                    style: Theme.of(context).textTheme.bodySmall
-                        ?.copyWith(color: cs.onSurfaceVariant),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -449,48 +485,196 @@ class _GarageUnavailable extends StatelessWidget {
   }
 }
 
-/// Pas encore de véhicule : c'est le moment de conversion vers les rappels.
-class _AddVehicleCard extends StatelessWidget {
-  const _AddVehicleCard();
+// ── Le vendeur qui n'a pas fini d'ouvrir son compte ───────────────────
+
+/// « Vous vendez ? » — la carte du profil vendeur sans session partenaire.
+///
+/// Trois sorties, parce que trois cas : ouvrir un compte (l'onglet
+/// Inscription), en avoir déjà un (l'onglet Connexion — un vendeur qui s'est
+/// déconnecté a un compte, et l'envoyer à l'inscription lui en ferait créer un
+/// second), ou ne pas vendre finalement. « Pas maintenant » écrit le profil
+/// ACHETEUR : la carte ne revient pas, et c'est le chemin promis par le
+/// sous-titre de la question du premier lancement pour changer d'avis.
+///
+/// Pas sous le drapeau « espace partenaire ouvert » : il est faux tant que le
+/// serveur n'a pas répondu, et le reste toute la session après un démarrage à
+/// froid. Une carte qui apparaît un jour et pas le lendemain se lit comme un
+/// bogue. La page partenaire sait expliquer un espace fermé ; la carte peut y
+/// mener sans crainte.
+class _CarteVendeur extends ConsumerWidget {
+  const _CarteVendeur();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
 
     return Card(
+      key: const Key('accueil-carte-vendeur'),
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
         side: BorderSide(color: cs.primary),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
         child: Column(
           children: [
-            Icon(Icons.directions_car_outlined, size: 34, color: cs.primary),
+            Icon(Icons.storefront_outlined, size: 34, color: cs.primary),
             const SizedBox(height: 10),
             Text(
-              AppLocalizations.of(context).homeAddVehicleTitle,
+              l10n.homeSellerTitle,
+              textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleSmall
                   ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
             Text(
-              AppLocalizations.of(context).homeAddVehicleBody,
+              l10n.homeSellerBody,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall
                   ?.copyWith(color: cs.onSurfaceVariant),
             ),
             const SizedBox(height: 14),
             FilledButton(
-              onPressed: () => context.push('/garage/add'),
+              key: const Key('accueil-vendeur-ouvrir'),
+              onPressed: () => context.push(cheminInscriptionVendeur),
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44)),
-              child: Text(AppLocalizations.of(context).homeAddVehicleCta),
+              child: Text(l10n.homeSellerOpenAccount),
+            ),
+            // Deux liens sous le bouton, qui passent l'un sous l'autre quand
+            // le texte grossit : `Wrap`, et non `Row`, pour qu'aucun des deux
+            // ne se coupe à 320 points.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                TextButton(
+                  key: const Key('accueil-vendeur-connexion'),
+                  onPressed: () => context.push('/partner'),
+                  child: Text(l10n.homeSellerHaveAccount),
+                ),
+                TextButton(
+                  key: const Key('accueil-vendeur-pas-maintenant'),
+                  onPressed: () => ref
+                      .read(profilUtilisateurProvider.notifier)
+                      .definir(ProfilUtilisateur.acheteur),
+                  child: Text(l10n.homeSellerNotNow),
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+/// Ce que l'accueil acheteur dit d'une session vendeur qui n'a pas tenu.
+///
+/// Deux cas, et rien dans tous les autres :
+///
+///  - REJETÉE (`deniedStatus`) : le serveur a fermé la session — compte
+///    refusé, suspendu ou désactivé — et le coffre est vidé. Sans cette
+///    carte, le partenaire retombait sur « Visiteur » sans un mot, après avoir
+///    vu son tableau de bord. La reconnexion montre le motif.
+///  - À CONFIRMER (`restoreFailed` sans profil) : un coffre d'avant le profil
+///    enregistré, que le serveur n'a pas pu confirmer — lenteur, coupure. Un
+///    bandeau et « Réessayer », le seul endroit de l'accueil où relancer la
+///    lecture.
+class _SessionVendeur extends ConsumerWidget {
+  const _SessionVendeur();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(partnerSessionProvider);
+    final l10n = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
+
+    if (session.deniedStatus != null) {
+      final statut = switch (session.deniedStatus) {
+        'rejected' => l10n.partnerAccountsRejectedTitle,
+        'suspended' => l10n.partnerAccountsSuspendedTitle,
+        _ => null,
+      };
+      final motif = session.reviewReason;
+
+      return Card(
+        key: const Key('accueil-session-vendeur-fermee'),
+        margin: const EdgeInsets.only(bottom: 8),
+        color: cs.errorContainer,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.homeSellerSessionClosedTitle,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: cs.onErrorContainer,
+                ),
+              ),
+              if (statut != null) ...[
+                const SizedBox(height: 4),
+                Text(statut, style: TextStyle(color: cs.onErrorContainer)),
+              ],
+              if (motif != null && motif.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  l10n.partnerAccountsReason(motif),
+                  style: TextStyle(color: cs.onErrorContainer),
+                ),
+              ],
+              const SizedBox(height: 6),
+              Text(
+                l10n.homeSellerSessionClosedBody,
+                style: TextStyle(color: cs.onErrorContainer),
+              ),
+              Wrap(
+                alignment: WrapAlignment.end,
+                children: [
+                  TextButton(
+                    key: const Key('accueil-session-vendeur-compris'),
+                    onPressed: ref.read(partnerSessionProvider.notifier).clearNotice,
+                    child: Text(l10n.homeSellerUnderstood),
+                  ),
+                  TextButton(
+                    key: const Key('accueil-session-vendeur-reconnexion'),
+                    // La carte a déjà dit le statut et le motif : la page
+                    // partenaire doit s'ouvrir sur la CONNEXION, pas répéter
+                    // l'écran de statut — d'où la notice effacée d'abord.
+                    onPressed: () {
+                      ref.read(partnerSessionProvider.notifier).clearNotice();
+                      context.push('/partner');
+                    },
+                    child: Text(l10n.homeSellerSignInAgain),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (session.restoreFailed && session.profile == null) {
+      return Card(
+        key: const Key('accueil-session-vendeur-a-confirmer'),
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          leading: const Icon(Icons.sync_problem_outlined),
+          title: Text(l10n.homeSellerSessionToConfirm),
+          trailing: TextButton(
+            key: const Key('accueil-session-vendeur-reessayer'),
+            onPressed: ref.read(partnerSessionProvider.notifier).restore,
+            child: Text(l10n.commonRetry),
+          ),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 }
 
@@ -503,7 +687,7 @@ class _CompatiblePartsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final parts = ref.watch(homeCompatiblePartsProvider(vehicle.id));
-    final l10n  = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return parts.maybeWhen(
       // Une bande vide ou en erreur disparaît : mieux vaut rien qu'un cadre
@@ -518,8 +702,10 @@ class _CompatiblePartsSection extends ConsumerWidget {
                     vehicle.identity.model ??
                         l10n.homeCompatiblePartsFallbackModel,
                   ),
-                  onSeeAll: () => context.push('/garage/${vehicle.id}/parts',
-                      extra: vehicle),
+                  onSeeAll: () => context.push(
+                    '/garage/${vehicle.id}/parts',
+                    extra: vehicle,
+                  ),
                 ),
                 // LA HAUTEUR VIENT DU CONTENU, et plus d'un nombre écrit ici.
                 //
@@ -683,10 +869,10 @@ class _PartFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        color: cs.surfaceContainerHighest,
-        alignment: Alignment.center,
-        child: Icon(Icons.settings_outlined, size: 24, color: cs.onSurfaceVariant),
-      );
+    color: cs.surfaceContainerHighest,
+    alignment: Alignment.center,
+    child: Icon(Icons.settings_outlined, size: 24, color: cs.onSurfaceVariant),
+  );
 }
 
 // ── Bonnes affaires ───────────────────────────────────────────────────
@@ -765,7 +951,7 @@ class _DealTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final c  = vehicle.commercial;
+    final c = vehicle.commercial;
 
     final couverture = Container(
       color: cs.surfaceContainerHighest,
@@ -805,7 +991,9 @@ class _DealTile extends StatelessWidget {
                         left: 6,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFB26A00),
                             borderRadius: BorderRadius.circular(4),
@@ -832,7 +1020,10 @@ class _DealTile extends StatelessWidget {
                       vehicle.identity.fullName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     if (vehicle.isEquipment) ...[
                       const SizedBox(height: 2),
@@ -848,7 +1039,10 @@ class _DealTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         c.locationCity!,
-                        style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
                     ],
                     const SizedBox(height: 4),
@@ -870,8 +1064,8 @@ class _DealTile extends StatelessWidget {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        vehicleHeadlinePrice(c, AppLocalizations.of(context))
-                            ?? AppLocalizations.of(context).catalogPriceOnRequest,
+                        vehicleHeadlinePrice(c, AppLocalizations.of(context)) ??
+                            AppLocalizations.of(context).catalogPriceOnRequest,
                         maxLines: 1,
                         style: TextStyle(
                           fontSize: 12.5,
@@ -910,8 +1104,13 @@ class _DealTile extends StatelessWidget {
 
 // ── Parcourir ─────────────────────────────────────────────────────────
 
-class _BrowseSection extends StatelessWidget {
-  const _BrowseSection();
+/// Publique : le tableau de bord partenaire la pose aussi, en bas de page,
+/// parce qu'un partenaire cherche comme tout le monde — et ce doit être LA
+/// MÊME rangée, avec la même borne d'échelle, plutôt que trois tuiles neuves
+/// qui tomberaient à 320 points dès l'échelle 1,5 (voir le commentaire du
+/// `build`).
+class BrowseSection extends StatelessWidget {
+  const BrowseSection({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -942,33 +1141,33 @@ class _BrowseSection extends StatelessWidget {
       child: MediaQuery.withClampedTextScaling(
         maxScaleFactor: echelleMaxLibellesDestinations,
         child: Row(
-        children: [
-          Expanded(
-            child: _BrowseTile(
-              icon: Icons.directions_car_outlined,
-              label: AppLocalizations.of(context).commonVehicles,
-              onTap: () => context.go('/vehicles'),
+          children: [
+            Expanded(
+              child: _BrowseTile(
+                icon: Icons.directions_car_outlined,
+                label: AppLocalizations.of(context).commonVehicles,
+                onTap: () => context.go('/vehicles'),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          // Même ordre que la barre du bas : deux rangements différents pour
-          // les mêmes trois destinations obligeraient à relire à chaque fois.
-          Expanded(
-            child: _BrowseTile(
-              icon: Icons.tune_outlined,
-              label: AppLocalizations.of(context).commonAccessories,
-              onTap: () => context.go('/accessories'),
+            const SizedBox(width: 8),
+            // Même ordre que la barre du bas : deux rangements différents pour
+            // les mêmes trois destinations obligeraient à relire à chaque fois.
+            Expanded(
+              child: _BrowseTile(
+                icon: Icons.tune_outlined,
+                label: AppLocalizations.of(context).commonAccessories,
+                onTap: () => context.go('/accessories'),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _BrowseTile(
-              icon: Icons.settings_outlined,
-              label: AppLocalizations.of(context).commonParts,
-              onTap: () => context.go('/parts'),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _BrowseTile(
+                icon: Icons.settings_outlined,
+                label: AppLocalizations.of(context).commonParts,
+                onTap: () => context.go('/parts'),
+              ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );
@@ -980,7 +1179,11 @@ class _BrowseTile extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _BrowseTile({required this.icon, required this.label, required this.onTap});
+  const _BrowseTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1028,9 +1231,9 @@ class _NeedPrompt extends ConsumerWidget {
           // 12.5)` emporte la famille de police du thème, et l'invitation est
           // la ligne la plus longue de la page.
           style: TextButton.styleFrom(
-            textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-              fontSize: 12.5,
-            ),
+            textStyle: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(fontSize: 12.5),
           ),
         ),
       ),
@@ -1055,8 +1258,9 @@ class _SectionTitle extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: Theme.of(context).textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1089,9 +1293,9 @@ class _SectionTitle extends StatelessWidget {
                 // pour son `TextPainter`, et que `test/support/polices.dart`
                 // raconte pour les bancs : une police de repli presque deux
                 // fois plus large, et rien pour s'en plaindre.
-                textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontSize: 12.5,
-                ),
+                textStyle: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(fontSize: 12.5),
               ),
               child: Text(AppLocalizations.of(context).homeSeeAll),
             ),
@@ -1107,19 +1311,19 @@ class _SectionSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: height,
-        child: const Center(child: CircularProgressIndicator()),
-      );
+    height: height,
+    child: const Center(child: CircularProgressIndicator()),
+  );
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
 IconData _iconFor(String kind) => switch (kind) {
-      'technical_inspection' => Icons.fact_check_outlined,
-      'insurance'            => Icons.shield_outlined,
-      'service'              => Icons.oil_barrel_outlined,
-      _                      => Icons.event_outlined,
-    };
+  'technical_inspection' => Icons.fact_check_outlined,
+  'insurance' => Icons.shield_outlined,
+  'service' => Icons.oil_barrel_outlined,
+  _ => Icons.event_outlined,
+};
 
 /// « Visite technique dans 21 jours », « Roadworthiness test in 21 days ».
 ///

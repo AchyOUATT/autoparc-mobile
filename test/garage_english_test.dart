@@ -189,6 +189,16 @@ void main() {
       );
       expect(consumptionRange(8.2, 9.4, en), '8.2–9.4 L/100 km');
       expect(consumptionRange(8.2, 9.4, fr), '8,2 à 9,4 l/100 km');
+
+      // LA VALEUR UNIQUE, que ce banc n'éprouvait pas — et c'est par là que le
+      // français avait bougé. Les deux bornes confondues prenaient la clé de
+      // la ligne de caractéristiques et sortaient « 8,2 L/100 km », en
+      // majuscule, à côté d'une fourchette restée en minuscule. La même cote
+      // doit s'écrire de la même façon qu'elle ait une borne ou deux.
+      expect(consumptionRange(8.2, 8.2, fr), '8,2 l/100 km');
+      expect(consumptionRange(8.2, 8.2, en), '8.2 L/100 km');
+      // Et le seuil : un écart sous 0,05 est une valeur, pas une fourchette.
+      expect(consumptionRange(8.2, 8.24, fr), '8,2 l/100 km');
     },
   );
 

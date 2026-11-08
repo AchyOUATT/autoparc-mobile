@@ -7,10 +7,11 @@ import 'package:flutter_test/flutter_test.dart';
 Map<String, dynamic> _refs(
   String serverTime, {
   List<Map<String, dynamic>> brands = const [],
+  List<Map<String, dynamic>> models = const [],
 }) => {
   'server_time':    serverTime,
   'brands':         brands,
-  'vehicle_models': const [],
+  'vehicle_models': models,
   'trims':          const [],
   'engine_types':   const [],
   'drivetrains':    const [],
@@ -154,6 +155,49 @@ void main() {
       // Le rechargement complet est ce qui purge les lignes supprimées :
       // un delta ne les signale pas.
       expect(refs.brands.map((b) => b.name), ['Toyota']);
+    });
+
+    test('model aliases survive a full download and an offline cache read', () async {
+      final response = _refs('2026-11-05T09:00:00+00:00', models: [
+        {'id': 81, 'brand_id': 12, 'name': 'Cerato', 'aliases': ['Forte']},
+      ]);
+      final cache = _FakeCache();
+      final online = await VehicleAdminRepository(
+        _FakeApiClient((_) => response), cache,
+      ).loadRefs();
+      expect(online.vehicleModels.single.commercialName, 'Cerato / Forte');
+      expect((cache.stored!['vehicle_models'] as List).single['aliases'], ['Forte']);
+
+      cache.savedAt = DateTime.now().subtract(const Duration(hours: 1));
+      final offline = await VehicleAdminRepository(
+        _FakeApiClient((_) => throw Exception('offline')), cache,
+      ).loadRefs();
+      expect(offline.vehicleModels.single.aliases, ['Forte']);
+      expect(offline.vehicleModels.single.id, 81);
+    });
+
+    test('an alias delta replaces the same model ID without creating another generation', () async {
+      final cache = _FakeCache(
+        stored: _refs('2026-11-05T08:00:00+00:00', models: [
+          {'id': 81, 'brand_id': 12, 'name': 'Cerato', 'generation': 'BD'},
+          {'id': 82, 'brand_id': 12, 'name': 'Sportage', 'generation': 'QL'},
+        ]),
+        savedAt: DateTime.now().subtract(const Duration(hours: 1)),
+      );
+      final client = _FakeApiClient((_) => _refs(
+        '2026-11-05T09:00:00+00:00', models: [
+          {'id': 81, 'brand_id': 12, 'name': 'Cerato', 'generation': 'BD', 'aliases': ['Forte']},
+        ],
+      ));
+      final refs = await VehicleAdminRepository(client, cache).loadRefs();
+
+      expect(client.calls.single, {'since': '2026-11-05T08:00:00+00:00'});
+      expect(refs.vehicleModels.map((m) => m.id), [81, 82]);
+      expect(refs.vehicleModels.first.name, 'Cerato');
+      expect(refs.vehicleModels.first.aliases, ['Forte']);
+      expect(refs.vehicleModels.last.aliases, isEmpty);
+      expect((cache.stored!['vehicle_models'] as List), hasLength(2));
+      expect(cache.stored!['server_time'], '2026-11-05T09:00:00+00:00');
     });
   });
 }

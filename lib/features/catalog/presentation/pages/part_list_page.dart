@@ -1,3 +1,4 @@
+import '../widgets/garage_registration_prompt.dart';
 import '../../../catalog/presentation/catalog_reference_labels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,12 +44,13 @@ import '../widgets/ligne_compatibilite.dart';
 ///
 /// Le repli reste le code brut du serveur en capitales. Ce n'est pas un
 /// libellé, c'est un aveu : une nature inconnue de cette table doit se voir.
-String _libelleType(AppLocalizations l10n, String type) => switch (type) {
+String? _libelleType(AppLocalizations l10n, String? type) => switch (type) {
+  null => null,
   'oem' => l10n.catalogPartTypeOem,
   'oes' => l10n.catalogPartTypeOes,
   'aftermarket' => l10n.catalogPartTypeAftermarket,
   'salvage' => l10n.catalogPartTypeSalvage,
-  _ => type.toUpperCase(),
+  final String t => t.toUpperCase(),
 };
 
 const _conditionColors = {
@@ -163,10 +165,10 @@ class _PartListPageState extends ConsumerState<PartListPage> {
               // Voir vehicle_list_page.dart. Sur CETTE liste le defaut etait
               // total : `PartFilter` n'avait pas de `clearSearch`, donc le
               // bouton « ✕ » ne nettoyait pas davantage que le clavier.
-              onChanged: (q) => ref.read(partFilterProvider.notifier).state =
-                  q.isEmpty
-                      ? filter.copyWith(clearSearch: true)
-                      : filter.copyWith(search: q),
+              onChanged: (q) =>
+                  ref.read(partFilterProvider.notifier).state = q.isEmpty
+                  ? filter.copyWith(clearSearch: true)
+                  : filter.copyWith(search: q),
             ),
           ),
         ),
@@ -177,6 +179,7 @@ class _PartListPageState extends ConsumerState<PartListPage> {
           _FilterBar(filter: filter, cities: cities),
           // Filtre "pour mon véhicule" — visible uniquement pour les clients connectés.
           if (!isStaff) const _GarageFilterBanner(),
+          const GarageRegistrationPrompt(),
           Expanded(
             child: _Body(paged: paged, scrollCtrl: _scrollCtrl),
           ),
@@ -285,7 +288,9 @@ class _FilterBar extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
-              label: Text(catalogPartCategoryLabel(c.name, AppLocalizations.of(context))),
+              label: Text(
+                catalogPartCategoryLabel(c.name, AppLocalizations.of(context)),
+              ),
               selected: filter.categoryId == c.id,
               onSelected: (_) => update(
                 (f) => f.categoryId == c.id
@@ -631,7 +636,7 @@ class _PartCardState extends ConsumerState<_PartCard> {
 
 /// Placeholder dégradé pour pièce sans photo.
 class _PartPlaceholder extends StatelessWidget {
-  final String type;
+  final String? type;
   final bool isOem;
   final ColorScheme cs;
   const _PartPlaceholder({
@@ -660,15 +665,17 @@ class _PartPlaceholder extends StatelessWidget {
             size: 30,
             color: isOem ? cs.onPrimaryContainer : cs.onSecondaryContainer,
           ),
+          if (type != null) ...[
           const SizedBox(height: 4),
           Text(
-            type,
+            type!,
             style: TextStyle(
               color: isOem ? cs.onPrimaryContainer : cs.onSecondaryContainer,
               fontWeight: FontWeight.w600,
               fontSize: 10,
             ),
           ),
+          ],
         ],
       ),
     ),

@@ -27,6 +27,9 @@ class ModelRef {
   final int id;
   final int brandId;
   final String name;
+  /// Other market names of this same reference, supplied by the server.
+  /// They help identify the model without changing its canonical name or ID.
+  final List<String> aliases;
   final String? generation;
   final String? equipmentCategory;
 
@@ -80,6 +83,7 @@ class ModelRef {
     required this.id,
     required this.brandId,
     required this.name,
+    this.aliases = const [],
     this.generation,
     this.equipmentCategory,
     this.bodyType,
@@ -97,6 +101,7 @@ class ModelRef {
     id:                  j['id']                   as int,
     brandId:             j['brand_id']              as int,
     name:                j['name']                  as String,
+    aliases:             _parseAliases(j['aliases'], j['name'] as String),
     generation:          j['generation']             as String?,
     equipmentCategory:   j['equipment_category']     as String?,
     bodyType:            j['body_type']              as String?,
@@ -109,6 +114,18 @@ class ModelRef {
     defaultPowerHp:      j['default_power_hp']       as int?,
     isActive:            j['is_active']              as bool? ?? true,
   );
+
+  static List<String> _parseAliases(Object? value, String name) {
+    if (value is! List) return const [];
+    final seen = {name.trim().toLowerCase()};
+    return List.unmodifiable([
+      for (final alias in value.whereType<String>().map((s) => s.trim()))
+        if (alias.isNotEmpty && seen.add(alias.toLowerCase())) alias,
+    ]);
+  }
+
+  /// The market names share one generation and one selection value.
+  String get commercialName => [name, ...aliases].join(' / ');
 
   /// Nom affiché dans les listes.
   ///
@@ -123,7 +140,9 @@ class ModelRef {
       if (yearsLabel != null) yearsLabel!,
     ];
 
-    return details.isEmpty ? name : '$name (${details.join(', ')})';
+    return details.isEmpty
+        ? commercialName
+        : '$commercialName (${details.join(', ')})';
   }
 
   /// « 2013–2019 », « depuis 2018 », ou nul si la période est inconnue.

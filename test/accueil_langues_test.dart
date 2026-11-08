@@ -20,7 +20,11 @@ import 'package:auto/features/auth/presentation/pages/login_page.dart';
 import 'package:auto/features/cart/data/models/cart_item.dart';
 import 'package:auto/features/cart/presentation/pages/cart_page.dart';
 import 'package:auto/features/cart/presentation/providers/cart_provider.dart';
+import 'package:auto/features/onboarding/data/profil_service.dart';
+import 'package:auto/features/onboarding/presentation/pages/choix_de_profil_page.dart';
 import 'package:auto/features/onboarding/presentation/pages/onboarding_page.dart';
+import 'package:auto/features/partner_accounts/partner_accounts.dart';
+import 'package:auto/features/partner_accounts/presentation/partner_dashboard_page.dart';
 import 'package:auto/features/garage/data/models/owned_vehicle.dart';
 import 'package:auto/features/garage/presentation/providers/garage_provider.dart';
 import 'package:auto/features/garage/presentation/widgets/engine_prompt.dart';
@@ -34,7 +38,10 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'support/echelles.dart';
+import 'support/faux_depot_partenaire.dart';
 import 'support/langues.dart';
 import 'support/mesures.dart';
 import 'support/polices.dart';
@@ -950,6 +957,11 @@ void main() {
   /// construit pas celles qui sont hors champ. C'est aussi celle dont le corps
   /// est le plus long des trois, dans les deux langues.
   group('Les écrans de la vague 2', () {
+    // Le tableau de bord lit une préférence — la ligne de bienvenue, vue ou
+    // non — et sans gestionnaire simulé le canal ne répond jamais en banc.
+    // Vue : c'est l'état de tout partenaire après son premier lancement, et
+    // la ligne a son propre banc.
+    setUp(() => SharedPreferences.setMockInitialValues({'tableau_de_bord_presente': true}));
     /// La fiche du Tucson, telle que le serveur la rend : c'est la fixture de
     /// la fiche de détail, donc un véhicule qui porte TOUT le bloc technique —
     /// puissance, cylindrée, couple, consommation, couleur métallisée, import.
@@ -1073,6 +1085,8 @@ void main() {
       // décider d'une troncature à eux seuls.
       'Corolla',
       'Hilux',
+      // Le nom du partenaire vient de son inscription : c'est lui qui le tape.
+      'Garage Exemple',
     };
 
     /// Monte [page] SEULE, dans sa propre coque, à la taille, à l'échelle et
@@ -1197,6 +1211,82 @@ void main() {
       'la démonstration': (
         const OnboardingPage(),
         const <Override>[],
+        const AuthState(type: AuthType.none),
+      ),
+      // ── LES ÉCRANS DES PROFILS ──────────────────────────────────────────
+      //
+      // La question du premier lancement, le tableau de bord partenaire avec
+      // des compteurs à QUATRE chiffres — la règle stricte des nombres vaut
+      // à 2,0, et « 1 234 » qui se replierait en « 1 2… » serait un autre
+      // nombre —, et l'accueil acheteur d'un profil vendeur, qui porte la
+      // carte « Vous vendez ? » à la place de la carte garage.
+      'la question du premier lancement': (
+        const ChoixDeProfilPage(),
+        const <Override>[],
+        const AuthState(type: AuthType.none),
+      ),
+      'le tableau de bord partenaire': (
+        const PartnerDashboardPage(),
+        [
+          partnerRepositoryProvider.overrideWithValue(
+            FauxDepotPartenaire()
+              ..profilAuCoffre = profilDeBanc()
+              ..nonLues = 12
+              ..tableauDeBord = tableauDeBordDeBanc(
+                vehicules: const PartnerDashboardCounts(
+                  total: 1234,
+                  published: 999,
+                  drafts: 235,
+                  withoutPhoto: 12,
+                  promotionEndingSoon: 3,
+                ),
+                pieces: const PartnerDashboardCounts(
+                  total: 4321,
+                  published: 4000,
+                  drafts: 321,
+                  outOfStock: 45,
+                  lowStock: 6,
+                ),
+                accessoires: const PartnerDashboardCounts(total: 7, published: 7),
+                nonLues: 12,
+              ),
+          ),
+        ],
+        const AuthState(type: AuthType.none),
+      ),
+      'le tableau de bord partenaire sans compteurs': (
+        const PartnerDashboardPage(),
+        [
+          partnerRepositoryProvider.overrideWithValue(
+            FauxDepotPartenaire()
+              ..profilAuCoffre = profilDeBanc()
+              ..reponseTableauDeBord = () async => throw const PartnerApiException(
+                    'The route api/partner/dashboard could not be found.',
+                    statusCode: 404,
+                  ),
+          ),
+        ],
+        const AuthState(type: AuthType.none),
+      ),
+      'le tableau de bord d\'un compte en attente': (
+        const PartnerDashboardPage(),
+        [
+          partnerRepositoryProvider.overrideWithValue(
+            FauxDepotPartenaire()..profilAuCoffre = profilDeBanc(status: 'pending'),
+          ),
+        ],
+        const AuthState(type: AuthType.none),
+      ),
+      'l\'accueil d\'un profil vendeur sans compte': (
+        const HomePage(),
+        [
+          profilInitialProvider.overrideWithValue(ProfilUtilisateur.vendeur),
+          partnerRepositoryProvider.overrideWithValue(FauxDepotPartenaire()),
+          // Vitrine vide : c'est la CARTE que cette pose mesure, et la tuile
+          // de la vitrine porte un nom de véhicule du serveur, qui a le droit
+          // de s'ellipser — il est mesuré par les douze poses de l'accueil.
+          homeDealsProvider.overrideWith((_) async => const <Vehicle>[]),
+        ],
         const AuthState(type: AuthType.none),
       ),
     };

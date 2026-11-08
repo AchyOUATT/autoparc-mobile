@@ -127,6 +127,7 @@ class ApiClient {
         receiveTimeout: const Duration(seconds: 60),
         headers: {
           'Accept': 'application/json',
+          'X-AutoParc-Capabilities': 'nullable-part-type',
           'Content-Type': 'application/json',
           'Accept-Language': languageCode == 'en' ? 'en' : 'fr',
           // Bypass l'interstitiel ngrok sur les URLs *.ngrok-free.dev / *.ngrok.io

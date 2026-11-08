@@ -1424,7 +1424,7 @@ class _GenerationHint extends StatelessWidget {
               child: Text(
                 AppLocalizations.of(
                   context,
-                ).garageGenerationNoAlternative((modele.name).toString()),
+                ).garageGenerationNoAlternative(modele.commercialName),
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(color: couleur),

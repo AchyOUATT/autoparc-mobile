@@ -11,7 +11,7 @@ class Part extends Equatable {
   final String? sku;
   final String  name;
   final String? description;
-  final String  type;       // 'oem' | 'oes' | 'aftermarket' | 'salvage'
+  final String? type;       // 'oem' | 'oes' | 'aftermarket' | 'salvage' | null (origine non renseignée)
   final String  condition;  // 'new' | 'refurbished' | 'used'
   final int?    categoryId;
   final String? categoryName;
@@ -153,7 +153,8 @@ class Part extends Equatable {
       sku:            json['sku']             as String?,
       name:           json['name']            as String,
       description:    json['description']     as String?,
-      type:           json['type']            as String,
+      // Also accept the compatibility sentinel from a cached legacy response.
+      type:           json['type'] == 'unknown' ? null : json['type'] as String?,
       condition:      json['condition']       as String,
       categoryId:     json['category_id']     as int?,
       categoryName:   (json['category'] as Map<String, dynamic>?)?['name'] as String?,

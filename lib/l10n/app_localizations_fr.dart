@@ -366,6 +366,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Modèle hors catalogue : compatibilité indisponible';
 
   @override
+  String get catalogGarageInviteBody =>
+      'Ajoutez votre véhicule au garage pour affiner vos recherches.';
+
+  @override
   String get catalogGarageFitmentChip => 'Compatibles';
 
   @override
@@ -980,6 +984,236 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get onboardingGarageBody =>
       'Ajoutez vos véhicules pour retrouver instantanément les pièces détachées compatibles.\nVotre historique vous suit à chaque visite.';
+
+  @override
+  String get onboardingProfileTitle => 'Bienvenue sur AutoParc';
+
+  @override
+  String get onboardingProfileSubtitle =>
+      'Dites-nous ce qui vous amène. Vous pourrez changer d\'avis plus tard.';
+
+  @override
+  String get onboardingProfileBuyTitle => 'Je cherche';
+
+  @override
+  String get onboardingProfileBuyBody =>
+      'Un véhicule, des pièces ou des accessoires pour ma voiture.';
+
+  @override
+  String get onboardingProfileBuyOwnVehicleNotice =>
+      'Vous pouvez aussi proposer votre propre véhicule à la vente, après connexion et validation de l’annonce par AutoParc.';
+
+  @override
+  String get onboardingProfileSellTitle => 'Je vends';
+
+  @override
+  String get onboardingProfileSellBody =>
+      'Des véhicules, des pièces ou des accessoires. Garage, revendeur ou particulier : vous ouvrez un compte vendeur, et vous pouvez aussi acheter.';
+
+  @override
+  String get onboardingProfileUndecided => 'Je ne sais pas encore';
+
+  @override
+  String get onboardingProfileOtherLanguage => 'English';
+
+  @override
+  String get partnerDashboardTitle => 'Tableau de bord';
+
+  @override
+  String partnerDashboardTotal(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count annonces',
+      one: '1 annonce',
+      zero: 'Aucune annonce',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String partnerDashboardPublished(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count publiées',
+      one: '1 publiée',
+      zero: '0 publiée',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String partnerDashboardDrafts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count brouillons',
+      one: '1 brouillon',
+      zero: '0 brouillon',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get partnerDashboardCountsUnavailable => 'Compteurs indisponibles';
+
+  @override
+  String get partnerDashboardTodoTitle => 'À faire';
+
+  @override
+  String partnerDashboardTodoWithoutPhoto(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count annonces publiées sans photo',
+      one: '1 annonce publiée sans photo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String partnerDashboardTodoOutOfStock(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count articles publiés en rupture',
+      one: '1 article publié en rupture',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String partnerDashboardTodoLowStock(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count articles en stock faible',
+      one: '1 article en stock faible',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String partnerDashboardTodoDrafts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count brouillons non publiés',
+      one: '1 brouillon non publié',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String partnerDashboardTodoPromotionEnding(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count promotions se terminent dans moins de 3 jours',
+      one: '1 promotion se termine dans moins de 3 jours',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get partnerDashboardSearchTitle => 'Rechercher dans le catalogue';
+
+  @override
+  String get partnerDashboardPendingTitle =>
+      'Votre demande est en cours d\'examen';
+
+  @override
+  String get partnerDashboardPendingBody =>
+      'AutoParc vérifie vos coordonnées et vous appelle si besoin. L\'application vérifie votre statut à chaque ouverture, et le bouton ci-dessous le fait tout de suite.';
+
+  @override
+  String get partnerDashboardPendingMeanwhile =>
+      'En attendant : parcourez le catalogue et préparez les photos de vos premiers articles.';
+
+  @override
+  String get partnerDashboardContactUs => 'Nous contacter';
+
+  @override
+  String get partnerDashboardWelcomeNotice =>
+      'Votre accueil est maintenant votre tableau de bord. Le catalogue reste dans les onglets du bas.';
+
+  @override
+  String get partnerDashboardWelcomeDismiss => 'OK';
+
+  @override
+  String get partnerAccountsClosedTitle =>
+      'L\'espace vendeur est fermé pour le moment';
+
+  @override
+  String get partnerAccountsClosedBody =>
+      'AutoParc le rouvrira dès que possible. Vous retrouverez cette page dans le menu, sous « Espace partenaire ».';
+
+  @override
+  String get partnerAccountsClosedBrowse => 'Parcourir le catalogue';
+
+  @override
+  String get partnerAccountsSellerIntroTitle => 'Créez votre compte vendeur';
+
+  @override
+  String get partnerAccountsSellerIntroBody =>
+      'Vos coordonnées, un mot de passe, et AutoParc valide votre compte. Vos annonces porteront votre nom ou celui de votre entreprise.';
+
+  @override
+  String get partnerAccountsSellerIntroFooter =>
+      'Vous pourrez publier dès que votre compte est validé.';
+
+  @override
+  String get homeSellerTitle => 'Vous vendez ?';
+
+  @override
+  String get homeSellerBody =>
+      'Pièces, accessoires ou véhicules : ouvrez votre compte vendeur pour publier vos annonces.';
+
+  @override
+  String get homeSellerOpenAccount => 'Ouvrir mon compte';
+
+  @override
+  String get homeSellerHaveAccount => 'J\'ai déjà un compte';
+
+  @override
+  String get homeSellerNotNow => 'Pas maintenant';
+
+  @override
+  String get homeSellerSessionClosedTitle =>
+      'Votre session vendeur a été fermée';
+
+  @override
+  String get homeSellerSessionClosedBody =>
+      'Reconnectez-vous pour connaître l\'état de votre compte.';
+
+  @override
+  String get homeSellerSignInAgain => 'Se reconnecter';
+
+  @override
+  String get homeSellerUnderstood => 'J\'ai compris';
+
+  @override
+  String get homeSellerSessionToConfirm => 'Session vendeur à confirmer';
+
+  @override
+  String get shellAccountPartner => 'Partenaire';
+
+  @override
+  String get shellAccountPartnerPending => 'Partenaire — en attente';
+
+  @override
+  String get shellPartnerDashboard => 'Tableau de bord';
+
+  @override
+  String get shellPartnerSignOut => 'Se déconnecter du compte partenaire';
+
+  @override
+  String get partnerDashboardSpaceClosed =>
+      'L\'espace vendeur est fermé pour le moment. Vos annonces restent en ligne ; vos inventaires reviendront à sa réouverture.';
+
+  @override
+  String get shellPartnerListings => 'Mes annonces';
 
   @override
   String get catalogFitmentsTitle => 'Véhicules compatibles';
@@ -5026,6 +5260,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String garageConsumptionSingle(String value) {
+    return '$value l/100 km';
+  }
+
+  @override
   String get garageConsumptionSourceCanada => 'Ressources naturelles Canada';
 
   @override
@@ -5581,7 +5820,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inspectionWithdrawn => 'Inspection retirée.';
 
   @override
-  String get faultDeclarationTitle => 'État déclaré';
+  String get faultDeclarationTitle => 'Pannes à déclarer';
 
   @override
   String get faultDeclarationUnknown => 'Non renseigné';
@@ -6344,4 +6583,64 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get equipmentDocumentDateInvalid =>
       'Saisissez une date valide au format AAAA-MM-JJ.';
+
+  @override
+  String get passwordRecoveryForgot => 'Mot de passe oublié ?';
+
+  @override
+  String get passwordRecoveryTitle => 'Récupérer mon compte';
+
+  @override
+  String get passwordRecoveryIntro =>
+      'Recevez un lien par email pour choisir un nouveau mot de passe.';
+
+  @override
+  String get passwordRecoveryAccountType => 'Quel espace utilisez-vous ?';
+
+  @override
+  String get passwordRecoveryClient => 'Client';
+
+  @override
+  String get passwordRecoveryStaff => 'Personnel AutoParc';
+
+  @override
+  String get passwordRecoveryPartner => 'Compte partenaire';
+
+  @override
+  String get passwordRecoveryPartnerHelp =>
+      'Saisissez l’email associé à votre compte partenaire. Si vous vous êtes inscrit uniquement avec un téléphone, contactez AutoParc pour une récupération assistée.';
+
+  @override
+  String get passwordRecoveryGoogleHelp =>
+      'Si vous vous connectez avec Google, utilisez « Continuer avec Google ». Le mot de passe Google se récupère auprès de Google.';
+
+  @override
+  String get passwordRecoverySend => 'Envoyer le lien';
+
+  @override
+  String get passwordRecoveryConfirmation =>
+      'Si un compte correspondant peut recevoir un lien, vous recevrez un email de réinitialisation. Vérifiez aussi vos courriers indésirables.';
+
+  @override
+  String get passwordRecoveryBackToLogin => 'Retour à la connexion';
+
+  @override
+  String get passwordRecoveryRateLimited =>
+      'Trop de demandes. Patientez quelques minutes avant de réessayer.';
+
+  @override
+  String get passwordRecoveryUnavailable =>
+      'La récupération par email est indisponible pour le moment. Réessayez plus tard ou contactez AutoParc.';
+
+  @override
+  String get passwordRecoverySupportTitle => 'Besoin d’aide ?';
+
+  @override
+  String get passwordRecoverySupportHelp =>
+      'Contactez AutoParc si vous n’avez pas d’email associé au compte ou si vous n’y avez plus accès. Votre identité devra être vérifiée avant toute récupération.';
+
+  @override
+  String vehiclesStepBlocked(int step, String details) {
+    return 'Impossible de continuer à l’étape $step :\n$details';
+  }
 }

@@ -81,10 +81,25 @@ String consumptionFuelLabel(
   };
 }
 
+/// La consommation officielle : une fourchette, ou une valeur quand ses deux
+/// bornes se confondent.
+///
+/// LA VALEUR UNIQUE A SA PROPRE CLÉ, et il ne faut pas lui rendre celle d'un
+/// voisin. Elle empruntait `catalogUnitConsumption`, la clé de la ligne de
+/// caractéristiques, qui écrit « L/100 km » en majuscule depuis toujours. La
+/// fourchette, elle, écrit « l/100 km ». Résultat : la même cote officielle
+/// changeait de casse selon que le modèle avait une ou plusieurs
+/// motorisations — « 8,2 L/100 km » ici, « 8,2 à 9,4 l/100 km » là.
+///
+/// Et c'était du français qui avait bougé : avant la traduction, les deux cas
+/// sortaient de la même ligne de `Vehicle`, en minuscule tous les deux —
+/// `estUnique ? '$min l/100 km' : '$min à $max l/100 km'`. Deux textes qui se
+/// ressemblent aujourd'hui dans une langue ne sont pas une raison de partager
+/// une clé : c'est exactement ce partage qui a fait diverger les deux cas.
 String consumptionRange(double min, double max, AppLocalizations l10n) {
   final number = NumberFormat('0.0', l10n.localeName);
   return (max - min).abs() < 0.05
-      ? l10n.catalogUnitConsumption(number.format(min))
+      ? l10n.garageConsumptionSingle(number.format(min))
       : l10n.garageConsumptionRange(number.format(min), number.format(max));
 }
 

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../core/api/api_exception.dart';
+import 'password_recovery_page.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -299,6 +300,24 @@ class _LoginFormState extends ConsumerState<_LoginForm> {
                   ? l10n.authPasswordTooShort
                   : null,
             ),
+
+            if (!_isRegister)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  key: const Key('forgot-password'),
+                  onPressed: widget.isLoading
+                      ? null
+                      : () => Navigator.of(context).push<void>(
+                          MaterialPageRoute(
+                            builder: (_) => PasswordRecoveryPage(
+                              initialEmail: _emailCtrl.text,
+                            ),
+                          ),
+                        ),
+                  child: Text(l10n.passwordRecoveryForgot),
+                ),
+              ),
 
             // ── Confirmation (inscription uniquement) ───────────────
             if (_isRegister) ...[

@@ -8,6 +8,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/api/endpoints.dart';
 import '../../../core/l10n/langue.dart';
 import '../../../core/api/api_exception.dart';
+// Préfixé : `dart:convert`, importé plus haut, expose déjà un `json`.
+import 'lecture_json.dart' as lecture;
 
 enum PartnerListingKind {
   vehicles('Véhicules', 'véhicule'),
@@ -259,6 +261,81 @@ class PartnerListingPage {
   final int total;
 }
 
+/// Les compteurs d'un inventaire sur le tableau de bord.
+///
+/// Les définitions sont celles du serveur (`DashboardController`) : `total`
+/// et `drafts` sur les annonces non archivées ; les six autres sur les
+/// annonces PUBLIÉES seulement — une annonce sans photo n'est un problème que
+/// si elle est en ligne. `outOfStock` et `lowStock` ne concernent que les
+/// pièces et accessoires ; les véhicules les rendent à zéro.
+class PartnerDashboardCounts {
+  const PartnerDashboardCounts({
+    this.total = 0,
+    this.published = 0,
+    this.drafts = 0,
+    this.withoutPhoto = 0,
+    this.outOfStock = 0,
+    this.lowStock = 0,
+    this.onPromotion = 0,
+    this.promotionEndingSoon = 0,
+  });
+
+  /// Lecture tolérante, comme tout le JSON de l'espace partenaire : un
+  /// compteur manquant vaut zéro plutôt qu'un écran rouge. Voir
+  /// `lecture_json.dart` pour la faute que cela évite — et c'est aussi ce qui
+  /// laisse un serveur plus ancien, qui ne rendrait pas encore un compteur,
+  /// servir un tableau de bord partiel plutôt qu'aucun.
+  factory PartnerDashboardCounts.fromJson(Map<String, dynamic> json) =>
+      PartnerDashboardCounts(
+        total: lecture.entier(json['total']) ?? 0,
+        published: lecture.entier(json['published']) ?? 0,
+        drafts: lecture.entier(json['drafts']) ?? 0,
+        withoutPhoto: lecture.entier(json['without_photo']) ?? 0,
+        outOfStock: lecture.entier(json['out_of_stock']) ?? 0,
+        lowStock: lecture.entier(json['low_stock']) ?? 0,
+        onPromotion: lecture.entier(json['on_promotion']) ?? 0,
+        promotionEndingSoon: lecture.entier(json['promotion_ending_soon']) ?? 0,
+      );
+
+  final int total;
+  final int published;
+  final int drafts;
+  final int withoutPhoto;
+  final int outOfStock;
+  final int lowStock;
+  final int onPromotion;
+  final int promotionEndingSoon;
+}
+
+/// Le tableau de bord d'un partenaire approuvé : `GET /api/partner/dashboard`.
+///
+/// Un seul appel pour les trois inventaires et la boîte aux lettres, parce que
+/// c'est la PAGE D'ACCUEIL du partenaire : elle se charge à chaque lancement,
+/// souvent face à une instance Render qui se réveille, et quatre allers-retours
+/// y feraient quatre fois le prix d'un.
+class PartnerDashboard {
+  const PartnerDashboard({
+    required this.counts,
+    required this.unreadNotifications,
+  });
+
+  factory PartnerDashboard.fromJson(Map<String, dynamic> json) {
+    final listings = lecture.map(json['listings']);
+
+    return PartnerDashboard(
+      counts: {
+        for (final kind in PartnerListingKind.values)
+          kind: PartnerDashboardCounts.fromJson(lecture.map(listings[kind.name])),
+      },
+      unreadNotifications: lecture.entier(json['unread_notifications']) ?? 0,
+    );
+  }
+
+  /// Un compteur par inventaire, dans l'ordre de [PartnerListingKind.values].
+  final Map<PartnerListingKind, PartnerDashboardCounts> counts;
+  final int unreadNotifications;
+}
+
 class PartnerReferences {
   const PartnerReferences({
     required this.brands,
@@ -317,6 +394,7 @@ class PartnerRepository {
   }) async {
     final headers = <String, dynamic>{
       'Accept': 'application/json',
+      'X-AutoParc-Capabilities': 'nullable-part-type',
       'Accept-Language': _languageCode,
     };
     if (path.startsWith('/partner/') &&
@@ -520,6 +598,13 @@ class PartnerRepository {
       total: (meta['total'] as num?)?.toInt() ?? 0,
     );
   }
+
+  /// Le tableau de bord. Un serveur antérieur à la route rend 404, donc une
+  /// [PartnerApiException] : la page le montre comme « compteurs
+  /// indisponibles » et reste navigable, voir `partner_dashboard_page.dart`.
+  Future<PartnerDashboard> dashboard() async => PartnerDashboard.fromJson(
+    lecture.map(await _request('GET', '/partner/dashboard')),
+  );
 
   Future<Map<String, dynamic>> listing(PartnerListingKind kind, int id) async =>
       Map<String, dynamic>.from(

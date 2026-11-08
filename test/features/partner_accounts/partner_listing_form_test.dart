@@ -125,7 +125,7 @@ void main() {
     await _open(tester, repository, PartnerListingKind.parts);
     await _enter(tester, 'Nom de l’article', 'Filtre en bon état');
     await _choose(tester, find.byType(DropdownButtonFormField<int>).first, 'Filtres à huile');
-    await _choose(tester, find.byType(DropdownButtonFormField<String>).at(1), 'D’occasion');
+    await _choose(tester, find.byType(DropdownButtonFormField<String>).first, 'D’occasion');
     await _choose(tester, find.byType(DropdownButtonFormField<int>).at(1), 'Corolla donneuse');
     await _enter(tester, 'Prix de vente (FCFA)', '2500');
     await _enter(tester, 'Quantité en stock', '3');
@@ -136,6 +136,35 @@ void main() {
     expect(repository.saved, containsPair('condition', 'used'));
     expect(repository.saved, containsPair('donor_vehicle_id', 41));
     expect(repository.saved, containsPair('stock_quantity', 3));
+  });
+
+  testWidgets('une pièce ne demande plus son origine et n’en invente aucune', (tester) async {
+    final repository = _Repository();
+    await _open(tester, repository, PartnerListingKind.parts);
+    expect(find.text('Origine de la pièce'), findsNothing);
+    expect(find.text('OEM'), findsNothing);
+    await _enter(tester, 'Nom de l’article', 'Filtre neuf');
+    await _choose(tester, find.byType(DropdownButtonFormField<int>).first, 'Filtres à huile');
+    await _enter(tester, 'Prix de vente (FCFA)', '2500');
+    await _enter(tester, 'Quantité en stock', '3');
+    await _submit(tester);
+
+    expect(repository.saved, isNot(contains('type')));
+    expect(repository.saved, containsPair('condition', 'new'));
+  });
+
+  testWidgets('modifier une pièce ne renvoie pas son origine historique', (tester) async {
+    final repository = _Repository();
+    await _open(tester, repository, PartnerListingKind.parts, listing: {
+      'id': 18, 'name': 'Alternateur', 'type': 'oem', 'condition': 'refurbished',
+      'category': {'id': 31, 'name': 'Filtres à huile'},
+      'pricing': {'selling_price': '50000.00'}, 'stock': {'quantity': 1},
+    });
+    await _submit(tester, editing: true);
+
+    expect(repository.editedId, 18);
+    expect(repository.saved, isNot(contains('type')));
+    expect(repository.saved, containsPair('condition', 'refurbished'));
   });
 
   testWidgets('un accessoire conserve sa catégorie et son stock en édition', (tester) async {
