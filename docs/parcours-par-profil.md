@@ -36,8 +36,12 @@ Livré le 7 novembre 2026, avec `GET /api/partner/dashboard` côté backend
 
 `test/premiere_utilisation_test.dart` (porte, profil, règle de départ), `test/demarrage_test.dart` (les trois issues, le vrai routeur), `test/accueil_selon_profil_test.dart` (priorité, première trame injectée, carte vendeur et ses trois boutons, session fermée — 403 garni et 401 nu —, jamais d'écran vide), `test/partner_accounts/partner_dashboard_page_test.dart` (compteurs, pluriel de zéro, « À faire », compteurs manquants, 503), `test/partner_accounts/tableau_de_bord_dans_la_coque_test.dart` (par-dessus la coque), `test/partner_accounts/session_au_demarrage_test.dart` (lecture du coffre avant la première trame, ligne de bienvenue), `test/partner_accounts/partner_account_page_vendeur_test.dart` (intro vendeur, espace fermé, session révoquée), `test/tiroir_partenaire_test.dart`, `test/l10n_parite_test.dart`, et les poses de géométrie de `test/accueil_langues_test.dart` (320–411 points, texte ×1,0 à ×2,0, fr et en) pour la question, le tableau de bord et l'accueil vendeur. Le faux dépôt partagé vit dans `test/support/faux_depot_partenaire.dart`. Vingt-deux mutations ont été tuées, une par garde.
 
+## Décidé par le propriétaire (8 novembre 2026)
+
+- **Les comptes partenaires sont approuvés par l'administrateur du système**, pour le moment — c'est l'écran « Validation des partenaires » du personnel (`manage-partners`).
+- **Les annonces des partenaires ne passent par aucune approbation** : « publiée » sur le tableau de bord est la décision du partenaire (bouton Publier), et l'annonce est en ligne aussitôt. Le personnel est notifié des promotions, il ne les valide pas.
+
 ## À décider par le propriétaire
 
 - Le délai d'examen annoncé au vendeur en attente (le texte dit « vous appelle si besoin », sans délai).
-- Qui, dans l'équipe, appelle les vendeurs et approuve les comptes au quotidien.
 - Le push vers les partenaires : aucune route partenaire n'enregistre de jeton FCM aujourd'hui ; la notification d'examen est lisible dans l'application seulement.
