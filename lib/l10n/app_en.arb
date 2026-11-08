@@ -110,6 +110,7 @@
   "catalogStockOut": "Out of stock",
   "catalogGarageFitmentTooltip": "Parts that fit this vehicle",
   "catalogGarageFitmentUnknownModel": "Model not in the catalogue: no fitment data",
+  "catalogGarageInviteBody": "Add your vehicle to your garage to refine your searches.",
   "catalogGarageFitmentChip": "Fitting",
   "catalogPartNoneFound": "No parts found",
   "catalogPartCatalogEmpty": "The catalogue has no parts at the moment.",

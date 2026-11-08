@@ -1,3 +1,5 @@
+import 'package:auto/features/auth/data/auth_repository.dart';
+import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -55,8 +57,13 @@ Map<String, dynamic> _fixture() =>
 ///
 /// `condition` passe à « occasion » parce que le champ kilométrage n'existe
 /// que là : sur un véhicule neuf, le formulaire le masque et le vide.
-Vehicle _vehicule({bool immatricule = true, String condition = 'used', int? mileage}) {
-  final json = jsonDecode(jsonEncode(_fixture()['data'])) as Map<String, dynamic>;
+Vehicle _vehicule({
+  bool immatricule = true,
+  String condition = 'used',
+  int? mileage,
+}) {
+  final json =
+      jsonDecode(jsonEncode(_fixture()['data'])) as Map<String, dynamic>;
   json['registration_status'] = <String, dynamic>{
     'value': immatricule ? 'registered' : 'unregistered',
     'label': immatricule ? 'Deja immatricule' : 'Non immatricule',
@@ -74,9 +81,18 @@ Vehicle _vehicule({bool immatricule = true, String condition = 'used', int? mile
 
 const _agence = LocationRef(id: 7, name: 'Showroom Nord', city: 'Ouagadougou');
 const _marque = BrandRef(id: 3, name: 'Toyota', isActive: true);
-const _modele = ModelRef(id: 11, brandId: 3, name: 'Corolla', generation: 'E180');
+const _modele = ModelRef(
+  id: 11,
+  brandId: 3,
+  name: 'Corolla',
+  generation: 'E180',
+);
 const _motorisation = EngineTypeRef(
-  id: 5, code: 'petrol', label: 'Essence', usesFuel: true, usesBattery: false,
+  id: 5,
+  code: 'petrol',
+  label: 'Essence',
+  usesFuel: true,
+  usesBattery: false,
 );
 
 /// Marque, modèle et motorisation sont EXIGÉS par les étapes 2 et 3 : sans
@@ -95,12 +111,14 @@ const _refs = CatalogRefs(
 );
 
 class _DepotPartenaire extends espace.PartnerRepository {
-
   Map<String, dynamic>? charge;
   int? identifiant;
 
   @override
-  Future<Map<String, dynamic>> listing(espace.PartnerListingKind kind, int id) async => {
+  Future<Map<String, dynamic>> listing(
+    espace.PartnerListingKind kind,
+    int id,
+  ) async => {
     'fault_declaration': {'state': 'unknown', 'faults': []},
   };
 
@@ -140,8 +158,33 @@ class _Annuaire extends annuaire.PartnerRepository {
     String? search,
     bool includeInactive = false,
   }) async => const PaginatedResponse(
-    data: [], currentPage: 1, lastPage: 1, total: 0, perPage: 50,
+    data: [],
+    currentPage: 1,
+    lastPage: 1,
+    total: 0,
+    perPage: 50,
   );
+}
+
+// Le mode personnel n'est pas une session : le banc doit ouvrir un vrai
+// role autorise, comme le fait l'application apres connexion du personnel.
+class _AuthFormulaire extends StateNotifier<AuthState> implements AuthNotifier {
+  _AuthFormulaire(VehicleFormMode mode)
+    : super(
+        mode.estPartenaire
+            ? const AuthState()
+            : const AuthState(
+                type: AuthType.staff,
+                staffUser: StaffUser(
+                  id: 1,
+                  name: 'Vendeur',
+                  email: 'staff@example.test',
+                  role: 'sales',
+                ),
+              ),
+      );
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 Future<void> _ouvrir(
@@ -151,21 +194,24 @@ Future<void> _ouvrir(
   required _DepotPersonnel personnel,
   Vehicle? existant,
 }) async {
-  await tester.pumpWidget(ProviderScope(
-    overrides: [
-      catalogRefsProvider.overrideWith((_) async => _refs),
-      countriesProvider.overrideWith((_) async => <CountryRef>[]),
-      espace.partnerRepositoryProvider.overrideWithValue(partenaire),
-      vehicleAdminRepositoryProvider.overrideWithValue(personnel),
-      annuaire.partnerRepositoryProvider.overrideWithValue(_Annuaire()),
-    ],
-    child: MaterialApp(
-      locale: const Locale('fr'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: VehicleRegisterPage(mode: mode, existing: existant),
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        authProvider.overrideWith((_) => _AuthFormulaire(mode)),
+        catalogRefsProvider.overrideWith((_) async => _refs),
+        countriesProvider.overrideWith((_) async => <CountryRef>[]),
+        espace.partnerRepositoryProvider.overrideWithValue(partenaire),
+        vehicleAdminRepositoryProvider.overrideWithValue(personnel),
+        annuaire.partnerRepositoryProvider.overrideWithValue(_Annuaire()),
+      ],
+      child: MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: VehicleRegisterPage(mode: mode, existing: existant),
+      ),
     ),
-  ));
+  );
   await tester.pumpAndSettle();
 }
 
@@ -189,7 +235,8 @@ void _basculerImmatriculation(WidgetTester tester, bool valeur) {
 
 void _saisirKilometrage(WidgetTester tester, String valeur) {
   final champ = find.byWidgetPredicate(
-    (widget) => widget is TextField && widget.decoration?.labelText == 'Kilométrage',
+    (widget) =>
+        widget is TextField && widget.decoration?.labelText == 'Kilométrage',
     skipOffstage: false,
   );
   tester.widget<TextField>(champ).controller!.text = valeur;
@@ -206,74 +253,105 @@ void main() {
 
   // ── LES TROIS CHAMPS QUE LE SERVEUR REFUSE A UN PARTENAIRE ───────────────
 
-  testWidgets('la charge partenaire ne porte ni promotion, ni agence, ni fournisseur',
-      (tester) async {
-    await _ouvrir(tester,
+  testWidgets(
+    'la charge partenaire ne porte ni promotion, ni agence, ni fournisseur',
+    (tester) async {
+      await _ouvrir(
+        tester,
         mode: VehicleFormMode.partenaire,
         partenaire: partenaire,
         personnel: personnel,
-        existant: _vehicule());
-    await _enregistrer(tester);
+        existant: _vehicule(),
+      );
+      await _enregistrer(tester);
 
-    expect(partenaire.charge, isNotNull,
-        reason: 'Rien n’a été enregistré : le reste du banc ne mesurerait rien.');
-    for (final champ in ['deal_type', 'location_id', 'partner_id']) {
-      expect(partenaire.charge!.containsKey(champ), isFalse,
-          reason: 'Le serveur REFUSE « $champ » à un partenaire : l’envoyer '
-              'vaut 422, et l’annonce ne part pas du tout.');
-    }
-  });
+      expect(
+        partenaire.charge,
+        isNotNull,
+        reason:
+            'Rien n’a été enregistré : le reste du banc ne mesurerait rien.',
+      );
+      for (final champ in ['deal_type', 'location_id', 'partner_id']) {
+        expect(
+          partenaire.charge!.containsKey(champ),
+          isFalse,
+          reason:
+              'Le serveur REFUSE « $champ » à un partenaire : l’envoyer '
+              'vaut 422, et l’annonce ne part pas du tout.',
+        );
+      }
+    },
+  );
 
   /// LE CONTRASTE, sans lequel le banc précédent passerait aussi bien si le
   /// champ avait disparu pour tout le monde.
   testWidgets('en mode personnel la promotion part bien', (tester) async {
-    await _ouvrir(tester,
-        mode: VehicleFormMode.personnel,
-        partenaire: partenaire,
-        personnel: personnel,
-        existant: _vehicule());
+    await _ouvrir(
+      tester,
+      mode: VehicleFormMode.personnel,
+      partenaire: partenaire,
+      personnel: personnel,
+      existant: _vehicule(),
+    );
     await _enregistrer(tester);
 
     expect(personnel.charge, isNotNull);
-    expect(personnel.charge!.containsKey('deal_type'), isTrue,
-        reason: 'La vitrine est à la boutique : le personnel doit pouvoir y '
-            'placer un véhicule, et l’en retirer.');
+    expect(
+      personnel.charge!.containsKey('deal_type'),
+      isTrue,
+      reason:
+          'La vitrine est à la boutique : le personnel doit pouvoir y '
+          'placer un véhicule, et l’en retirer.',
+    );
   });
 
-  testWidgets('l’écran partenaire ne montre pas les champs de la boutique',
-      (tester) async {
-    await _ouvrir(tester,
-        mode: VehicleFormMode.partenaire,
-        partenaire: partenaire,
-        personnel: personnel,
-        existant: _vehicule());
+  testWidgets('l’écran partenaire ne montre pas les champs de la boutique', (
+    tester,
+  ) async {
+    await _ouvrir(
+      tester,
+      mode: VehicleFormMode.partenaire,
+      partenaire: partenaire,
+      personnel: personnel,
+      existant: _vehicule(),
+    );
 
     for (final libelle in [
       'Mise en avant',
       'Agence / Showroom',
       'Fournisseur / Partenaire source',
     ]) {
-      expect(find.text(libelle, skipOffstage: false), findsNothing,
-          reason: 'Montrer « $libelle » à un partenaire lui fait remplir un '
-              'champ que le serveur refusera.');
+      expect(
+        find.text(libelle, skipOffstage: false),
+        findsNothing,
+        reason:
+            'Montrer « $libelle » à un partenaire lui fait remplir un '
+            'champ que le serveur refusera.',
+      );
     }
   });
 
   testWidgets('l’écran du personnel les montre', (tester) async {
-    await _ouvrir(tester,
-        mode: VehicleFormMode.personnel,
-        partenaire: partenaire,
-        personnel: personnel,
-        existant: _vehicule());
+    await _ouvrir(
+      tester,
+      mode: VehicleFormMode.personnel,
+      partenaire: partenaire,
+      personnel: personnel,
+      existant: _vehicule(),
+    );
 
     for (final libelle in [
       'Mise en avant',
       'Agence / Showroom',
       'Fournisseur / Partenaire source',
     ]) {
-      expect(find.text(libelle, skipOffstage: false), findsWidgets,
-          reason: 'Si « $libelle » manquait aussi au personnel, le banc '
-              'd’en face ne prouverait rien.');
+      expect(
+        find.text(libelle, skipOffstage: false),
+        findsWidgets,
+        reason:
+            'Si « $libelle » manquait aussi au personnel, le banc '
+            'd’en face ne prouverait rien.',
+      );
     }
   });
 
@@ -284,11 +362,13 @@ void main() {
   // ignoré en silence, et le filtre public `?mileage_max=` ne trouve rien.
 
   testWidgets('le compteur d’un importé part dans import', (tester) async {
-    await _ouvrir(tester,
-        mode: VehicleFormMode.partenaire,
-        partenaire: partenaire,
-        personnel: personnel,
-        existant: _vehicule(immatricule: false));
+    await _ouvrir(
+      tester,
+      mode: VehicleFormMode.partenaire,
+      partenaire: partenaire,
+      personnel: personnel,
+      existant: _vehicule(immatricule: false),
+    );
     _saisirKilometrage(tester, '85000');
     await _enregistrer(tester);
 
@@ -296,13 +376,16 @@ void main() {
     expect(partenaire.charge!.containsKey('registration'), isFalse);
   });
 
-  testWidgets('le kilométrage d’un immatriculé part dans registration',
-      (tester) async {
-    await _ouvrir(tester,
-        mode: VehicleFormMode.partenaire,
-        partenaire: partenaire,
-        personnel: personnel,
-        existant: _vehicule());
+  testWidgets('le kilométrage d’un immatriculé part dans registration', (
+    tester,
+  ) async {
+    await _ouvrir(
+      tester,
+      mode: VehicleFormMode.partenaire,
+      partenaire: partenaire,
+      personnel: personnel,
+      existant: _vehicule(),
+    );
     _saisirKilometrage(tester, '85000');
     await _enregistrer(tester);
 
@@ -311,42 +394,57 @@ void main() {
   });
 
   testWidgets('un kilométrage vide n’envoie aucun bloc', (tester) async {
-    await _ouvrir(tester,
-        mode: VehicleFormMode.partenaire,
-        partenaire: partenaire,
-        personnel: personnel,
-        existant: _vehicule());
+    await _ouvrir(
+      tester,
+      mode: VehicleFormMode.partenaire,
+      partenaire: partenaire,
+      personnel: personnel,
+      existant: _vehicule(),
+    );
     await _enregistrer(tester);
 
-    expect(partenaire.charge!.containsKey('registration'), isFalse,
-        reason: 'Un kilométrage déjà inconnu reste absent sans créer un zéro.');
+    expect(
+      partenaire.charge!.containsKey('registration'),
+      isFalse,
+      reason: 'Un kilométrage déjà inconnu reste absent sans créer un zéro.',
+    );
     expect(partenaire.charge!.containsKey('import'), isFalse);
   });
 
   for (final registered in [true, false]) {
-    testWidgets('effacer un compteur connu envoie null (immatriculé=$registered)',
-        (tester) async {
-      await _ouvrir(tester,
+    testWidgets(
+      'effacer un compteur connu envoie null (immatriculé=$registered)',
+      (tester) async {
+        await _ouvrir(
+          tester,
           mode: VehicleFormMode.partenaire,
           partenaire: partenaire,
           personnel: personnel,
-          existant: _vehicule(immatricule: registered, mileage: 85000));
-      _saisirKilometrage(tester, '');
-      await _enregistrer(tester);
+          existant: _vehicule(immatricule: registered, mileage: 85000),
+        );
+        _saisirKilometrage(tester, '');
+        await _enregistrer(tester);
 
-      expect(partenaire.charge![registered ? 'registration' : 'import'],
-          {registered ? 'mileage_km' : 'odometer_at_import_km': null});
-    });
+        expect(partenaire.charge![registered ? 'registration' : 'import'], {
+          registered ? 'mileage_km' : 'odometer_at_import_km': null,
+        });
+      },
+    );
   }
 
-  testWidgets('un zéro renseigné reste prérempli et sauvegardé', (tester) async {
-    await _ouvrir(tester,
-        mode: VehicleFormMode.partenaire,
-        partenaire: partenaire,
-        personnel: personnel,
-        existant: _vehicule(mileage: 0));
+  testWidgets('un zéro renseigné reste prérempli et sauvegardé', (
+    tester,
+  ) async {
+    await _ouvrir(
+      tester,
+      mode: VehicleFormMode.partenaire,
+      partenaire: partenaire,
+      personnel: personnel,
+      existant: _vehicule(mileage: 0),
+    );
     final champ = find.byWidgetPredicate(
-      (widget) => widget is TextField && widget.decoration?.labelText == 'Kilométrage',
+      (widget) =>
+          widget is TextField && widget.decoration?.labelText == 'Kilométrage',
       skipOffstage: false,
     );
     expect(tester.widget<TextField>(champ).controller!.text, '0');
@@ -364,31 +462,44 @@ void main() {
 
   const annonce = 'ses informations d’immatriculation seront supprimées';
 
-  testWidgets('déclarer importé un véhicule immatriculé annonce la suppression',
-      (tester) async {
-    await _ouvrir(tester,
+  testWidgets(
+    'déclarer importé un véhicule immatriculé annonce la suppression',
+    (tester) async {
+      await _ouvrir(
+        tester,
         mode: VehicleFormMode.partenaire,
         partenaire: partenaire,
         personnel: personnel,
-        existant: _vehicule());
+        existant: _vehicule(),
+      );
 
-    expect(find.textContaining(annonce, skipOffstage: false), findsNothing,
-        reason: 'Rien n’a encore basculé : l’avertissement serait du bruit.');
+      expect(
+        find.textContaining(annonce, skipOffstage: false),
+        findsNothing,
+        reason: 'Rien n’a encore basculé : l’avertissement serait du bruit.',
+      );
 
-    _basculerImmatriculation(tester, false);
-    await tester.pumpAndSettle();
+      _basculerImmatriculation(tester, false);
+      await tester.pumpAndSettle();
 
-    expect(find.textContaining(annonce, skipOffstage: false), findsOneWidget,
-        reason: 'Le serveur SUPPRIME le carnet d’immatriculation : le vendeur '
-            'doit l’apprendre avant d’enregistrer, et non après.');
-  });
+      expect(
+        find.textContaining(annonce, skipOffstage: false),
+        findsOneWidget,
+        reason:
+            'Le serveur SUPPRIME le carnet d’immatriculation : le vendeur '
+            'doit l’apprendre avant d’enregistrer, et non après.',
+      );
+    },
+  );
 
   testWidgets('revenir à immatriculé retire l’avertissement', (tester) async {
-    await _ouvrir(tester,
-        mode: VehicleFormMode.partenaire,
-        partenaire: partenaire,
-        personnel: personnel,
-        existant: _vehicule());
+    await _ouvrir(
+      tester,
+      mode: VehicleFormMode.partenaire,
+      partenaire: partenaire,
+      personnel: personnel,
+      existant: _vehicule(),
+    );
 
     _basculerImmatriculation(tester, false);
     await tester.pumpAndSettle();
@@ -400,22 +511,27 @@ void main() {
 
   /// Rien à supprimer sur un véhicule qui n'était pas immatriculé, ni sur une
   /// création : l'avertissement y serait faux.
-  testWidgets('un importé qui le reste ne déclenche aucun avertissement',
-      (tester) async {
-    await _ouvrir(tester,
-        mode: VehicleFormMode.partenaire,
-        partenaire: partenaire,
-        personnel: personnel,
-        existant: _vehicule(immatricule: false));
+  testWidgets('un importé qui le reste ne déclenche aucun avertissement', (
+    tester,
+  ) async {
+    await _ouvrir(
+      tester,
+      mode: VehicleFormMode.partenaire,
+      partenaire: partenaire,
+      personnel: personnel,
+      existant: _vehicule(immatricule: false),
+    );
 
     expect(find.textContaining(annonce, skipOffstage: false), findsNothing);
   });
 
   testWidgets('une création n’annonce aucune suppression', (tester) async {
-    await _ouvrir(tester,
-        mode: VehicleFormMode.partenaire,
-        partenaire: partenaire,
-        personnel: personnel);
+    await _ouvrir(
+      tester,
+      mode: VehicleFormMode.partenaire,
+      partenaire: partenaire,
+      personnel: personnel,
+    );
 
     expect(find.textContaining(annonce, skipOffstage: false), findsNothing);
   });

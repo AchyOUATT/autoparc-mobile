@@ -365,6 +365,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Model not in the catalogue: no fitment data';
 
   @override
+  String get catalogGarageInviteBody =>
+      'Add your vehicle to your garage to refine your searches.';
+
+  @override
   String get catalogGarageFitmentChip => 'Fitting';
 
   @override

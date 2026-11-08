@@ -366,6 +366,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Modèle hors catalogue : compatibilité indisponible';
 
   @override
+  String get catalogGarageInviteBody =>
+      'Ajoutez votre véhicule au garage pour affiner vos recherches.';
+
+  @override
   String get catalogGarageFitmentChip => 'Compatibles';
 
   @override
