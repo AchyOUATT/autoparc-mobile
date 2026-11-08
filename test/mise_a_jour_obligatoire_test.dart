@@ -537,6 +537,85 @@ void main() {
       expect(adaptateur.appels, 1, reason: 'La réponse de version doit être lue une seule fois.');
     });
   });
+
+  // ── La seconde lecture renseigne AUSSI l'interrupteur ────────────────────
+  //
+  // Observé un matin d'instance endormie : le verdict finissait par bloquer —
+  // la seconde tentative vivait dans son provider à lui — mais le drapeau de
+  // l'espace partenaire restait « inconnu » toute la session, jusqu'au
+  // redémarrage, alors que la seconde lecture avait bien rapporté
+  // `partner_space_open`. Les deux lecteurs doivent apprendre la même chose au
+  // même moment : la seconde lecture passe par `plancherDeVersionProvider`,
+  // que les deux regardent.
+
+  group('Interrupteur de l\'espace partenaire — la seconde lecture le renseigne', () {
+    ProviderContainer conteneur(HttpClientAdapter adaptateur) => ProviderContainer(overrides: [
+          serviceVersionMinimaleProvider.overrideWithValue(ServiceVersionMinimale(
+            client: Dio()..httpClientAdapter = adaptateur,
+            lireVersionInstallee: () async => 69,
+          )),
+        ]);
+
+    /// Les valeurs successives d'un drapeau, telles que le tiroir les verrait.
+    ///
+    /// On ÉCOUTE le provider plutôt que de le lire après coup : c'est ainsi que
+    /// `ref.watch` le suit dans le tiroir, et c'est ce suivi-là qui manquait.
+    /// Puis on laisse tourner la boucle d'événements — l'adaptateur répond sans
+    /// réseau, la lecture patiente se résout en quelques tours, et un test ne
+    /// doit pas passer les soixante-dix secondes du budget réel.
+    Future<List<bool>> valeursDe(ProviderContainer c, ProviderListenable<bool> drapeau) async {
+      final vues = <bool>[];
+      final abonnement = c.listen<bool>(drapeau, (_, suivant) => vues.add(suivant), fireImmediately: true);
+      addTearDown(abonnement.close);
+
+      // La première lecture, celle qui échoue sans retarder le démarrage.
+      await c.read(plancherDeVersionProvider.future);
+      for (var i = 0; i < 50; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      return vues;
+    }
+
+    test('sans réponse puis « ouvert » : l\'entrée apparaît sans redémarrage', () async {
+      final adaptateur = _AdaptateurEnDeuxTemps(corps: '{"partner_space_open": true}');
+      final c = conteneur(adaptateur);
+      addTearDown(c.dispose);
+
+      final vues = await valeursDe(c, espacePartenaireOuvertProvider);
+
+      expect(adaptateur.appels, 2, reason: 'La seconde lecture n\'a pas eu lieu.');
+      // Fermé d'abord — l'inconnu se lit fermé —, puis ouvert, sans relancer.
+      expect(vues.first, isFalse);
+      expect(vues.last, isTrue, reason: 'La réponse patiente n\'a pas atteint le drapeau.');
+    });
+
+    test('sans réponse puis « fermé » : le refus devient sûr, lui aussi', () async {
+      final adaptateur = _AdaptateurEnDeuxTemps(corps: '{"partner_space_open": false}');
+      final c = conteneur(adaptateur);
+      addTearDown(c.dispose);
+
+      final vues = await valeursDe(c, espacePartenaireFermeProvider);
+
+      expect(adaptateur.appels, 2);
+      // « Fermé » n'est vrai que de source sûre : faux tant qu'on ne sait rien,
+      // vrai dès que le serveur a répondu non.
+      expect(vues.first, isFalse);
+      expect(vues.last, isTrue, reason: 'La réponse patiente n\'a pas atteint le drapeau.');
+    });
+
+    test('deux lectures sans réponse : les deux drapeaux restent dans le doute', () async {
+      final adaptateur = _AdaptateurFixe(reseauCoupe: true);
+      final c = conteneur(adaptateur);
+      addTearDown(c.dispose);
+
+      await valeursDe(c, espacePartenaireOuvertProvider);
+
+      expect(adaptateur.appels, 2);
+      expect(c.read(espacePartenaireOuvertProvider), isFalse);
+      expect(c.read(espacePartenaireFermeProvider), isFalse, reason: 'L\'inconnu n\'est pas un refus.');
+    });
+  });
 }
 
 /// Rend `litteral` tel qu'il doit apparaître dans le corps JSON : un nombre

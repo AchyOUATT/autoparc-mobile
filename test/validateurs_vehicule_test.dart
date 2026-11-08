@@ -266,9 +266,13 @@ void main() {
       await _ouvrir(tester, depot, _vehicule(), locale: locale);
       final l10n = await AppLocalizations.delegate.load(locale);
       _ecrire(tester, l10n.vehiclesVinOptional, 'SHORT');
-      for (var attempt = 0; attempt < 2; attempt++) {
+      tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+      await tester.pumpAndSettle();
+      // Retry while the previous snackbar is still reversing, not only after
+      // its animation has settled. Each retry must replace the whole queue.
+      for (var attempt = 0; attempt < 3; attempt++) {
         tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 16));
       }
       expect(find.byType(SnackBar), findsOneWidget);
       _ecrire(tester, l10n.vehiclesVinOptional, '');

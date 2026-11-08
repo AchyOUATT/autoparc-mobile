@@ -1,7 +1,9 @@
 import '../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/update/version_minimale.dart';
 import '../data/partner_repository.dart';
 import 'partner_listings_page.dart';
 import 'partner_notifications_page.dart';
@@ -11,7 +13,16 @@ import '../../../core/api/api_exception.dart';
 import '../../auth/presentation/pages/password_recovery_page.dart';
 
 class PartnerAccountPage extends ConsumerStatefulWidget {
-  const PartnerAccountPage({super.key});
+  const PartnerAccountPage({super.key, this.inscription = false});
+
+  /// Ouvrir directement sur l'onglet Inscription.
+  ///
+  /// C'est le chemin du vendeur qui vient de répondre « Vendre » au premier
+  /// lancement : il a déjà dit ce qu'il veut, lui montrer un formulaire de
+  /// connexion et lui laisser trouver l'onglet serait lui faire répondre deux
+  /// fois. Faux par défaut, pour tous les autres chemins — le tiroir, un
+  /// partenaire qui revient —, où la connexion est le cas courant.
+  final bool inscription;
   @override
   ConsumerState<PartnerAccountPage> createState() => _PartnerAccountPageState();
 }
@@ -25,7 +36,7 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
   final _whatsapp = TextEditingController();
   final _password = TextEditingController();
   final _confirmation = TextEditingController();
-  bool _register = false;
+  late bool _register = widget.inscription;
   bool _obscure = true;
 
   /// La forme d'une adresse, employée aux deux endroits où on en vérifie une.
@@ -107,6 +118,16 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
                     session.reviewReason,
                     session,
                   )
+                // ── L'ESPACE FERMÉ EST UN ÉCRAN, PAS UNE LIGNE ROUGE ──────────
+                //
+                // Deux sources, et il en faut deux : le drapeau de
+                // `GET /api/app/version` quand il a RÉPONDU fermé, et le 503
+                // d'un appel partenaire quand il n'avait pas encore répondu.
+                // Avant, le vendeur remplissait sept champs, envoyait, et
+                // lisait le motif du serveur en rouge sous le formulaire —
+                // au tout premier contact avec l'application.
+                : ref.watch(espacePartenaireFermeProvider) || session.espaceFerme
+                ? _ferme(context, session)
                 : _login(context, session),
           ),
         ),
@@ -130,16 +151,28 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
             color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(height: 16),
+          // ── PAR LE PREMIER LANCEMENT, L'INTRO PARLE AU VENDEUR ─────────────
+          //
+          // « Présentez votre entreprise » parle à une entreprise ; le vendeur
+          // qui vient de répondre « Je vends » est, le plus souvent, un
+          // particulier ou un petit revendeur. Le français de l'autre chemin —
+          // le tiroir — ne bouge pas : ce sont des clés NOUVELLES, lues
+          // seulement quand `widget.inscription` est vrai et l'onglet
+          // Inscription encore sélectionné.
           Text(
             _register
-                ? AppLocalizations.of(context).partnerAccountsCompanyIntro
+                ? (widget.inscription
+                      ? AppLocalizations.of(context).partnerAccountsSellerIntroTitle
+                      : AppLocalizations.of(context).partnerAccountsCompanyIntro)
                 : AppLocalizations.of(context).partnerAccountsActivityIntro,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 8),
           Text(
             _register
-                ? AppLocalizations.of(context).partnerAccountsRegisterIntro
+                ? (widget.inscription
+                      ? AppLocalizations.of(context).partnerAccountsSellerIntroBody
+                      : AppLocalizations.of(context).partnerAccountsRegisterIntro)
                 : AppLocalizations.of(context).partnerAccountsLoginIntro,
           ),
           const SizedBox(height: 24),
@@ -370,7 +403,9 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            AppLocalizations.of(context).partnerAccountsPublishingAfterApproval,
+            widget.inscription && _register
+                ? AppLocalizations.of(context).partnerAccountsSellerIntroFooter
+                : AppLocalizations.of(context).partnerAccountsPublishingAfterApproval,
             textAlign: TextAlign.center,
           ),
         ],
@@ -591,6 +626,13 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
         AppLocalizations.of(context).partnerAccountsSuspendedDescription,
         Icons.pause_circle_outline,
       ),
+      // Le 401 nu d'une session révoquée : fermée, motif à la reconnexion.
+      // Sans ce cas, elle tombait dans « Inscription reçue », qui ment.
+      sessionRevoquee => (
+        AppLocalizations.of(context).homeSellerSessionClosedTitle,
+        AppLocalizations.of(context).homeSellerSessionClosedBody,
+        Icons.lock_outline,
+      ),
       _ => (
         AppLocalizations.of(context).partnerAccountsReceivedTitle,
         AppLocalizations.of(context).partnerAccountsReceivedDescription,
@@ -657,6 +699,56 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
       ],
     );
   }
+
+  /// Le panneau « les inscriptions ne sont pas encore ouvertes ».
+  ///
+  /// « Réessayer » relit le drapeau ET efface le 503 : si l'espace vient
+  /// d'ouvrir, le formulaire revient sans relancer l'application. « Parcourir
+  /// le catalogue » rend la main à ce qu'il y a dessous — il y a toujours
+  /// quelque chose, voir `ouvrirInscriptionVendeur` — ou ramène à l'accueil.
+  Widget _ferme(BuildContext context, PartnerSession session) => ListView(
+    key: const Key('partner-espace-ferme'),
+    padding: const EdgeInsets.fromLTRB(24, 48, 24, 32),
+    children: [
+      Icon(
+        Icons.lock_clock_outlined,
+        size: 64,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+      const SizedBox(height: 24),
+      Text(
+        AppLocalizations.of(context).partnerAccountsClosedTitle,
+        style: Theme.of(context).textTheme.headlineSmall,
+        textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: 12),
+      Text(
+        AppLocalizations.of(context).partnerAccountsClosedBody,
+        textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: 24),
+      FilledButton.icon(
+        key: const Key('partner-ferme-catalogue'),
+        onPressed: () =>
+            context.canPop() ? context.pop() : context.go('/'),
+        icon: const Icon(Icons.storefront_outlined),
+        label: Text(AppLocalizations.of(context).partnerAccountsClosedBrowse),
+      ),
+      TextButton.icon(
+        key: const Key('partner-ferme-reessayer'),
+        onPressed: session.loading
+            ? null
+            : () {
+                ref.invalidate(plancherDeVersionProvider);
+                if (session.espaceFerme) {
+                  ref.read(partnerSessionProvider.notifier).clearNotice();
+                }
+              },
+        icon: const Icon(Icons.refresh),
+        label: Text(AppLocalizations.of(context).commonRetry),
+      ),
+    ],
+  );
 
   Widget _notice(BuildContext context, String text) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 12),

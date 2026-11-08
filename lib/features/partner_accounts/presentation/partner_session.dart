@@ -1,16 +1,32 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/notice_tableau_de_bord.dart';
 import '../data/partner_repository.dart';
 
+/// Le `deniedStatus` d'une session fermée par le serveur SANS statut — le 401
+/// nu d'un compte refusé ou suspendu, dont les jetons ont été révoqués. Pas une
+/// valeur du serveur : un mot de l'application, pour que l'accueil dise « votre
+/// session vendeur a été fermée » et que la reconnexion montre le motif.
+const String sessionRevoquee = 'revoked';
+
 class PartnerSession {
-  const PartnerSession({this.profile, this.loading = false, this.error, this.deniedStatus, this.reviewReason, this.restoreFailed = false, this.verified = true});
+  const PartnerSession({this.profile, this.loading = false, this.error, this.deniedStatus, this.reviewReason, this.restoreFailed = false, this.verified = true, this.espaceFerme = false});
   final PartnerProfile? profile;
   final bool loading;
   final String? error;
   final String? deniedStatus;
   final String? reviewReason;
   final bool restoreFailed;
+
+  /// Le serveur a répondu 503 : l'espace partenaire est fermé.
+  ///
+  /// Distinct de [error], qui porte le message : la page ne doit pas montrer
+  /// ce refus-là en ligne rouge sous un formulaire rempli, mais remplacer le
+  /// formulaire par un panneau — c'est souvent le tout premier contact d'un
+  /// vendeur avec l'application. Et le message du serveur est le SEUL moyen
+  /// de le savoir quand `GET /api/app/version` n'a pas encore répondu.
+  final bool espaceFerme;
 
   /// Le serveur a confirmé cette session pendant cette exécution.
   ///
@@ -26,11 +42,87 @@ class PartnerSession {
   bool get sessionAConfirmer => profile != null && !verified;
 }
 
+/// Le profil enregistré au coffre, s'il est lisible.
+///
+/// Nul pour une session d'avant la version qui l'y a mis — elle n'enregistrait
+/// que le jeton — ou pour un enregistrement abîmé.
+PartnerProfile? profilDepuisLeCoffre(Map<String, dynamic>? json) {
+  if (json == null) return null;
+
+  try {
+    return PartnerProfile.fromJson(json);
+  } catch (_) {
+    return null;
+  }
+}
+
+/// L'état OPTIMISTE que vaut un coffre : la session telle qu'elle était, avant
+/// toute vérification.
+///
+/// Une seule définition, employée par `restore()` et par le démarrage : rien
+/// pour un coffre vide ; le profil non confirmé quand il y en a un ; et
+/// `loading` seulement quand le coffre porte un jeton SANS profil — session
+/// d'avant cette version —, parce qu'il n'y a alors rien à montrer tant que le
+/// serveur n'a pas répondu.
+PartnerSession sessionInitialeDepuis(PartnerSessionStockee? stockee) {
+  if (stockee == null) return const PartnerSession();
+
+  final profil = profilDepuisLeCoffre(stockee.profile);
+
+  return PartnerSession(profile: profil, verified: false, loading: profil == null);
+}
+
+/// La session partenaire telle que `main()` la lit AVANT `runApp`.
+///
+/// ── POURQUOI UNE LECTURE DE PLUS AU DÉMARRAGE ─────────────────────────────
+///
+/// L'accueil dépend d'elle : un partenaire ouvre sur son tableau de bord, les
+/// autres sur l'accueil acheteur. Le notifier lit le coffre dans son
+/// constructeur, mais de façon asynchrone — à la première trame il ne sait
+/// encore rien, et l'accueil acheteur s'afficherait un instant avant le
+/// tableau de bord, à CHAQUE lancement. C'est le même clignotement que la
+/// langue a réglé avec `localeInitialeProvider`, et la même réponse.
+///
+/// ── CE QUE LE DÉLAI PROTÈGE ───────────────────────────────────────────────
+///
+/// Le coffre chiffré d'Android peut être lent à s'ouvrir, et parfois ne pas
+/// répondre. Deux secondes, puis on démarre SANS savoir : l'état rendu est
+/// l'état de départ du notifier, qui refera sa lecture et décidera. Un coffre
+/// lent ne retarde donc jamais le démarrage de plus de deux secondes, et un
+/// coffre cassé ne l'empêche pas.
+Future<PartnerSession> sessionPartenaireAuDemarrage(
+  PartnerTokenStore coffre, {
+  Duration delai = const Duration(seconds: 2),
+}) async {
+  try {
+    return sessionInitialeDepuis(await coffre.readSession().timeout(delai));
+  } catch (_) {
+    return const PartnerSession(loading: true);
+  }
+}
+
+/// La session lue par `main()`, injectée par surcharge — comme la langue.
+///
+/// Le défaut est l'état de départ historique du notifier, « on ne sait pas
+/// encore » : les bancs qui ne surchargent rien gardent exactement le
+/// comportement qu'ils ont toujours éprouvé.
+final sessionPartenaireInitialeProvider =
+    Provider<PartnerSession>((_) => const PartnerSession(loading: true));
+
 final partnerSessionProvider = StateNotifierProvider<PartnerSessionNotifier, PartnerSession>((ref) =>
-  PartnerSessionNotifier(ref.watch(partnerRepositoryProvider)));
+  PartnerSessionNotifier(
+    ref.watch(partnerRepositoryProvider),
+    initiale: ref.read(sessionPartenaireInitialeProvider),
+  ));
 
 class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsBindingObserver {
-  PartnerSessionNotifier(this._repository) : super(const PartnerSession(loading: true)) {
+  /// [initiale] : ce que `main()` a lu au coffre avant `runApp`, pour que la
+  /// première trame soit déjà la bonne. `restore()` relit et vérifie quand
+  /// même : la lecture du démarrage n'est qu'une avance, pas une autorité.
+  PartnerSessionNotifier(
+    this._repository, {
+    PartnerSession initiale = const PartnerSession(loading: true),
+  }) : super(initiale) {
     _observerLeCycleDeVie();
     restore();
   }
@@ -87,19 +179,7 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
     super.dispose();
   }
 
-  /// Le profil enregistré au coffre, s'il est lisible.
-  ///
-  /// Nul pour une session d'avant cette version — qui n'enregistrait que le
-  /// jeton — ou pour un enregistrement abîmé.
-  PartnerProfile? _profilDepuis(Map<String, dynamic>? json) {
-    if (json == null) return null;
 
-    try {
-      return PartnerProfile.fromJson(json);
-    } catch (_) {
-      return null;
-    }
-  }
 
   /// Ouvre l'espace partenaire sur le coffre, PUIS vérifie.
   ///
@@ -133,11 +213,10 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
       return;
     }
 
-    // Démarrage optimiste. `loading` ne reste vrai que s'il n'y a RIEN à
-    // montrer — une session d'avant cette version, qui n'a pas de profil au
-    // coffre. Elle se complète à la première vérification réussie.
-    final profil = _profilDepuis(stockee.profile);
-    state = PartnerSession(profile: profil, verified: false, loading: profil == null);
+    // Démarrage optimiste : le coffre tel quel, avant la vérification. La
+    // définition est partagée avec `main()`, voir `sessionInitialeDepuis`.
+    final profil = profilDepuisLeCoffre(stockee.profile);
+    state = sessionInitialeDepuis(stockee);
 
     try {
       final frais = await _repository.getMe();
@@ -149,10 +228,23 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
       // Un rejet définitif ferme la session — `getMe()` a déjà vidé le coffre.
       // Tout le reste la conserve : une lenteur ou une coupure ne dit rien de
       // la validité de la session, et `restoreFailed` propose de réessayer.
+      //
+      // ── LE REFUS RÉEL EST UN 401 NU ─────────────────────────────────────
+      //
+      // Quand le personnel refuse ou suspend un compte, il révoque ses jetons :
+      // le prochain `/partner/me` répond 401 « Unauthenticated. », SANS
+      // `status` ni motif — ceux-là ne viennent qu'à la reconnexion. Ne poser
+      // `deniedStatus` que depuis le corps laissait donc l'accueil muet sur le
+      // seul chemin que le serveur produit : l'ancien partenaire retombait en
+      // « Visiteur » sans un mot. `revoked` dit « fermée, motif à la
+      // reconnexion », et c'est ce que la carte de l'accueil affiche.
       state = error.sessionRejected
-          ? PartnerSession(error: error.message, deniedStatus: error.accountStatus, reviewReason: error.reviewReason)
+          ? PartnerSession(error: error.message,
+              deniedStatus: error.accountStatus ?? (profil != null ? sessionRevoquee : null),
+              reviewReason: error.reviewReason)
           : PartnerSession(profile: profil, verified: false, error: error.message,
-              restoreFailed: true, deniedStatus: error.accountStatus, reviewReason: error.reviewReason);
+              restoreFailed: true, deniedStatus: error.accountStatus, reviewReason: error.reviewReason,
+              espaceFerme: error.statusCode == 503);
     } catch (_) {
       if (!mounted || generation != _generation) return;
       state = PartnerSession(profile: profil, verified: false,
@@ -166,8 +258,15 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
     try {
       final profile = await action();
       if (mounted && generation == _generation) state = PartnerSession(profile: profile);
+      // Une session qui NAÎT dans cette version n'a jamais connu l'ancien
+      // accueil : la ligne « votre accueil est maintenant votre tableau de
+      // bord » ne s'adresse qu'aux sessions restaurées d'un coffre antérieur.
+      // SANS attendre, et APRÈS la session : des préférences qui ne répondent
+      // pas ne doivent pas retenir une connexion réussie — mesuré en banc,
+      // où le canal reste muet et bloquait l'inscription.
+      NoticeTableauDeBord.marquerVue().ignore();
     } on PartnerApiException catch (error) {
-      if (mounted && generation == _generation) state = PartnerSession(error: error.message, deniedStatus: error.accountStatus, reviewReason: error.reviewReason);
+      if (mounted && generation == _generation) state = PartnerSession(error: error.message, deniedStatus: error.accountStatus, reviewReason: error.reviewReason, espaceFerme: error.statusCode == 503);
     } catch (_) {
       if (mounted && generation == _generation) state = const PartnerSession(error: 'La connexion n’a pas abouti. Réessayez.');
     }
@@ -219,9 +318,14 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
       if (mounted && generation == _generation) state = PartnerSession(profile: profile);
     } on PartnerApiException catch (error) {
       if (mounted && generation == _generation) {
+        // Même règle qu'à la restauration : un 401 nu sur une session connue
+        // est une session fermée, pas un simple visiteur.
         state = PartnerSession(profile: error.sessionRejected ? null : previous,
           verified: error.sessionRejected ? true : confirme,
-          error: error.message, deniedStatus: error.accountStatus, reviewReason: error.reviewReason);
+          error: error.message,
+          deniedStatus: error.accountStatus ?? (error.sessionRejected && previous != null ? sessionRevoquee : null),
+          reviewReason: error.reviewReason,
+          espaceFerme: error.statusCode == 503);
       }
     } catch (_) {
       if (mounted && generation == _generation) {

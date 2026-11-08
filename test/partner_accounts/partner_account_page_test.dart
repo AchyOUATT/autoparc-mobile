@@ -6,39 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:auto/l10n/app_localizations.dart';
 
-class _Repository extends PartnerRepository {
-  PartnerProfile? savedProfile;
-  Map<String, dynamic>? registration;
-  bool loggedOut = false;
-  /// La couture a change : le notifier lit le COFFRE, puis verifie. Un faux
-  /// qui ne modelise que `getMe()` laisserait la lecture du coffre tomber sur
-  /// le vrai magasin securise, dont le canal de plateforme n'existe pas en
-  /// banc — et la page resterait sur son indicateur de chargement.
-  @override
-  Future<PartnerSessionStockee?> sessionStockee() async => savedProfile == null
-      ? null
-      : PartnerSessionStockee(token: 'jeton-de-banc', profile: savedProfile!.toJson());
-  @override
-  Future<PartnerProfile> register(Map<String, dynamic> fields) async {
-    registration = fields;
-    return savedProfile = _profile('pending');
-  }
-  /// Quand elle est posée, `getMe()` attend : c'est ce qui rend la fenêtre
-  /// du démarrage optimiste observable.
-  Completer<PartnerProfile>? porte;
+import '../support/faux_depot_partenaire.dart';
 
-  @override
-  Future<PartnerProfile> getMe() async => porte == null ? savedProfile! : porte!.future;
-  @override
-  Future<void> logout() async { loggedOut = true; savedProfile = null; }
-}
-
-PartnerProfile _profile(String status) => PartnerProfile(user: const {'role': 'partner'}, account: {
-  'company_name': 'Garage Exemple', 'status': status,
-  if (status == 'rejected') 'review_reason': 'Téléphone à vérifier',
-});
-
-Future<void> _open(WidgetTester tester, _Repository repository) async {
+/// Le faux est partagé — `test/support/faux_depot_partenaire.dart` dit ce
+/// qu'il modélise, et pourquoi un faux qui ne modéliserait que `getMe()`
+/// laisserait ce banc VERT sur l'état anonyme : le notifier lit le coffre
+/// avant de vérifier, et `restore()` attrape l'exception du vrai magasin
+/// sécurisé au lieu de rester sur son indicateur.
+Future<void> _open(WidgetTester tester, FauxDepotPartenaire repository) async {
   await tester.pumpWidget(ProviderScope(overrides: [partnerRepositoryProvider.overrideWithValue(repository)],
     child: const MaterialApp(
       locale: const Locale('fr'),
@@ -58,9 +33,9 @@ void main() {
   /// périmé : la puce le dit, au lieu d'annoncer « Compte approuvé » sur la
   /// foi d'un enregistrement que rien n'a confirmé.
   testWidgets('pendant la vérification, la puce annonce un statut à confirmer', (tester) async {
-    final repository = _Repository()
-      ..savedProfile = _profile('approved')
-      ..porte = Completer<PartnerProfile>();
+    final repository = FauxDepotPartenaire()
+      ..profilAuCoffre = profilDeBanc()
+      ..porteGetMe = Completer<PartnerProfile>();
 
     await _open(tester, repository);
 
@@ -71,7 +46,7 @@ void main() {
             'bloquante.');
 
     // Le serveur répond enfin.
-    repository.porte!.complete(_profile('approved'));
+    repository.porteGetMe!.complete(profilDeBanc());
     await tester.pumpAndSettle();
 
     expect(find.text('Compte approuvé'), findsOneWidget);
@@ -79,7 +54,7 @@ void main() {
   });
 
   testWidgets('une inscription réelle du formulaire aboutit à une attente sans gestion', (tester) async {
-    final repository = _Repository();
+    final repository = FauxDepotPartenaire();
     await _open(tester, repository);
     await tester.tap(find.text('Inscription'));
     await tester.pumpAndSettle();
@@ -100,9 +75,9 @@ void main() {
     await tester.tap(find.byKey(const Key('partner-submit')));
     await tester.pumpAndSettle();
 
-    expect(repository.registration, isNotNull);
-    expect(repository.registration!['company_name'], 'Garage Exemple');
-    expect(repository.registration!['password_confirmation'], 'Partenaire12345');
+    expect(repository.inscription, isNotNull);
+    expect(repository.inscription!['company_name'], 'Garage Exemple');
+    expect(repository.inscription!['password_confirmation'], 'Partenaire12345');
     expect(find.text('Inscription reçue'), findsOneWidget);
     expect(find.text('Vérifier mon statut'), findsOneWidget);
     expect(find.text('Créer une annonce'), findsNothing);
@@ -115,7 +90,7 @@ void main() {
   /// l'inscription — et la seconde perte est muette.
   testWidgets('une inscription sans nom d’entreprise part quand même',
       (tester) async {
-    final repository = _Repository();
+    final repository = FauxDepotPartenaire();
     await _open(tester, repository);
     await tester.tap(find.text('Inscription'));
     await tester.pumpAndSettle();
@@ -135,12 +110,12 @@ void main() {
     await tester.tap(find.byKey(const Key('partner-submit')));
     await tester.pumpAndSettle();
 
-    expect(repository.registration, isNotNull,
+    expect(repository.inscription, isNotNull,
         reason: 'Le formulaire a refusé une inscription que le serveur accepte.');
-    expect(repository.registration!.containsKey('company_name'), isFalse,
+    expect(repository.inscription!.containsKey('company_name'), isFalse,
         reason: '« Absent » et « vide » doivent arriver distinctement : une '
             'chaîne vide s’enregistrerait comme un nom.');
-    expect(repository.registration!['contact_name'], 'Salif Kaboré');
+    expect(repository.inscription!['contact_name'], 'Salif Kaboré');
   });
 
   /// ── L'ADRESSE N'EST PLUS EXIGEE NON PLUS ────────────────────────────────
@@ -149,7 +124,7 @@ void main() {
   /// les notifications passent par `AppNotification`. L'adresse ne servait donc
   /// qu'à se connecter, et c'est le numéro qui le fait désormais.
   testWidgets('une inscription sans courriel part quand même', (tester) async {
-    final repository = _Repository();
+    final repository = FauxDepotPartenaire();
     await _open(tester, repository);
     await tester.tap(find.text('Inscription'));
     await tester.pumpAndSettle();
@@ -168,17 +143,17 @@ void main() {
     await tester.tap(find.byKey(const Key('partner-submit')));
     await tester.pumpAndSettle();
 
-    expect(repository.registration, isNotNull,
+    expect(repository.inscription, isNotNull,
         reason: 'Le formulaire a refusé une inscription que le serveur accepte.');
-    expect(repository.registration!.containsKey('email'), isFalse);
-    expect(repository.registration!['phone'], '+22670000001');
+    expect(repository.inscription!.containsKey('email'), isFalse);
+    expect(repository.inscription!['phone'], '+22670000001');
   });
 
   /// Le champ de connexion accepte les deux : les partenaires inscrits avant
   /// ce changement ont une adresse et s'en servent.
   testWidgets('la connexion accepte un numéro comme une adresse', (tester) async {
     for (final identifiant in ['+226 70 00 00 01', 'salif@example.test']) {
-      final repository = _Repository();
+      final repository = FauxDepotPartenaire();
       await _open(tester, repository);
 
       await tester.enterText(find.byKey(const Key('partner-email')), identifiant);
@@ -197,7 +172,7 @@ void main() {
 
   testWidgets('la connexion refuse un identifiant qui n’est ni l’un ni l’autre',
       (tester) async {
-    final repository = _Repository();
+    final repository = FauxDepotPartenaire();
     await _open(tester, repository);
 
     await tester.enterText(find.byKey(const Key('partner-email')), 'salif');
@@ -218,10 +193,8 @@ void main() {
   /// l'affichage qui se replie.
   testWidgets('sans entreprise, l’espace porte le nom du responsable',
       (tester) async {
-    final repository = _Repository()
-      ..savedProfile = PartnerProfile(user: const {'role': 'partner'}, account: const {
-        'company_name': null, 'contact_name': 'Salif Kaboré', 'status': 'approved',
-      });
+    final repository = FauxDepotPartenaire()
+      ..profilAuCoffre = profilDeBanc(company: null, contact: 'Salif Kaboré');
 
     await _open(tester, repository);
 
@@ -229,7 +202,11 @@ void main() {
   });
 
   testWidgets('le motif du refus reste visible et la déconnexion est disponible', (tester) async {
-    final repository = _Repository()..savedProfile = _profile('rejected');
+    final repository = FauxDepotPartenaire()
+      ..profilAuCoffre = profilDeBanc(
+        status: 'rejected',
+        reviewReason: 'Téléphone à vérifier',
+      );
     await _open(tester, repository);
 
     expect(find.text('Demande refusée'), findsOneWidget);
@@ -237,12 +214,12 @@ void main() {
     await tester.tap(find.text('Se déconnecter'));
     await tester.pumpAndSettle();
 
-    expect(repository.loggedOut, isTrue);
+    expect(repository.appels, contains('logout'));
     expect(find.text('Connexion'), findsOneWidget);
   });
 
   testWidgets('un compte approuvé accède aux trois inventaires sans rôle personnel', (tester) async {
-    final repository = _Repository()..savedProfile = _profile('approved');
+    final repository = FauxDepotPartenaire()..profilAuCoffre = profilDeBanc();
     await _open(tester, repository);
 
     expect(find.text('Compte approuvé'), findsOneWidget);

@@ -423,7 +423,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     // Reutiliser les validateurs : les raisons ne doivent pas diverger des
     // erreurs sous les champs. Remplacer le message precedent, sans file
     // d'attente de messages perimes apres plusieurs appuis sur Suivant.
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).clearSnackBars();
     _snackError(
       l10n.vehiclesStepBlocked(
         etape + 1,
@@ -466,7 +466,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     // sont montées mais vides, et les exiger ici interdirait d'avancer.
     if (_step < 3) {
       if (_validerLEtape(_step)) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).clearSnackBars();
         setState(() => _step++);
       } else {
         _expliquerLEtape(_step);
@@ -493,7 +493,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       return;
     }
 
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).clearSnackBars();
     await _submit(refs);
   }
 
@@ -692,7 +692,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         'features': _selectedFeatureIds.toList(),
       if (widget.mode.peutChoisirLaBoutique && _selectedLocation != null)
         'location_id': _selectedLocation!.id,
-      if (widget.mode.peutChoisirLaBoutique && _selectedPartnerId != null)
+      if (widget.mode.peutChoisirLaBoutique &&
+          ref.read(authProvider).canManageCatalog &&
+          _selectedPartnerId != null)
         'partner_id': _selectedPartnerId,
       // Kilométrage → sous-objet selon le STATUT, et non plus selon la
       // présence d'une plaque :
@@ -1704,8 +1706,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             //
             // Le fournisseur source est une relation de la boutique. Un
             // partenaire n'a pas a rattacher son vehicule a un tiers, et le
-            // serveur refuse `partner_id`.
-            if (widget.mode.peutChoisirLaBoutique) ...[
+            // serveur refuse `partner_id`. Le mode du formulaire ne constitue
+            // pas une autorisation : meme un lien direct vers le formulaire
+            // personnel doit verifier le role de la session.
+            if (widget.mode.peutChoisirLaBoutique &&
+                ref.watch(authProvider).canManageCatalog) ...[
               const SizedBox(height: 4),
               const Divider(),
               const SizedBox(height: 4),
