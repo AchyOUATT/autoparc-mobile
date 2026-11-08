@@ -79,10 +79,9 @@ class _MyVehicleSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Un visiteur non connecté n'a pas de garage : l'interroger lui vaudrait
-    // un 401, et l'invitation lui annoncerait « votre session a expiré » —
-    // pour une session qu'il n'a jamais ouverte.
-    if (!ref.watch(authProvider).isClient) return const _AddVehicleCard();
+    // L'accueil ne propose pas d'enregistrer un véhicule. L'ajout reste dans
+    // Mon garage ; un visiteur voit directement le catalogue, sans requête 401.
+    if (!ref.watch(authProvider).isClient) return const SizedBox.shrink();
 
     final garage = ref.watch(garageProvider);
 
@@ -96,15 +95,16 @@ class _MyVehicleSection extends ConsumerWidget {
         onRetry: () => ref.invalidate(garageProvider),
       ),
       data: (vehicles) {
-        if (vehicles.isEmpty) return const _AddVehicleCard();
+        if (vehicles.isEmpty) return const SizedBox.shrink();
 
         final vehicle = ref.watch(homeVehicleProvider);
-        if (vehicle == null) return const _AddVehicleCard();
+        if (vehicle == null) return const SizedBox.shrink();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (vehicles.length > 1) _VehicleSelector(vehicles: vehicles, selected: vehicle),
+            if (vehicles.length > 1)
+              _VehicleSelector(vehicles: vehicles, selected: vehicle),
             _VehicleCard(vehicle: vehicle),
             _CompatiblePartsSection(vehicle: vehicle),
           ],
@@ -136,9 +136,9 @@ class _VehicleSelector extends ConsumerWidget {
         itemCount: vehicles.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (_, i) {
-          final v       = vehicles[i];
-          final actif   = v.id == selected.id;
-          final alerte  = !actif && needsAttention(v);
+          final v = vehicles[i];
+          final actif = v.id == selected.id;
+          final alerte = !actif && needsAttention(v);
 
           return Center(
             child: ChoiceChip(
@@ -163,9 +163,9 @@ class _VehicleCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs        = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
     final prochaine = vehicle.nextDeadline;
-    final autres    = vehicle.deadlines.where((d) => d != prochaine).take(2);
+    final autres = vehicle.deadlines.where((d) => d != prochaine).take(2);
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -198,7 +198,10 @@ class _VehicleCard extends ConsumerWidget {
                       // du nom, ce qui tenait tant qu'aucune marque n'avait
                       // d'accent : « Citroën » devenait « citro-n » et perdait
                       // son logo sans que rien ne le signale.
-                      child: BrandLogo(slug: vehicle.identity.brandSlug, size: 26),
+                      child: BrandLogo(
+                        slug: vehicle.identity.brandSlug,
+                        size: 26,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -241,11 +244,12 @@ class _VehicleCard extends ConsumerWidget {
                         // COHÉRENCE : U+202F est la ponctuation française des
                         // milliers, et c'est déjà celle du reste de
                         // l'application.
-                        AppLocalizations.of(context).commonMileageKm(
-                          formatEntier(vehicle.mileageKm!),
+                        AppLocalizations.of(
+                          context,
+                        ).commonMileageKm(formatEntier(vehicle.mileageKm!)),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
                         ),
-                        style: Theme.of(context).textTheme.bodySmall
-                            ?.copyWith(color: cs.onSurfaceVariant),
                       ),
                   ],
                 ),
@@ -276,11 +280,15 @@ class _VehicleCard extends ConsumerWidget {
                         Expanded(
                           child: Text(
                             _libelle(AppLocalizations.of(context), d),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: d.overdue ? cs.error : cs.onSurfaceVariant,
-                              fontWeight:
-                                  d.overdue ? FontWeight.w600 : FontWeight.normal,
-                            ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: d.overdue
+                                      ? cs.error
+                                      : cs.onSurfaceVariant,
+                                  fontWeight: d.overdue
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
                           ),
                         ),
                       ],
@@ -321,13 +329,13 @@ class _UrgentDeadline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs      = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
     final depasse = deadline.overdue;
 
     // Rouge pour ce qui est déjà dépassé, ambre pour ce qui approche : la
     // nuance porte l'urgence sans texte supplémentaire.
-    final fond    = depasse ? cs.errorContainer : const Color(0xFFFAEEDA);
-    final encre   = depasse ? cs.onErrorContainer : const Color(0xFF412402);
+    final fond = depasse ? cs.errorContainer : const Color(0xFFFAEEDA);
+    final encre = depasse ? cs.onErrorContainer : const Color(0xFF412402);
 
     return Container(
       width: double.infinity,
@@ -381,7 +389,11 @@ class _NoDeadline extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.event_note_outlined, size: 18, color: cs.onSurfaceVariant),
+            Icon(
+              Icons.event_note_outlined,
+              size: 18,
+              color: cs.onSurfaceVariant,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -417,7 +429,11 @@ class _GarageUnavailable extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
         child: Row(
           children: [
-            Icon(Icons.cloud_off_outlined, size: 22, color: cs.onSurfaceVariant),
+            Icon(
+              Icons.cloud_off_outlined,
+              size: 22,
+              color: cs.onSurfaceVariant,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -425,14 +441,16 @@ class _GarageUnavailable extends StatelessWidget {
                 children: [
                   Text(
                     AppLocalizations.of(context).homeGarageUnavailable,
-                    style: Theme.of(context).textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w500),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     message,
-                    style: Theme.of(context).textTheme.bodySmall
-                        ?.copyWith(color: cs.onSurfaceVariant),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -440,51 +458,6 @@ class _GarageUnavailable extends StatelessWidget {
             TextButton(
               onPressed: onRetry,
               child: Text(AppLocalizations.of(context).commonRetry),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Pas encore de véhicule : c'est le moment de conversion vers les rappels.
-class _AddVehicleCard extends StatelessWidget {
-  const _AddVehicleCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: cs.primary),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-        child: Column(
-          children: [
-            Icon(Icons.directions_car_outlined, size: 34, color: cs.primary),
-            const SizedBox(height: 10),
-            Text(
-              AppLocalizations.of(context).homeAddVehicleTitle,
-              style: Theme.of(context).textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              AppLocalizations.of(context).homeAddVehicleBody,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: cs.onSurfaceVariant),
-            ),
-            const SizedBox(height: 14),
-            FilledButton(
-              onPressed: () => context.push('/garage/add'),
-              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44)),
-              child: Text(AppLocalizations.of(context).homeAddVehicleCta),
             ),
           ],
         ),
@@ -502,7 +475,7 @@ class _CompatiblePartsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final parts = ref.watch(homeCompatiblePartsProvider(vehicle.id));
-    final l10n  = AppLocalizations.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return parts.maybeWhen(
       // Une bande vide ou en erreur disparaît : mieux vaut rien qu'un cadre
@@ -517,8 +490,10 @@ class _CompatiblePartsSection extends ConsumerWidget {
                     vehicle.identity.model ??
                         l10n.homeCompatiblePartsFallbackModel,
                   ),
-                  onSeeAll: () => context.push('/garage/${vehicle.id}/parts',
-                      extra: vehicle),
+                  onSeeAll: () => context.push(
+                    '/garage/${vehicle.id}/parts',
+                    extra: vehicle,
+                  ),
                 ),
                 // LA HAUTEUR VIENT DU CONTENU, et plus d'un nombre écrit ici.
                 //
@@ -682,10 +657,10 @@ class _PartFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        color: cs.surfaceContainerHighest,
-        alignment: Alignment.center,
-        child: Icon(Icons.settings_outlined, size: 24, color: cs.onSurfaceVariant),
-      );
+    color: cs.surfaceContainerHighest,
+    alignment: Alignment.center,
+    child: Icon(Icons.settings_outlined, size: 24, color: cs.onSurfaceVariant),
+  );
 }
 
 // ── Bonnes affaires ───────────────────────────────────────────────────
@@ -764,7 +739,7 @@ class _DealTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final c  = vehicle.commercial;
+    final c = vehicle.commercial;
 
     final couverture = Container(
       color: cs.surfaceContainerHighest,
@@ -804,7 +779,9 @@ class _DealTile extends StatelessWidget {
                         left: 6,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFB26A00),
                             borderRadius: BorderRadius.circular(4),
@@ -831,13 +808,19 @@ class _DealTile extends StatelessWidget {
                       vehicle.identity.fullName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     if (c.locationCity != null) ...[
                       const SizedBox(height: 2),
                       Text(
                         c.locationCity!,
-                        style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
                     ],
                     const SizedBox(height: 4),
@@ -859,8 +842,8 @@ class _DealTile extends StatelessWidget {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        vehicleHeadlinePrice(c, AppLocalizations.of(context))
-                            ?? AppLocalizations.of(context).catalogPriceOnRequest,
+                        vehicleHeadlinePrice(c, AppLocalizations.of(context)) ??
+                            AppLocalizations.of(context).catalogPriceOnRequest,
                         maxLines: 1,
                         style: TextStyle(
                           fontSize: 12.5,
@@ -931,33 +914,33 @@ class _BrowseSection extends StatelessWidget {
       child: MediaQuery.withClampedTextScaling(
         maxScaleFactor: echelleMaxLibellesDestinations,
         child: Row(
-        children: [
-          Expanded(
-            child: _BrowseTile(
-              icon: Icons.directions_car_outlined,
-              label: AppLocalizations.of(context).commonVehicles,
-              onTap: () => context.go('/vehicles'),
+          children: [
+            Expanded(
+              child: _BrowseTile(
+                icon: Icons.directions_car_outlined,
+                label: AppLocalizations.of(context).commonVehicles,
+                onTap: () => context.go('/vehicles'),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          // Même ordre que la barre du bas : deux rangements différents pour
-          // les mêmes trois destinations obligeraient à relire à chaque fois.
-          Expanded(
-            child: _BrowseTile(
-              icon: Icons.tune_outlined,
-              label: AppLocalizations.of(context).commonAccessories,
-              onTap: () => context.go('/accessories'),
+            const SizedBox(width: 8),
+            // Même ordre que la barre du bas : deux rangements différents pour
+            // les mêmes trois destinations obligeraient à relire à chaque fois.
+            Expanded(
+              child: _BrowseTile(
+                icon: Icons.tune_outlined,
+                label: AppLocalizations.of(context).commonAccessories,
+                onTap: () => context.go('/accessories'),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _BrowseTile(
-              icon: Icons.settings_outlined,
-              label: AppLocalizations.of(context).commonParts,
-              onTap: () => context.go('/parts'),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _BrowseTile(
+                icon: Icons.settings_outlined,
+                label: AppLocalizations.of(context).commonParts,
+                onTap: () => context.go('/parts'),
+              ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );
@@ -969,7 +952,11 @@ class _BrowseTile extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _BrowseTile({required this.icon, required this.label, required this.onTap});
+  const _BrowseTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1017,9 +1004,9 @@ class _NeedPrompt extends ConsumerWidget {
           // 12.5)` emporte la famille de police du thème, et l'invitation est
           // la ligne la plus longue de la page.
           style: TextButton.styleFrom(
-            textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-              fontSize: 12.5,
-            ),
+            textStyle: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(fontSize: 12.5),
           ),
         ),
       ),
@@ -1044,8 +1031,9 @@ class _SectionTitle extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: Theme.of(context).textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1078,9 +1066,9 @@ class _SectionTitle extends StatelessWidget {
                 // pour son `TextPainter`, et que `test/support/polices.dart`
                 // raconte pour les bancs : une police de repli presque deux
                 // fois plus large, et rien pour s'en plaindre.
-                textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontSize: 12.5,
-                ),
+                textStyle: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(fontSize: 12.5),
               ),
               child: Text(AppLocalizations.of(context).homeSeeAll),
             ),
@@ -1096,19 +1084,19 @@ class _SectionSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: height,
-        child: const Center(child: CircularProgressIndicator()),
-      );
+    height: height,
+    child: const Center(child: CircularProgressIndicator()),
+  );
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────
 
 IconData _iconFor(String kind) => switch (kind) {
-      'technical_inspection' => Icons.fact_check_outlined,
-      'insurance'            => Icons.shield_outlined,
-      'service'              => Icons.oil_barrel_outlined,
-      _                      => Icons.event_outlined,
-    };
+  'technical_inspection' => Icons.fact_check_outlined,
+  'insurance' => Icons.shield_outlined,
+  'service' => Icons.oil_barrel_outlined,
+  _ => Icons.event_outlined,
+};
 
 /// « Visite technique dans 21 jours », « Roadworthiness test in 21 days ».
 ///
