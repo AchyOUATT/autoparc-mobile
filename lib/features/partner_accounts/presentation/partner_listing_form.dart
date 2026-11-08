@@ -44,7 +44,6 @@ class _PartnerListingFormPageState
   int? _categoryId;
   int? _manufacturerId;
   int? _donorId;
-  String _partType = 'aftermarket';
   String _partCondition = 'new';
   String _accessoryCategory = 'utilitaire';
 
@@ -105,7 +104,6 @@ class _PartnerListingFormPageState
         fin: DateTime.tryParse('${promotion['ends_at']}')?.toLocal(),
       );
     }
-    _partType = _text(listing['type'] ?? 'aftermarket');
     _partCondition = _text(listing['condition'] ?? 'new');
     _accessoryCategory = _text(
       _map(listing['category'])['value'] ??
@@ -218,7 +216,6 @@ class _PartnerListingFormPageState
     if (_part) {
       data.addAll({
         'part_category_id': _categoryId,
-        'type': _partType,
         'condition': _partCondition,
         'manufacturer_reference': _manufacturerReference.text.trim(),
         'donor_vehicle_id': _partCondition == 'used' ? _donorId : null,
@@ -505,19 +502,6 @@ class _PartnerListingFormPageState
         value: _categoryId,
         items: _flattenCategories(references.partCategories),
         onChanged: (value) => setState(() => _categoryId = value),
-      ),
-      _choice(
-        AppLocalizations.of(context).partnerAccountsPartOrigin,
-        _partType,
-        {
-          'oem': AppLocalizations.of(context).partnerAccountsPartOem,
-          'oes': AppLocalizations.of(context).partnerAccountsPartOes,
-          'aftermarket': AppLocalizations.of(
-            context,
-          ).partnerAccountsPartAftermarket,
-          'salvage': AppLocalizations.of(context).partnerAccountsPartSalvage,
-        },
-        (value) => setState(() => _partType = value),
       ),
       _choice(
         AppLocalizations.of(context).partnerAccountsCondition,

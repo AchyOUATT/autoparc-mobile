@@ -178,10 +178,12 @@ class _PartTile extends StatelessWidget {
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: color.withValues(alpha: 0.15),
-        child: Text(
-          part.type.substring(0, 1).toUpperCase(),
-          style: TextStyle(color: color, fontWeight: FontWeight.bold),
-        ),
+        child: part.type == null || part.type!.isEmpty
+            ? Icon(Icons.settings_outlined, color: color, size: 20)
+            : Text(
+                part.type!.substring(0, 1).toUpperCase(),
+                style: TextStyle(color: color, fontWeight: FontWeight.bold),
+              ),
       ),
       title: Text(part.name, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: part.sku != null

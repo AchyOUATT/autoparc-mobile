@@ -80,6 +80,15 @@ void main() {
     expect(Accessory.fromJson(accessory).isAvailableForSale, isFalse);
   });
 
+  test('une pièce sans origine renseignée reste lisible, sans origine inventée', () {
+    final json = fixture('part_detail')..['type'] = null;
+    final part = Part.fromJson(json);
+    expect(part.type, isNull);
+    expect(part.isOem, isFalse);
+    expect(part.isAftermarket, isFalse);
+    expect(part.condition, isNotEmpty);
+  });
+
   test('les anciens produits sans vendeur conservent leurs quantités et disponibilité', () {
     final part = Part.fromJson(fixture('part_detail'));
     final accessory = Accessory.fromJson(fixture('accessories_list'));

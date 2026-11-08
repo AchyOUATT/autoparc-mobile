@@ -43,12 +43,13 @@ import '../widgets/ligne_compatibilite.dart';
 ///
 /// Le repli reste le code brut du serveur en capitales. Ce n'est pas un
 /// libellé, c'est un aveu : une nature inconnue de cette table doit se voir.
-String _libelleType(AppLocalizations l10n, String type) => switch (type) {
+String? _libelleType(AppLocalizations l10n, String? type) => switch (type) {
+  null => null,
   'oem' => l10n.catalogPartTypeOem,
   'oes' => l10n.catalogPartTypeOes,
   'aftermarket' => l10n.catalogPartTypeAftermarket,
   'salvage' => l10n.catalogPartTypeSalvage,
-  _ => type.toUpperCase(),
+  final String t => t.toUpperCase(),
 };
 
 const _conditionColors = {
@@ -631,7 +632,7 @@ class _PartCardState extends ConsumerState<_PartCard> {
 
 /// Placeholder dégradé pour pièce sans photo.
 class _PartPlaceholder extends StatelessWidget {
-  final String type;
+  final String? type;
   final bool isOem;
   final ColorScheme cs;
   const _PartPlaceholder({
@@ -660,15 +661,17 @@ class _PartPlaceholder extends StatelessWidget {
             size: 30,
             color: isOem ? cs.onPrimaryContainer : cs.onSecondaryContainer,
           ),
+          if (type != null) ...[
           const SizedBox(height: 4),
           Text(
-            type,
+            type!,
             style: TextStyle(
               color: isOem ? cs.onPrimaryContainer : cs.onSecondaryContainer,
               fontWeight: FontWeight.w600,
               fontSize: 10,
             ),
           ),
+          ],
         ],
       ),
     ),
