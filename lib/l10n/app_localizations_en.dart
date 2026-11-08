@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -1004,6 +1003,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get onboardingProfileBuyBody =>
       'A vehicle, parts or accessories for my car.';
+
+  @override
+  String get onboardingProfileBuyOwnVehicleNotice =>
+      'You can also offer your own vehicle for sale after signing in and having the listing approved by AutoParc.';
 
   @override
   String get onboardingProfileSellTitle => 'I\'m selling';

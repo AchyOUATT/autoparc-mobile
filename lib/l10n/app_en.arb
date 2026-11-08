@@ -298,6 +298,7 @@
   "onboardingProfileSubtitle": "Tell us what brings you here. You can change your mind later.",
   "onboardingProfileBuyTitle": "I'm looking",
   "onboardingProfileBuyBody": "A vehicle, parts or accessories for my car.",
+  "onboardingProfileBuyOwnVehicleNotice": "You can also offer your own vehicle for sale after signing in and having the listing approved by AutoParc.",
   "onboardingProfileSellTitle": "I'm selling",
   "onboardingProfileSellBody": "Vehicles, parts or accessories. Garage, dealer or private seller: you open a seller account, and you can buy too.",
   "onboardingProfileUndecided": "I don't know yet",

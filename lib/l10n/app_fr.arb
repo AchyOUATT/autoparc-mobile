@@ -1416,6 +1416,10 @@
   "@onboardingProfileBuyBody": {
     "description": "Corps de la première carte."
   },
+  "onboardingProfileBuyOwnVehicleNotice": "Vous pouvez aussi proposer votre propre véhicule à la vente, après connexion et validation de l’annonce par AutoParc.",
+  "@onboardingProfileBuyOwnVehicleNotice": {
+    "description": "Précision sous le texte de la carte Je cherche sur /bienvenue, uniquement lorsque la vente personnelle est activée. Un acheteur peut proposer son propre véhicule après connexion et modération, sans devenir partenaire. Préserver ce caractère conditionnel, sans promettre gratuité ni quota."
+  },
   "onboardingProfileSellTitle": "Je vends",
   "@onboardingProfileSellTitle": {
     "description": "Titre de la seconde carte. Mène à l'inscription d'un compte partenaire, et non à la vente d'une voiture de particulier — c'est le corps qui le dit."

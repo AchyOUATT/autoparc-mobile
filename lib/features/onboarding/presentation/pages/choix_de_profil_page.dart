@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/demarrage.dart';
 import '../../../../core/l10n/langue.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../private_sales/data/private_listing_repository.dart';
 import '../../data/onboarding_service.dart';
 import '../../data/profil_service.dart';
 
@@ -103,9 +104,8 @@ class ChoixDeProfilPage extends ConsumerWidget {
                     Text(
                       l10n.onboardingProfileTitle,
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 10),
                     Text(
@@ -122,7 +122,11 @@ class ChoixDeProfilPage extends ConsumerWidget {
                       icon: Icons.search,
                       couleur: const Color(0xFF1A3C5E),
                       titre: l10n.onboardingProfileBuyTitle,
-                      corps: l10n.onboardingProfileBuyBody,
+                      // Match the availability of /sell; a profile choice
+                      // never grants seller permissions or enables the module.
+                      corps: privateSalesEnabled
+                          ? '${l10n.onboardingProfileBuyBody}\n\n${l10n.onboardingProfileBuyOwnVehicleNotice}'
+                          : l10n.onboardingProfileBuyBody,
                       onTap: () => _chercher(context, ref),
                     ),
                     const SizedBox(height: 12),
