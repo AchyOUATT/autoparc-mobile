@@ -17,13 +17,6 @@ import '../../../../core/api/api_exception.dart';
 
 // ── Constantes métier ─────────────────────────────────────────────────
 
-List<({String value, String label})> _types(AppLocalizations l10n) => [
-  (value: 'oem', label: l10n.catalogPartTypeOem),
-  (value: 'oes', label: l10n.catalogPartTypeOes),
-  (value: 'aftermarket', label: l10n.catalogPartTypeAftermarket),
-  (value: 'salvage', label: l10n.catalogPartTypeSalvage),
-];
-
 List<({String value, String label})> _conditions(AppLocalizations l10n) => [
   (value: 'new', label: l10n.catalogAdminConditionNew),
   (value: 'refurbished', label: l10n.catalogAdminConditionRefurbished),
@@ -47,7 +40,6 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
   // Identification
   final _nameCtrl = TextEditingController();
   final _skuCtrl = TextEditingController();
-  String _type = 'aftermarket';
   String _condition = 'new';
 
   // Classification
@@ -97,7 +89,6 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
 
     _nameCtrl.text = e.name;
     _skuCtrl.text = e.sku ?? '';
-    _type = e.type;
     _condition = e.condition;
     _priceCtrl.text = e.pricing.sellingPrice.toStringAsFixed(0);
     if (e.stock.quantity > 0) _stockCtrl.text = e.stock.quantity.toString();
@@ -173,7 +164,6 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
     final payload = <String, dynamic>{
       'name': _nameCtrl.text.trim(),
       if (_skuCtrl.text.isNotEmpty) 'sku': _skuCtrl.text.trim(),
-      'type': _type,
       'condition': _condition,
       'part_category_id': _category!.id,
       if (_manufacturer != null) 'manufacturer_id': _manufacturer!.id,
@@ -319,26 +309,9 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
               hint: l10n.catalogAdminPartSkuHint,
             ),
 
-            // Type
-            const SizedBox(height: 4),
-            Text(
-              l10n.catalogAdminTypeLabel,
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              children: _types(l10n)
-                  .map(
-                    (t) => ChoiceChip(
-                      label: Text(t.label),
-                      selected: _type == t.value,
-                      onSelected: (_) => setState(() => _type = t.value),
-                    ),
-                  )
-                  .toList(),
-            ),
-
+            // L'origine (OEM, OES…) n'est plus saisie : seul l'état compte.
+            // En édition, l'origine déjà enregistrée n'est pas renvoyée et le
+            // serveur la conserve.
             const SizedBox(height: 14),
             Text(
               l10n.catalogAdminConditionLabel,

@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _CaptureAdapter implements HttpClientAdapter {
   final languages = <String>[];
+  final capabilities = <Object?>[];
 
   @override
   Future<ResponseBody> fetch(
@@ -20,6 +21,7 @@ class _CaptureAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
+    capabilities.add(options.headers['X-AutoParc-Capabilities']);
     languages.add(
       options.headers.entries
               .firstWhere(
@@ -72,6 +74,7 @@ void main() {
       await client.get('/catalog/language-proof');
 
       expect(adapter.languages, ['en', 'fr', 'en']);
+      expect(adapter.capabilities, List.filled(3, 'nullable-part-type'));
       expect(
         identical(client, container.read(apiClientProvider)),
         isTrue,

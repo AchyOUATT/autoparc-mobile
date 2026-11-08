@@ -36,12 +36,13 @@ import '../../../../l10n/app_localizations.dart';
 ///
 /// Le repli rend le code brut du serveur, comme avant : une nature inconnue de
 /// cette table doit se voir.
-String _libelleType(AppLocalizations l10n, String type) => switch (type) {
+String? _libelleType(AppLocalizations l10n, String? type) => switch (type) {
+  null => null,
   'oem' => l10n.catalogPartTypeOemLong,
   'oes' => l10n.catalogPartTypeOesLong,
   'aftermarket' => l10n.catalogPartTypeAftermarketLong,
   'salvage' => l10n.catalogPartTypeSalvageLong,
-  _ => type,
+  final String t => t,
 };
 
 /// L'état d'une pièce dans la langue active.
@@ -596,7 +597,9 @@ class _InfoCard extends StatelessWidget {
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 12),
-            _InfoRow(l10n.catalogFieldType, typeLabel),
+            // Origine facultative : non saisie, la ligne disparaît plutôt
+            // que d'afficher une origine inventée.
+            if (typeLabel != null) _InfoRow(l10n.catalogFieldType, typeLabel),
             _InfoRow(l10n.catalogFieldState, conditionLabel),
             // Le NOM de la catégorie et celui du fabricant viennent du
             // référentiel du serveur et restent en français jusqu'à la vague

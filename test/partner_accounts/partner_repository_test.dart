@@ -75,6 +75,16 @@ void main() {
   });
 
   // ── LA BOÎTE AUX LETTRES DU PARTENAIRE ────────────────────────────────
+  test('les pièces négocient une origine nullable avec le jeton partenaire', () async {
+    tokens.token = 'partner-test-token';
+    final adapter = _Adapter((_) => (200, {'data': {'id': 42, 'type': null}}));
+    dio.httpClientAdapter = adapter;
+    final result = await repository.listing(PartnerListingKind.parts, 42);
+    expect(result['type'], isNull);
+    expect(adapter.requests.single.headers['X-AutoParc-Capabilities'], 'nullable-part-type');
+    expect(adapter.requests.single.headers['Authorization'], 'Bearer partner-test-token');
+  });
+
   //
   // Ses propres routes, sous `/api/partner/`, et donc son propre jeton. Ce
   // banc éprouve la LECTURE réelle de la réponse : l'écran, lui, passe par un

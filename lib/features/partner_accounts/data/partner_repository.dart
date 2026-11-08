@@ -393,6 +393,7 @@ class PartnerRepository {
   }) async {
     final headers = <String, dynamic>{
       'Accept': 'application/json',
+      'X-AutoParc-Capabilities': 'nullable-part-type',
       'Accept-Language': _languageCode,
     };
     if (path.startsWith('/partner/') &&
