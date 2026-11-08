@@ -61,7 +61,7 @@ class PlancherDeVersion {
   ///
   /// LE DÉFAUT EST FERMÉ, ET C'EST VOULU. Un serveur plus ancien, qui ne
   /// connaît pas ce champ, laisse l'espace masqué ; et une réponse perdue —
-  /// réseau coupé, réveil d'instance au-delà des cinq secondes — fait de même.
+  /// réseau coupé, instance muette même à la tentative patiente — fait de même.
   /// Dans le doute on n'affiche pas une entrée qui mènerait à une erreur.
   ///
   /// Ce drapeau ne fait que RENSEIGNER l'affichage. Ce qui ferme réellement
@@ -277,7 +277,7 @@ class ServiceVersionMinimale {
   /// lecteurs, donc, et un seul appel réseau au démarrage — c'est celui qui
   /// réveille l'instance endormie du plan gratuit, et le dédoubler le ferait
   /// payer deux fois. D'où `lire()` d'un côté, `juger()` de l'autre, et un
-  /// provider qui partage le `Future`.
+  /// provider qui partage la réponse — et sa seconde lecture, voir plus bas.
   /// [budget] : le temps accordé à CETTE lecture. `delai` par défaut, pour la
   /// tentative du démarrage ; `delaiPatient` pour celle qui attend un serveur
   /// endormi. Il porte aussi sur la CONNEXION et pas seulement sur la
@@ -352,30 +352,14 @@ class ServiceVersionMinimale {
 final serviceVersionMinimaleProvider =
     Provider<ServiceVersionMinimale>((ref) => ServiceVersionMinimale());
 
-/// Le verdict, calculé une fois au démarrage.
+/// La réponse de version, partagée, et qui peut arriver EN DEUX TEMPS.
 ///
-/// Un `FutureProvider` et non un `AsyncNotifier` : le contrôle n'expose
-/// aucune commande — ni rechargement, ni écriture — et son résultat ne change
-/// pas tant que l'application tourne. Pas d'`autoDispose` non plus : on ne
-/// veut surtout pas qu'il soit relancé parce que son seul lecteur a cessé un
-/// instant de l'écouter.
-/// La réponse de version, lue UNE FOIS et partagée.
-///
-/// Deux lecteurs en dépendent — le verdict de mise à jour et l'entrée de
-/// l'espace partenaire — et c'est tout l'intérêt de la faire passer par un
+/// Deux lecteurs en dépendent — le verdict de mise à jour et l'interrupteur
+/// de l'espace partenaire — et c'est tout l'intérêt de la faire passer par un
 /// provider : l'appel réseau du démarrage, celui qui réveille l'instance,
-/// n'a lieu qu'une fois.
-final plancherDeVersionProvider = FutureProvider<PlancherDeVersion?>(
-  (ref) => ref.watch(serviceVersionMinimaleProvider).lire(),
-);
-
-/// Le verdict, qui peut arriver EN DEUX TEMPS.
+/// n'a lieu qu'une fois, et ce que l'un apprend, l'autre le sait.
 ///
-/// ── POURQUOI CE N'EST PLUS UN `FutureProvider` ──────────────────────────────
-///
-/// Il l'était, et le commentaire d'alors disait vrai : « son résultat ne change
-/// pas tant que l'application tourne ». C'est précisément cette prémisse qui
-/// était fausse, et elle a coûté une version entière.
+/// ── POURQUOI UN FLUX, ET POURQUOI ICI ───────────────────────────────────────
 ///
 /// Mesure du 25/10/2026, après la publication de la 87 : la première tentative
 /// s'accorde cinq secondes, l'instance endormie en met 25 à 35. Un téléphone
@@ -384,30 +368,61 @@ final plancherDeVersionProvider = FutureProvider<PlancherDeVersion?>(
 /// pouvait très bien retomber sur une instance froide. La population visée par
 /// le plancher est exactement celle qui ne le voyait jamais.
 ///
-/// Un flux, donc, qui rend d'abord le verdict rapide — rien ne retarde le
-/// démarrage — puis, SI ET SEULEMENT SI aucune réponse n'est arrivée, celui de
-/// la seconde tentative. L'écran bloquant s'affiche alors de lui-même :
-/// `main.dart` lit ce provider par `.asData?.value`, qui suit un flux comme
-/// il suivait un futur.
+/// D'où une seconde tentative, patiente, SI ET SEULEMENT SI la première n'a
+/// reçu aucune réponse. Elle a d'abord vécu dans le verdict, qui appelait
+/// `lire()` pour lui seul : le verdict finissait par bloquer, mais CE
+/// provider-ci ne voyait jamais la réponse, et l'interrupteur de l'espace
+/// partenaire restait « inconnu » jusqu'au redémarrage — observé un matin
+/// d'instance endormie, toute la session, alors que la seconde lecture avait
+/// bien rapporté `partner_space_open`. Les deux lecteurs doivent apprendre la
+/// même chose au même moment : la seconde tentative vit donc là où vit la
+/// première, et le verdict n'en est plus qu'une dérivée.
+///
+/// Un flux, qui émet d'abord la réponse rapide — rien ne retarde le
+/// démarrage — puis, si elle était nulle, celle de la tentative patiente.
+/// Un `StreamProvider` et non un `AsyncNotifier` : personne ne lui donne
+/// d'ordre, il déroule ses deux temps tout seul. Pas d'`autoDispose` : il ne
+/// doit surtout pas être relancé parce que ses lecteurs ont cessé un instant
+/// de l'écouter.
 ///
 /// Ce qu'on ne réessaie PAS : une réponse obtenue, même quand elle dit « à
-/// jour ». C'est une vraie réponse, et la redemander ne ferait que payer deux
-/// fois le réveil de l'instance. Ni un verdict déjà bloquant, puisqu'il n'y a
-/// plus rien à apprendre.
-final verdictMiseAJourProvider = StreamProvider<VerdictMiseAJour>((ref) async* {
+/// jour » ou « fermé ». C'est une vraie réponse, et la redemander ne ferait
+/// que payer deux fois le réveil de l'instance.
+final plancherDeVersionProvider =
+    StreamProvider<PlancherDeVersion?>((ref) async* {
   final service = ref.watch(serviceVersionMinimaleProvider);
 
-  final plancher = await ref.watch(plancherDeVersionProvider.future);
-  yield await service.juger(plancher);
+  final rapide = await service.lire();
+  yield rapide;
 
-  // Une réponse est arrivée : le verdict ci-dessus est définitif.
-  if (plancher != null) return;
+  // Une réponse est arrivée : elle est définitive.
+  if (rapide != null) return;
 
   // Aucune réponse en cinq secondes — l'instance dormait. On redemande avec le
-  // budget qu'il faut, en arrière-plan, sans que l'utilisateur attende.
-  yield await service.juger(
-    await service.lire(budget: ServiceVersionMinimale.delaiPatient),
-  );
+  // budget qu'il faut, en arrière-plan, sans que l'utilisateur attende. Le
+  // `yield` est tout l'objet : une lecture qui n'alimenterait pas ce flux
+  // laisserait l'interrupteur de l'espace partenaire dans le doute jusqu'au
+  // redémarrage, et un banc le mesure.
+  yield await service.lire(budget: ServiceVersionMinimale.delaiPatient);
+});
+
+/// Le verdict, dérivé de la réponse — et refait si elle arrive en deux temps.
+///
+/// Il a été un `StreamProvider` qui portait lui-même la seconde tentative ;
+/// elle est remontée dans `plancherDeVersionProvider`, voir là-haut pourquoi.
+/// Ce qui reste est une dérivée. Le `.future` d'un `StreamProvider` est remis
+/// à jour à CHAQUE émission — Riverpod 2.6, `onData` du gestionnaire de futur —
+/// donc le `watch` ci-dessous rebâtit le verdict quand la réponse patiente
+/// arrive, et l'écran bloquant s'affiche alors de lui-même : `main.dart` lit
+/// `.asData?.value`, qui suit cela comme il suivait le flux.
+///
+/// Ni régression ni clignotement : le flux n'émet une seconde fois que si la
+/// première réponse était nulle, c'est-à-dire après un verdict « rien à
+/// faire ». Un verdict déjà bloquant n'est donc jamais rebâti par le flux.
+final verdictMiseAJourProvider = FutureProvider<VerdictMiseAJour>((ref) async {
+  final service = ref.watch(serviceVersionMinimaleProvider);
+
+  return service.juger(await ref.watch(plancherDeVersionProvider.future));
 });
 
 /// L'espace partenaire est-il ouvert ? FERMÉ tant qu'on n'en sait rien.

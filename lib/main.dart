@@ -1064,15 +1064,15 @@ class AppDrawer extends ConsumerWidget {
           // DEUX EXCEPTIONS au drapeau, depuis la question du premier
           // lancement : un profil VENDEUR voit toujours l'entrée — elle mène
           // au panneau « pas encore ouvert » de la page, pas à un refus brut,
-          // et le drapeau reste faux toute la session après un démarrage à
-          // froid — ; et une session partenaire en cours ne la voit plus, le
-          // bloc PARTENAIRE ci-dessus porte déjà « Mes annonces ».
+          // et le drapeau reste inconnu jusqu'à la lecture patiente après un
+          // démarrage à froid — ; et une session partenaire en cours ne la voit
+          // plus, le bloc PARTENAIRE ci-dessus porte déjà « Mes annonces ».
           //
           // ET L'INCONNU N'EST PLUS UN REFUS : tant que le serveur n'a pas dit
           // « fermé », l'entrée est là pour tout le monde. La question du
           // premier lancement promet « vous pourrez changer d'avis plus
           // tard » ; une instance endormie le matin — drapeau sans réponse
-          // toute la session — ne doit pas en faire un mensonge. Ce que
+          // jusqu'à la lecture patiente — ne doit pas en faire un mensonge. Ce que
           // l'entrée masquée évitait, une entrée vers un refus brut, n'existe
           // plus : la page explique un espace fermé et encaisse un 503.
           if (partenaire == null &&

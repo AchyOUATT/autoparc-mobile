@@ -46,9 +46,9 @@ void main() {
         overrides: [
           partnerRepositoryProvider.overrideWithValue(depot),
           plancherDeVersionProvider.overrideWith(
-            (_) async => espaceOuvert == null
+            (_) => Stream.value(espaceOuvert == null
                 ? null
-                : PlancherDeVersion(espacePartenaireOuvert: espaceOuvert),
+                : PlancherDeVersion(espacePartenaireOuvert: espaceOuvert)),
           ),
         ],
         child: MaterialApp.router(
