@@ -1881,6 +1881,12 @@ abstract class AppLocalizations {
   /// **'Un véhicule, des pièces ou des accessoires pour ma voiture.'**
   String get onboardingProfileBuyBody;
 
+  /// Précision sous le texte de la carte Je cherche sur /bienvenue, uniquement lorsque la vente personnelle est activée. Un acheteur peut proposer son propre véhicule après connexion et modération, sans devenir partenaire. Préserver ce caractère conditionnel, sans promettre gratuité ni quota.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous pouvez aussi proposer votre propre véhicule à la vente, après connexion et validation de l’annonce par AutoParc.'**
+  String get onboardingProfileBuyOwnVehicleNotice;
+
   /// Titre de la seconde carte. Mène à l'inscription d'un compte partenaire, et non à la vente d'une voiture de particulier — c'est le corps qui le dit.
   ///
   /// In fr, this message translates to:
