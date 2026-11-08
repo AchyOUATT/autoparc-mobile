@@ -1,7 +1,7 @@
 name: auto
 description: "AutoParc – vente et location de véhicules, pièces et accessoires."
 publish_to: 'none'
-version: 1.5.2+1
+version: 1.6.0+1
 
 environment:
   sdk: ^3.11.5
@@ -154,6 +154,7 @@ dependencies:
   # Seule la plateforme connaît donc le numéro embarqué dans l'APK — côté
   # Android il se lit dans le PackageManager, pas dans le code.
   package_info_plus: ^8.3.1
+  file_picker: ^10.3.10
 
 dev_dependencies:
   flutter_test:

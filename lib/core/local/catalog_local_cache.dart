@@ -45,7 +45,7 @@ class CatalogLocalCache {
   /// indéfiniment leur ancienne forme — sans champ, sans erreur, sans rien qui
   /// le signale. Changer ce numéro jette le cache et force un rechargement
   /// complet, une fois.
-  static const _schemaVersion   = 2; // 2 : années de production des modèles
+  static const _schemaVersion   = 3; // 3 : classification des engins et matériels
 
   static const _kRefs           = 'refs';
   static const _kCountries      = 'countries';

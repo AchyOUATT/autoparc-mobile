@@ -20,6 +20,8 @@ class VehicleFilter {
   final String? search;
   final String? availability; // null | 'sale' | 'rent'
   final String? condition;
+  final String? assetKind; // null | 'road_vehicle' | 'equipment'
+  final String? equipmentType;
   final String? vehicleType;  // null | 'passenger' | 'utility' | 'heavy'
   final String? bodyStyle;    // null | 'sedan' | 'suv' | 'pickup' | 'minibus' | 'bus' | …
   final int? yearMin;
@@ -44,6 +46,8 @@ class VehicleFilter {
     this.search,
     this.availability,
     this.condition,
+    this.assetKind,
+    this.equipmentType,
     this.vehicleType,
     this.bodyStyle,
     this.yearMin,
@@ -61,6 +65,8 @@ class VehicleFilter {
     String? search,
     String? availability,
     String? condition,
+    String? assetKind,
+    String? equipmentType,
     String? vehicleType,
     String? bodyStyle,
     int? yearMin,
@@ -75,6 +81,8 @@ class VehicleFilter {
     bool clearSearch = false,
     bool clearAvailability = false,
     bool clearCondition = false,
+    bool clearAssetKind = false,
+    bool clearEquipmentType = false,
     bool clearVehicleType = false,
     bool clearBodyStyle = false,
     bool clearYearMin = false,
@@ -91,6 +99,10 @@ class VehicleFilter {
         search:         clearSearch         ? null : (search       ?? this.search),
         availability:   clearAvailability   ? null : (availability ?? this.availability),
         condition:      clearCondition      ? null : (condition    ?? this.condition),
+        assetKind: clearAssetKind ? null : (assetKind ?? this.assetKind),
+        equipmentType: clearEquipmentType
+            ? null
+            : (equipmentType ?? this.equipmentType),
         vehicleType:    clearVehicleType    ? null : (vehicleType  ?? this.vehicleType),
         bodyStyle:      clearBodyStyle      ? null : (bodyStyle    ?? this.bodyStyle),
         yearMin:        clearYearMin        ? null : (yearMin      ?? this.yearMin),
@@ -254,6 +266,8 @@ class VehicleListNotifier extends AutoDisposeNotifier<PagedState<CatalogVehicleI
         search:       filter.search,
         availability: filter.availability,
         condition:    filter.condition,
+        assetKind:    filter.assetKind,
+        equipmentType: filter.equipmentType,
         vehicleType:  filter.vehicleType,
         bodyStyle:    filter.bodyStyle,
         yearMin:      filter.yearMin,

@@ -3,6 +3,20 @@ import 'package:dio/dio.dart';
 import '../../l10n/app_localizations.dart';
 import '../l10n/error_messages.dart';
 
+/// Error JSON can arrive as bytes when the successful response is a file.
+Map<String, dynamic>? decodeApiErrorBody(Object? raw) {
+  try {
+    final value = raw is List<int>
+        ? jsonDecode(utf8.decode(raw))
+        : raw is String
+        ? jsonDecode(raw)
+        : raw;
+    return value is Map ? Map<String, dynamic>.from(value) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 /// An application error whose message can be presented in the current locale.
 abstract interface class DisplayableException implements Exception {
   String get message;
@@ -62,16 +76,7 @@ class ApiException implements DisplayableException {
   });
 
   factory ApiException.fromDioError(DioException e) {
-    // Dio peut renvoyer la réponse comme Map (parsée) ou String (brute).
-    final raw = e.response?.data;
-    Map<String, dynamic>? parsed;
-    if (raw is Map<String, dynamic>) {
-      parsed = raw;
-    } else if (raw is String && raw.isNotEmpty) {
-      try {
-        parsed = jsonDecode(raw) as Map<String, dynamic>?;
-      } catch (_) {}
-    }
+    final parsed = decodeApiErrorBody(e.response?.data);
 
     final message = (parsed != null && parsed.containsKey('message'))
         ? parsed['message'] as String

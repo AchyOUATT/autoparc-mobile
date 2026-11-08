@@ -24,6 +24,7 @@ import '../../../../core/api/api_exception.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../partner_accounts/presentation/partner_session.dart';
 import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
+import '../../../vehicles/presentation/widgets/equipment_details_section.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
 import '../../../../core/providers/shell_scaffold_provider.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -82,7 +83,8 @@ class _VehicleListPageState extends ConsumerState<VehicleListPage> {
     final auth = ref.watch(authProvider);
     final isStaff = auth.isStaff;
     final partnerSession = ref.watch(partnerSessionProvider);
-    final isPartner = partnerSession.profile != null ||
+    final isPartner =
+        partnerSession.profile != null ||
         partnerSession.deniedStatus != null ||
         partnerSession.restoreFailed ||
         auth.clientLoginRequiresPartner;
@@ -283,6 +285,83 @@ class _FilterChips extends ConsumerWidget {
       children: [
         BandeFiltres(
           children: [
+            FilterChip(
+              avatar: const Icon(Icons.directions_car_outlined, size: 14),
+              label: Text(l10n.vehicleRegistrationRoadTitle),
+              selected: filter.assetKind == 'road_vehicle',
+              onSelected: (_) => update(
+                (f) => f.copyWith(
+                  assetKind: 'road_vehicle',
+                  clearAssetKind: f.assetKind == 'road_vehicle',
+                  clearEquipmentType: true,
+                  clearVehicleType: f.assetKind == 'road_vehicle',
+                  clearBodyStyle: f.assetKind == 'road_vehicle',
+                  clearRegistrationStatus: f.assetKind == 'road_vehicle',
+                  clearCustomsCleared: f.assetKind == 'road_vehicle',
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilterChip(
+              avatar: const Icon(Icons.construction_outlined, size: 14),
+              label: Text(l10n.vehicleRegistrationEquipmentTitle),
+              selected: filter.assetKind == 'equipment',
+              onSelected: (_) => update(
+                (f) => f.copyWith(
+                  assetKind: 'equipment',
+                  clearAssetKind: f.assetKind == 'equipment',
+                  clearEquipmentType: true,
+                  clearVehicleType: true,
+                  clearBodyStyle: true,
+                  clearRegistrationStatus: true,
+                  clearCustomsCleared: true,
+                ),
+              ),
+            ),
+            if (filter.assetKind == 'equipment') ...[
+              const SizedBox(width: 8),
+              PopupMenuButton<String>(
+                key: const ValueKey('catalog-equipment-type-filter'),
+                tooltip: l10n.equipmentTypeLabel,
+                initialValue: filter.equipmentType ?? '',
+                onSelected: (type) => update(
+                  (f) => f.copyWith(
+                    assetKind: 'equipment',
+                    equipmentType: type,
+                    clearEquipmentType: type.isEmpty,
+                    clearVehicleType: true,
+                    clearBodyStyle: true,
+                    clearRegistrationStatus: true,
+                    clearCustomsCleared: true,
+                  ),
+                ),
+                itemBuilder: (context) => [
+                  PopupMenuItem(value: '', child: Text(l10n.needsFilterAllTypes)),
+                  for (final type in _equipmentTypes)
+                    PopupMenuItem(
+                      value: type,
+                      child: Text(equipmentTypeLabel(type, l10n)),
+                    ),
+                ],
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  child: Chip(
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          filter.equipmentType == null
+                              ? l10n.equipmentTypeLabel
+                              : equipmentTypeLabel(filter.equipmentType, l10n),
+                        ),
+                        const Icon(Icons.arrow_drop_down, size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(width: 20),
             LibelleGroupeFiltres(l10n.catalogFilterGroupOffer),
             FilterChip(
               label: Text(l10n.catalogOfferSale),
@@ -342,7 +421,11 @@ class _FilterChips extends ConsumerWidget {
               onSelected: (_) => update(
                 (f) => f.registrationStatus == 'registered'
                     ? f.copyWith(clearRegistrationStatus: true)
-                    : f.copyWith(registrationStatus: 'registered'),
+                    : f.copyWith(
+                        assetKind: 'road_vehicle',
+                        registrationStatus: 'registered',
+                        clearEquipmentType: true,
+                      ),
               ),
             ),
             const SizedBox(width: 8),
@@ -353,7 +436,11 @@ class _FilterChips extends ConsumerWidget {
               onSelected: (_) => update(
                 (f) => f.registrationStatus == 'unregistered'
                     ? f.copyWith(clearRegistrationStatus: true)
-                    : f.copyWith(registrationStatus: 'unregistered'),
+                    : f.copyWith(
+                        assetKind: 'road_vehicle',
+                        registrationStatus: 'unregistered',
+                        clearEquipmentType: true,
+                      ),
               ),
             ),
             const SizedBox(width: 20),
@@ -362,9 +449,11 @@ class _FilterChips extends ConsumerWidget {
               avatar: const Icon(Icons.verified_outlined, size: 14),
               label: Text(l10n.catalogValidatedByAutoParc),
               selected: filter.validatedByAutoParc == true,
-              onSelected: (_) => update((f) => f.validatedByAutoParc == true
-                  ? f.copyWith(clearValidatedByAutoParc: true)
-                  : f.copyWith(validatedByAutoParc: true)),
+              onSelected: (_) => update(
+                (f) => f.validatedByAutoParc == true
+                    ? f.copyWith(clearValidatedByAutoParc: true)
+                    : f.copyWith(validatedByAutoParc: true),
+              ),
             ),
             const SizedBox(width: 8),
             LibelleGroupeFiltres(l10n.catalogFilterGroupType),
@@ -374,6 +463,8 @@ class _FilterChips extends ConsumerWidget {
               selected: filter.vehicleType == 'utility',
               onSelected: (_) => update(
                 (f) => f.copyWith(
+                  assetKind: 'road_vehicle',
+                  clearEquipmentType: true,
                   vehicleType: f.vehicleType == 'utility' ? null : 'utility',
                   clearVehicleType: f.vehicleType == 'utility',
                 ),
@@ -386,6 +477,8 @@ class _FilterChips extends ConsumerWidget {
               selected: filter.vehicleType == 'heavy',
               onSelected: (_) => update(
                 (f) => f.copyWith(
+                  assetKind: 'road_vehicle',
+                  clearEquipmentType: true,
                   vehicleType: f.vehicleType == 'heavy' ? null : 'heavy',
                   clearVehicleType: f.vehicleType == 'heavy',
                 ),
@@ -438,6 +531,8 @@ class _FilterChips extends ConsumerWidget {
                   onSelected: (_) {
                     ref.read(vehicleFilterProvider.notifier).state = filter
                         .copyWith(
+                          assetKind: 'road_vehicle',
+                          clearEquipmentType: true,
                           bodyStyle: selected ? null : s.value,
                           clearBodyStyle: selected,
                         );
@@ -559,6 +654,18 @@ const _bodyStyles = [
   (value: 'truck', icon: Icons.local_shipping_outlined),
   (value: 'convertible', icon: Icons.wb_sunny_outlined),
   (value: 'coupe', icon: Icons.speed),
+];
+
+const _equipmentTypes = [
+  'agricultural_tractor',
+  'aerial_platform',
+  'excavator',
+  'backhoe_loader',
+  'loader',
+  'telehandler',
+  'forklift',
+  'generator',
+  'other',
 ];
 
 /// Le libellé d'une puce de carrosserie, dans la langue active.
@@ -1146,6 +1253,9 @@ class PrivateCatalogVehicleCard extends StatelessWidget {
 /// l'ellipse : c'est la fin de la ligne qui se perd, et le carburant est la
 /// moins décisive des trois.
 String? _ligneSpecs(AppLocalizations l10n, Vehicle vehicle) {
+  if (vehicle.isEquipment) {
+    return equipmentTypeLabel(vehicle.equipmentType, l10n);
+  }
   final finition = finitionCourte(vehicle.identity.trim);
 
   final specs = <String>[
@@ -1936,6 +2046,9 @@ class _EmptyView extends ConsumerWidget {
       if (f.deal == true) l10n.catalogFilterTermDeal,
       if (f.customsCleared == true) l10n.catalogFilterTermCustoms,
       if (f.validatedByAutoParc == true) l10n.catalogValidatedByAutoParc,
+      if (f.assetKind == 'equipment') l10n.vehicleRegistrationEquipmentTitle,
+      if (f.assetKind == 'road_vehicle') l10n.vehicleRegistrationRoadTitle,
+      if (f.equipmentType != null) equipmentTypeLabel(f.equipmentType, l10n),
       if (f.vehicleType != null) l10n.catalogFilterTermVehicleType,
       if (f.bodyStyle != null) l10n.catalogFilterTermBodyStyle,
       if (f.condition != null) l10n.catalogFilterTermCondition,

@@ -1,3 +1,4 @@
+import '../widgets/engine_details.dart';
 import '../garage_labels.dart';
 import '../../../../core/l10n/reference_labels.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -360,6 +361,7 @@ class _VehicleCard extends ConsumerWidget {
             ),
           ),
 
+          EngineDetailsTile(vehicle: vehicle),
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Divider(height: 1),

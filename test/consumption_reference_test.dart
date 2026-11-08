@@ -2,6 +2,7 @@ import 'package:auto/features/catalog/data/models/vehicle.dart';
 import 'package:auto/features/garage/data/models/motorisation.dart';
 import 'package:auto/features/garage/data/models/owned_vehicle.dart';
 import 'package:auto/features/garage/presentation/widgets/consumption_reference_details.dart';
+import 'package:auto/features/garage/presentation/widgets/consumption_reference_candidates.dart';
 import 'package:auto/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -283,9 +284,14 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: ConsumptionReferenceCandidates(
-              references: [first, second],
-              vehicleYear: 2014,
+            body: SingleChildScrollView(
+              child: ConsumptionReferenceCandidates(
+                references: [
+                  Motorisation(id: 1, label: first.label, modelYear: 2013, consumption: first),
+                  Motorisation(id: 2, label: second.label, modelYear: 2013, consumption: second),
+                ],
+                vehicleYear: 2014,
+              ),
             ),
           ),
         ),
@@ -294,7 +300,6 @@ void main() {
         find.text('Comparer les références de consommation'),
         findsOneWidget,
       );
-      await tester.tap(find.text('Comparer les références de consommation'));
       await tester.pumpAndSettle();
       expect(find.textContaining('NRCan'), findsOneWidget);
       expect(find.textContaining('EEA'), findsOneWidget);

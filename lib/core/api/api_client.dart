@@ -344,6 +344,35 @@ class ApiClient {
     }
   }
 
+  /// Uploads a private administrative document with the authenticated session.
+  Future<Map<String, dynamic>> uploadDocument(
+    String path, {
+    required String filename,
+    required List<int> bytes,
+    required Map<String, String> fields,
+  }) async {
+    try {
+      final form = FormData.fromMap(fields);
+      form.files.add(MapEntry('document',
+          MultipartFile.fromBytes(bytes, filename: filename)));
+      final response = await _dio.post<Map<String, dynamic>>(path,
+          data: form, options: Options(contentType: 'multipart/form-data'));
+      return response.data!;
+    } on DioException catch (error) {
+      throw ApiException.fromDioError(error);
+    }
+  }
+
+  Future<List<int>> downloadBytes(String path) async {
+    try {
+      final response = await _dio.get<List<int>>(path,
+          options: Options(responseType: ResponseType.bytes));
+      return response.data ?? const [];
+    } on DioException catch (error) {
+      throw ApiException.fromDioError(error);
+    }
+  }
+
   /// Enregistre la session complete, ET tient l'ancienne cle a jour.
   ///
   /// ── POURQUOI ON ECRIT LES DEUX, ET NON PLUS UNE SEULE ──────────────────

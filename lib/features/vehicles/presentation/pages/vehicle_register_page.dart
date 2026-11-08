@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import '../widgets/heavy_vehicle_configuration.dart';
+
 import '../../../catalog/presentation/catalog_reference_labels.dart';
 import '../../../../core/l10n/reference_labels.dart';
 import '../../../../core/l10n/transmission_labels.dart';
@@ -60,11 +62,13 @@ class VehicleRegisterPage extends ConsumerStatefulWidget {
   /// garde le comportement du back-office, et c'est l'espace partenaire qui
   /// demande explicitement l'autre.
   final VehicleFormMode mode;
+  final bool saleOnly;
 
   const VehicleRegisterPage({
     super.key,
     this.existing,
     this.mode = VehicleFormMode.personnel,
+    this.saleOnly = false,
   });
 
   @override
@@ -112,6 +116,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   // ── Step 0 — Type & Identification ───────────────────────────────
   String _vehicleType = 'passenger'; // 'passenger' | 'utility' | 'heavy'
   String? _bodyStyle; // 'sedan' | 'suv' | 'pickup' | …
+  bool _showAllModelsForBody = false;
+
+  String? get _modelBodyFilter =>
+      !_showAllModelsForBody && _bodyStyle != 'other' ? _bodyStyle : null;
   final _vinCtrl = TextEditingController();
   final _plateCtrl = TextEditingController(); // plaque (optionnel)
 
@@ -156,6 +164,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   final _powerCtrl = TextEditingController();
   final _seatsCtrl = TextEditingController(text: '5');
   final _doorsCtrl = TextEditingController(text: '4');
+  bool _seatsUseInitialDefault = true;
+  bool _doorsUseInitialDefault = true;
   final Set<int> _selectedFeatureIds = {}; // IDs des équipements sélectionnés
 
   // ── Step 4 — Commercial ────────────────────────────────────────────
@@ -170,6 +180,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   int? _selectedPartnerId;
   final _salePriceCtrl = TextEditingController();
   final _rentalDailyCtrl = TextEditingController();
+  final _rentalWeeklyCtrl = TextEditingController();
   final _rentalMonthlyCtrl = TextEditingController();
   final _rentalDepositCtrl = TextEditingController();
   final _mileageCtrl = TextEditingController();
@@ -190,11 +201,16 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   /// au prix. La promotion chiffree est l'outil du vendeur tiers.
   espace.PromotionSaisie _promotion = const espace.PromotionSaisie();
   final _descriptionCtrl = TextEditingController();
+  late final HeavyVehicleConfigurationController _heavyConfiguration;
+  final _heavyConfigurationExpansion = ExpansibleController();
 
   @override
   void initState() {
     super.initState();
     final e = _existing;
+    _heavyConfiguration = HeavyVehicleConfigurationController(
+      value: e?.heavyConfiguration,
+    );
     _faultDeclaration = e?.faultDeclaration ?? const FaultDeclaration.unknown();
     _faultsReady = e == null;
     _faultBaseline = jsonEncode(_faultDeclaration.toPayload());
@@ -204,21 +220,29 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       _bodyStyle = e.bodyStyle;
       _transmission = e.transmission ?? '';
       _powerCtrl.text = e.powerHp?.toString() ?? '';
+      _seatsUseInitialDefault = false;
+      _doorsUseInitialDefault = false;
       _seatsCtrl.text = e.seats?.toString() ?? '';
       _doorsCtrl.text = e.doors?.toString() ?? '';
       _vinCtrl.text = e.vin ?? '';
       if (e.identity.year != null) _yearCtrl.text = e.identity.year.toString();
       _condition = e.commercial.condition;
       _mileageCtrl.text = e.mileageKm?.toString() ?? '';
-      _availability = e.commercial.availability;
+      _availability = widget.saleOnly ? 'sale' : e.commercial.availability;
       _negotiable = e.commercial.priceNegotiable;
       _dealType = e.commercial.dealType ?? '';
+      double originalPrice(String field, double publicPrice) =>
+          widget.mode.estPartenaire
+              ? e.proposedPriceExcludingCommission(field) ?? publicPrice
+              : publicPrice;
       if (e.commercial.salePrice != null)
-        _salePriceCtrl.text = _fmtPrice(e.commercial.salePrice!);
+        _salePriceCtrl.text = _fmtPrice(originalPrice('sale_price', e.commercial.salePrice!));
       if (e.commercial.rentalDailyRate != null)
-        _rentalDailyCtrl.text = _fmtPrice(e.commercial.rentalDailyRate!);
+        _rentalDailyCtrl.text = _fmtPrice(originalPrice('rental_daily_rate', e.commercial.rentalDailyRate!));
+      if (e.commercial.rentalWeeklyRate != null)
+        _rentalWeeklyCtrl.text = _fmtPrice(originalPrice('rental_weekly_rate', e.commercial.rentalWeeklyRate!));
       if (e.commercial.rentalMonthlyRate != null)
-        _rentalMonthlyCtrl.text = _fmtPrice(e.commercial.rentalMonthlyRate!);
+        _rentalMonthlyCtrl.text = _fmtPrice(originalPrice('rental_monthly_rate', e.commercial.rentalMonthlyRate!));
       if (e.commercial.rentalDeposit != null)
         _rentalDepositCtrl.text = _fmtPrice(e.commercial.rentalDeposit!);
       if (e.commercial.site != null) _siteCtrl.text = e.commercial.site!;
@@ -366,6 +390,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
   @override
   void dispose() {
+    _heavyConfiguration.dispose();
+    _heavyConfigurationExpansion.dispose();
     for (final c in [
       _vinCtrl,
       _plateCtrl,
@@ -375,6 +401,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       _doorsCtrl,
       _salePriceCtrl,
       _rentalDailyCtrl,
+      _rentalWeeklyCtrl,
       _rentalMonthlyCtrl,
       _rentalDepositCtrl,
       _mileageCtrl,
@@ -416,7 +443,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       for (final champ in invalides ?? <FormFieldState<Object?>>{})
         if (champ.errorText != null) champ.errorText!,
     ].toSet().toList();
-    return invalides == null || invalides.isEmpty;
+    final valid = invalides == null || invalides.isEmpty;
+    if (!valid && etape == 2 && _vehicleType == 'heavy') {
+      _heavyConfigurationExpansion.expand();
+    }
+    return valid;
   }
 
   void _expliquerLEtape(int etape) {
@@ -610,6 +641,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   }
 
   Map<String, dynamic> _buildPayload() {
+    final heavyConfiguration = _heavyConfiguration.toValue();
     final bool forSale = _availability == 'sale' || _availability == 'both';
     final bool forRent = _availability == 'rent' || _availability == 'both';
     final bool hasPlate = _plateCtrl.text.trim().isNotEmpty;
@@ -628,6 +660,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       if (_canDeclareFaults && _faultsReady && _faultsDirty)
         ..._faultDeclaration.toPayload(),
       'vehicle_type': _vehicleType,
+      if (_vehicleType == 'heavy')
+        'heavy_configuration': heavyConfiguration.isEmpty
+            ? null
+            : heavyConfiguration.toJson(),
       if (_bodyStyle != null || _classificationChanged)
         'body_style': _bodyStyle,
       if (_vinCtrl.text.trim().isNotEmpty) 'vin': _vinCtrl.text.trim(),
@@ -671,18 +707,23 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         'sale_price': int.parse(
           _salePriceCtrl.text.replaceAll(RegExp(r'\s'), ''),
         ),
-      if (_existing != null ||
-          forRent && _rentalDailyCtrl.text.trim().isNotEmpty)
+      if (!widget.saleOnly && (_existing != null ||
+          forRent && _rentalDailyCtrl.text.trim().isNotEmpty))
         'rental_daily_rate': forRent
             ? _parsePrice(_rentalDailyCtrl.text)
             : null,
-      if (_existing != null ||
-          forRent && _rentalMonthlyCtrl.text.trim().isNotEmpty)
+      if (!widget.saleOnly && (_existing != null ||
+          forRent && _rentalWeeklyCtrl.text.trim().isNotEmpty))
+        'rental_weekly_rate': forRent
+            ? _parsePrice(_rentalWeeklyCtrl.text)
+            : null,
+      if (!widget.saleOnly && (_existing != null ||
+          forRent && _rentalMonthlyCtrl.text.trim().isNotEmpty))
         'rental_monthly_rate': forRent
             ? _parsePrice(_rentalMonthlyCtrl.text)
             : null,
-      if (_existing != null ||
-          forRent && _rentalDepositCtrl.text.trim().isNotEmpty)
+      if (!widget.saleOnly && (_existing != null ||
+          forRent && _rentalDepositCtrl.text.trim().isNotEmpty))
         'rental_deposit': forRent ? _parsePrice(_rentalDepositCtrl.text) : null,
       if (_siteCtrl.text.isNotEmpty) 'site': _siteCtrl.text.trim(),
       if (_descriptionCtrl.text.isNotEmpty)
@@ -755,10 +796,50 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
   bool get _rentalRatesMissing =>
       _rentalDailyCtrl.text.trim().isEmpty &&
+      _rentalWeeklyCtrl.text.trim().isEmpty &&
       _rentalMonthlyCtrl.text.trim().isEmpty;
 
   int? _parsePrice(String value) =>
       int.tryParse(value.replaceAll(RegExp(r'\s'), ''));
+
+  void _clearInitialPassengerDefaults() {
+    if (_seatsUseInitialDefault) {
+      _seatsCtrl.clear();
+      _seatsUseInitialDefault = false;
+    }
+    if (_doorsUseInitialDefault) {
+      _doorsCtrl.clear();
+      _doorsUseInitialDefault = false;
+    }
+  }
+
+  void _selectVehicleType(String value) {
+    _vehicleType = value;
+    final bodyType = vehicleTypeForBodyStyle(_bodyStyle);
+    if (bodyType != null && bodyType != value) _bodyStyle = null;
+    if (value == 'heavy') _clearInitialPassengerDefaults();
+  }
+
+  void _selectBodyStyle(String? value) {
+    _bodyStyle = value;
+    _showAllModelsForBody = false;
+    _clearModelWithConflictingBody();
+    final vehicleType = vehicleTypeForBodyStyle(value);
+    if (vehicleType != null && vehicleType != _vehicleType) {
+      _vehicleType = vehicleType;
+      if (vehicleType == 'heavy') _clearInitialPassengerDefaults();
+    }
+  }
+
+  void _clearModelWithConflictingBody() {
+    final filter = _modelBodyFilter;
+    final modelBody = _model?.inferredBodyStyle;
+    // Missing catalogue data cannot disprove the owner's existing identity.
+    if (filter != null && modelBody != null && modelBody != filter) {
+      _classification.selectModel(null);
+      _resetModelTechnicalFields();
+    }
+  }
 
   void _resetModelTechnicalFields() {
     _classificationChanged = true;
@@ -796,7 +877,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _existing != null ? l10n.vehiclesEditTitle : l10n.vehiclesCreateTitle,
+          _existing != null ? l10n.vehiclesEditTitle : widget.saleOnly
+              ? l10n.vehicleRegistrationSaleTitle : l10n.vehiclesCreateTitle,
         ),
         centerTitle: false,
         actions: [
@@ -927,18 +1009,20 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           ),
           const SizedBox(height: 8),
           _ChoiceGroup<String>(
+            key: const ValueKey('vehicle-category'),
             options: [
               (value: 'passenger', label: l10n.vehiclesTypePassenger),
               (value: 'utility', label: l10n.vehiclesTypeUtility),
               (value: 'heavy', label: l10n.vehiclesTypeHeavy),
             ],
             selected: _vehicleType,
-            onChanged: (v) => setState(() => _vehicleType = v),
+            onChanged: (v) => setState(() => _selectVehicleType(v)),
           ),
           const SizedBox(height: 16),
 
           // ── Carrosserie ───────────────────────────────────────────
           DropdownButtonFormField<String>(
+            key: ValueKey('vehicle-body-style-$_bodyStyle'),
             value: _bodyStyle,
             // isExpanded, comme tous les autres menus de l'application : sans
             // lui, le menu prend la largeur de son item le plus long —
@@ -999,7 +1083,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                 child: Text(l10n.vehiclesFaultCategoryOther),
               ),
             ],
-            onChanged: (v) => setState(() => _bodyStyle = v),
+            onChanged: (v) => setState(() => _selectBodyStyle(v)),
             validator: (v) => v == null ? l10n.vehiclesBodyStyleRequired : null,
           ),
           const SizedBox(height: 16),
@@ -1101,9 +1185,13 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   // ── Step 2 — Identité ─────────────────────────────────────────────
 
   Step _buildStep2(CatalogRefs refs) {
-    final models = _brand != null
-        ? refs.modelsForBrand(_brand!.id)
+    final filteredModels = _brand != null
+        ? refs.modelsForBrand(_brand!.id, bodyStyle: _modelBodyFilter)
         : <ModelRef>[];
+    final retainCurrentModel = _model != null &&
+        !filteredModels.any((model) => model.id == _model!.id);
+    // Keep a saved/unknown identity readable without offering other mismatches.
+    final models = [if (retainCurrentModel) _model!, ...filteredModels];
     final trims = _model != null ? refs.trimsForModel(_model!.id) : <TrimRef>[];
 
     return Step(
@@ -1139,6 +1227,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
             // Modèle
             VehicleReferenceDropdown<ModelRef>(
+              key: ValueKey(
+                'vehicle-model-${_brand?.id}-${_model?.id}-$_modelBodyFilter',
+              ),
               label: l10n.vehiclesModelLabel,
               items: models,
               value: _model,
@@ -1156,16 +1247,27 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                 // Type de véhicule : valeur DB en priorité, sinon inférence
                 final vtype = m.resolvedVehicleType;
                 if (vtype != null) _vehicleType = vtype;
+                // A truck must not inherit the passenger car's seat/door defaults.
+                if (vtype == 'heavy') {
+                  _seatsCtrl.clear();
+                  _doorsCtrl.clear();
+                  _seatsUseInitialDefault = false;
+                  _doorsUseInitialDefault = false;
+                }
 
                 // Transmission : valeur DB uniquement
                 if (m.defaultTransmission != null)
                   _transmission = m.defaultTransmission!;
 
                 // Places et portes : valeur DB uniquement
-                if (m.defaultSeats != null)
+                if (m.defaultSeats != null) {
                   _seatsCtrl.text = m.defaultSeats.toString();
-                if (m.defaultDoors != null)
+                  _seatsUseInitialDefault = false;
+                }
+                if (m.defaultDoors != null) {
                   _doorsCtrl.text = m.defaultDoors.toString();
+                  _doorsUseInitialDefault = false;
+                }
 
                 // Puissance : valeur DB uniquement (indicative)
                 if (m.defaultPowerHp != null)
@@ -1175,6 +1277,34 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               enabled: _brand != null,
             ),
             const SizedBox(height: 12),
+
+            if (_brand != null && _bodyStyle != null && _bodyStyle != 'other') ...[
+              if (_modelBodyFilter != null)
+                Text(l10n.vehiclesModelsBodyFilterActive),
+              if (_modelBodyFilter != null && filteredModels.isEmpty)
+                Text(
+                  l10n.vehiclesModelsBodyFilterEmpty,
+                  key: const ValueKey('vehicle-model-body-empty'),
+                ),
+              if (_modelBodyFilter != null && retainCurrentModel)
+                Text(l10n.vehiclesModelsBodyFilterRetained),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton(
+                  key: const ValueKey('vehicle-model-body-filter'),
+                  onPressed: () => setState(() {
+                    _showAllModelsForBody = !_showAllModelsForBody;
+                    if (!_showAllModelsForBody) _clearModelWithConflictingBody();
+                  }),
+                  child: Text(
+                    _showAllModelsForBody
+                        ? l10n.vehiclesModelsBodyFilterRestore
+                        : l10n.vehiclesModelsBodyFilterShowAll,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
 
             // Finition (optionnel)
             if (trims.isNotEmpty) ...[
@@ -1336,7 +1466,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: TextFormField(
+                  key: const ValueKey('vehicle-seats'),
                   controller: _seatsCtrl,
+                  onChanged: (_) => _seatsUseInitialDefault = false,
                   decoration: InputDecoration(
                     labelText: l10n.catalogFieldSeats,
                     suffixText: 'p',
@@ -1351,7 +1483,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: TextFormField(
+                  key: const ValueKey('vehicle-doors'),
                   controller: _doorsCtrl,
+                  onChanged: (_) => _doorsUseInitialDefault = false,
                   decoration: InputDecoration(
                     labelText: l10n.catalogFieldDoors,
                     suffixText: 'p',
@@ -1365,6 +1499,23 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               ),
             ],
           ),
+
+          if (_vehicleType == 'heavy') ...[
+            const SizedBox(height: 16),
+            ExpansionTile(
+              key: const ValueKey('heavy-configuration-section'),
+              controller: _heavyConfigurationExpansion,
+              initiallyExpanded: true,
+              maintainState: true,
+              tilePadding: EdgeInsets.zero,
+              title: Text(l10n.heavyConfigurationTitle),
+              children: [
+                HeavyVehicleConfigurationFields(
+                  controller: _heavyConfiguration,
+                ),
+              ],
+            ),
+          ],
 
           _faultDeclarationEditor(),
 
@@ -1528,25 +1679,27 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                 ),
             ],
 
-            // Disponibilité
-            Text(
-              l10n.vehiclesAvailabilityLabel,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+            if (!widget.saleOnly) ...[
+              // Disponibilité
+              Text(
+                l10n.vehiclesAvailabilityLabel,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            _ChoiceGroup<String>(
-              options: [
-                (value: 'sale', label: l10n.vehiclesForSale),
-                (value: 'rent', label: l10n.vehiclesForRent),
-                (value: 'both', label: l10n.vehiclesForBoth),
+              const SizedBox(height: 6),
+              _ChoiceGroup<String>(
+                options: [
+                  (value: 'sale', label: l10n.vehiclesForSale),
+                  (value: 'rent', label: l10n.vehiclesForRent),
+                  (value: 'both', label: l10n.vehiclesForBoth),
               ],
-              selected: _availability,
-              onChanged: (v) => setState(() => _availability = v),
-            ),
-            const SizedBox(height: 16),
+                selected: _availability,
+                onChanged: (v) => setState(() => _availability = v),
+              ),
+              const SizedBox(height: 16),
 
+            ],
             // Mise en avant commerciale — la vitrine est a la boutique.
             if (widget.mode.peutChoisirLaBoutique) ...[
               Text(
@@ -1627,6 +1780,21 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               ),
               const SizedBox(height: 12),
               _marge(_rentalDailyCtrl, libelle: l10n.vehiclesBuyerRateLabel),
+              TextFormField(
+                controller: _rentalWeeklyCtrl,
+                decoration: InputDecoration(
+                  labelText: l10n.vehiclesWeeklyRateLabel,
+                  suffixText: 'FCFA${l10n.commonPerWeekSuffix}',
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [_ThousandsSeparatorFormatter()],
+                validator: (_) => forRent && _rentalRatesMissing
+                    ? l10n.vehiclesRentalRateRequired
+                    : null,
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 12),
+              _marge(_rentalWeeklyCtrl, libelle: l10n.vehiclesBuyerRateLabel),
               TextFormField(
                 controller: _rentalMonthlyCtrl,
                 decoration: InputDecoration(
@@ -1944,6 +2112,7 @@ class _ChoiceGroup<T> extends StatelessWidget {
   final void Function(T) onChanged;
 
   const _ChoiceGroup({
+    super.key,
     required this.options,
     required this.selected,
     required this.onChanged,

@@ -5050,11 +5050,11 @@
   "@vehiclesMonthlyRateLabel": {
     "description": "Libellé du tarif mensuel."
   },
-  "vehiclesRentalRateRequired": "Saisissez un tarif journalier ou mensuel",
+  "vehiclesRentalRateRequired": "Saisissez un tarif journalier, hebdomadaire ou mensuel",
   "@vehiclesRentalRateRequired": {
     "description": "Validation de présence d’un des deux tarifs."
   },
-  "vehiclesRentalRateHint": "Renseignez au moins un tarif : par jour ou par mois.",
+  "vehiclesRentalRateHint": "Renseignez au moins un tarif : par jour, par semaine ou par mois.",
   "@vehiclesRentalRateHint": {
     "description": "Aide des tarifs de location."
   },
@@ -7486,6 +7486,253 @@
   "@catalogValidatedByAutoParc": {
     "description": "Filter for vehicles inspected and validated by AutoParc."
   },
+  "garageEngineDetailsTitle": "Détails du moteur — facultatif",
+  "garageEngineDetailsHelp": "Renseignez uniquement ce que vous connaissez. La cylindrée en litres ne donne pas la cylindrée exacte en cm³. Ces détails ne confirment pas à eux seuls la compatibilité des pièces.",
+  "garageEngineLitres": "Cylindrée indiquée (L)",
+  "garageEngineCc": "Cylindrée exacte (cm³)",
+  "garageEngineCylinders": "Nombre de cylindres",
+  "garageEngineLayout": "Disposition des cylindres",
+  "garageEngineInline": "En ligne",
+  "garageEngineV": "En V",
+  "garageEngineBoxer": "Boxer",
+  "garageEngineW": "En W",
+  "garageEngineOther": "Autre",
+  "garageEngineUnspecified": "Non renseigné",
+  "garageEngineCode": "Code moteur",
+  "garageEnginePower": "Puissance (ch)",
+  "garageEngineNumberInvalid": "Saisissez un nombre positif dans la plage indiquée.",
+  "garageEngineCodeInvalid": "20 caractères maximum.",
+  "garageEngineAddDetails": "Compléter les détails du moteur",
+  "garageEngineCylindersValue": "{count} cylindres",
+  "garageEnginePowerValue": "{power} ch",
+  "@garageEngineCylindersValue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@garageEnginePowerValue": {
+    "placeholders": {
+      "power": {
+        "type": "int"
+      }
+    }
+  },
+  "vehiclesModelsBodyFilterActive": "Modèles correspondant à la carrosserie choisie.",
+  "vehiclesModelsBodyFilterEmpty": "Aucun modèle de cette carrosserie n’est renseigné pour cette marque.",
+  "vehiclesModelsBodyFilterShowAll": "Afficher tous les modèles",
+  "vehiclesModelsBodyFilterRestore": "Filtrer par carrosserie",
+  "vehiclesModelsBodyFilterRetained": "Votre modèle actuel est conservé. Sa carrosserie diffère ou n’est pas précisée au catalogue.",
+  "garageConsumptionRecommendationClosest": "Référence la plus proche",
+  "garageConsumptionRecommendationTied": "Références à départager",
+  "garageConsumptionRecommendationNeedsDetails": "Précisez la version du moteur",
+  "garageConsumptionRecommendationProvisional": "Les informations connues ne permettent pas de recommander une référence unique. Ces valeurs restent des points de comparaison.",
+  "garageConsumptionRecommendationNotice": "La sélection ne confirme pas à elle seule que cette référence correspond au véhicule.",
+  "garageConsumptionRecommendationNoEligible": "Aucune des références proposées ne correspond aux caractéristiques connues.",
+  "garageConsumptionRecommendationTieCount": "{count} références sont aussi proches. Les trois premières sont affichées.",
+  "garageConsumptionRecommendationCurrent": "Référence actuellement sélectionnée",
+  "garageConsumptionRecommendationShowAll": "Voir toutes les références",
+  "garageConsumptionRecommendationShowLess": "Revenir aux références ciblées",
+  "garageConsumptionRecommendationOther": "Autres références",
+  "garageConsumptionRecommendationConflict": "Écart avec les caractéristiques connues : {details}.",
+  "garageConsumptionRecommendationConflictGeneric": "Écart avec les caractéristiques connues. Consultez les détails avant de modifier le véhicule.",
+  "garageConsumptionRecommendationBasedOn": "Rapprochée grâce à : {details}.",
+  "garageConsumptionRecommendationMissing": "À préciser : {details}.",
+  "garageConsumptionRecommendationRefine": "Préciser les détails du moteur",
+  "garageConsumptionRecommendationEngineCode": "code moteur",
+  "garageConsumptionRecommendationDisplacement": "cylindrée",
+  "garageConsumptionRecommendationCylinders": "cylindres",
+  "garageConsumptionRecommendationPower": "puissance",
+  "garageConsumptionRecommendationFuel": "carburant",
+  "garageConsumptionRecommendationDrive": "roues motrices",
+  "garageConsumptionRecommendationTrim": "finition",
+  "garageConsumptionRecommendationModelYear": "millésime",
+  "garageConsumptionRecommendationMarket": "marché d’origine",
+  "garageConsumptionRecommendationTransmission": "boîte de vitesses",
+  "garageConsumptionRecommendationVersion": "version",
+  "@garageConsumptionRecommendationTieCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@garageConsumptionRecommendationConflict": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "@garageConsumptionRecommendationBasedOn": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "@garageConsumptionRecommendationMissing": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "heavyConfigurationTitle": "Configuration poids lourd — facultatif",
+  "heavyConfigurationDetailsTitle": "Configuration poids lourd",
+  "heavyConfigurationHelp": "Renseignez uniquement les informations connues, à partir des documents du véhicule. Ces données sont déclarées.",
+  "heavyConfigurationDeclared": "Données déclarées",
+  "heavyConfigurationVersion": "Version commerciale",
+  "heavyConfigurationCab": "Cabine",
+  "heavyConfigurationAxles": "Configuration des essieux",
+  "heavyConfigurationAxlesHelp": "Recopiez la notation exacte (ex. 6x2/4 ou 6x2*4).",
+  "heavyConfigurationChassis": "Type de châssis",
+  "heavyConfigurationUnspecified": "Non renseigné",
+  "heavyConfigurationTractor": "Tracteur routier",
+  "heavyConfigurationRigid": "Porteur",
+  "heavyConfigurationOther": "Autre",
+  "heavyConfigurationBodyUse": "Carrosserie / usage",
+  "heavyConfigurationEmission": "Norme antipollution",
+  "heavyConfigurationPtac": "PTAC (kg)",
+  "heavyConfigurationPtacHelp": "Poids total autorisé en charge, indiqué sur les documents du véhicule.",
+  "heavyConfigurationPtra": "PTRA (kg)",
+  "heavyConfigurationPtraHelp": "Poids total roulant autorisé, indiqué sur les documents du véhicule.",
+  "heavyConfigurationMassInvalid": "Saisissez un entier entre 1 et 1 000 000 kg.",
+  "heavyConfigurationTrainMassTooSmall": "Le PTRA doit être supérieur ou égal au PTAC.",
+  "heavyConfigurationTextTooLong": "Saisissez au maximum {max} caractères.",
+  "@heavyConfigurationTextTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "vehicleRegistrationEntryTitle": "Ajouter un véhicule",
+  "vehicleRegistrationChoosePurpose": "Que souhaitez-vous proposer ?",
+  "vehicleRegistrationSaleTitle": "Mettre un véhicule en vente",
+  "vehicleRegistrationSaleHelp": "Renseignez le véhicule et les informations utiles à sa vente.",
+  "vehicleRegistrationRentalTitle": "Mettre un véhicule en location",
+  "vehicleRegistrationRentalHelp": "Un formulaire court pour le véhicule et ses tarifs de location.",
+  "rentalVehicleCreateTitle": "Mettre en location",
+  "rentalVehicleEditTitle": "Modifier la location",
+  "rentalVehicleIntro": "Renseignez le véhicule et au moins un tarif. Vous pourrez ajouter les photos après l’enregistrement.",
+  "rentalVehicleIdentityTitle": "Le véhicule",
+  "rentalVehicleRatesTitle": "Tarifs de location",
+  "rentalVehicleOptionalTitle": "Informations complémentaires — facultatif",
+  "rentalVehiclePickupPlace": "Lieu de retrait",
+  "rentalVehiclePickupPlaceHelp": "Ville, quartier ou adresse où récupérer le véhicule.",
+  "rentalVehicleRateRequired": "Renseignez un tarif journalier, hebdomadaire ou mensuel.",
+  "rentalVehicleSave": "Enregistrer la location",
+  "rentalVehicleOptionalHint": "La boîte, les places et les informations complémentaires sont facultatives.",
+  "rentalVehicleSeatsInvalid": "Saisissez un nombre de places entre 1 et 70.",
+  "commonPerWeekSuffix": "/semaine",
+  "vehiclesWeeklyRateLabel": "Tarif hebdomadaire",
+  "rentalVehicleEquipmentTitle": "Équipements et accessoires — facultatif",
+  "rentalVehicleEquipmentHelp": "Cochez uniquement les équipements et accessoires inclus. Cette section peut rester vide.",
+  "rentalVehicleOtherEquipmentHelp": "Précisez ici les accessoires, services ou autres informations non proposés dans la liste.",
+  "partnerAccountsRentalWeekly": "Location : {amount} / semaine",
+  "@partnerAccountsRentalWeekly": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "equipmentDetailsTitle": "Engin et matériel",
+  "equipmentDeclared": "Données déclarées",
+  "equipmentTypeLabel": "Type d’engin",
+  "equipmentTypeRequired": "Choisissez un type d’engin.",
+  "equipmentTypeAgriculturalTractor": "Tracteur agricole",
+  "equipmentTypeAerialPlatform": "Nacelle / plateforme élévatrice",
+  "equipmentTypeExcavator": "Pelle / mini-pelle",
+  "equipmentTypeBackhoeLoader": "Tractopelle",
+  "equipmentTypeLoader": "Chargeuse",
+  "equipmentTypeTelehandler": "Chariot télescopique",
+  "equipmentTypeForklift": "Chariot élévateur",
+  "equipmentTypeGenerator": "Groupe électrogène",
+  "equipmentTypeOther": "Autre matériel",
+  "equipmentBrand": "Marque",
+  "equipmentModel": "Modèle / désignation",
+  "equipmentBrandLabel": "Marque *",
+  "equipmentModelLabel": "Modèle ou désignation *",
+  "equipmentBrandNotListed": "Ma marque n’est pas dans la liste",
+  "equipmentModelNotListed": "Mon modèle n’est pas dans la liste",
+  "equipmentSerialNumber": "Numéro de série",
+  "equipmentRegistrationNumber": "Immatriculation, si applicable",
+  "equipmentParkNumber": "Numéro de parc / chantier",
+  "equipmentOperatingHours": "Heures de fonctionnement (h)",
+  "equipmentHourReadingDate": "Date du relevé (AAAA-MM-JJ)",
+  "equipmentOdometerKm": "Compteur kilométrique (km)",
+  "equipmentPowerKw": "Puissance (kW)",
+  "equipmentTransmission": "Transmission",
+  "equipmentRatedLoadKg": "Charge admissible (kg)",
+  "equipmentWorkingHeightM": "Hauteur de travail (m)",
+  "equipmentOutreachM": "Déport / portée (m)",
+  "equipmentLiftHeightM": "Hauteur de levage (m)",
+  "equipmentOperatingWeightKg": "Masse en fonctionnement (kg)",
+  "equipmentBucketCapacityM3": "Volume du godet (m³)",
+  "equipmentPtoRpm": "Prise de force (tr/min)",
+  "equipmentCabin": "Cabine",
+  "equipmentQuickCoupler": "Attache rapide",
+  "equipmentAttachments": "Équipements, outils et accessoires",
+  "equipmentEngineSerialNumber": "Numéro de série du moteur",
+  "equipmentTransmissionMechanical": "Mécanique",
+  "equipmentTransmissionHydrostatic": "Hydrostatique",
+  "equipmentTransmissionPowershift": "Powershift",
+  "equipmentTransmissionElectric": "Électrique",
+  "equipmentTransmissionOther": "Autre",
+  "equipmentCabinOpen": "Ouverte",
+  "equipmentCabinClosed": "Fermée",
+  "equipmentCabinAirConditioned": "Climatisée",
+  "equipmentYes": "Oui",
+  "equipmentNo": "Non",
+  "equipmentCreateSaleTitle": "Mettre un engin en vente",
+  "equipmentCreateRentalTitle": "Mettre un engin en location",
+  "equipmentEditTitle": "Modifier l’engin",
+  "equipmentFormIntro": "Renseignez le type, la marque, le modèle et le tarif. Les autres informations peuvent être complétées plus tard.",
+  "equipmentYearLabel": "Année, si connue",
+  "equipmentFuelLabel": "Carburant / énergie — facultatif",
+  "equipmentFuelNone": "Énergie non renseignée",
+  "equipmentOptionalIdentity": "Identification complémentaire — facultatif",
+  "equipmentOptionalTechnical": "Caractéristiques techniques — facultatif",
+  "equipmentOptionalAttachments": "Équipements et précisions — facultatif",
+  "equipmentValueInvalid": "Saisissez un nombre positif ou nul dans l’unité indiquée.",
+  "equipmentDateInvalid": "Saisissez une date valide, sans dépasser aujourd’hui.",
+  "equipmentSave": "Enregistrer l’engin",
+  "equipmentDocuments": "Documents de l’engin",
+  "equipmentUnknown": "Non renseigné",
+  "equipmentSalePriceRequired": "Renseignez le prix de vente.",
+  "equipmentOptionalTextHint": "Renseignez uniquement les informations connues.",
+  "equipmentIdentityTitle": "L’engin",
+  "equipmentPricesTitle": "Tarifs et disponibilité",
+  "equipmentDocumentAfterSaveHint": "Les photos et documents peuvent être ajoutés après l’enregistrement.",
+  "vehicleRegistrationFamilyTitle": "Quel type de bien souhaitez-vous enregistrer ?",
+  "vehicleRegistrationRoadTitle": "Véhicule routier",
+  "vehicleRegistrationRoadHelp": "Voiture, utilitaire ou poids lourd.",
+  "vehicleRegistrationEquipmentTitle": "Engins et matériels",
+  "vehicleRegistrationEquipmentHelp": "Tracteur agricole, nacelle, pelle, chariot ou autre matériel.",
+  "equipmentDocumentsPrivateHint": "Ces justificatifs sont privés. Ils ne sont pas affichés dans l’annonce publique.",
+  "equipmentDocumentAdd": "Ajouter un document",
+  "equipmentDocumentEmpty": "Aucun document ajouté. Cette étape est facultative.",
+  "equipmentDocumentType": "Type de document",
+  "equipmentDocumentOwnership": "Titre de propriété",
+  "equipmentDocumentRegistration": "Immatriculation",
+  "equipmentDocumentInspection": "Contrôle / inspection",
+  "equipmentDocumentInsurance": "Assurance",
+  "equipmentDocumentOther": "Autre justificatif",
+  "equipmentDocumentExpiry": "Expiration — facultatif (AAAA-MM-JJ)",
+  "equipmentDocumentSelect": "Choisir le fichier",
+  "equipmentDocumentFormats": "PDF, JPEG, PNG ou WebP, 8 Mo maximum.",
+  "equipmentDocumentTooLarge": "Le fichier dépasse la limite de 8 Mo.",
+  "equipmentDocumentProvided": "Document fourni — non vérifié",
+  "equipmentDocumentExport": "Enregistrer ou partager le document",
+  "equipmentDocumentDelete": "Supprimer le document",
+  "equipmentDocumentDeleteConfirm": "Supprimer ce document de l’engin ?",
+  "equipmentDocumentExpired": "Document expiré",
+  "equipmentDocumentSaved": "Document ajouté",
+  "equipmentDocumentDeleted": "Document supprimé",
+  "equipmentDocumentDateInvalid": "Saisissez une date valide au format AAAA-MM-JJ.",
   "passwordRecoveryForgot": "Mot de passe oublié ?",
   "passwordRecoveryTitle": "Récupérer mon compte",
   "passwordRecoveryIntro": "Recevez un lien par email pour choisir un nouveau mot de passe.",

@@ -37,6 +37,8 @@ class CatalogRepository {
     int perPage = 20,
     String? search,
     String? availability,
+    String? assetKind,
+    String? equipmentType,
     String? vehicleType,
     String? bodyStyle,
     String? brandId,
@@ -58,6 +60,8 @@ class CatalogRepository {
       perPage: perPage,
       search: search,
       availability: availability,
+      assetKind: assetKind,
+      equipmentType: equipmentType,
       vehicleType: vehicleType,
       bodyStyle: bodyStyle,
       brandId: brandId,
@@ -87,6 +91,8 @@ class CatalogRepository {
         perPage: perPage,
         search: search,
         availability: availability,
+        assetKind: assetKind,
+        equipmentType: equipmentType,
         vehicleType: vehicleType,
         bodyStyle: bodyStyle,
         brandId: brandId,
@@ -120,6 +126,8 @@ class CatalogRepository {
     int perPage = 20,
     String? search,
     String? availability, // 'sale' | 'rent' | null (tous)
+    String? assetKind, // 'road_vehicle' | 'equipment' | null (tous)
+    String? equipmentType,
     String? vehicleType, // 'passenger' | 'utility' | 'heavy' | null (tous)
     String?
     bodyStyle, // 'sedan' | 'suv' | 'pickup' | 'minibus' | 'bus' | … | null
@@ -141,6 +149,8 @@ class CatalogRepository {
       perPage: perPage,
       search: search,
       availability: availability,
+      assetKind: assetKind,
+      equipmentType: equipmentType,
       vehicleType: vehicleType,
       bodyStyle: bodyStyle,
       brandId: brandId,
@@ -166,6 +176,8 @@ class CatalogRepository {
     required int perPage,
     required String? search,
     required String? availability,
+    required String? assetKind,
+    required String? equipmentType,
     required String? vehicleType,
     required String? bodyStyle,
     required String? brandId,
@@ -184,6 +196,8 @@ class CatalogRepository {
     'page': page,
     'per_page': perPage,
     if (search != null && search.isNotEmpty) 'q': search,
+    if (assetKind != null) 'asset_kind': assetKind,
+    if (equipmentType != null) 'equipment_type': equipmentType,
     if (vehicleType != null) 'vehicle_type': vehicleType,
     if (bodyStyle != null) 'body_style': bodyStyle,
     if (brandId != null) 'brand_id': brandId,

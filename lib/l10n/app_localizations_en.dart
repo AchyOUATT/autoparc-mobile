@@ -3740,11 +3740,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get vehiclesMonthlyRateLabel => 'Monthly rate';
 
   @override
-  String get vehiclesRentalRateRequired => 'Enter a daily or monthly rate';
+  String get vehiclesRentalRateRequired =>
+      'Enter a daily, weekly or monthly rate';
 
   @override
   String get vehiclesRentalRateHint =>
-      'Enter at least one rate: daily or monthly.';
+      'Enter at least one rate: per day, per week or per month.';
 
   @override
   String get vehiclesDepositLabel => 'Deposit';
@@ -5921,6 +5922,638 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get catalogValidatedByAutoParc => 'Validated by AutoParc';
+
+  @override
+  String get garageEngineDetailsTitle => 'Engine details — optional';
+
+  @override
+  String get garageEngineDetailsHelp =>
+      'Enter only what you know. Litres do not specify the exact displacement in cm³. These details alone do not confirm parts compatibility.';
+
+  @override
+  String get garageEngineLitres => 'Stated displacement (L)';
+
+  @override
+  String get garageEngineCc => 'Exact displacement (cm³)';
+
+  @override
+  String get garageEngineCylinders => 'Number of cylinders';
+
+  @override
+  String get garageEngineLayout => 'Cylinder layout';
+
+  @override
+  String get garageEngineInline => 'Inline';
+
+  @override
+  String get garageEngineV => 'V';
+
+  @override
+  String get garageEngineBoxer => 'Boxer';
+
+  @override
+  String get garageEngineW => 'W';
+
+  @override
+  String get garageEngineOther => 'Other';
+
+  @override
+  String get garageEngineUnspecified => 'Not specified';
+
+  @override
+  String get garageEngineCode => 'Engine code';
+
+  @override
+  String get garageEnginePower => 'Power (metric hp)';
+
+  @override
+  String get garageEngineNumberInvalid =>
+      'Enter a positive number within the stated range.';
+
+  @override
+  String get garageEngineCodeInvalid => '20 characters maximum.';
+
+  @override
+  String get garageEngineAddDetails => 'Add engine details';
+
+  @override
+  String garageEngineCylindersValue(int count) {
+    return '$count cylinders';
+  }
+
+  @override
+  String garageEnginePowerValue(int power) {
+    return '$power metric hp';
+  }
+
+  @override
+  String get vehiclesModelsBodyFilterActive =>
+      'Models matching the selected body style.';
+
+  @override
+  String get vehiclesModelsBodyFilterEmpty =>
+      'No models with this body style are listed for this make.';
+
+  @override
+  String get vehiclesModelsBodyFilterShowAll => 'Show all models';
+
+  @override
+  String get vehiclesModelsBodyFilterRestore => 'Filter by body style';
+
+  @override
+  String get vehiclesModelsBodyFilterRetained =>
+      'Your current model is retained. Its catalogue body style differs or is unspecified.';
+
+  @override
+  String get garageConsumptionRecommendationClosest => 'Closest reference';
+
+  @override
+  String get garageConsumptionRecommendationTied => 'References to distinguish';
+
+  @override
+  String get garageConsumptionRecommendationNeedsDetails =>
+      'Clarify the engine version';
+
+  @override
+  String get garageConsumptionRecommendationProvisional =>
+      'The known details do not identify a single reference. These values remain comparisons.';
+
+  @override
+  String get garageConsumptionRecommendationNotice =>
+      'Selecting a reference does not by itself confirm it applies to this vehicle.';
+
+  @override
+  String get garageConsumptionRecommendationNoEligible =>
+      'None of these references matches the known characteristics.';
+
+  @override
+  String garageConsumptionRecommendationTieCount(int count) {
+    return '$count references are equally close. The first three are shown.';
+  }
+
+  @override
+  String get garageConsumptionRecommendationCurrent =>
+      'Currently selected reference';
+
+  @override
+  String get garageConsumptionRecommendationShowAll => 'See all references';
+
+  @override
+  String get garageConsumptionRecommendationShowLess =>
+      'Back to targeted references';
+
+  @override
+  String get garageConsumptionRecommendationOther => 'Other references';
+
+  @override
+  String garageConsumptionRecommendationConflict(String details) {
+    return 'Conflict with known characteristics: $details.';
+  }
+
+  @override
+  String get garageConsumptionRecommendationConflictGeneric =>
+      'Conflicts with known characteristics. Check the details before changing the vehicle.';
+
+  @override
+  String garageConsumptionRecommendationBasedOn(String details) {
+    return 'Matched using: $details.';
+  }
+
+  @override
+  String garageConsumptionRecommendationMissing(String details) {
+    return 'Details to clarify: $details.';
+  }
+
+  @override
+  String get garageConsumptionRecommendationRefine => 'Refine engine details';
+
+  @override
+  String get garageConsumptionRecommendationEngineCode => 'engine code';
+
+  @override
+  String get garageConsumptionRecommendationDisplacement => 'displacement';
+
+  @override
+  String get garageConsumptionRecommendationCylinders => 'cylinders';
+
+  @override
+  String get garageConsumptionRecommendationPower => 'power';
+
+  @override
+  String get garageConsumptionRecommendationFuel => 'fuel';
+
+  @override
+  String get garageConsumptionRecommendationDrive => 'drivetrain';
+
+  @override
+  String get garageConsumptionRecommendationTrim => 'trim';
+
+  @override
+  String get garageConsumptionRecommendationModelYear => 'model year';
+
+  @override
+  String get garageConsumptionRecommendationMarket =>
+      'original specification market';
+
+  @override
+  String get garageConsumptionRecommendationTransmission => 'gearbox';
+
+  @override
+  String get garageConsumptionRecommendationVersion => 'version';
+
+  @override
+  String get heavyConfigurationTitle =>
+      'Heavy vehicle configuration — optional';
+
+  @override
+  String get heavyConfigurationDetailsTitle => 'Heavy vehicle configuration';
+
+  @override
+  String get heavyConfigurationHelp =>
+      'Enter only known information from the vehicle documents. These details are owner-declared.';
+
+  @override
+  String get heavyConfigurationDeclared => 'Owner-declared details';
+
+  @override
+  String get heavyConfigurationVersion => 'Commercial version';
+
+  @override
+  String get heavyConfigurationCab => 'Cab';
+
+  @override
+  String get heavyConfigurationAxles => 'Axle configuration';
+
+  @override
+  String get heavyConfigurationAxlesHelp =>
+      'Copy the exact notation (e.g. 6x2/4 or 6x2*4).';
+
+  @override
+  String get heavyConfigurationChassis => 'Chassis type';
+
+  @override
+  String get heavyConfigurationUnspecified => 'Not specified';
+
+  @override
+  String get heavyConfigurationTractor => 'Tractor unit';
+
+  @override
+  String get heavyConfigurationRigid => 'Rigid truck';
+
+  @override
+  String get heavyConfigurationOther => 'Other';
+
+  @override
+  String get heavyConfigurationBodyUse => 'Body / use';
+
+  @override
+  String get heavyConfigurationEmission => 'Emissions standard';
+
+  @override
+  String get heavyConfigurationPtac => 'GVWR (kg)';
+
+  @override
+  String get heavyConfigurationPtacHelp =>
+      'Gross vehicle weight rating, as stated on the vehicle documents.';
+
+  @override
+  String get heavyConfigurationPtra => 'GCWR (kg)';
+
+  @override
+  String get heavyConfigurationPtraHelp =>
+      'Gross combination weight rating, as stated on the vehicle documents.';
+
+  @override
+  String get heavyConfigurationMassInvalid =>
+      'Enter a whole number between 1 and 1,000,000 kg.';
+
+  @override
+  String get heavyConfigurationTrainMassTooSmall =>
+      'GCWR must be greater than or equal to GVWR.';
+
+  @override
+  String heavyConfigurationTextTooLong(int max) {
+    return 'Enter at most $max characters.';
+  }
+
+  @override
+  String get vehicleRegistrationEntryTitle => 'Add a vehicle';
+
+  @override
+  String get vehicleRegistrationChoosePurpose =>
+      'What would you like to offer?';
+
+  @override
+  String get vehicleRegistrationSaleTitle => 'List a vehicle for sale';
+
+  @override
+  String get vehicleRegistrationSaleHelp =>
+      'Enter the vehicle and the details needed to sell it.';
+
+  @override
+  String get vehicleRegistrationRentalTitle => 'List a vehicle for rent';
+
+  @override
+  String get vehicleRegistrationRentalHelp =>
+      'A short form for the vehicle and its rental rates.';
+
+  @override
+  String get rentalVehicleCreateTitle => 'List for rent';
+
+  @override
+  String get rentalVehicleEditTitle => 'Edit rental listing';
+
+  @override
+  String get rentalVehicleIntro =>
+      'Enter the vehicle and at least one rate. You can add photos after saving.';
+
+  @override
+  String get rentalVehicleIdentityTitle => 'Vehicle';
+
+  @override
+  String get rentalVehicleRatesTitle => 'Rental rates';
+
+  @override
+  String get rentalVehicleOptionalTitle => 'Additional details — optional';
+
+  @override
+  String get rentalVehiclePickupPlace => 'Pickup location';
+
+  @override
+  String get rentalVehiclePickupPlaceHelp =>
+      'City, area or address where the vehicle can be collected.';
+
+  @override
+  String get rentalVehicleRateRequired =>
+      'Enter a daily, weekly or monthly rate.';
+
+  @override
+  String get rentalVehicleSave => 'Save rental listing';
+
+  @override
+  String get rentalVehicleOptionalHint =>
+      'Transmission, seats and additional details are optional.';
+
+  @override
+  String get rentalVehicleSeatsInvalid =>
+      'Enter a number of seats between 1 and 70.';
+
+  @override
+  String get commonPerWeekSuffix => '/week';
+
+  @override
+  String get vehiclesWeeklyRateLabel => 'Weekly rate';
+
+  @override
+  String get rentalVehicleEquipmentTitle =>
+      'Equipment and accessories — optional';
+
+  @override
+  String get rentalVehicleEquipmentHelp =>
+      'Select only the equipment and accessories included. You can leave this section empty.';
+
+  @override
+  String get rentalVehicleOtherEquipmentHelp =>
+      'Use this description for accessories, services or other details not listed above.';
+
+  @override
+  String partnerAccountsRentalWeekly(String amount) {
+    return 'Rental: $amount / week';
+  }
+
+  @override
+  String get equipmentDetailsTitle => 'Equipment';
+
+  @override
+  String get equipmentDeclared => 'Declared information';
+
+  @override
+  String get equipmentTypeLabel => 'Equipment type';
+
+  @override
+  String get equipmentTypeRequired => 'Choose an equipment type.';
+
+  @override
+  String get equipmentTypeAgriculturalTractor => 'Agricultural tractor';
+
+  @override
+  String get equipmentTypeAerialPlatform => 'Aerial work platform';
+
+  @override
+  String get equipmentTypeExcavator => 'Excavator / mini excavator';
+
+  @override
+  String get equipmentTypeBackhoeLoader => 'Backhoe loader';
+
+  @override
+  String get equipmentTypeLoader => 'Loader';
+
+  @override
+  String get equipmentTypeTelehandler => 'Telehandler';
+
+  @override
+  String get equipmentTypeForklift => 'Forklift';
+
+  @override
+  String get equipmentTypeGenerator => 'Generator';
+
+  @override
+  String get equipmentTypeOther => 'Other equipment';
+
+  @override
+  String get equipmentBrand => 'Brand';
+
+  @override
+  String get equipmentModel => 'Model / designation';
+
+  @override
+  String get equipmentBrandLabel => 'Brand *';
+
+  @override
+  String get equipmentModelLabel => 'Model or designation *';
+
+  @override
+  String get equipmentBrandNotListed => 'My brand is not listed';
+
+  @override
+  String get equipmentModelNotListed => 'My model is not listed';
+
+  @override
+  String get equipmentSerialNumber => 'Serial number';
+
+  @override
+  String get equipmentRegistrationNumber => 'Registration, if applicable';
+
+  @override
+  String get equipmentParkNumber => 'Fleet / site number';
+
+  @override
+  String get equipmentOperatingHours => 'Operating hours (h)';
+
+  @override
+  String get equipmentHourReadingDate => 'Reading date (YYYY-MM-DD)';
+
+  @override
+  String get equipmentOdometerKm => 'Odometer (km)';
+
+  @override
+  String get equipmentPowerKw => 'Power (kW)';
+
+  @override
+  String get equipmentTransmission => 'Transmission';
+
+  @override
+  String get equipmentRatedLoadKg => 'Rated load (kg)';
+
+  @override
+  String get equipmentWorkingHeightM => 'Working height (m)';
+
+  @override
+  String get equipmentOutreachM => 'Outreach (m)';
+
+  @override
+  String get equipmentLiftHeightM => 'Lift height (m)';
+
+  @override
+  String get equipmentOperatingWeightKg => 'Operating weight (kg)';
+
+  @override
+  String get equipmentBucketCapacityM3 => 'Bucket capacity (m³)';
+
+  @override
+  String get equipmentPtoRpm => 'Power take-off (rpm)';
+
+  @override
+  String get equipmentCabin => 'Cab';
+
+  @override
+  String get equipmentQuickCoupler => 'Quick coupler';
+
+  @override
+  String get equipmentAttachments => 'Equipment, tools and attachments';
+
+  @override
+  String get equipmentEngineSerialNumber => 'Engine serial number';
+
+  @override
+  String get equipmentTransmissionMechanical => 'Mechanical';
+
+  @override
+  String get equipmentTransmissionHydrostatic => 'Hydrostatic';
+
+  @override
+  String get equipmentTransmissionPowershift => 'Powershift';
+
+  @override
+  String get equipmentTransmissionElectric => 'Electric';
+
+  @override
+  String get equipmentTransmissionOther => 'Other';
+
+  @override
+  String get equipmentCabinOpen => 'Open';
+
+  @override
+  String get equipmentCabinClosed => 'Enclosed';
+
+  @override
+  String get equipmentCabinAirConditioned => 'Air conditioned';
+
+  @override
+  String get equipmentYes => 'Yes';
+
+  @override
+  String get equipmentNo => 'No';
+
+  @override
+  String get equipmentCreateSaleTitle => 'List equipment for sale';
+
+  @override
+  String get equipmentCreateRentalTitle => 'List equipment for rent';
+
+  @override
+  String get equipmentEditTitle => 'Edit equipment';
+
+  @override
+  String get equipmentFormIntro =>
+      'Enter the type, brand, model and price. Other details can be added later.';
+
+  @override
+  String get equipmentYearLabel => 'Year, if known';
+
+  @override
+  String get equipmentFuelLabel => 'Fuel / energy — optional';
+
+  @override
+  String get equipmentFuelNone => 'Energy not specified';
+
+  @override
+  String get equipmentOptionalIdentity =>
+      'Additional identification — optional';
+
+  @override
+  String get equipmentOptionalTechnical => 'Technical details — optional';
+
+  @override
+  String get equipmentOptionalAttachments => 'Attachments and notes — optional';
+
+  @override
+  String get equipmentValueInvalid =>
+      'Enter a non-negative number in the unit shown.';
+
+  @override
+  String get equipmentDateInvalid =>
+      'Enter a valid date that is not in the future.';
+
+  @override
+  String get equipmentSave => 'Save equipment';
+
+  @override
+  String get equipmentDocuments => 'Equipment documents';
+
+  @override
+  String get equipmentUnknown => 'Not specified';
+
+  @override
+  String get equipmentSalePriceRequired => 'Enter the sale price.';
+
+  @override
+  String get equipmentOptionalTextHint => 'Enter only information you know.';
+
+  @override
+  String get equipmentIdentityTitle => 'Equipment identity';
+
+  @override
+  String get equipmentPricesTitle => 'Pricing and availability';
+
+  @override
+  String get equipmentDocumentAfterSaveHint =>
+      'Photos and documents can be added after saving.';
+
+  @override
+  String get vehicleRegistrationFamilyTitle =>
+      'What kind of asset would you like to register?';
+
+  @override
+  String get vehicleRegistrationRoadTitle => 'Road vehicle';
+
+  @override
+  String get vehicleRegistrationRoadHelp =>
+      'Car, van, utility vehicle or truck.';
+
+  @override
+  String get vehicleRegistrationEquipmentTitle => 'Equipment and machinery';
+
+  @override
+  String get vehicleRegistrationEquipmentHelp =>
+      'Agricultural tractor, platform, excavator, forklift or other equipment.';
+
+  @override
+  String get equipmentDocumentsPrivateHint =>
+      'These documents are private and are not displayed in the public listing.';
+
+  @override
+  String get equipmentDocumentAdd => 'Add a document';
+
+  @override
+  String get equipmentDocumentEmpty =>
+      'No documents added. This step is optional.';
+
+  @override
+  String get equipmentDocumentType => 'Document type';
+
+  @override
+  String get equipmentDocumentOwnership => 'Ownership document';
+
+  @override
+  String get equipmentDocumentRegistration => 'Registration';
+
+  @override
+  String get equipmentDocumentInspection => 'Inspection';
+
+  @override
+  String get equipmentDocumentInsurance => 'Insurance';
+
+  @override
+  String get equipmentDocumentOther => 'Other document';
+
+  @override
+  String get equipmentDocumentExpiry => 'Expiry — optional (YYYY-MM-DD)';
+
+  @override
+  String get equipmentDocumentSelect => 'Choose a file';
+
+  @override
+  String get equipmentDocumentFormats => 'PDF, JPEG, PNG or WebP, up to 8 MB.';
+
+  @override
+  String get equipmentDocumentTooLarge => 'The file exceeds the 8 MB limit.';
+
+  @override
+  String get equipmentDocumentProvided => 'Document provided — not verified';
+
+  @override
+  String get equipmentDocumentExport => 'Save or share document';
+
+  @override
+  String get equipmentDocumentDelete => 'Delete document';
+
+  @override
+  String get equipmentDocumentDeleteConfirm =>
+      'Delete this equipment document?';
+
+  @override
+  String get equipmentDocumentExpired => 'Expired document';
+
+  @override
+  String get equipmentDocumentSaved => 'Document added';
+
+  @override
+  String get equipmentDocumentDeleted => 'Document deleted';
+
+  @override
+  String get equipmentDocumentDateInvalid =>
+      'Enter a valid date in YYYY-MM-DD format.';
 
   @override
   String get passwordRecoveryForgot => 'Forgot password?';

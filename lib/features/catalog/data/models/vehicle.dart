@@ -1,5 +1,8 @@
 import 'package:equatable/equatable.dart';
+
 import '../../../../core/utils/mileage.dart';
+import '../../../vehicles/data/models/heavy_vehicle_configuration.dart';
+import '../../../vehicles/data/models/equipment_details.dart';
 
 import 'promotion.dart';
 import '../../../garage/data/models/motorisation.dart';
@@ -45,7 +48,7 @@ class VehicleFeature extends Equatable {
   factory VehicleFeature.fromJson(Map<String, dynamic> json) => VehicleFeature(
     id: json['id'] as int,
     name: json['name'] as String,
-    category: json['category'] as String,
+    category: json['category'] as String? ?? 'autre',
   );
 
   @override
@@ -68,10 +71,15 @@ class Vehicle extends Equatable {
   final String? vin;
   final String designation;
   final String registrationStatus; // 'unregistered' | 'registered'
+  final String assetKind; // 'road_vehicle' | 'equipment'
+  final String? equipmentType;
+  final EquipmentDetails equipmentDetails;
   final String vehicleType; // 'passenger' | 'utility' | 'heavy'
   final String? bodyStyle; // 'sedan' | 'suv' | 'pickup' | 'minibus' | 'bus' | …
   final VehicleIdentity identity;
   final VehicleCommercial commercial;
+  final String? description;
+  final Map<String, double> partnerProposedPrices;
   final VehicleImport? import_;
   final int faultsCount;
 
@@ -164,6 +172,7 @@ class Vehicle extends Equatable {
   final int? torqueNm;
   final int? gearCount;
   final String? engineCode;
+  final HeavyVehicleConfiguration heavyConfiguration;
 
   /// Consommation mixte, en L/100 km.
   final double? combinedL100km;
@@ -202,10 +211,15 @@ class Vehicle extends Equatable {
     this.vin,
     required this.designation,
     required this.registrationStatus,
+    this.assetKind = 'road_vehicle',
+    this.equipmentType,
+    this.equipmentDetails = const EquipmentDetails(),
     this.vehicleType = 'passenger',
     this.bodyStyle,
     required this.identity,
     required this.commercial,
+    this.description,
+    this.partnerProposedPrices = const {},
     this.import_,
     required this.faultsCount,
     this.inspection,
@@ -226,6 +240,7 @@ class Vehicle extends Equatable {
     this.torqueNm,
     this.gearCount,
     this.engineCode,
+    this.heavyConfiguration = const HeavyVehicleConfiguration(),
     this.combinedL100km,
     this.officialConsumption,
     this.consumptionReferences = const [],
@@ -235,6 +250,11 @@ class Vehicle extends Equatable {
 
   factory Vehicle.fromJson(Map<String, dynamic> json) {
     final technique = json['technical'] as Map<String, dynamic>?;
+    final assetKind = json['asset_kind'] as String? ?? 'road_vehicle';
+    final equipmentDetails = EquipmentDetails.fromJson(
+      json['equipment_details'] as Map<String, dynamic>? ?? const {},
+    );
+    final identity = json['identity'] as Map<String, dynamic>? ?? const {};
 
     // ── Les photos, couverture en tête ───────────────────────────────────
     //
@@ -298,15 +318,28 @@ class Vehicle extends Equatable {
       vin: json['vin'] as String?,
       designation: json['designation'] as String,
       registrationStatus: status is Map
-          ? status['value'] as String
-          : status as String,
-      vehicleType: json['vehicle_type'] as String? ?? 'passenger',
+          ? status['value'] as String? ?? ''
+          : status as String? ?? '',
+      assetKind: assetKind,
+      equipmentType: json['equipment_type'] as String?,
+      equipmentDetails: equipmentDetails,
+      vehicleType:
+          json['vehicle_type'] as String? ??
+          (assetKind == 'equipment' ? '' : 'passenger'),
       bodyStyle: json['body_style'] as String?,
-      identity: VehicleIdentity.fromJson(
-        json['identity'] as Map<String, dynamic>,
-      ),
+      identity: VehicleIdentity.fromJson({
+        ...identity,
+        if (assetKind == 'equipment' && identity['brand'] == null)
+          'brand': equipmentDetails.brandLabel,
+        if (assetKind == 'equipment' && identity['model'] == null)
+          'model': equipmentDetails.modelLabel,
+      }),
       commercial: VehicleCommercial.fromJson(
         json['commercial'] as Map<String, dynamic>,
+      ),
+      description: json['description'] as String?,
+      partnerProposedPrices: _readPartnerProposedPrices(
+        json['partner_pricing'],
       ),
       import_: json['import'] != null
           ? VehicleImport.fromJson(json['import'] as Map<String, dynamic>)
@@ -345,6 +378,11 @@ class Vehicle extends Equatable {
       torqueNm: _asInt(technique?['torque_nm']),
       gearCount: _asInt(technique?['gear_count']),
       engineCode: technique?['engine_code'] as String?,
+      heavyConfiguration: HeavyVehicleConfiguration.fromJson(
+        technique?['heavy_configuration'] is Map<String, dynamic>
+            ? technique!['heavy_configuration'] as Map<String, dynamic>
+            : const <String, dynamic>{},
+      ),
       combinedL100km: _asDouble(
         (json['consumption'] as Map<String, dynamic>?)?['combined_l_100km'],
       ),
@@ -411,14 +449,42 @@ class Vehicle extends Equatable {
   /// valident l'une l'autre.
   bool get aUnePagePublique => !_statutsSansPage.contains(commercial.status);
 
-  bool get isImported => registrationStatus == 'unregistered';
-  bool get isRegistered => registrationStatus == 'registered';
-  bool get isUtility => vehicleType == 'utility';
-  bool get isHeavy => vehicleType == 'heavy';
-  bool get isPassenger => vehicleType == 'passenger';
+  bool get isEquipment => assetKind == 'equipment';
+  bool get isImported => !isEquipment && registrationStatus == 'unregistered';
+  bool get isRegistered => !isEquipment && registrationStatus == 'registered';
+  bool get isUtility => !isEquipment && vehicleType == 'utility';
+  bool get isHeavy => !isEquipment && vehicleType == 'heavy';
+  bool get isPassenger => !isEquipment && vehicleType == 'passenger';
+
+  /// Private seller inputs; public prices already include the shop margin.
+  double? proposedPriceExcludingCommission(String field) =>
+      partnerProposedPrices[field];
 
   @override
-  List<Object?> get props => [id, reference, inspection, faultDeclaration];
+  List<Object?> get props => [
+    id,
+    reference,
+    inspection,
+    faultDeclaration,
+    heavyConfiguration,
+    assetKind,
+    equipmentType,
+    equipmentDetails,
+    description,
+    partnerProposedPrices,
+  ];
+}
+
+Map<String, double> _readPartnerProposedPrices(Object? metadata) {
+  if (metadata is! Map || metadata['prix_proposes'] is! Map) return const {};
+  final prices = metadata['prix_proposes'] as Map;
+  final result = <String, double>{};
+  for (final entry in prices.entries) {
+    if (entry.key is! String) continue;
+    final price = double.tryParse('${entry.value}');
+    if (price != null && price.isFinite) result[entry.key as String] = price;
+  }
+  return Map.unmodifiable(result);
 }
 
 // ── Identité ──────────────────────────────────────────────────────
@@ -469,25 +535,31 @@ class VehicleIdentity extends Equatable {
     this.year,
   });
 
-  factory VehicleIdentity.fromJson(Map<String, dynamic> json) => VehicleIdentity(
-    brand:         json['brand']           as String,
-    brandSlug:     json['brand_slug']      as String?,
-    brandLogoPath: json['brand_logo_path'] as String?,
-    model:       json['model']       as String,
-    generation:  json['generation']  as String?,
-    trim:        json['trim']        as String?,
-    engineType:  json['engine_type'] as String?,
-    engineTypeCode: json['engine_type_code'] as String?,
-    drivetrain:  json['drivetrain']  as String?,
-    drivetrainCode: json['drivetrain_code'] as String?,
-    color:       json['color']       as String?,
-    colorHex:    json['color_hex']    as String?,
-    colorFinish: json['color_finish'] as String?,
-    year:        json['year']        as int?,
-  );
+  factory VehicleIdentity.fromJson(Map<String, dynamic> json) =>
+      VehicleIdentity(
+        brand: json['brand'] as String? ?? '',
+        brandSlug: json['brand_slug'] as String?,
+        brandLogoPath: json['brand_logo_path'] as String?,
+        model: json['model'] as String? ?? '',
+        generation: json['generation'] as String?,
+        trim: json['trim'] as String?,
+        engineType: json['engine_type'] as String?,
+        engineTypeCode: json['engine_type_code'] as String?,
+        drivetrain: json['drivetrain'] as String?,
+        drivetrainCode: json['drivetrain_code'] as String?,
+        color: json['color'] as String?,
+        colorHex: json['color_hex'] as String?,
+        colorFinish: json['color_finish'] as String?,
+        year: json['year'] as int?,
+      );
 
-  String get fullName =>
-      year != null ? '$brand $model ($year)' : '$brand $model';
+  String get fullName {
+    final name = [
+      brand,
+      model,
+    ].where((part) => part.trim().isNotEmpty).join(' ');
+    return year != null ? '$name ($year)'.trim() : name;
+  }
 
   @override
   List<Object?> get props => [brand, model, generation, trim, year];
@@ -641,11 +713,11 @@ class VehicleImport extends Equatable {
   bool get isRightHandDrive => steeringside == 'right';
 
   factory VehicleImport.fromJson(Map<String, dynamic> json) => VehicleImport(
-    originCountry:      json['origin_country']       as String?,
-    originCountryIso2:   json['origin_country_iso2'] as String?,
-    customsCleared:     json['customs_cleared']      as bool? ?? false,
-    portOfEntry:        json['port_of_entry']         as String?,
-    steeringside:       json['steering_side']         as String?,
+    originCountry: json['origin_country'] as String?,
+    originCountryIso2: json['origin_country_iso2'] as String?,
+    customsCleared: json['customs_cleared'] as bool? ?? false,
+    portOfEntry: json['port_of_entry'] as String?,
+    steeringside: json['steering_side'] as String?,
     odometerAtImportKm: parseMileageKm(json['odometer_at_import_km']),
   );
 
@@ -690,11 +762,11 @@ class OfficialConsumption {
       min: min,
       max: max,
       motorisations: _asInt(json['motorisations']) ?? 1,
-      modelYear:     _asInt(json['model_year']) ?? 0,
-      source:        json['source'] as String? ?? '',
-      cycle:         json['cycle']  as String? ?? '',
-      sourceCode:    json['source_code'] as String?,
-      cycleCode:     json['cycle_code'] as String?,
+      modelYear: _asInt(json['model_year']) ?? 0,
+      source: json['source'] as String? ?? '',
+      cycle: json['cycle'] as String? ?? '',
+      sourceCode: json['source_code'] as String?,
+      cycleCode: json['cycle_code'] as String?,
     );
   }
 
