@@ -77,7 +77,7 @@ void main() {
 
       expect(find.byType(HomePage), findsOneWidget);
       expect(find.byType(PartnerDashboardPage), findsNothing);
-      expect(find.text('Enregistrez votre véhicule'), findsOneWidget);
+      expect(find.byKey(const Key('accueil-carte-vendeur')), findsNothing);
     });
 
     testWidgets('avec une session partenaire : le tableau de bord', (tester) async {
@@ -132,7 +132,7 @@ void main() {
 
         expect(find.byKey(const Key('accueil-carte-vendeur')), findsNothing,
             reason: 'profil = $profil');
-        expect(find.text('Enregistrez votre véhicule'), findsOneWidget);
+        expect(find.byKey(const Key('accueil-carte-vendeur')), findsNothing);
       }
     });
 
@@ -146,7 +146,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('accueil-carte-vendeur')), findsNothing);
-      expect(find.text('Enregistrez votre véhicule'), findsOneWidget);
+      expect(find.byKey(const Key('accueil-carte-vendeur')), findsNothing);
       expect(await ProfilService.lire(), ProfilUtilisateur.acheteur,
           reason: 'C\'est le chemin promis pour changer d\'avis : il doit '
               'tenir au lancement suivant.');
@@ -217,7 +217,7 @@ void main() {
       expect(find.byType(HomePage), findsOneWidget,
           reason: 'Cet état dure jusqu\'au délai réseau — soixante secondes '
               'sur une instance qui se réveille. Un accueil, pas un blanc.');
-      expect(find.text('Enregistrez votre véhicule'), findsOneWidget);
+      expect(find.byKey(const Key('accueil-carte-vendeur')), findsNothing);
     });
 
     /// LE CHEMIN RÉEL D'UN REFUS. Quand le personnel refuse ou suspend un

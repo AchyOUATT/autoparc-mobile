@@ -11,10 +11,11 @@ import '../providers/garage_provider.dart';
 import '../widgets/consumption_tile.dart';
 import '../widgets/engine_prompt.dart';
 import '../widgets/mileage_dialog.dart';
+import '../widgets/vehicle_card_header.dart';
+import '../widgets/vehicle_card_actions.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
 import '../../../../core/api/api_exception.dart';
-import '../../../../core/widgets/brand_logo.dart';
 import '../../../private_sales/data/private_listing_repository.dart';
 
 class GaragePage extends ConsumerWidget {
@@ -319,46 +320,14 @@ class _VehicleCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
     final id = vehicle.identity;
 
     return Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── En-tête ──────────────────────────────────────────────
-          ListTile(
-            // Le logo de la marque plutôt que l'initiale du surnom.
-            //
-            // L'initiale ne disait rien : « M » valait aussi bien pour « Ma
-            // Corolla » que pour « Ma seconde voiture », et deux véhicules
-            // surnommés par leur propriétaire portaient la même lettre. Le logo,
-            // lui, se reconnaît sans lire — c'est déjà ce que fait la fiche de
-            // l'accueil, et le garage est l'écran où l'on cherche une voiture
-            // parmi plusieurs.
-            //
-            // BrandLogo retombe sur une icône générique quand le fichier
-            // manque : aucune case vide, aucune erreur.
-            leading: SizedBox(
-              width: 40,
-              height: 40,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(child: BrandLogo(slug: id.brandSlug, size: 30)),
-              ),
-            ),
-            title: Text(
-              vehicle.displayName,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              '${id.fullName} · ${vehicle.year}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+          VehicleCardHeader(
+            vehicle: vehicle,
             trailing: _MoreMenu(vehicle: vehicle),
           ),
 
@@ -369,15 +338,6 @@ class _VehicleCard extends ConsumerWidget {
               spacing: 8,
               runSpacing: 4,
               children: [
-                if (vehicle.plateNumber != null)
-                  _InfoChip(Icons.badge_outlined, vehicle.plateNumber!),
-                if (vehicle.mileageKm != null)
-                  _InfoChip(
-                    Icons.speed,
-                    AppLocalizations.of(context).garageMileageValue(
-                      (_fmt(context, vehicle.mileageKm!)).toString(),
-                    ),
-                  ),
                 if (id.engineType != null)
                   _InfoChip(Icons.local_gas_station_outlined, referenceFuelLabel(id.engineTypeCode, id.engineType!, AppLocalizations.of(context))),
                 if (id.color != null)
@@ -398,6 +358,11 @@ class _VehicleCard extends ConsumerWidget {
                   ),
               ],
             ),
+          ),
+
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Divider(height: 1),
           ),
 
           // ── Échéances d'entretien ─────────────────────────────────
@@ -510,41 +475,18 @@ class _VehicleCard extends ConsumerWidget {
               ),
             ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => context.push(
-                      '/garage/${vehicle.id}/parts',
-                      extra: vehicle,
-                    ),
-                    icon: const Icon(Icons.settings_outlined, size: 18),
-                    label: Text(
-                      AppLocalizations.of(context).garageMatchingPartsTitle,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: () => showMileageDialog(context, ref, vehicle),
-                  icon: const Icon(Icons.speed, size: 18),
-                  label: Text(AppLocalizations.of(context).garageUpdateAction),
-                ),
-              ],
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: VehicleCardActions(
+              onParts: () => context.push(
+                '/garage/${vehicle.id}/parts',
+                extra: vehicle,
+              ),
+              onMileage: () => showMileageDialog(context, ref, vehicle),
             ),
           ),
         ],
       ),
     );
-  }
-
-  String _fmt(BuildContext context, int n) {
-    if (n >= 1000)
-      return AppLocalizations.of(
-        context,
-      ).garageCompactThousands(((n / 1000).toStringAsFixed(0)).toString());
-    return n.toString();
   }
 
   Future<void> _editDeadlines(
