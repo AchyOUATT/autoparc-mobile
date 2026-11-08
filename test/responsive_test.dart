@@ -74,7 +74,7 @@ import 'support/langues.dart';
 void main() {
   // ── Référentiel minimal ──────────────────────────────────────────────────
 
-  const marque  = BrandRef(id: 3, name: 'Toyota', isActive: true);
+  const marque = BrandRef(id: 3, name: 'Toyota', isActive: true);
   const corolla = ModelRef(id: 11, brandId: 3, name: 'Corolla');
 
   const refs = CatalogRefs(
@@ -95,6 +95,11 @@ void main() {
   const formats = <String, Size>{
     '320x640': Size(320, 640),
     '360x720': Size(360, 720),
+    '320x568': Size(320, 568),
+    '360x640': Size(360, 640),
+    '390x844': Size(390, 844),
+    '640x360': Size(640, 360),
+    '360x640 clavier': Size(360, 640),
   };
 
   /// Les échelles de texte du système. 1,3 correspond au deuxième cran des
@@ -154,6 +159,7 @@ void main() {
     required Size taille,
     required double echelle,
     required String marqueur,
+    double keyboard = 0,
   }) async {
     tester.view.physicalSize = taille;
     tester.view.devicePixelRatio = 1.0;
@@ -178,6 +184,7 @@ void main() {
           // gestuelle, ou le creux n'est que d'une vingtaine de points.
           padding: const EdgeInsets.only(top: 24, bottom: 48),
           viewPadding: const EdgeInsets.only(top: 24, bottom: 48),
+          viewInsets: EdgeInsets.only(bottom: keyboard),
         ),
         child: ecran,
       ),
@@ -187,8 +194,22 @@ void main() {
     final erreur = tester.takeException();
     if (erreur != null) return erreur;
 
+    final marker = find.textContaining(marqueur, findRichText: true);
+    // Lazy lists may put the marker below the first viewport in landscape.
+    // Reach it before asserting that real content, not a spinner, was tested.
+    if (marker.evaluate().isEmpty &&
+        find.byType(Scrollable).evaluate().isNotEmpty) {
+      await tester.scrollUntilVisible(
+        marker,
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await poser(tester);
+      final error = tester.takeException();
+      if (error != null) return error;
+    }
     expect(
-      find.textContaining(marqueur, findRichText: true),
+      marker,
       findsWidgets,
       reason: 'L\'écran ne s\'est pas dessiné : rien n\'a été mesuré.',
     );
@@ -204,6 +225,7 @@ void main() {
     required Size taille,
     required double echelle,
     required String marqueur,
+    double keyboard = 0,
   }) async {
     final immediat = await deborde(
       tester,
@@ -211,6 +233,7 @@ void main() {
       taille: taille,
       echelle: echelle,
       marqueur: marqueur,
+      keyboard: keyboard,
     );
     if (immediat != null) return immediat;
 
@@ -230,13 +253,14 @@ void main() {
   // ── Le garage : le formulaire d'ajout ────────────────────────────────────
 
   Widget formulaireGarage() => ProviderScope(
-        overrides: [catalogRefsProvider.overrideWith((_) async => refs)],
-        child: const MaterialApp(
-          locale: const Locale('fr'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: AddVehicleToGaragePage()),
-      );
+    overrides: [catalogRefsProvider.overrideWith((_) async => refs)],
+    child: const MaterialApp(
+      locale: const Locale('fr'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: AddVehicleToGaragePage(),
+    ),
+  );
 
   group('Ajouter un véhicule au garage', () {
     for (final format in formats.entries) {
@@ -247,6 +271,7 @@ void main() {
               tester,
               formulaireGarage(),
               taille: format.value,
+              keyboard: format.key.endsWith('clavier') ? 280 : 0,
               echelle: echelle,
               marqueur: "Décodage automatique par VIN",
             ),
@@ -264,16 +289,17 @@ void main() {
   /// barre la plus chargée de l'application, et celle qui déborde en premier.
   group('Modifier une pièce', () {
     Widget ecranModification() => ProviderScope(
-          overrides: [
-            catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
-            catalogRefsProvider.overrideWith((_) async => refs),
-          ],
-          child: MaterialApp(
-            locale: const Locale('fr'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: AddPartPage(existing: _piece())),
-        );
+      overrides: [
+        catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
+        catalogRefsProvider.overrideWith((_) async => refs),
+      ],
+      child: MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AddPartPage(existing: _piece()),
+      ),
+    );
 
     for (final format in formats.entries) {
       for (final echelle in echelles) {
@@ -283,6 +309,7 @@ void main() {
               tester,
               ecranModification(),
               taille: format.value,
+              keyboard: format.key.endsWith('clavier') ? 280 : 0,
               echelle: echelle,
               marqueur: "Identification",
             ),
@@ -295,16 +322,17 @@ void main() {
 
   group('Modifier un accessoire', () {
     Widget ecranModification() => ProviderScope(
-          overrides: [
-            catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
-            catalogRefsProvider.overrideWith((_) async => refs),
-          ],
-          child: MaterialApp(
-            locale: const Locale('fr'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: AddAccessoryPage(existing: _accessoire())),
-        );
+      overrides: [
+        catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
+        catalogRefsProvider.overrideWith((_) async => refs),
+      ],
+      child: MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AddAccessoryPage(existing: _accessoire()),
+      ),
+    );
 
     for (final format in formats.entries) {
       for (final echelle in echelles) {
@@ -314,6 +342,7 @@ void main() {
               tester,
               ecranModification(),
               taille: format.value,
+              keyboard: format.key.endsWith('clavier') ? 280 : 0,
               echelle: echelle,
               marqueur: "Identification",
             ),
@@ -330,21 +359,21 @@ void main() {
   /// Supprimer — en plus du nom de la pièce, qui peut être long.
   group('Fiche d\'une pièce (admin)', () {
     Widget fiche() => ProviderScope(
-          overrides: [
-            authProvider.overrideWith((_) => _FauxAuth(_admin())),
-            catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
-          ],
-          child: MaterialApp(
-            // Les délégués et la locale, depuis la vague 2 : la fiche lit
-            // `AppLocalizations.of(context)`, qui lève sur une coque qui ne
-            // les pose pas. `locale:` est explicite pour la raison écrite
-            // dans test/support/langues.dart.
-            locale: localeFr,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: PartDetailPage(partId: 1, initialPart: _piece()),
-          ),
-        );
+      overrides: [
+        authProvider.overrideWith((_) => _FauxAuth(_admin())),
+        catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
+      ],
+      child: MaterialApp(
+        // Les délégués et la locale, depuis la vague 2 : la fiche lit
+        // `AppLocalizations.of(context)`, qui lève sur une coque qui ne
+        // les pose pas. `locale:` est explicite pour la raison écrite
+        // dans test/support/langues.dart.
+        locale: localeFr,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: PartDetailPage(partId: 1, initialPart: _piece()),
+      ),
+    );
 
     for (final format in formats.entries) {
       for (final echelle in echelles) {
@@ -354,6 +383,7 @@ void main() {
               tester,
               fiche(),
               taille: format.value,
+              keyboard: format.key.endsWith('clavier') ? 280 : 0,
               echelle: echelle,
               marqueur: 'Filtre à huile',
             ),
@@ -377,22 +407,22 @@ void main() {
   /// barre tenait à 320 et le banc serait resté vert sur un écran cassé.
   group('Fiche d\'un accessoire (admin)', () {
     Widget fiche() => ProviderScope(
-          overrides: [
-            authProvider.overrideWith((_) => _FauxAuth(_admin())),
-            catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
-          ],
-          child: MaterialApp(
-            // Mêmes délégués et même locale explicite que la fiche d'une
-            // pièce juste au-dessus.
-            locale: localeFr,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: AccessoryDetailPage(
-              accessoryId: 1,
-              initialAccessory: _accessoire(),
-            ),
-          ),
-        );
+      overrides: [
+        authProvider.overrideWith((_) => _FauxAuth(_admin())),
+        catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
+      ],
+      child: MaterialApp(
+        // Mêmes délégués et même locale explicite que la fiche d'une
+        // pièce juste au-dessus.
+        locale: localeFr,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: AccessoryDetailPage(
+          accessoryId: 1,
+          initialAccessory: _accessoire(),
+        ),
+      ),
+    );
 
     for (final format in formats.entries) {
       for (final echelle in echelles) {
@@ -402,6 +432,7 @@ void main() {
               tester,
               fiche(),
               taille: format.value,
+              keyboard: format.key.endsWith('clavier') ? 280 : 0,
               echelle: echelle,
               // Un texte du corps, et non le nom de l'article : celui-ci
               // s'affiche dans la barre de titre même sans corps dessiné.
@@ -410,8 +441,9 @@ void main() {
               // recopié ici, ce marqueur cesserait de désigner quoi que ce
               // soit au premier changement de libellé, et le test tomberait
               // sur « rien n'est peint » au lieu de dire pourquoi.
-              marqueur: (await chargerTextes(localeFr))
-                  .catalogSectionInformation,
+              marqueur: (await chargerTextes(
+                localeFr,
+              )).catalogSectionInformation,
             ),
             isNull,
           );
@@ -436,20 +468,20 @@ void main() {
   /// critère de besoin, les deux boutons d'un panier vide — étaient tous dans
   /// du texte fixe, plus deux menus déroulants sans `isExpanded`.
   final ecrans = <String, (Widget, String, AuthState)>{
-    'Accueil':            (const HomePage(),            'Accueil',          _admin()),
-    'Pièces':             (const PartListPage(),        'Pièces détachées', _admin()),
-    'Accessoires':        (const AccessoryListPage(),   'Accessoires',      _admin()),
-    'Véhicules':          (const VehicleListPage(),     'Véhicules',        _admin()),
-    'Mon garage':         (const GaragePage(),          'Mon garage',       _client()),
-    'Profil du personnel': (const GaragePage(),         'Mon profil',       _admin()),
-    'Panier':             (const CartPage(),            'Panier',           _client()),
-    'Besoins clients':    (const NeedsListPage(),       'Besoins clients',  _admin()),
-    'Mes besoins':        (const ClientNeedsPage(),     'Mes besoins',      _client()),
-    'Exprimer un besoin': (const SubmitNeedPage(),      'besoin',           _client()),
-    'Notifications':      (const NotificationsPage(),   'Notifications',    _admin()),
-    'Partenaires':        (const PartnerListPage(),     'Partenaires',      _admin()),
-    'Nouveau partenaire': (const PartnerFormPage(),     'partenaire',       _admin()),
-    'Mettre en vente':    (const VehicleRegisterPage(), 'véhicule',         _admin()),
+    'Accueil': (const HomePage(), 'Accueil', _admin()),
+    'Pièces': (const PartListPage(), 'Pièces détachées', _admin()),
+    'Accessoires': (const AccessoryListPage(), 'Accessoires', _admin()),
+    'Véhicules': (const VehicleListPage(), 'Véhicules', _admin()),
+    'Mon garage': (const GaragePage(), 'Mon garage', _client()),
+    'Profil du personnel': (const GaragePage(), 'Mon profil', _admin()),
+    'Panier': (const CartPage(), 'Panier', _client()),
+    'Besoins clients': (const NeedsListPage(), 'Besoins clients', _admin()),
+    'Mes besoins': (const ClientNeedsPage(), 'Mes besoins', _client()),
+    'Exprimer un besoin': (const SubmitNeedPage(), 'besoin', _client()),
+    'Notifications': (const NotificationsPage(), 'Notifications', _admin()),
+    'Partenaires': (const PartnerListPage(), 'Partenaires', _admin()),
+    'Nouveau partenaire': (const PartnerFormPage(), 'partenaire', _admin()),
+    'Mettre en vente': (const VehicleRegisterPage(), 'véhicule', _admin()),
   };
 
   /// Les surcharges propres à un écran, en plus des trois communes.
@@ -470,24 +502,27 @@ void main() {
   /// horizontalement, donc c'est la HAUTEUR d'une tuile qui déborde, jamais
   /// leur nombre.
   final surcharges = <String, List<Override>>{
-    'Accueil': [homeDealsProvider.overrideWith((_) async => [_affaire()])],
+    'Accueil': [
+      homeDealsProvider.overrideWith((_) async => [_affaire()]),
+    ],
   };
 
   for (final entree in ecrans.entries) {
     group(entree.key, () {
       for (final format in formats.entries) {
         for (final echelle in echelles) {
-          testWidgets('tient en ${format.key}, texte x$echelle',
-              (tester) async {
+          testWidgets('tient en ${format.key}, texte x$echelle', (
+            tester,
+          ) async {
             expect(
               await debordeEnDefilant(
                 tester,
                 ProviderScope(
                   overrides: [
-                    authProvider
-                        .overrideWith((_) => _FauxAuth(entree.value.$3)),
-                    catalogRepositoryProvider
-                        .overrideWithValue(_DepotMuet()),
+                    authProvider.overrideWith(
+                      (_) => _FauxAuth(entree.value.$3),
+                    ),
+                    catalogRepositoryProvider.overrideWithValue(_DepotMuet()),
                     catalogRefsProvider.overrideWith((_) async => refs),
                     ...?surcharges[entree.key],
                   ],
@@ -504,6 +539,7 @@ void main() {
                   ),
                 ),
                 taille: format.value,
+                keyboard: format.key.endsWith('clavier') ? 280 : 0,
                 echelle: echelle,
                 marqueur: entree.value.$2,
               ),
@@ -522,22 +558,20 @@ void main() {
   /// des photos déjà en place, ni sur un petit écran.
   group('Photos d\'un article', () {
     Widget ecranPhotos(List<MediaItem> deja) => ProviderScope(
-          overrides: [
-            mediaRepositoryProvider.overrideWithValue(_DepotMedia(deja)),
-          ],
-          child: const MaterialApp(
-            locale: const Locale('fr'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: MediaUploadPage(
-              config: MediaUploadConfig(
-                type: MediaOwnerType.part,
-                id: 1,
-                title: 'Filtre à huile moteur cartouche 04152-YZZA1',
-              ),
-            ),
+      overrides: [mediaRepositoryProvider.overrideWithValue(_DepotMedia(deja))],
+      child: const MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: MediaUploadPage(
+          config: MediaUploadConfig(
+            type: MediaOwnerType.part,
+            id: 1,
+            title: 'Filtre à huile moteur cartouche 04152-YZZA1',
           ),
-        );
+        ),
+      ),
+    );
 
     for (final format in formats.entries) {
       for (final echelle in echelles) {
@@ -547,6 +581,7 @@ void main() {
               tester,
               ecranPhotos(const []),
               taille: format.value,
+              keyboard: format.key.endsWith('clavier') ? 280 : 0,
               echelle: echelle,
               marqueur: "Aucune photo",
             ),
@@ -554,13 +589,15 @@ void main() {
           );
         });
 
-        testWidgets('avec photos, en ${format.key}, texte x$echelle',
-            (tester) async {
+        testWidgets('avec photos, en ${format.key}, texte x$echelle', (
+          tester,
+        ) async {
           expect(
             await debordeEnDefilant(
               tester,
               ecranPhotos(_photos()),
               taille: format.value,
+              keyboard: format.key.endsWith('clavier') ? 280 : 0,
               echelle: echelle,
               marqueur: "Cover",
             ),
@@ -585,16 +622,17 @@ void main() {
   /// mise en page ne déborde pas de la même façon dans les deux.
   group('Passages à la pompe', () {
     Widget ecranCarburant(List<FuelFill> passages) => ProviderScope(
-          overrides: [
-            fuelFillsProvider.overrideWith(() => _Passages(passages)),
-            garageProvider.overrideWith(_GarageAvecCamry.new),
-          ],
-          child: const MaterialApp(
-            locale: const Locale('fr'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: FuelFillsPage(ownedVehicleId: 1)),
-        );
+      overrides: [
+        fuelFillsProvider.overrideWith(() => _Passages(passages)),
+        garageProvider.overrideWith(_GarageAvecCamry.new),
+      ],
+      child: const MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: FuelFillsPage(ownedVehicleId: 1),
+      ),
+    );
 
     for (final format in formats.entries) {
       for (final echelle in echelles) {
@@ -604,6 +642,7 @@ void main() {
               tester,
               ecranCarburant(const []),
               taille: format.value,
+              keyboard: format.key.endsWith('clavier') ? 280 : 0,
               echelle: echelle,
               marqueur: 'Aucun passage enregistré',
             ),
@@ -611,13 +650,15 @@ void main() {
           );
         });
 
-        testWidgets('avec des passages, en ${format.key}, texte x$echelle',
-            (tester) async {
+        testWidgets('avec des passages, en ${format.key}, texte x$echelle', (
+          tester,
+        ) async {
           expect(
             await debordeEnDefilant(
               tester,
               ecranCarburant(_passages()),
               taille: format.value,
+              keyboard: format.key.endsWith('clavier') ? 280 : 0,
               echelle: echelle,
               // « Demi-plein » ne s'écrit que sur une ligne dessinée : le
               // titre de la barre, lui, s'affiche même pendant le chargement
@@ -643,20 +684,20 @@ void main() {
   /// elle qui décide si ça tient.
   group('Mise à jour obligatoire', () {
     Widget ecranBloquant() => const MaterialApp(
-          // Le bouton de cet écran est traduit depuis le lot de langue. Voir
-          // test/support/langues.dart : sans `locale:`, la coque mesurerait
-          // l'anglais.
-          locale: localeFr,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: EcranMiseAJour(
-            message: "Cette version de l'application ne peut plus lire les "
-                'prix du catalogue depuis le serveur. Installez la dernière '
-                'version pour continuer à consulter vos véhicules.',
-            urlStore:
-                'https://play.google.com/store/apps/details?id=bf.autoparc',
-          ),
-        );
+      // Le bouton de cet écran est traduit depuis le lot de langue. Voir
+      // test/support/langues.dart : sans `locale:`, la coque mesurerait
+      // l'anglais.
+      locale: localeFr,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: EcranMiseAJour(
+        message:
+            "Cette version de l'application ne peut plus lire les "
+            'prix du catalogue depuis le serveur. Installez la dernière '
+            'version pour continuer à consulter vos véhicules.',
+        urlStore: 'https://play.google.com/store/apps/details?id=bf.autoparc',
+      ),
+    );
 
     for (final format in formats.entries) {
       for (final echelle in echelles) {
@@ -666,6 +707,7 @@ void main() {
               tester,
               ecranBloquant(),
               taille: format.value,
+              keyboard: format.key.endsWith('clavier') ? 280 : 0,
               echelle: echelle,
               marqueur: 'Mettre à jour',
             ),
@@ -687,30 +729,32 @@ void main() {
 /// liste, et un jeu posé à l'envers la ferait mesurer sur une mise en page que
 /// personne ne voit.
 List<FuelFill> _passages() => const [
-      FuelFill(
-        id: 3,
-        isFull: true,
-        mileageKm: 197400,
-        litres: 41.2,
-        amountFcfa: 130000,
-        l100km: 4.0,
-        distanceKm: 1000,
-        retenu: false,
-        motifEcart: 'anormalement_bas',
-      ),
-      FuelFill(
-          id: 2,
-          isFull: false,
-          mileageKm: 95600,
-          litres: 13.7,
-          amountFcfa: 10000),
-      FuelFill(
-          id: 1,
-          isFull: true,
-          mileageKm: 95000,
-          litres: 40.0,
-          amountFcfa: 29000),
-    ];
+  FuelFill(
+    id: 3,
+    isFull: true,
+    mileageKm: 197400,
+    litres: 41.2,
+    amountFcfa: 130000,
+    l100km: 4.0,
+    distanceKm: 1000,
+    retenu: false,
+    motifEcart: 'anormalement_bas',
+  ),
+  FuelFill(
+    id: 2,
+    isFull: false,
+    mileageKm: 95600,
+    litres: 13.7,
+    amountFcfa: 10000,
+  ),
+  FuelFill(
+    id: 1,
+    isFull: true,
+    mileageKm: 95000,
+    litres: 40.0,
+    amountFcfa: 29000,
+  ),
+];
 
 class _Passages extends FuelFillsNotifier {
   _Passages(this.liste);
@@ -727,75 +771,75 @@ class _Passages extends FuelFillsNotifier {
 class _GarageAvecCamry extends GarageNotifier {
   @override
   Future<List<OwnedVehicle>> build() async => const [
-        OwnedVehicle(
-          id: 1,
-          designation: 'Toyota Camry 2013 2,5 l boîte automatique',
-          nickname: 'La Camry de la famille',
-          brandId: 1,
-          vehicleModelId: 7,
-          year: 2013,
-          mileageKm: 197400,
-          identity: OwnedVehicleIdentity(brand: 'Toyota', model: 'Camry'),
-          compatibilityReady: true,
-        ),
-      ];
+    OwnedVehicle(
+      id: 1,
+      designation: 'Toyota Camry 2013 2,5 l boîte automatique',
+      nickname: 'La Camry de la famille',
+      brandId: 1,
+      vehicleModelId: 7,
+      year: 2013,
+      mileageKm: 197400,
+      identity: OwnedVehicleIdentity(brand: 'Toyota', model: 'Camry'),
+      compatibilityReady: true,
+    ),
+  ];
 }
 
 Accessory _accessoire() => Accessory.fromJson({
-      'id': 1,
-      'name': 'Tapis de sol caoutchouc toutes saisons, jeu de quatre',
-      'sku': 'TAP-4S-001',
-      // « Multimédia » et non « Confort » : dix signes contre sept, à égalité
-      // avec « Esthétique » et « Utilitaire » pour le plus long des cinq
-      // libellés. C'est lui qui décidait si la barre de la fiche débordait —
-      // 129,0 points de puce contre 95,7 —, donc le seul qui mesure quelque
-      // chose. Le libellé le plus court aurait rendu le banc complaisant.
-      'category': {'value': 'multimedia', 'label': 'Multimédia'},
-      'pricing': {
-        'selling_price': 12000,
-        'currency': 'XOF',
-        'vat_rate': 0,
-        'price_including_vat': 12000,
-      },
-      'stock': {
-        'is_available': true,
-        'quantity': 15,
-        'alert_threshold': 0,
-        'is_low': false,
-      },
-      'is_active': true,
-    });
+  'id': 1,
+  'name': 'Tapis de sol caoutchouc toutes saisons, jeu de quatre',
+  'sku': 'TAP-4S-001',
+  // « Multimédia » et non « Confort » : dix signes contre sept, à égalité
+  // avec « Esthétique » et « Utilitaire » pour le plus long des cinq
+  // libellés. C'est lui qui décidait si la barre de la fiche débordait —
+  // 129,0 points de puce contre 95,7 —, donc le seul qui mesure quelque
+  // chose. Le libellé le plus court aurait rendu le banc complaisant.
+  'category': {'value': 'multimedia', 'label': 'Multimédia'},
+  'pricing': {
+    'selling_price': 12000,
+    'currency': 'XOF',
+    'vat_rate': 0,
+    'price_including_vat': 12000,
+  },
+  'stock': {
+    'is_available': true,
+    'quantity': 15,
+    'alert_threshold': 0,
+    'is_low': false,
+  },
+  'is_active': true,
+});
 
 List<MediaItem> _photos() => List.generate(
-      5,
-      (i) => MediaItem.fromJson({
-        'id': i + 1,
-        'url': 'https://exemple.test/photo-$i.jpg',
-        'collection': 'gallery',
-        'is_cover': i == 0,
-      }),
-    );
+  5,
+  (i) => MediaItem.fromJson({
+    'id': i + 1,
+    'url': 'https://exemple.test/photo-$i.jpg',
+    'collection': 'gallery',
+    'is_cover': i == 0,
+  }),
+);
 
 Part _piece() => Part.fromJson({
-      'id': 1,
-      // Un nom long à dessein : c'est lui qui pousse la barre de titre.
-      'name': 'Filtre à huile moteur cartouche 04152-YZZA1',
-      'sku': '04152-YZZA1',
-      'type': 'aftermarket',
-      'condition': 'new',
-      'pricing': {
-        'selling_price': 3000,
-        'currency': 'XOF',
-        'vat_rate': 0,
-        'price_including_vat': 3000,
-      },
-      'stock': {
-        'is_available': true,
-        'quantity': 15,
-        'alert_threshold': 0,
-        'is_low': false,
-      },
-    });
+  'id': 1,
+  // Un nom long à dessein : c'est lui qui pousse la barre de titre.
+  'name': 'Filtre à huile moteur cartouche 04152-YZZA1',
+  'sku': '04152-YZZA1',
+  'type': 'aftermarket',
+  'condition': 'new',
+  'pricing': {
+    'selling_price': 3000,
+    'currency': 'XOF',
+    'vat_rate': 0,
+    'price_including_vat': 3000,
+  },
+  'stock': {
+    'is_available': true,
+    'quantity': 15,
+    'alert_threshold': 0,
+    'is_low': false,
+  },
+});
 
 /// Un véhicule de la vitrine de l'accueil, au pire cas de hauteur.
 ///
@@ -808,34 +852,30 @@ Part _piece() => Part.fromJson({
 /// parce que `homeDealsProvider` ne sert que des `deal_type` non nuls, et que
 /// la fixture doit ressembler à ce que l'écran reçoit.
 Vehicle _affaire() => Vehicle.fromJson({
-      'id': 1,
-      'reference': 'VH-0001',
-      'designation': 'Toyota Corolla Base 2015',
-      'registration_status': 'registered',
-      'identity': {
-        'brand': 'Toyota',
-        'brand_slug': 'toyota',
-        'model': 'Corolla',
-        'year': 2015,
-      },
-      'commercial': {
-        'condition': 'used',
-        'status': 'in_stock',
-        'availability': 'sale',
-        'sale_price': '4500000.00',
-        'currency': 'XOF',
-        'price_negotiable': true,
-        'deal_type': 'good_deal',
-        'deal_label': 'Bonne affaire',
-        'location': {
-          'id': 1,
-          'name': 'Showroom Paspanga',
-          'city': 'Ouagadougou',
-        },
-      },
-      'media': const [],
-      'published_at': '2026-09-30T18:42:43+00:00',
-    });
+  'id': 1,
+  'reference': 'VH-0001',
+  'designation': 'Toyota Corolla Base 2015',
+  'registration_status': 'registered',
+  'identity': {
+    'brand': 'Toyota',
+    'brand_slug': 'toyota',
+    'model': 'Corolla',
+    'year': 2015,
+  },
+  'commercial': {
+    'condition': 'used',
+    'status': 'in_stock',
+    'availability': 'sale',
+    'sale_price': '4500000.00',
+    'currency': 'XOF',
+    'price_negotiable': true,
+    'deal_type': 'good_deal',
+    'deal_label': 'Bonne affaire',
+    'location': {'id': 1, 'name': 'Showroom Paspanga', 'city': 'Ouagadougou'},
+  },
+  'media': const [],
+  'published_at': '2026-09-30T18:42:43+00:00',
+});
 
 /// Un dépôt qui ne répond jamais : l'écran doit se dessiner sans attendre le
 /// réseau, et c'est bien sa mise en page qu'on mesure ici.
@@ -859,14 +899,14 @@ class _FauxAuth extends StateNotifier<AuthState> implements AuthNotifier {
 /// Un administrateur : c'est le rôle qui voit le plus de commandes à l'écran,
 /// donc celui dont les barres de titre sont les plus chargées.
 AuthState _admin() => const AuthState(
-      type: AuthType.staff,
-      staffUser: StaffUser(
-        id: 1,
-        name: 'Administrateur',
-        email: 'admin@autoparc.bf',
-        role: 'admin',
-      ),
-    );
+  type: AuthType.staff,
+  staffUser: StaffUser(
+    id: 1,
+    name: 'Administrateur',
+    email: 'admin@autoparc.bf',
+    role: 'admin',
+  ),
+);
 
 /// Un client connecté. Le garage, le panier et « mes besoins » n'existent que
 /// pour lui : les ouvrir en administrateur montrerait une autre page.

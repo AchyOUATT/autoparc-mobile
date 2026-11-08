@@ -1,3 +1,4 @@
+import 'package:auto/core/widgets/scrollable_center.dart';
 import '../garage_labels.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -296,7 +297,8 @@ class _Vide extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Center(
+    return ScrollableCenter(
+      padding: const EdgeInsets.only(bottom: 80),
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
@@ -332,7 +334,8 @@ class _Erreur extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return ScrollableCenter(
+      padding: const EdgeInsets.only(bottom: 80),
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(

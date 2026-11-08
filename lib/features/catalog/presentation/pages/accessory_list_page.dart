@@ -1,3 +1,4 @@
+import 'package:auto/core/widgets/scrollable_center.dart';
 import '../widgets/garage_registration_prompt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -753,7 +754,7 @@ class _ErrorView extends StatelessWidget {
   const _ErrorView({required this.error, required this.onRetry});
 
   @override
-  Widget build(BuildContext context) => Center(
+  Widget build(BuildContext context) => ScrollableCenter(
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
