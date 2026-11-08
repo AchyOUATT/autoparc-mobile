@@ -472,7 +472,7 @@ void main() {
           scale: 1.6,
         );
         expect(
-          find.text(locale == 'fr' ? 'État déclaré' : 'Declared condition'),
+          find.text(locale == 'fr' ? 'Pannes à déclarer' : 'Faults to declare'),
           findsOneWidget,
         );
         expect(

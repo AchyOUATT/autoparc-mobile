@@ -104,8 +104,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   String _faultBaseline = '';
   int _faultLoadGeneration = 0;
 
-  bool get _canDeclareFaults => widget.mode.estPartenaire ||
-      ref.read(authProvider).canManageFaults;
+  bool get _canDeclareFaults =>
+      widget.mode.estPartenaire || ref.read(authProvider).canManageFaults;
 
   Vehicle? get _existing => widget.existing;
 
@@ -151,7 +151,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   set _engineType(EngineTypeRef? value) => _classification.engineType = value;
   DrivetrainRef? get _drivetrain => _classification.drivetrain;
   set _drivetrain(DrivetrainRef? value) => _classification.drivetrain = value;
-  String _transmission = 'automatic'; // Gearbox family, separate from wheel drive.
+  String _transmission =
+      'automatic'; // Gearbox family, separate from wheel drive.
   final _powerCtrl = TextEditingController();
   final _seatsCtrl = TextEditingController(text: '5');
   final _doorsCtrl = TextEditingController(text: '4');
@@ -254,7 +255,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     _faultAccessKey = key;
     _faultLoadGeneration++;
     setState(() {
-      _faultDeclaration = _existing?.faultDeclaration ?? const FaultDeclaration.unknown();
+      _faultDeclaration =
+          _existing?.faultDeclaration ?? const FaultDeclaration.unknown();
       _faultsDirty = false;
       _faultsReady = _existing == null;
       _faultsLoading = false;
@@ -275,28 +277,36 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     try {
       final FaultDeclaration declaration;
       if (widget.mode.estPartenaire) {
-        final detail = await ref.read(espace.partnerRepositoryProvider)
+        final detail = await ref
+            .read(espace.partnerRepositoryProvider)
             .listing(espace.PartnerListingKind.vehicles, existing.id);
         declaration = FaultDeclaration.fromJson(detail['fault_declaration']);
       } else {
-        final rows = await ref.read(vehicleFaultRepositoryProvider).getFaults(existing.id);
+        final rows = await ref
+            .read(vehicleFaultRepositoryProvider)
+            .getFaults(existing.id);
         declaration = FaultDeclaration.fromJson({
           'state': existing.faultDeclaration.state,
-          'faults': rows.map((fault) => {
-            'id': fault.id,
-            'category': fault.category,
-            'title': fault.title,
-            'description': fault.description,
-            'severity': fault.severity,
-            'status': fault.status,
-            'affects_drivability': fault.affectsDrivability,
-            'is_safety_critical': fault.isSafetyCritical,
-            'disclosed_to_buyer': fault.disclosedToBuyer,
-            'editable': true,
-          }).toList(),
+          'faults': rows
+              .map(
+                (fault) => {
+                  'id': fault.id,
+                  'category': fault.category,
+                  'title': fault.title,
+                  'description': fault.description,
+                  'severity': fault.severity,
+                  'status': fault.status,
+                  'affects_drivability': fault.affectsDrivability,
+                  'is_safety_critical': fault.isSafetyCritical,
+                  'disclosed_to_buyer': fault.disclosedToBuyer,
+                  'editable': true,
+                },
+              )
+              .toList(),
         });
       }
-      if (!mounted || generation != _faultLoadGeneration || !_canDeclareFaults) return;
+      if (!mounted || generation != _faultLoadGeneration || !_canDeclareFaults)
+        return;
       setState(() {
         _faultDeclaration = declaration;
         _faultBaseline = jsonEncode(declaration.toPayload());
@@ -330,7 +340,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(messageFor(_faultsLoadError!, l10n: l10n)),
-                  TextButton(onPressed: _loadFaultDeclaration, child: Text(l10n.commonRetry)),
+                  TextButton(
+                    onPressed: _loadFaultDeclaration,
+                    child: Text(l10n.commonRetry),
+                  ),
                 ],
               )
             else
@@ -342,7 +355,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               staffStatuses: !widget.mode.estPartenaire,
               onChanged: (declaration) => setState(() {
                 _faultDeclaration = declaration;
-                _faultsDirty = jsonEncode(declaration.toPayload()) != _faultBaseline;
+                _faultsDirty =
+                    jsonEncode(declaration.toPayload()) != _faultBaseline;
               }),
             ),
         ],
@@ -394,12 +408,33 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   ///     appliqué : un VIN de cinq caractères partait au serveur.
   ///
   /// Les règles vivent désormais là où elles s'affichent : sous le champ.
-  bool _validerLEtape(int etape) =>
-      _clefsDEtape[etape].currentState?.validate() ?? true;
+  final _erreursDEtape = <int, List<String>>{};
+
+  bool _validerLEtape(int etape) {
+    final invalides = _clefsDEtape[etape].currentState?.validateGranularly();
+    _erreursDEtape[etape] = [
+      for (final champ in invalides ?? <FormFieldState<Object?>>{})
+        if (champ.errorText != null) champ.errorText!,
+    ].toSet().toList();
+    return invalides == null || invalides.isEmpty;
+  }
+
+  void _expliquerLEtape(int etape) {
+    // Reutiliser les validateurs : les raisons ne doivent pas diverger des
+    // erreurs sous les champs. Remplacer le message precedent, sans file
+    // d'attente de messages perimes apres plusieurs appuis sur Suivant.
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    _snackError(
+      l10n.vehiclesStepBlocked(
+        etape + 1,
+        (_erreursDEtape[etape] ?? const <String>[]).join('\n'),
+      ),
+    );
+  }
 
   /// La première étape qui ne passe pas, ou -1 si toutes passent.
   ///
-  /// `validate()` est appelé sur CHACUNE, et non interrompu à la première qui
+  /// `validateGranularly()` est appelé sur CHACUNE, sans arrêt à la première qui
   /// échoue : chaque champ fautif doit porter son message, sinon le vendeur
   /// corrige la première erreur pour en découvrir une seconde.
   int _premiereEtapeFautive() {
@@ -426,10 +461,16 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
   /// Appelé par le bouton Suivant / Enregistrer du Stepper.
   Future<void> _onContinue(CatalogRefs refs) async {
+    if (_submitting) return;
     // Avancer d'une étape → n'éprouver que l'étape courante. Les suivantes
     // sont montées mais vides, et les exiger ici interdirait d'avancer.
     if (_step < 3) {
-      if (_validerLEtape(_step)) setState(() => _step++);
+      if (_validerLEtape(_step)) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        setState(() => _step++);
+      } else {
+        _expliquerLEtape(_step);
+      }
 
       return;
     }
@@ -447,11 +488,12 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
     if (fautive != -1) {
       setState(() => _step = fautive);
-      _snackError(l10n.vehiclesMissingStep(fautive + 1));
+      _expliquerLEtape(fautive);
 
       return;
     }
 
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     await _submit(refs);
   }
 
@@ -576,7 +618,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     final int? mileage = _mileageCtrl.text.isNotEmpty
         ? int.tryParse(_mileageCtrl.text.replaceAll(RegExp(r'\D'), ''))
         : null;
-    final clearingMileage = _existing != null &&
+    final clearingMileage =
+        _existing != null &&
         _existing!.isRegistered == _immatricule &&
         _existing!.mileageKm != null &&
         mileage == null;
@@ -677,9 +720,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         'deal_ends_at': _promotion.fin?.toIso8601String(),
       } else if (widget.mode.estPartenaire && _existing != null)
         'deal_price': null,
-      if (!_immatricule && (mileage != null || clearingMileage || _paysOrigine != null))
+      if (!_immatricule &&
+          (mileage != null || clearingMileage || _paysOrigine != null))
         'import': {
-          if (mileage != null || clearingMileage) 'odometer_at_import_km': mileage,
+          if (mileage != null || clearingMileage)
+            'odometer_at_import_km': mileage,
           'origin_country_id': ?_paysOrigine?.id,
         },
     };
@@ -1062,7 +1107,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     return Step(
       title: Text(l10n.vehiclesIdentityTitle),
       subtitle: _brand != null
-          ? Text(_model == null ? _brand!.name : referenceModelDisplayName(_model!, l10n))
+          ? Text(
+              _model == null
+                  ? _brand!.name
+                  : referenceModelDisplayName(_model!, l10n),
+            )
           : null,
       isActive: _step >= 1,
       content: Form(
@@ -1200,10 +1249,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   /// ligne qui annonce des tirets.
   Widget? _resumeTechnique() {
     final parts = <String>[
-      if (_engineType != null) referenceFuelLabel(_engineType!.code, _engineType!.label, l10n),
-      if (_transmission.isNotEmpty)
-        transmissionLabel(_transmission, l10n),
-      if (_drivetrain != null) referenceDrivetrainLabel(_drivetrain!.code, _drivetrain!.label, l10n),
+      if (_engineType != null)
+        referenceFuelLabel(_engineType!.code, _engineType!.label, l10n),
+      if (_transmission.isNotEmpty) transmissionLabel(_transmission, l10n),
+      if (_drivetrain != null)
+        referenceDrivetrainLabel(_drivetrain!.code, _drivetrain!.label, l10n),
       if (_powerCtrl.text.trim().isNotEmpty)
         l10n.vehiclesPowerSummary(_powerCtrl.text.trim()),
     ];

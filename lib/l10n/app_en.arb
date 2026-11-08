@@ -2519,7 +2519,7 @@
   "inspectionWithdrawReasonRequired": "Enter a reason for withdrawal.",
   "inspectionWithdrawConfirm": "Withdraw",
   "inspectionWithdrawn": "Inspection withdrawn.",
-  "faultDeclarationTitle": "Declared condition",
+  "faultDeclarationTitle": "Faults to declare",
   "faultDeclarationUnknown": "Not provided",
   "faultDeclarationNoneSeller": "No faults declared by the seller",
   "faultDeclarationHasFaults": "Faults declared",
@@ -2569,5 +2569,7 @@
   "passwordRecoveryRateLimited": "Too many requests. Wait a few minutes before trying again.",
   "passwordRecoveryUnavailable": "Email recovery is currently unavailable. Try again later or contact AutoParc.",
   "passwordRecoverySupportTitle": "Need help?",
-  "passwordRecoverySupportHelp": "Contact AutoParc if your account has no email address or you can no longer access it. Your identity must be checked before account recovery."
+  "passwordRecoverySupportHelp": "Contact AutoParc if your account has no email address or you can no longer access it. Your identity must be checked before account recovery.",
+  "vehiclesStepBlocked": "Cannot continue at step {step}:\n{details}",
+  "@vehiclesStepBlocked": {"description": "Ephemeral explanation from the existing step validators.", "placeholders": {"step": {"type": "int"}, "details": {"type": "String"}}}
 }

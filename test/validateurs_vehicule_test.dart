@@ -1,3 +1,5 @@
+import 'package:auto/features/vehicles/presentation/pages/vehicle_form_mode.dart';
+import 'package:auto/features/partner_accounts/presentation/partner_session.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -51,9 +53,18 @@ Map<String, dynamic> _fixture() =>
         as Map<String, dynamic>;
 
 const _marque = BrandRef(id: 3, name: 'Toyota', isActive: true);
-const _modele = ModelRef(id: 11, brandId: 3, name: 'Corolla', generation: 'E180');
+const _modele = ModelRef(
+  id: 11,
+  brandId: 3,
+  name: 'Corolla',
+  generation: 'E180',
+);
 const _motorisation = EngineTypeRef(
-  id: 5, code: 'petrol', label: 'Essence', usesFuel: true, usesBattery: false,
+  id: 5,
+  code: 'petrol',
+  label: 'Essence',
+  usesFuel: true,
+  usesBattery: false,
 );
 
 const _refs = CatalogRefs(
@@ -68,7 +79,9 @@ const _refs = CatalogRefs(
 );
 
 /// Un véhicule complet, dont on retire ce qu'on veut éprouver.
-Vehicle _vehicule({Map<String, dynamic> Function(Map<String, dynamic>)? retouche}) {
+Vehicle _vehicule({
+  Map<String, dynamic> Function(Map<String, dynamic>)? retouche,
+}) {
   var json = Map<String, dynamic>.from(
     jsonDecode(jsonEncode(_fixture()['data'])) as Map<String, dynamic>,
   );
@@ -109,24 +122,45 @@ class _Annuaire extends PartnerRepository {
     String? search,
     bool includeInactive = false,
   }) async => const PaginatedResponse(
-    data: [], currentPage: 1, lastPage: 1, total: 0, perPage: 50,
+    data: [],
+    currentPage: 1,
+    lastPage: 1,
+    total: 0,
+    perPage: 50,
   );
 }
 
-Future<void> _ouvrir(WidgetTester tester, _Depot depot, Vehicle existant) async {
-  await tester.pumpWidget(ProviderScope(
-    overrides: [
-      catalogRefsProvider.overrideWith((_) async => _refs),
-      countriesProvider.overrideWith((_) async => <CountryRef>[]),
-      vehicleAdminRepositoryProvider.overrideWithValue(depot),
-      partnerRepositoryProvider.overrideWithValue(_Annuaire()),
-    ],
-    child: MaterialApp(
-      locale: const Locale('fr'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: VehicleRegisterPage(existing: existant)),
-  ));
+class _SessionVide extends StateNotifier<PartnerSession>
+    implements PartnerSessionNotifier {
+  _SessionVide() : super(const PartnerSession());
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+Future<void> _ouvrir(
+  WidgetTester tester,
+  _Depot depot,
+  Vehicle? existant, {
+  Locale locale = const Locale('fr'),
+  VehicleFormMode mode = VehicleFormMode.personnel,
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        partnerSessionProvider.overrideWith((_) => _SessionVide()),
+        catalogRefsProvider.overrideWith((_) async => _refs),
+        countriesProvider.overrideWith((_) async => <CountryRef>[]),
+        vehicleAdminRepositoryProvider.overrideWithValue(depot),
+        partnerRepositoryProvider.overrideWithValue(_Annuaire()),
+      ],
+      child: MaterialApp(
+        locale: locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: VehicleRegisterPage(existing: existant, mode: mode),
+      ),
+    ),
+  );
   await tester.pumpAndSettle();
 }
 
@@ -141,9 +175,9 @@ Future<void> _enregistrer(WidgetTester tester) async {
 /// Le champ visé, où qu'il soit — les étapes non courantes sont montées mais
 /// masquées, et `find` ne les voit pas sans `skipOffstage: false`.
 Finder _champ(String libelle) => find.byWidgetPredicate(
-      (widget) => widget is TextField && widget.decoration?.labelText == libelle,
-      skipOffstage: false,
-    );
+  (widget) => widget is TextField && widget.decoration?.labelText == libelle,
+  skipOffstage: false,
+);
 
 /// Écrit dans un champ en passant par son CONTRÔLEUR.
 ///
@@ -156,6 +190,124 @@ void _ecrire(WidgetTester tester, String libelle, String valeur) {
 }
 
 void main() {
+  for (final locale in [const Locale('fr'), const Locale('en')]) {
+    for (final mode in VehicleFormMode.values) {
+      testWidgets('blocked next explains every current error: $locale $mode', (
+        tester,
+      ) async {
+        final depot = _Depot();
+        await _ouvrir(tester, depot, null, locale: locale, mode: mode);
+        final l10n = await AppLocalizations.delegate.load(locale);
+        _ecrire(tester, l10n.vehiclesVinOptional, 'SHORT');
+        final next = find.widgetWithText(FilledButton, l10n.vehiclesNext).first;
+        await Scrollable.ensureVisible(tester.element(next), alignment: 0.5);
+        await tester.pumpAndSettle();
+        await tester.tap(next);
+        await tester.pumpAndSettle();
+        expect(tester.widget<Stepper>(find.byType(Stepper)).currentStep, 0);
+        final snack = find.byType(SnackBar);
+        for (final reason in [
+          l10n.vehiclesBodyStyleRequired,
+          l10n.vehiclesVinLengthError,
+        ]) {
+          expect(
+            find.descendant(of: snack, matching: find.textContaining(reason)),
+            findsOneWidget,
+          );
+        }
+        expect(depot.charge, isNull);
+        // The feedback is ephemeral; the field errors remain available.
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+        expect(find.byType(SnackBar), findsNothing);
+        tester
+            .widget<DropdownButtonFormField<String>>(
+              find.byWidgetPredicate(
+                (w) =>
+                    w is DropdownButtonFormField<String> &&
+                    w.decoration.labelText == l10n.vehiclesBodyStyleLabel,
+                skipOffstage: false,
+              ),
+            )
+            .onChanged!('sedan');
+        _ecrire(tester, l10n.vehiclesVinOptional, '');
+        await tester.pumpAndSettle();
+        await Scrollable.ensureVisible(tester.element(next), alignment: 0.5);
+        await tester.pumpAndSettle();
+        await tester.tap(next);
+        await tester.pumpAndSettle();
+        expect(tester.widget<Stepper>(find.byType(Stepper)).currentStep, 1);
+        expect(find.byType(SnackBar), findsNothing);
+        // Empty later steps never block the preceding valid one.
+        tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+        await tester.pumpAndSettle();
+        expect(tester.widget<Stepper>(find.byType(Stepper)).currentStep, 1);
+        for (final reason in [
+          l10n.vehiclesBrandRequired,
+          l10n.vehiclesModelRequired,
+          l10n.vehiclesYearRequired,
+        ]) {
+          expect(
+            find.descendant(
+              of: find.byType(SnackBar),
+              matching: find.textContaining(reason),
+            ),
+            findsOneWidget,
+          );
+        }
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('correcting a field clears repeated stale feedback $locale', (
+      tester,
+    ) async {
+      final depot = _Depot();
+      await _ouvrir(tester, depot, _vehicule(), locale: locale);
+      final l10n = await AppLocalizations.delegate.load(locale);
+      _ecrire(tester, l10n.vehiclesVinOptional, 'SHORT');
+      for (var attempt = 0; attempt < 2; attempt++) {
+        tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+        await tester.pumpAndSettle();
+      }
+      expect(find.byType(SnackBar), findsOneWidget);
+      _ecrire(tester, l10n.vehiclesVinOptional, '');
+      tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+      await tester.pumpAndSettle();
+      expect(tester.widget<Stepper>(find.byType(Stepper)).currentStep, 1);
+      expect(find.byType(SnackBar), findsNothing);
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      expect(find.byType(SnackBar), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('final validation explains an earlier invalid field $locale', (
+      tester,
+    ) async {
+      final depot = _Depot();
+      await _ouvrir(tester, depot, _vehicule(), locale: locale);
+      final l10n = await AppLocalizations.delegate.load(locale);
+      for (var step = 0; step < 3; step++) {
+        tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+        await tester.pumpAndSettle();
+      }
+      _ecrire(tester, l10n.vehiclesVinOptional, 'SHORT');
+      tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
+      await tester.pumpAndSettle();
+      expect(tester.widget<Stepper>(find.byType(Stepper)).currentStep, 0);
+      expect(
+        find.descendant(
+          of: find.byType(SnackBar),
+          matching: find.textContaining(l10n.vehiclesVinLengthError),
+        ),
+        findsOneWidget,
+      );
+      expect(depot.charge, isNull);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   // ── LES DEUX RÈGLES QUI NE PROTÉGEAIENT RIEN ────────────────────────────
 
   /// LE BANC QUI COMPTE LE PLUS.
@@ -165,17 +317,27 @@ void main() {
   /// une promesse que rien ne tenait.
   testWidgets('sans carrosserie, rien ne part', (tester) async {
     final depot = _Depot();
-    await _ouvrir(tester, depot, _vehicule(retouche: (json) {
-      json['body_style'] = null;
+    await _ouvrir(
+      tester,
+      depot,
+      _vehicule(
+        retouche: (json) {
+          json['body_style'] = null;
 
-      return json;
-    }));
+          return json;
+        },
+      ),
+    );
 
     await _enregistrer(tester);
 
-    expect(depot.charge, isNull,
-        reason: 'Un vehicule sans carrosserie est introuvable par le filtre '
-            'public, ou range sous une carrosserie que personne n a choisie.');
+    expect(
+      depot.charge,
+      isNull,
+      reason:
+          'Un vehicule sans carrosserie est introuvable par le filtre '
+          'public, ou range sous une carrosserie que personne n a choisie.',
+    );
     expect(find.text('Sélectionne un type de carrosserie'), findsOneWidget);
   });
 
@@ -200,7 +362,10 @@ void main() {
     await _enregistrer(tester);
 
     expect(depot.charge, isNull);
-    expect(find.text('Le VIN doit faire exactement 17 caractères.'), findsOneWidget);
+    expect(
+      find.text('Le VIN doit faire exactement 17 caractères.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('un VIN vide reste accepté', (tester) async {
@@ -211,8 +376,11 @@ void main() {
 
     await _enregistrer(tester);
 
-    expect(depot.charge, isNotNull,
-        reason: 'Le VIN est facultatif : on ne l a pas toujours sous la main.');
+    expect(
+      depot.charge,
+      isNotNull,
+      reason: 'Le VIN est facultatif : on ne l a pas toujours sous la main.',
+    );
   });
 
   // ── LES RÈGLES QUI ÉTAIENT REDITES À LA MAIN ────────────────────────────
@@ -230,7 +398,7 @@ void main() {
     await _enregistrer(tester);
 
     expect(depot.charge, isNull);
-    expect(find.textContaining('Année invalide'), findsOneWidget);
+    expect(find.textContaining('Année invalide'), findsNWidgets(2));
   });
 
   testWidgets('un prix de vente vide est refusé', (tester) async {
@@ -255,18 +423,28 @@ void main() {
   /// d'éprouver chaque étape à la sortie.
   testWidgets('une étape fautive n’avance pas', (tester) async {
     final depot = _Depot();
-    await _ouvrir(tester, depot, _vehicule(retouche: (json) {
-      json['body_style'] = null;
+    await _ouvrir(
+      tester,
+      depot,
+      _vehicule(
+        retouche: (json) {
+          json['body_style'] = null;
 
-      return json;
-    }));
+          return json;
+        },
+      ),
+    );
 
     tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
     await tester.pumpAndSettle();
 
-    expect(tester.widget<Stepper>(find.byType(Stepper)).currentStep, 0,
-        reason: 'Laisser avancer ferait decouvrir la faute trois etapes plus '
-            'loin, apres tout le reste de la saisie.');
+    expect(
+      tester.widget<Stepper>(find.byType(Stepper)).currentStep,
+      0,
+      reason:
+          'Laisser avancer ferait decouvrir la faute trois etapes plus '
+          'loin, apres tout le reste de la saisie.',
+    );
     expect(find.text('Sélectionne un type de carrosserie'), findsOneWidget);
   });
 
@@ -302,12 +480,17 @@ void main() {
     tester.widget<Stepper>(find.byType(Stepper)).onStepContinue!();
     await tester.pumpAndSettle();
 
-    expect(depot.charge, isNull,
-        reason: 'Une etape anterieure fautive doit arreter l enregistrement, '
-            'meme si ce n est pas celle qu on regarde.');
+    expect(
+      depot.charge,
+      isNull,
+      reason:
+          'Une etape anterieure fautive doit arreter l enregistrement, '
+          'meme si ce n est pas celle qu on regarde.',
+    );
     expect(tester.widget<Stepper>(find.byType(Stepper)).currentStep, 0);
     expect(find.textContaining('étape 1'), findsOneWidget);
   });
+
   /// Et avancer d'une étape n'exige QUE cette étape : les suivantes sont
   /// montées mais vides, et les exiger ici interdirait d'avancer.
   testWidgets('avancer n’exige pas les étapes suivantes', (tester) async {
