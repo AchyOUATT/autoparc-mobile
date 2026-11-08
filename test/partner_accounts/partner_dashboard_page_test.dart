@@ -26,20 +26,6 @@ import '../support/faux_depot_partenaire.dart';
 /// Un compte en attente ouvre ici aussi, avec ses trois réponses (qui examine,
 /// comment on le saura, quoi faire en attendant) et un moyen de joindre la
 /// boutique.
-/// Le formulaire de création, ouvert par le « + », part chercher ses
-/// références ; sans cette réponse, il irait au réseau et laisserait un
-/// délai en suspens à la fin du banc.
-class _DepotAvecReferences extends FauxDepotPartenaire {
-  @override
-  Future<PartnerReferences> references() async => const PartnerReferences(
-    brands: [],
-    models: [],
-    engineTypes: [],
-    partCategories: [],
-    manufacturers: [],
-  );
-}
-
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({'tableau_de_bord_presente': true}));
 
@@ -70,7 +56,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  FauxDepotPartenaire approuve() => _DepotAvecReferences()
+  FauxDepotPartenaire approuve() => FauxDepotPartenaire()
     ..profilAuCoffre = profilDeBanc()
     ..nonLues = 3
     ..tableauDeBord = tableauDeBordDeBanc(
@@ -116,7 +102,7 @@ void main() {
       expect(find.text('À faire'), findsOneWidget);
       expect(find.text('2 annonces publiées sans photo'), findsOneWidget);
       expect(find.text('2 articles publiés en rupture'), findsOneWidget);
-      expect(find.text('236 brouillons jamais publiés'), findsOneWidget,
+      expect(find.text('236 brouillons non publiés'), findsOneWidget,
           reason: 'Les brouillons s\'additionnent sur les trois inventaires : '
               '235 véhicules et 1 pièce.');
       expect(find.text('1 article en stock faible'), findsNothing,
@@ -134,6 +120,44 @@ void main() {
       expect(find.text('À faire'), findsNothing,
           reason: 'Un titre « À faire » sans ligne apprendrait à ne plus '
               'regarder.');
+    });
+
+    /// LE PLURIEL FRANÇAIS DE ZÉRO. Dans l'ICU, zéro tombe dans la catégorie
+    /// « one » en français : sans cas `=0`, la branche `=1` — « 1 publiée »
+    /// — s'affichait pour zéro. Et « tout publié » ou « tout en brouillon »
+    /// est l'état le plus courant d'un vendeur.
+    testWidgets('zéro se lit zéro, pas un', (tester) async {
+      final depot = approuve()
+        ..tableauDeBord = tableauDeBordDeBanc(
+          pieces: const PartnerDashboardCounts(total: 6, published: 6, drafts: 0),
+          accessoires: const PartnerDashboardCounts(total: 3, published: 0, drafts: 3),
+        );
+      await ouvrir(tester, depot);
+
+      expect(find.text('6 publiées · 0 brouillon'), findsOneWidget);
+      expect(find.text('0 publiée · 3 brouillons'), findsOneWidget);
+      expect(find.textContaining('1 brouillon'), findsNothing);
+      expect(find.textContaining('1 publiée'), findsNothing);
+    });
+
+    testWidgets('un 503 à la vérification : une carte « espace fermé », pas le texte du serveur', (
+      tester,
+    ) async {
+      final depot = approuve()
+        ..reponseGetMe = () async => throw const PartnerApiException(
+              'L\'espace vendeur est fermé pour le moment. Revenez bientôt.',
+              statusCode: 503,
+            );
+      await ouvrir(tester, depot);
+
+      expect(find.byKey(const Key('partner-dashboard-espace-ferme')), findsOneWidget);
+      expect(find.text('Garage Exemple'), findsOneWidget,
+          reason: 'La session du coffre est gardée : un 503 ne dit rien de sa '
+              'validité.');
+      expect(
+        find.text('L\'espace vendeur est fermé pour le moment. Revenez bientôt.'),
+        findsNothing,
+      );
     });
 
     testWidgets('la pastille des demandes porte le nombre de non lues', (

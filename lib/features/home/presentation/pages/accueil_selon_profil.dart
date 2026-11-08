@@ -15,8 +15,10 @@ import 'home_page.dart';
 /// d'essai sur le même téléphone — et sans règle écrite, c'est l'ordre des
 /// `if` qui aurait décidé. Le personnel passe devant parce qu'il est le public
 /// le plus rare et le plus outillé, et que ses tuiles de tiroir l'attendent
-/// derrière l'accueil ; le tableau de bord partenaire, lui, reste à un appui
-/// du tiroir.
+/// derrière l'accueil ; les annonces du partenaire, elles, restent à un appui
+/// du tiroir (« Mes annonces »). Le tableau de bord n'a pas d'autre route que
+/// `/` : sur ce téléphone-là, il n'existe pas tant que la session du personnel
+/// est ouverte, et le tiroir ne le promet pas.
 ///
 /// ── CE SUR QUOI ON NE BRANCHE PAS ──────────────────────────────────────────
 ///

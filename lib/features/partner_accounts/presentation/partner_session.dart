@@ -1,7 +1,14 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/notice_tableau_de_bord.dart';
 import '../data/partner_repository.dart';
+
+/// Le `deniedStatus` d'une session fermée par le serveur SANS statut — le 401
+/// nu d'un compte refusé ou suspendu, dont les jetons ont été révoqués. Pas une
+/// valeur du serveur : un mot de l'application, pour que l'accueil dise « votre
+/// session vendeur a été fermée » et que la reconnexion montre le motif.
+const String sessionRevoquee = 'revoked';
 
 class PartnerSession {
   const PartnerSession({this.profile, this.loading = false, this.error, this.deniedStatus, this.reviewReason, this.restoreFailed = false, this.verified = true, this.espaceFerme = false});
@@ -221,10 +228,23 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
       // Un rejet définitif ferme la session — `getMe()` a déjà vidé le coffre.
       // Tout le reste la conserve : une lenteur ou une coupure ne dit rien de
       // la validité de la session, et `restoreFailed` propose de réessayer.
+      //
+      // ── LE REFUS RÉEL EST UN 401 NU ─────────────────────────────────────
+      //
+      // Quand le personnel refuse ou suspend un compte, il révoque ses jetons :
+      // le prochain `/partner/me` répond 401 « Unauthenticated. », SANS
+      // `status` ni motif — ceux-là ne viennent qu'à la reconnexion. Ne poser
+      // `deniedStatus` que depuis le corps laissait donc l'accueil muet sur le
+      // seul chemin que le serveur produit : l'ancien partenaire retombait en
+      // « Visiteur » sans un mot. `revoked` dit « fermée, motif à la
+      // reconnexion », et c'est ce que la carte de l'accueil affiche.
       state = error.sessionRejected
-          ? PartnerSession(error: error.message, deniedStatus: error.accountStatus, reviewReason: error.reviewReason)
+          ? PartnerSession(error: error.message,
+              deniedStatus: error.accountStatus ?? (profil != null ? sessionRevoquee : null),
+              reviewReason: error.reviewReason)
           : PartnerSession(profile: profil, verified: false, error: error.message,
-              restoreFailed: true, deniedStatus: error.accountStatus, reviewReason: error.reviewReason);
+              restoreFailed: true, deniedStatus: error.accountStatus, reviewReason: error.reviewReason,
+              espaceFerme: error.statusCode == 503);
     } catch (_) {
       if (!mounted || generation != _generation) return;
       state = PartnerSession(profile: profil, verified: false,
@@ -238,6 +258,13 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
     try {
       final profile = await action();
       if (mounted && generation == _generation) state = PartnerSession(profile: profile);
+      // Une session qui NAÎT dans cette version n'a jamais connu l'ancien
+      // accueil : la ligne « votre accueil est maintenant votre tableau de
+      // bord » ne s'adresse qu'aux sessions restaurées d'un coffre antérieur.
+      // SANS attendre, et APRÈS la session : des préférences qui ne répondent
+      // pas ne doivent pas retenir une connexion réussie — mesuré en banc,
+      // où le canal reste muet et bloquait l'inscription.
+      NoticeTableauDeBord.marquerVue().ignore();
     } on PartnerApiException catch (error) {
       if (mounted && generation == _generation) state = PartnerSession(error: error.message, deniedStatus: error.accountStatus, reviewReason: error.reviewReason, espaceFerme: error.statusCode == 503);
     } catch (_) {
@@ -291,9 +318,14 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
       if (mounted && generation == _generation) state = PartnerSession(profile: profile);
     } on PartnerApiException catch (error) {
       if (mounted && generation == _generation) {
+        // Même règle qu'à la restauration : un 401 nu sur une session connue
+        // est une session fermée, pas un simple visiteur.
         state = PartnerSession(profile: error.sessionRejected ? null : previous,
           verified: error.sessionRejected ? true : confirme,
-          error: error.message, deniedStatus: error.accountStatus, reviewReason: error.reviewReason);
+          error: error.message,
+          deniedStatus: error.accountStatus ?? (error.sessionRejected && previous != null ? sessionRevoquee : null),
+          reviewReason: error.reviewReason,
+          espaceFerme: error.statusCode == 503);
       }
     } catch (_) {
       if (mounted && generation == _generation) {

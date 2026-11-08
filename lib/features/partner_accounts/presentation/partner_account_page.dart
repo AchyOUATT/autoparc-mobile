@@ -626,6 +626,13 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
         AppLocalizations.of(context).partnerAccountsSuspendedDescription,
         Icons.pause_circle_outline,
       ),
+      // Le 401 nu d'une session révoquée : fermée, motif à la reconnexion.
+      // Sans ce cas, elle tombait dans « Inscription reçue », qui ment.
+      sessionRevoquee => (
+        AppLocalizations.of(context).homeSellerSessionClosedTitle,
+        AppLocalizations.of(context).homeSellerSessionClosedBody,
+        Icons.lock_outline,
+      ),
       _ => (
         AppLocalizations.of(context).partnerAccountsReceivedTitle,
         AppLocalizations.of(context).partnerAccountsReceivedDescription,

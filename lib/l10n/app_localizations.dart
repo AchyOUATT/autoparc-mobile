@@ -1914,13 +1914,13 @@ abstract class AppLocalizations {
   /// Le nombre d'annonces publiées, dans le résumé d'un inventaire. « Publiée » au sens du bouton Publier de la liste : le partenaire l'a décidé, que le catalogue la montre ou non.
   ///
   /// In fr, this message translates to:
-  /// **'{count, plural, =1{1 publiée} other{{count} publiées}}'**
+  /// **'{count, plural, =0{0 publiée} =1{1 publiée} other{{count} publiées}}'**
   String partnerDashboardPublished(int count);
 
-  /// Le nombre d'annonces non publiées, dans le résumé d'un inventaire. Le même mot que la pastille « Brouillon » de la liste des annonces.
+  /// Le nombre d'annonces non publiées, dans le résumé d'un inventaire. Le même mot que la pastille « Brouillon » de la liste des annonces. LE CAS ZÉRO EST ÉCRIT : en français, zéro tombe dans la catégorie « one » de l'ICU, et sans `=0` la branche `=1` — « 1 brouillon » — s'affichait pour zéro. Même règle pour partnerDashboardPublished.
   ///
   /// In fr, this message translates to:
-  /// **'{count, plural, =1{1 brouillon} other{{count} brouillons}}'**
+  /// **'{count, plural, =0{0 brouillon} =1{1 brouillon} other{{count} brouillons}}'**
   String partnerDashboardDrafts(int count);
 
   /// À la place des compteurs quand le serveur ne les rend pas — réseau coupé, ou serveur antérieur à la route. Les cartes restent navigables ; seul le chiffre manque, et il est remplacé par un tiret.
@@ -1953,16 +1953,16 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 article en stock faible} other{{count} articles en stock faible}}'**
   String partnerDashboardTodoLowStock(int count);
 
-  /// Ligne « À faire » : des annonces créées mais jamais publiées.
+  /// Ligne « À faire » : des annonces non publiées — jamais publiées, ou dépubliées. Pas « jamais » : une annonce dépubliée par le bouton Dépublier a été en ligne.
   ///
   /// In fr, this message translates to:
-  /// **'{count, plural, =1{1 brouillon jamais publié} other{{count} brouillons jamais publiés}}'**
+  /// **'{count, plural, =1{1 brouillon non publié} other{{count} brouillons non publiés}}'**
   String partnerDashboardTodoDrafts(int count);
 
-  /// Ligne « À faire » : des promotions en cours dont la fin est à moins de trois jours — « cette semaine » est la lecture qu'en fait le vendeur, le seuil exact est celui du serveur.
+  /// Ligne « À faire » : des promotions en cours dont la fin est à moins de trois jours — le seuil exact du serveur (`promotion_ending_soon`), écrit tel quel : « cette semaine » aurait compté six jours de plus que le chiffre.
   ///
   /// In fr, this message translates to:
-  /// **'{count, plural, =1{1 promotion se termine cette semaine} other{{count} promotions se terminent cette semaine}}'**
+  /// **'{count, plural, =1{1 promotion se termine dans moins de 3 jours} other{{count} promotions se terminent dans moins de 3 jours}}'**
   String partnerDashboardTodoPromotionEnding(int count);
 
   /// Titre de la rangée de recherche en bas du tableau de bord : les trois tuiles Véhicules / Accessoires / Pièces de l'accueil acheteur, parce qu'un partenaire cherche aussi comme tout le monde.
@@ -2010,13 +2010,13 @@ abstract class AppLocalizations {
   /// Titre du panneau qui remplace le formulaire d'inscription quand le serveur dit que l'espace partenaire est fermé, ou qu'un appel partenaire rend 503. Un panneau et non une ligne rouge sous un formulaire rempli : c'est souvent le tout premier contact d'un vendeur avec l'application.
   ///
   /// In fr, this message translates to:
-  /// **'Les inscriptions vendeurs ne sont pas encore ouvertes'**
+  /// **'L\'espace vendeur est fermé pour le moment'**
   String get partnerAccountsClosedTitle;
 
   /// Corps du panneau « espace fermé ». « Espace partenaire » est la tuile du tiroir, clé shellPartnerSpace : les deux textes doivent rester accordés.
   ///
   /// In fr, this message translates to:
-  /// **'AutoParc les activera dès que l\'équipe pourra traiter les demandes. Vous retrouverez cette page dans le menu, sous « Espace partenaire ».'**
+  /// **'AutoParc le rouvrira dès que possible. Vous retrouverez cette page dans le menu, sous « Espace partenaire ».'**
   String get partnerAccountsClosedBody;
 
   /// Bouton du panneau « espace fermé », qui ramène au catalogue. Le second bouton est « Réessayer », clé commonRetry.
@@ -2120,6 +2120,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Tableau de bord'**
   String get shellPartnerDashboard;
+
+  /// Tuile de déconnexion du bloc PARTENAIRE du tiroir. Nommée, et non « Se déconnecter » : le bloc du personnel peut être ouvert au-dessus avec sa propre tuile de déconnexion, et deux boutons identiques feraient fermer la mauvaise session.
+  ///
+  /// In fr, this message translates to:
+  /// **'Se déconnecter du compte partenaire'**
+  String get shellPartnerSignOut;
+
+  /// Carte en tête du tableau de bord quand un appel partenaire a rendu 503 — espace refermé pour maintenance — alors qu'une session est au coffre. Remplace le texte brut du serveur, qui parlait d'inscription à un partenaire inscrit. Les annonces publiées restent visibles : le catalogue public n'est pas derrière le drapeau.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'espace vendeur est fermé pour le moment. Vos annonces restent en ligne ; vos inventaires reviendront à sa réouverture.'**
+  String get partnerDashboardSpaceClosed;
 
   /// Tuile du bloc PARTENAIRE du tiroir, vers le hub de l'espace partenaire et ses trois inventaires.
   ///

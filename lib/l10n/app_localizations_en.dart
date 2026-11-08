@@ -1035,6 +1035,7 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: '$count published',
       one: '1 published',
+      zero: '0 published',
     );
     return '$_temp0';
   }
@@ -1046,6 +1047,7 @@ class AppLocalizationsEn extends AppLocalizations {
       locale: localeName,
       other: '$count drafts',
       one: '1 draft',
+      zero: '0 drafts',
     );
     return '$_temp0';
   }
@@ -1094,8 +1096,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count drafts never published',
-      one: '1 draft never published',
+      other: '$count unpublished drafts',
+      one: '1 unpublished draft',
     );
     return '$_temp0';
   }
@@ -1105,8 +1107,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count promotions end this week',
-      one: '1 promotion ends this week',
+      other: '$count promotions end within 3 days',
+      one: '1 promotion ends within 3 days',
     );
     return '$_temp0';
   }
@@ -1136,12 +1138,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get partnerDashboardWelcomeDismiss => 'OK';
 
   @override
-  String get partnerAccountsClosedTitle =>
-      'Seller registration is not open yet';
+  String get partnerAccountsClosedTitle => 'The seller area is closed for now';
 
   @override
   String get partnerAccountsClosedBody =>
-      'AutoParc will open it as soon as the team can process requests. You will find this page again in the menu, under “Partner area”.';
+      'AutoParc will reopen it as soon as possible. You will find this page again in the menu, under “Partner area”.';
 
   @override
   String get partnerAccountsClosedBrowse => 'Browse the catalogue';
@@ -1198,6 +1199,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shellPartnerDashboard => 'Dashboard';
+
+  @override
+  String get shellPartnerSignOut => 'Sign out of the partner account';
+
+  @override
+  String get partnerDashboardSpaceClosed =>
+      'The seller area is closed for now. Your listings stay online; your inventories will be back when it reopens.';
 
   @override
   String get shellPartnerListings => 'My listings';

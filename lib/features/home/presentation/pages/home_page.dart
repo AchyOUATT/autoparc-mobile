@@ -669,7 +669,13 @@ class _SessionVendeur extends ConsumerWidget {
                   ),
                   TextButton(
                     key: const Key('accueil-session-vendeur-reconnexion'),
-                    onPressed: () => context.push('/partner'),
+                    // La carte a déjà dit le statut et le motif : la page
+                    // partenaire doit s'ouvrir sur la CONNEXION, pas répéter
+                    // l'écran de statut — d'où la notice effacée d'abord.
+                    onPressed: () {
+                      ref.read(partnerSessionProvider.notifier).clearNotice();
+                      context.push('/partner');
+                    },
                     child: Text(l10n.homeSellerSignInAgain),
                   ),
                 ],

@@ -948,7 +948,10 @@ class AppDrawer extends ConsumerWidget {
           // partenaire ensuite, la même priorité que l'accueil
           // (`AccueilSelonProfil`).
           if (partenaire != null) ...[
-            _DrawerTile(
+            // Pas pour le personnel : `/` lui rend SON accueil (personnel >
+            // partenaire, voir `AccueilSelonProfil`), et une tuile « Tableau
+            // de bord » qui ouvrirait autre chose mentirait.
+            if (!auth.isStaff) _DrawerTile(
               icon: Icons.dashboard_outlined,
               label: l10n.shellPartnerDashboard,
               onTap: () { _close(context); context.go('/'); },
@@ -973,9 +976,12 @@ class AppDrawer extends ConsumerWidget {
               },
             ),
             const Divider(),
+            // Nommée, parce que le bloc du personnel peut être ouvert au-dessus
+            // avec SA tuile « Se déconnecter » : deux boutons identiques dans
+            // le même tiroir, et l'employé fermerait la mauvaise session.
             _DrawerTile(
               icon: Icons.logout,
-              label: l10n.shellSignOut,
+              label: l10n.shellPartnerSignOut,
               color: cs.error,
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -1061,9 +1067,17 @@ class AppDrawer extends ConsumerWidget {
           // et le drapeau reste faux toute la session après un démarrage à
           // froid — ; et une session partenaire en cours ne la voit plus, le
           // bloc PARTENAIRE ci-dessus porte déjà « Mes annonces ».
+          //
+          // ET L'INCONNU N'EST PLUS UN REFUS : tant que le serveur n'a pas dit
+          // « fermé », l'entrée est là pour tout le monde. La question du
+          // premier lancement promet « vous pourrez changer d'avis plus
+          // tard » ; une instance endormie le matin — drapeau sans réponse
+          // toute la session — ne doit pas en faire un mensonge. Ce que
+          // l'entrée masquée évitait, une entrée vers un refus brut, n'existe
+          // plus : la page explique un espace fermé et encaisse un 503.
           if (partenaire == null &&
-              (ref.watch(espacePartenaireOuvertProvider) ||
-                  profil == ProfilUtilisateur.vendeur)) _DrawerTile(
+              (profil == ProfilUtilisateur.vendeur ||
+                  !ref.watch(espacePartenaireFermeProvider))) _DrawerTile(
             icon: Icons.storefront_outlined,
             label: AppLocalizations.of(context).shellPartnerSpace,
             onTap: () { _close(context); context.push('/partner'); },

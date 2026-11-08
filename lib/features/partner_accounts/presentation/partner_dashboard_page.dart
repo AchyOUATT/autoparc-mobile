@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/api/api_exception.dart';
 import '../../../core/contact/feuille_contact.dart';
@@ -10,12 +9,15 @@ import '../../../l10n/app_localizations.dart';
 import '../../home/presentation/pages/home_page.dart' show BrowseSection;
 import '../../vehicles/presentation/pages/vehicle_form_mode.dart';
 import '../../vehicles/presentation/pages/vehicle_register_page.dart';
+import '../data/notice_tableau_de_bord.dart';
 import '../data/partner_repository.dart';
 import 'partner_listing_form.dart';
 import 'partner_listings_page.dart';
 import 'partner_localizations.dart';
 import 'partner_notifications_page.dart';
 import 'partner_session.dart';
+
+export '../data/notice_tableau_de_bord.dart' show NoticeTableauDeBord;
 
 /// Les compteurs du tableau de bord, RATTACHÉS AU COMPTE.
 ///
@@ -32,22 +34,6 @@ final partnerDashboardProvider = FutureProvider.autoDispose<PartnerDashboard>((
 
   return ref.watch(partnerRepositoryProvider).dashboard();
 });
-
-/// La ligne « votre accueil est maintenant votre tableau de bord », une fois.
-///
-/// Les partenaires déjà connectés voient leur page d'ouverture changer sans
-/// qu'on leur ait posé de question ; une ligne, une fois, et « OK ». La
-/// préférence est posée à la fermeture, pas à l'affichage : une application
-/// tuée avant l'appui remontre la ligne, ce qui est le bon sens.
-class NoticeTableauDeBord {
-  static const _cle = 'tableau_de_bord_presente';
-
-  static Future<bool> estVue() async =>
-      (await SharedPreferences.getInstance()).getBool(_cle) ?? false;
-
-  static Future<void> marquerVue() async =>
-      (await SharedPreferences.getInstance()).setBool(_cle, true);
-}
 
 /// L'accueil d'un partenaire connecté.
 ///
@@ -107,8 +93,20 @@ class _PartnerDashboardPageState extends ConsumerState<PartnerDashboardPage> {
   /// (`partner_listings_page.dart`) : le véhicule passe par le formulaire du
   /// personnel en mode partenaire, pièces et accessoires par le leur. Au
   /// retour d'un enregistrement, les compteurs sont relus.
+  /// ── `rootNavigator: true`, ET C'EST MESURÉ ─────────────────────────────
+  ///
+  /// Cette page vit DANS la coque (`ShellRoute`, route `/`), donc dans un
+  /// Navigator imbriqué dont la barre du bas et le tiroir sont les frères.
+  /// Un `push` sur ce Navigator-là empilait le formulaire SOUS la barre du
+  /// bas, toujours visible et touchable ; un appui sur « Pièces » remplaçait
+  /// la page `/` de la coque, et Flutter achevait les routes sans page qui
+  /// y étaient accrochées : dix champs remplis, formulaire disparu, sans un
+  /// mot. Reproduit par `tableau_de_bord_dans_la_coque_test.dart`. Le même
+  /// écran ouvert par le tiroir (`/partner`, Navigator racine) était plein
+  /// écran : deux habillages pour un même formulaire. La racine, donc —
+  /// comme `product_gallery.dart` le fait déjà pour la vue plein écran.
   Future<void> _creer(PartnerListingKind kind) async {
-    final enregistre = await Navigator.of(context).push<bool>(
+    final enregistre = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(
         builder: (_) => kind == PartnerListingKind.vehicles
             ? const VehicleRegisterPage(mode: VehicleFormMode.partenaire)
@@ -119,7 +117,7 @@ class _PartnerDashboardPageState extends ConsumerState<PartnerDashboardPage> {
   }
 
   Future<void> _ouvrir(PartnerListingKind kind) async {
-    await Navigator.of(context).push<void>(
+    await Navigator.of(context, rootNavigator: true).push<void>(
       MaterialPageRoute(builder: (_) => PartnerListingsPage(kind: kind)),
     );
     // La liste publie, dépublie, archive : les chiffres ont pu bouger.
@@ -151,7 +149,19 @@ class _PartnerDashboardPageState extends ConsumerState<PartnerDashboardPage> {
             if (_noticeVue == false)
               _Bienvenue(key: const Key('partner-dashboard-notice'), onOk: _fermerLaNotice),
             if (profile != null) _EnTete(profile: profile, session: session),
-            if (session.error != null && !session.espaceFerme)
+            // Un 503 sur une session connue : l'espace est refermé — pour
+            // maintenance, le plus souvent. Une carte qui le dit, et non le
+            // texte brut du serveur, qui parle d'inscription à un inscrit.
+            if (session.espaceFerme)
+              Card(
+                key: const Key('partner-dashboard-espace-ferme'),
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: const Icon(Icons.lock_clock_outlined),
+                  title: Text(l10n.partnerDashboardSpaceClosed),
+                ),
+              )
+            else if (session.error != null)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(

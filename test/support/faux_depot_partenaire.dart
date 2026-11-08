@@ -259,6 +259,23 @@ class FauxDepotPartenaire extends PartnerRepository {
     return tableauDeBord ?? tableauDeBordDeBanc();
   }
 
+  /// Les références du formulaire d'annonce, vides : le formulaire ouvert
+  /// par le « + » du tableau de bord ou de la liste part les chercher, et
+  /// sans cette réponse il irait au réseau et laisserait un délai en suspens
+  /// à la fin du banc.
+  @override
+  Future<PartnerReferences> references() async {
+    appels.add('references');
+
+    return const PartnerReferences(
+      brands: [],
+      models: [],
+      engineTypes: [],
+      partCategories: [],
+      manufacturers: [],
+    );
+  }
+
   @override
   Future<PartnerListingPage> listListings(
     PartnerListingKind kind, {

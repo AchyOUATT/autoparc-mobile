@@ -1444,7 +1444,7 @@
       }
     }
   },
-  "partnerDashboardPublished": "{count, plural, =1{1 publiée} other{{count} publiées}}",
+  "partnerDashboardPublished": "{count, plural, =0{0 publiée} =1{1 publiée} other{{count} publiées}}",
   "@partnerDashboardPublished": {
     "description": "Le nombre d'annonces publiées, dans le résumé d'un inventaire. « Publiée » au sens du bouton Publier de la liste : le partenaire l'a décidé, que le catalogue la montre ou non.",
     "placeholders": {
@@ -1453,9 +1453,9 @@
       }
     }
   },
-  "partnerDashboardDrafts": "{count, plural, =1{1 brouillon} other{{count} brouillons}}",
+  "partnerDashboardDrafts": "{count, plural, =0{0 brouillon} =1{1 brouillon} other{{count} brouillons}}",
   "@partnerDashboardDrafts": {
-    "description": "Le nombre d'annonces non publiées, dans le résumé d'un inventaire. Le même mot que la pastille « Brouillon » de la liste des annonces.",
+    "description": "Le nombre d'annonces non publiées, dans le résumé d'un inventaire. Le même mot que la pastille « Brouillon » de la liste des annonces. LE CAS ZÉRO EST ÉCRIT : en français, zéro tombe dans la catégorie « one » de l'ICU, et sans `=0` la branche `=1` — « 1 brouillon » — s'affichait pour zéro. Même règle pour partnerDashboardPublished.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -1497,18 +1497,18 @@
       }
     }
   },
-  "partnerDashboardTodoDrafts": "{count, plural, =1{1 brouillon jamais publié} other{{count} brouillons jamais publiés}}",
+  "partnerDashboardTodoDrafts": "{count, plural, =1{1 brouillon non publié} other{{count} brouillons non publiés}}",
   "@partnerDashboardTodoDrafts": {
-    "description": "Ligne « À faire » : des annonces créées mais jamais publiées.",
+    "description": "Ligne « À faire » : des annonces non publiées — jamais publiées, ou dépubliées. Pas « jamais » : une annonce dépubliée par le bouton Dépublier a été en ligne.",
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "partnerDashboardTodoPromotionEnding": "{count, plural, =1{1 promotion se termine cette semaine} other{{count} promotions se terminent cette semaine}}",
+  "partnerDashboardTodoPromotionEnding": "{count, plural, =1{1 promotion se termine dans moins de 3 jours} other{{count} promotions se terminent dans moins de 3 jours}}",
   "@partnerDashboardTodoPromotionEnding": {
-    "description": "Ligne « À faire » : des promotions en cours dont la fin est à moins de trois jours — « cette semaine » est la lecture qu'en fait le vendeur, le seuil exact est celui du serveur.",
+    "description": "Ligne « À faire » : des promotions en cours dont la fin est à moins de trois jours — le seuil exact du serveur (`promotion_ending_soon`), écrit tel quel : « cette semaine » aurait compté six jours de plus que le chiffre.",
     "placeholders": {
       "count": {
         "type": "int"
@@ -1543,11 +1543,11 @@
   "@partnerDashboardWelcomeDismiss": {
     "description": "Ferme la ligne de bienvenue du tableau de bord. Identique dans les deux langues, à dessein."
   },
-  "partnerAccountsClosedTitle": "Les inscriptions vendeurs ne sont pas encore ouvertes",
+  "partnerAccountsClosedTitle": "L'espace vendeur est fermé pour le moment",
   "@partnerAccountsClosedTitle": {
     "description": "Titre du panneau qui remplace le formulaire d'inscription quand le serveur dit que l'espace partenaire est fermé, ou qu'un appel partenaire rend 503. Un panneau et non une ligne rouge sous un formulaire rempli : c'est souvent le tout premier contact d'un vendeur avec l'application."
   },
-  "partnerAccountsClosedBody": "AutoParc les activera dès que l'équipe pourra traiter les demandes. Vous retrouverez cette page dans le menu, sous « Espace partenaire ».",
+  "partnerAccountsClosedBody": "AutoParc le rouvrira dès que possible. Vous retrouverez cette page dans le menu, sous « Espace partenaire ».",
   "@partnerAccountsClosedBody": {
     "description": "Corps du panneau « espace fermé ». « Espace partenaire » est la tuile du tiroir, clé shellPartnerSpace : les deux textes doivent rester accordés."
   },
@@ -1618,6 +1618,14 @@
   "shellPartnerDashboard": "Tableau de bord",
   "@shellPartnerDashboard": {
     "description": "Tuile du bloc PARTENAIRE du tiroir, qui ramène à l'accueil — le tableau de bord."
+  },
+  "shellPartnerSignOut": "Se déconnecter du compte partenaire",
+  "@shellPartnerSignOut": {
+    "description": "Tuile de déconnexion du bloc PARTENAIRE du tiroir. Nommée, et non « Se déconnecter » : le bloc du personnel peut être ouvert au-dessus avec sa propre tuile de déconnexion, et deux boutons identiques feraient fermer la mauvaise session."
+  },
+  "partnerDashboardSpaceClosed": "L'espace vendeur est fermé pour le moment. Vos annonces restent en ligne ; vos inventaires reviendront à sa réouverture.",
+  "@partnerDashboardSpaceClosed": {
+    "description": "Carte en tête du tableau de bord quand un appel partenaire a rendu 503 — espace refermé pour maintenance — alors qu'une session est au coffre. Remplace le texte brut du serveur, qui parlait d'inscription à un partenaire inscrit. Les annonces publiées restent visibles : le catalogue public n'est pas derrière le drapeau."
   },
   "shellPartnerListings": "Mes annonces",
   "@shellPartnerListings": {

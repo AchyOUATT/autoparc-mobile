@@ -99,7 +99,7 @@ void main() {
       await ouvrir(tester, depot: FauxDepotPartenaire(), inscription: true, espaceOuvert: false);
 
       expect(find.byKey(const Key('partner-espace-ferme')), findsOneWidget);
-      expect(find.text('Les inscriptions vendeurs ne sont pas encore ouvertes'), findsOneWidget);
+      expect(find.text('L\x27espace vendeur est fermé pour le moment'), findsOneWidget);
       expect(find.byKey(const Key('partner-company')), findsNothing);
       expect(find.text('Parcourir le catalogue'), findsOneWidget);
       expect(find.text('Réessayer'), findsOneWidget);
@@ -124,7 +124,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('partner-espace-ferme')), findsOneWidget);
-      expect(find.text('Les inscriptions vendeurs ne sont pas encore ouvertes'), findsOneWidget);
+      expect(find.text('L\x27espace vendeur est fermé pour le moment'), findsOneWidget);
       expect(
         find.text('L\'inscription des vendeurs n\'est pas encore ouverte. Revenez bientôt.'),
         findsNothing,
@@ -147,6 +147,23 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('ACCUEIL'), findsOneWidget);
+    });
+
+    testWidgets('une session révoquée par un 401 nu se lit « fermée », pas « reçue »', (
+      tester,
+    ) async {
+      final depot = FauxDepotPartenaire()
+        ..profilAuCoffre = profilDeBanc()
+        ..reponseGetMe = () async => throw const PartnerApiException(
+              'Unauthenticated.',
+              statusCode: 401,
+            );
+      await ouvrir(tester, depot: depot);
+
+      expect(find.text('Votre session vendeur a été fermée'), findsOneWidget);
+      expect(find.text('Inscription reçue'), findsNothing,
+          reason: 'Le repli du `switch` annonçait une inscription en attente '
+              'à un compte que le serveur venait de fermer.');
     });
 
     testWidgets('un autre refus reste une ligne sous le formulaire', (tester) async {

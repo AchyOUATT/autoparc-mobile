@@ -1030,6 +1030,7 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other: '$count publiées',
       one: '1 publiée',
+      zero: '0 publiée',
     );
     return '$_temp0';
   }
@@ -1041,6 +1042,7 @@ class AppLocalizationsFr extends AppLocalizations {
       locale: localeName,
       other: '$count brouillons',
       one: '1 brouillon',
+      zero: '0 brouillon',
     );
     return '$_temp0';
   }
@@ -1089,8 +1091,8 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count brouillons jamais publiés',
-      one: '1 brouillon jamais publié',
+      other: '$count brouillons non publiés',
+      one: '1 brouillon non publié',
     );
     return '$_temp0';
   }
@@ -1100,8 +1102,8 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count promotions se terminent cette semaine',
-      one: '1 promotion se termine cette semaine',
+      other: '$count promotions se terminent dans moins de 3 jours',
+      one: '1 promotion se termine dans moins de 3 jours',
     );
     return '$_temp0';
   }
@@ -1133,11 +1135,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get partnerAccountsClosedTitle =>
-      'Les inscriptions vendeurs ne sont pas encore ouvertes';
+      'L\'espace vendeur est fermé pour le moment';
 
   @override
   String get partnerAccountsClosedBody =>
-      'AutoParc les activera dès que l\'équipe pourra traiter les demandes. Vous retrouverez cette page dans le menu, sous « Espace partenaire ».';
+      'AutoParc le rouvrira dès que possible. Vous retrouverez cette page dans le menu, sous « Espace partenaire ».';
 
   @override
   String get partnerAccountsClosedBrowse => 'Parcourir le catalogue';
@@ -1194,6 +1196,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get shellPartnerDashboard => 'Tableau de bord';
+
+  @override
+  String get shellPartnerSignOut => 'Se déconnecter du compte partenaire';
+
+  @override
+  String get partnerDashboardSpaceClosed =>
+      'L\'espace vendeur est fermé pour le moment. Vos annonces restent en ligne ; vos inventaires reviendront à sa réouverture.';
 
   @override
   String get shellPartnerListings => 'Mes annonces';

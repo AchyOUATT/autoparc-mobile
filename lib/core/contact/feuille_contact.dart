@@ -18,6 +18,11 @@ void afficherFeuilleContact(BuildContext context, WidgetRef ref) {
   ref.read(autoparcContactProvider.notifier).refresh();
   showModalBottomSheet(
     context: context,
+    // Depuis le tableau de bord — une page DANS la coque —, la feuille et sa
+    // barrière vivraient sinon dans le Navigator imbriqué, et la barre du bas
+    // resterait visible et touchable sous elle. Sans effet pour le tiroir,
+    // dont le contexte est déjà celui de la racine.
+    useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
     shape: const RoundedRectangleBorder(

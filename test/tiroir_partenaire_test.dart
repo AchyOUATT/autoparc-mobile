@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:auto/core/update/version_minimale.dart';
+import 'package:auto/features/auth/data/auth_repository.dart';
 import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
 import 'package:auto/features/onboarding/data/profil_service.dart';
 import 'package:auto/features/partner_accounts/partner_accounts.dart';
@@ -75,7 +76,7 @@ void main() {
       expect(find.text('Mes annonces'), findsOneWidget);
       expect(find.text('Demandes clients'), findsOneWidget);
       expect(find.text('4'), findsOneWidget, reason: 'La pastille des non lues.');
-      expect(find.text('Se déconnecter'), findsOneWidget);
+      expect(find.text('Se déconnecter du compte partenaire'), findsOneWidget);
       expect(find.text('Espace partenaire'), findsNothing,
           reason: '« Mes annonces » y mène déjà ; l\'entrée générique ferait '
               'doublon.');
@@ -124,7 +125,7 @@ void main() {
       final depot = FauxDepotPartenaire()..profilAuCoffre = profilDeBanc();
       await poserTiroir(tester, depot: depot);
 
-      await tester.tap(find.text('Se déconnecter'));
+      await tester.tap(find.text('Se déconnecter du compte partenaire'));
       await tester.pumpAndSettle();
 
       expect(depot.appels, contains('logout'));
@@ -137,11 +138,59 @@ void main() {
     });
   });
 
+  group('Personnel et partenaire sur le même téléphone', () {
+    testWidgets('pas de tuile « Tableau de bord », et deux déconnexions qu\'on distingue', (
+      tester,
+    ) async {
+      const employe = StaffUser(id: 1, name: 'Awa Traoré', email: 'awa@autoparc.bf', role: 'admin');
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authProvider.overrideWith(
+              (_) => _FauxAuth(const AuthState(type: AuthType.staff, staffUser: employe)),
+            ),
+            partnerRepositoryProvider.overrideWithValue(
+              FauxDepotPartenaire()..profilAuCoffre = profilDeBanc(),
+            ),
+            plancherDeVersionProvider.overrideWith((_) async => null),
+          ],
+          child: MaterialApp(
+            locale: const Locale('fr'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(drawer: AppDrawer(), body: SizedBox.shrink()),
+          ),
+        ),
+      );
+      tester.state<ScaffoldState>(find.byType(Scaffold)).openDrawer();
+      await tester.pumpAndSettle();
+      // Le bloc du personnel est long : le bloc PARTENAIRE est sous le pli.
+      await tester.scrollUntilVisible(
+        find.text('Se déconnecter du compte partenaire'),
+        120,
+        scrollable: find.descendant(of: find.byType(Drawer), matching: find.byType(Scrollable)),
+      );
+
+      expect(find.text('Mes annonces'), findsOneWidget,
+          reason: 'Le bloc PARTENAIRE reste : ses annonces sont à un appui.');
+      expect(find.text('Tableau de bord'), findsNothing,
+          reason: '`/` rend l\'accueil du personnel (personnel > partenaire) : '
+              'une tuile qui promettrait le tableau de bord mentirait.');
+      expect(find.text('Se déconnecter'), findsOneWidget,
+          reason: 'Celle du personnel.');
+      expect(find.text('Se déconnecter du compte partenaire'), findsOneWidget);
+    });
+  });
+
   group('L\'entrée « Espace partenaire »', () {
-    testWidgets('reste fermée tant qu\'on ne sait rien du serveur', (tester) async {
+    testWidgets('est là tant que le serveur n\'a pas dit fermé', (tester) async {
       await poserTiroir(tester, depot: FauxDepotPartenaire());
 
-      expect(find.text('Espace partenaire'), findsNothing);
+      expect(find.text('Espace partenaire'), findsOneWidget,
+          reason: 'La question du premier lancement promet « vous pourrez '
+              'changer d\'avis plus tard » ; une instance endormie le matin ne '
+              'doit pas en faire un mensonge. La page sait expliquer un espace '
+              'fermé.');
       expect(find.text('Se connecter'), findsOneWidget);
     });
 

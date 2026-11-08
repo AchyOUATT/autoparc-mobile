@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:auto/features/partner_accounts/data/notice_tableau_de_bord.dart';
 import 'package:auto/features/partner_accounts/partner_accounts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../support/faux_depot_partenaire.dart';
 
@@ -69,6 +72,54 @@ void main() {
 
       expect(session.profile, isNull);
       expect(session.loading, isTrue);
+    });
+  });
+
+  /// La ligne « votre accueil est maintenant votre tableau de bord » ne
+  /// s'adresse qu'aux sessions restaurées d'un coffre antérieur : une session
+  /// qui NAÎT dans cette version — connexion ou inscription — la marque vue.
+  group('La ligne de bienvenue et les sessions qui naissent', () {
+    setUp(() => SharedPreferences.setMockInitialValues({}));
+
+    test('une inscription la marque vue', () async {
+      final conteneur = ProviderContainer(
+        overrides: [partnerRepositoryProvider.overrideWithValue(FauxDepotPartenaire())],
+      );
+      addTearDown(conteneur.dispose);
+
+      await conteneur.read(partnerSessionProvider.notifier).register({'contact_name': 'Awa'});
+      // L'écriture ne retient pas la connexion : on laisse la file se vider.
+      await pumpEventQueue();
+
+      expect(await NoticeTableauDeBord.estVue(), isTrue,
+          reason: 'Qui vient de s\'inscrire n\'a jamais eu d\'autre accueil : '
+              '« maintenant » lui annoncerait un changement qui n\'a pas eu lieu.');
+    });
+
+    test('une connexion aussi', () async {
+      final depot = FauxDepotPartenaire()..reponseLogin = () async => profilDeBanc();
+      final conteneur = ProviderContainer(
+        overrides: [partnerRepositoryProvider.overrideWithValue(depot)],
+      );
+      addTearDown(conteneur.dispose);
+
+      await conteneur.read(partnerSessionProvider.notifier).login('+22670000000', 'Partenaire12345');
+      await pumpEventQueue();
+
+      expect(await NoticeTableauDeBord.estVue(), isTrue);
+    });
+
+    test('une restauration ne la marque pas : c\'est à elle que la ligne s\'adresse', () async {
+      final conteneur = ProviderContainer(
+        overrides: [
+          partnerRepositoryProvider.overrideWithValue(FauxDepotPartenaire()..profilAuCoffre = profilDeBanc()),
+        ],
+      );
+      addTearDown(conteneur.dispose);
+
+      await conteneur.read(partnerSessionProvider.notifier).restore();
+
+      expect(await NoticeTableauDeBord.estVue(), isFalse);
     });
   });
 
