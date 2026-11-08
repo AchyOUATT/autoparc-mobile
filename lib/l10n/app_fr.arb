@@ -7421,7 +7421,7 @@
       }
     }
   },
-  "faultDeclarationTitle": "État déclaré",
+  "faultDeclarationTitle": "Pannes à déclarer",
   "faultDeclarationUnknown": "Non renseigné",
   "faultDeclarationNoneSeller": "Aucun défaut déclaré par le vendeur",
   "faultDeclarationHasFaults": "Des défauts sont déclarés",
@@ -7501,5 +7501,7 @@
   "passwordRecoveryRateLimited": "Trop de demandes. Patientez quelques minutes avant de réessayer.",
   "passwordRecoveryUnavailable": "La récupération par email est indisponible pour le moment. Réessayez plus tard ou contactez AutoParc.",
   "passwordRecoverySupportTitle": "Besoin d’aide ?",
-  "passwordRecoverySupportHelp": "Contactez AutoParc si vous n’avez pas d’email associé au compte ou si vous n’y avez plus accès. Votre identité devra être vérifiée avant toute récupération."
+  "passwordRecoverySupportHelp": "Contactez AutoParc si vous n’avez pas d’email associé au compte ou si vous n’y avez plus accès. Votre identité devra être vérifiée avant toute récupération.",
+  "vehiclesStepBlocked": "Impossible de continuer à l’étape {step} :\n{details}",
+  "@vehiclesStepBlocked": {"description": "Ephemeral explanation from the existing step validators.", "placeholders": {"step": {"type": "int"}, "details": {"type": "String"}}}
 }

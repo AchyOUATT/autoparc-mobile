@@ -10244,7 +10244,7 @@ abstract class AppLocalizations {
   /// No description provided for @faultDeclarationTitle.
   ///
   /// In fr, this message translates to:
-  /// **'État déclaré'**
+  /// **'Pannes à déclarer'**
   String get faultDeclarationTitle;
 
   /// No description provided for @faultDeclarationUnknown.
@@ -10528,6 +10528,12 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Contactez AutoParc si vous n’avez pas d’email associé au compte ou si vous n’y avez plus accès. Votre identité devra être vérifiée avant toute récupération.'**
   String get passwordRecoverySupportHelp;
+
+  /// Ephemeral explanation from the existing step validators.
+  ///
+  /// In fr, this message translates to:
+  /// **'Impossible de continuer à l’étape {step} :\n{details}'**
+  String vehiclesStepBlocked(int step, String details);
 }
 
 class _AppLocalizationsDelegate

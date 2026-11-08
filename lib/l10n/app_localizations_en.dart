@@ -5799,7 +5799,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inspectionWithdrawn => 'Inspection withdrawn.';
 
   @override
-  String get faultDeclarationTitle => 'Declared condition';
+  String get faultDeclarationTitle => 'Faults to declare';
 
   @override
   String get faultDeclarationUnknown => 'Not provided';
@@ -5976,4 +5976,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get passwordRecoverySupportHelp =>
       'Contact AutoParc if your account has no email address or you can no longer access it. Your identity must be checked before account recovery.';
+
+  @override
+  String vehiclesStepBlocked(int step, String details) {
+    return 'Cannot continue at step $step:\n$details';
+  }
 }

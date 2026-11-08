@@ -5820,7 +5820,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inspectionWithdrawn => 'Inspection retirée.';
 
   @override
-  String get faultDeclarationTitle => 'État déclaré';
+  String get faultDeclarationTitle => 'Pannes à déclarer';
 
   @override
   String get faultDeclarationUnknown => 'Non renseigné';
@@ -5998,4 +5998,9 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get passwordRecoverySupportHelp =>
       'Contactez AutoParc si vous n’avez pas d’email associé au compte ou si vous n’y avez plus accès. Votre identité devra être vérifiée avant toute récupération.';
+
+  @override
+  String vehiclesStepBlocked(int step, String details) {
+    return 'Impossible de continuer à l’étape $step :\n$details';
+  }
 }

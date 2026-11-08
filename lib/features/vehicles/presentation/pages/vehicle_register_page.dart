@@ -408,12 +408,33 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   ///     appliqué : un VIN de cinq caractères partait au serveur.
   ///
   /// Les règles vivent désormais là où elles s'affichent : sous le champ.
-  bool _validerLEtape(int etape) =>
-      _clefsDEtape[etape].currentState?.validate() ?? true;
+  final _erreursDEtape = <int, List<String>>{};
+
+  bool _validerLEtape(int etape) {
+    final invalides = _clefsDEtape[etape].currentState?.validateGranularly();
+    _erreursDEtape[etape] = [
+      for (final champ in invalides ?? <FormFieldState<Object?>>{})
+        if (champ.errorText != null) champ.errorText!,
+    ].toSet().toList();
+    return invalides == null || invalides.isEmpty;
+  }
+
+  void _expliquerLEtape(int etape) {
+    // Reutiliser les validateurs : les raisons ne doivent pas diverger des
+    // erreurs sous les champs. Remplacer le message precedent, sans file
+    // d'attente de messages perimes apres plusieurs appuis sur Suivant.
+    ScaffoldMessenger.of(context).clearSnackBars();
+    _snackError(
+      l10n.vehiclesStepBlocked(
+        etape + 1,
+        (_erreursDEtape[etape] ?? const <String>[]).join('\n'),
+      ),
+    );
+  }
 
   /// La première étape qui ne passe pas, ou -1 si toutes passent.
   ///
-  /// `validate()` est appelé sur CHACUNE, et non interrompu à la première qui
+  /// `validateGranularly()` est appelé sur CHACUNE, sans arrêt à la première qui
   /// échoue : chaque champ fautif doit porter son message, sinon le vendeur
   /// corrige la première erreur pour en découvrir une seconde.
   int _premiereEtapeFautive() {
@@ -440,10 +461,16 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
   /// Appelé par le bouton Suivant / Enregistrer du Stepper.
   Future<void> _onContinue(CatalogRefs refs) async {
+    if (_submitting) return;
     // Avancer d'une étape → n'éprouver que l'étape courante. Les suivantes
     // sont montées mais vides, et les exiger ici interdirait d'avancer.
     if (_step < 3) {
-      if (_validerLEtape(_step)) setState(() => _step++);
+      if (_validerLEtape(_step)) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        setState(() => _step++);
+      } else {
+        _expliquerLEtape(_step);
+      }
 
       return;
     }
@@ -461,11 +488,12 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
     if (fautive != -1) {
       setState(() => _step = fautive);
-      _snackError(l10n.vehiclesMissingStep(fautive + 1));
+      _expliquerLEtape(fautive);
 
       return;
     }
 
+    ScaffoldMessenger.of(context).clearSnackBars();
     await _submit(refs);
   }
 
