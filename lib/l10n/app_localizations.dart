@@ -10883,6 +10883,108 @@ abstract class AppLocalizations {
   /// **'Saisissez au maximum {max} caractères.'**
   String heavyConfigurationTextTooLong(int max);
 
+  /// No description provided for @heavyConfigurationBodyType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type de carrosserie'**
+  String get heavyConfigurationBodyType;
+
+  /// No description provided for @heavyConfigurationBodyTanker.
+  ///
+  /// In fr, this message translates to:
+  /// **'Citerne'**
+  String get heavyConfigurationBodyTanker;
+
+  /// No description provided for @heavyConfigurationBodyTipper.
+  ///
+  /// In fr, this message translates to:
+  /// **'Benne'**
+  String get heavyConfigurationBodyTipper;
+
+  /// No description provided for @heavyConfigurationBodyTractorUnit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tracteur'**
+  String get heavyConfigurationBodyTractorUnit;
+
+  /// No description provided for @heavyConfigurationBodyFlatbed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plateau'**
+  String get heavyConfigurationBodyFlatbed;
+
+  /// No description provided for @heavyConfigurationBodyBox.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fourgon'**
+  String get heavyConfigurationBodyBox;
+
+  /// No description provided for @heavyConfigurationBodyMixer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toupie'**
+  String get heavyConfigurationBodyMixer;
+
+  /// No description provided for @heavyConfigurationVolume.
+  ///
+  /// In fr, this message translates to:
+  /// **'Volume utile'**
+  String get heavyConfigurationVolume;
+
+  /// No description provided for @heavyConfigurationVolumeHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Volume de la benne ou de la caisse, en mètres cubes.'**
+  String get heavyConfigurationVolumeHelp;
+
+  /// No description provided for @heavyConfigurationVolumeInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez un volume entre 0,01 et 500 m³.'**
+  String get heavyConfigurationVolumeInvalid;
+
+  /// No description provided for @heavyConfigurationTankCapacity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Capacité de cuve'**
+  String get heavyConfigurationTankCapacity;
+
+  /// No description provided for @heavyConfigurationTankCapacityHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Volume de la citerne, pas le réservoir du porteur.'**
+  String get heavyConfigurationTankCapacityHelp;
+
+  /// No description provided for @heavyConfigurationTankInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez un entier entre 1 et 200 000 L.'**
+  String get heavyConfigurationTankInvalid;
+
+  /// No description provided for @heavyConfigurationPayload.
+  ///
+  /// In fr, this message translates to:
+  /// **'Charge utile (kg)'**
+  String get heavyConfigurationPayload;
+
+  /// No description provided for @heavyConfigurationPayloadHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Charge transportable, indiquée sur les documents du véhicule.'**
+  String get heavyConfigurationPayloadHelp;
+
+  /// No description provided for @vehiclesGearCountLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nombre de rapports'**
+  String get vehiclesGearCountLabel;
+
+  /// No description provided for @vehiclesGearCountInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez un entier entre 1 et 12.'**
+  String get vehiclesGearCountInvalid;
+
   /// No description provided for @vehicleRegistrationEntryTitle.
   ///
   /// In fr, this message translates to:

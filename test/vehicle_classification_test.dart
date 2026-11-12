@@ -95,10 +95,14 @@ const declaredHeavyConfiguration = <String, dynamic>{
   'cab_label': 'CR20 Highline',
   'axle_configuration': '6x2/4',
   'chassis_type': 'tractor',
+  'body_type': null,
   'body_use': 'Transport routier',
   'emission_standard': 'Euro VI',
   'ptac_kg': 26000,
   'ptra_kg': 44000,
+  'useful_volume_m3': null,
+  'tank_capacity_liters': null,
+  'payload_kg': null,
 };
 
 const knownSedan = ModelRef(
@@ -855,10 +859,14 @@ void main() {
         'cab_label': null,
         'axle_configuration': null,
         'chassis_type': null,
+        'body_type': null,
         'body_use': null,
         'emission_standard': null,
         'ptac_kg': null,
         'ptra_kg': null,
+        'useful_volume_m3': null,
+        'tank_capacity_liters': null,
+        'payload_kg': null,
       });
       for (final key in [
         'engine_code',

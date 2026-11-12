@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -6183,6 +6184,63 @@ class AppLocalizationsEn extends AppLocalizations {
   String heavyConfigurationTextTooLong(int max) {
     return 'Enter at most $max characters.';
   }
+
+  @override
+  String get heavyConfigurationBodyType => 'Body type';
+
+  @override
+  String get heavyConfigurationBodyTanker => 'Tanker';
+
+  @override
+  String get heavyConfigurationBodyTipper => 'Tipper';
+
+  @override
+  String get heavyConfigurationBodyTractorUnit => 'Tractor unit';
+
+  @override
+  String get heavyConfigurationBodyFlatbed => 'Flatbed';
+
+  @override
+  String get heavyConfigurationBodyBox => 'Box body';
+
+  @override
+  String get heavyConfigurationBodyMixer => 'Concrete mixer';
+
+  @override
+  String get heavyConfigurationVolume => 'Useful volume';
+
+  @override
+  String get heavyConfigurationVolumeHelp =>
+      'Body or tipper volume, in cubic metres.';
+
+  @override
+  String get heavyConfigurationVolumeInvalid =>
+      'Enter a volume between 0.01 and 500 m³.';
+
+  @override
+  String get heavyConfigurationTankCapacity => 'Tank capacity';
+
+  @override
+  String get heavyConfigurationTankCapacityHelp =>
+      'The tanker vessel volume, not the truck’s fuel tank.';
+
+  @override
+  String get heavyConfigurationTankInvalid =>
+      'Enter a whole number between 1 and 200,000 L.';
+
+  @override
+  String get heavyConfigurationPayload => 'Payload (kg)';
+
+  @override
+  String get heavyConfigurationPayloadHelp =>
+      'Usable payload, as stated on the vehicle documents.';
+
+  @override
+  String get vehiclesGearCountLabel => 'Number of gears';
+
+  @override
+  String get vehiclesGearCountInvalid =>
+      'Enter a whole number between 1 and 12.';
 
   @override
   String get vehicleRegistrationEntryTitle => 'Add a vehicle';

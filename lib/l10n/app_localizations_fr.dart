@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -6206,6 +6207,62 @@ class AppLocalizationsFr extends AppLocalizations {
   String heavyConfigurationTextTooLong(int max) {
     return 'Saisissez au maximum $max caractères.';
   }
+
+  @override
+  String get heavyConfigurationBodyType => 'Type de carrosserie';
+
+  @override
+  String get heavyConfigurationBodyTanker => 'Citerne';
+
+  @override
+  String get heavyConfigurationBodyTipper => 'Benne';
+
+  @override
+  String get heavyConfigurationBodyTractorUnit => 'Tracteur';
+
+  @override
+  String get heavyConfigurationBodyFlatbed => 'Plateau';
+
+  @override
+  String get heavyConfigurationBodyBox => 'Fourgon';
+
+  @override
+  String get heavyConfigurationBodyMixer => 'Toupie';
+
+  @override
+  String get heavyConfigurationVolume => 'Volume utile';
+
+  @override
+  String get heavyConfigurationVolumeHelp =>
+      'Volume de la benne ou de la caisse, en mètres cubes.';
+
+  @override
+  String get heavyConfigurationVolumeInvalid =>
+      'Saisissez un volume entre 0,01 et 500 m³.';
+
+  @override
+  String get heavyConfigurationTankCapacity => 'Capacité de cuve';
+
+  @override
+  String get heavyConfigurationTankCapacityHelp =>
+      'Volume de la citerne, pas le réservoir du porteur.';
+
+  @override
+  String get heavyConfigurationTankInvalid =>
+      'Saisissez un entier entre 1 et 200 000 L.';
+
+  @override
+  String get heavyConfigurationPayload => 'Charge utile (kg)';
+
+  @override
+  String get heavyConfigurationPayloadHelp =>
+      'Charge transportable, indiquée sur les documents du véhicule.';
+
+  @override
+  String get vehiclesGearCountLabel => 'Nombre de rapports';
+
+  @override
+  String get vehiclesGearCountInvalid => 'Saisissez un entier entre 1 et 12.';
 
   @override
   String get vehicleRegistrationEntryTitle => 'Ajouter un véhicule';
