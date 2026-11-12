@@ -57,10 +57,14 @@ void main() {
       c.axles,
       c.bodyUse,
       c.emission,
+      c.usefulVolume,
+      c.tankCapacity,
+      c.payload,
     ]) {
       controller.text = '  ';
     }
     c.chassisType = null;
+    c.bodyType = null;
     expect(c.toValue().isEmpty, isTrue);
   });
 
@@ -252,4 +256,60 @@ void main() {
       c.dispose();
     });
   }
+
+  test('19,32 and 19.32 are the same useful volume, tank stays tanker-only', () {
+    final c = HeavyVehicleConfigurationController();
+    addTearDown(c.dispose);
+    c.usefulVolume.text = '19,32';
+    expect(c.toValue().usefulVolumeM3, 19.32);
+    c.usefulVolume.text = '19.32';
+    expect(c.toValue().usefulVolumeM3, 19.32);
+    c.tankCapacity.text = '45000';
+    c.bodyType = 'tipper';
+    expect(c.toValue().tankCapacityLiters, isNull);
+    c.bodyType = 'tanker';
+    expect(c.toValue().tankCapacityLiters, 45000);
+    expect(
+      HeavyVehicleConfiguration.fromJson({
+        'useful_volume_m3': '19.32',
+        'payload_kg': 60000,
+        'body_type': 'tipper',
+      }).toJson(),
+      containsPair('useful_volume_m3', 19.32),
+    );
+  });
+
+  testWidgets('tank capacity is offered only for a tanker body', (tester) async {
+    final c = HeavyVehicleConfigurationController();
+    addTearDown(c.dispose);
+    final form = GlobalKey<FormState>();
+    await tester.pumpWidget(
+      app(Form(key: form, child: HeavyVehicleConfigurationFields(controller: c))),
+    );
+    expect(find.byKey(const ValueKey('heavy-tank-capacity')), findsNothing);
+
+    await tester.ensureVisible(find.byKey(const ValueKey('heavy-body-type')));
+    await tester.tap(find.byKey(const ValueKey('heavy-body-type')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Citerne').last);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('heavy-tank-capacity')), findsOneWidget);
+
+    c.tankCapacity.text = '45000';
+    c.usefulVolume.text = '19,32';
+    c.payload.text = '60000';
+    expect(form.currentState!.validate(), isTrue);
+    expect(c.toValue().bodyType, 'tanker');
+    expect(c.toValue().usefulVolumeM3, 19.32);
+    expect(c.toValue().tankCapacityLiters, 45000);
+    expect(c.toValue().payloadKg, 60000);
+
+    await tester.tap(find.byKey(const ValueKey('heavy-body-type')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Benne').last);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('heavy-tank-capacity')), findsNothing);
+    expect(c.toValue().bodyType, 'tipper');
+    expect(c.toValue().tankCapacityLiters, isNull);
+  });
 }

@@ -110,4 +110,29 @@ void main() {
     expect(find.text('6x2/4'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('heavy detail shows typed volume, tank, payload and body type', (
+    tester,
+  ) async {
+    await mount(
+      tester,
+      vehicle(
+        'heavy',
+        configuration: {
+          'body_type': 'tanker',
+          'useful_volume_m3': 19.32,
+          'tank_capacity_liters': 45000,
+          'payload_kg': 60000,
+        },
+      ),
+    );
+    expect(find.byType(HeavyVehicleConfigurationDetails), findsOneWidget);
+    await tester.ensureVisible(find.text('Citerne'));
+    await tester.pumpAndSettle();
+    expect(find.text('Citerne'), findsOneWidget);
+    expect(find.text('19,32 m³'), findsOneWidget);
+    expect(find.text('45 000 L'), findsOneWidget);
+    expect(find.text('60 000 kg'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

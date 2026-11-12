@@ -174,6 +174,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   String _transmission =
       'automatic'; // Gearbox family, separate from wheel drive.
   final _powerCtrl = TextEditingController();
+  final _gearCountCtrl = TextEditingController();
   final _seatsCtrl = TextEditingController(text: '5');
   final _doorsCtrl = TextEditingController(text: '4');
   bool _seatsUseInitialDefault = true;
@@ -232,6 +233,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       _bodyStyle = e.bodyStyle;
       _transmission = e.transmission ?? '';
       _powerCtrl.text = e.powerHp?.toString() ?? '';
+      _gearCountCtrl.text = e.gearCount?.toString() ?? '';
       _seatsUseInitialDefault = false;
       _doorsUseInitialDefault = false;
       _seatsCtrl.text = e.seats?.toString() ?? '';
@@ -419,6 +421,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       _plateCtrl,
       _yearCtrl,
       _powerCtrl,
+      _gearCountCtrl,
       _seatsCtrl,
       _doorsCtrl,
       _salePriceCtrl,
@@ -737,6 +740,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       'transmission': _transmission.isEmpty ? null : _transmission,
       if (_powerCtrl.text.isNotEmpty || _classificationChanged)
         'power_hp': int.tryParse(_powerCtrl.text),
+      if (!(_existing != null && _classificationChanged) &&
+          (_gearCountCtrl.text.trim().isNotEmpty ||
+              _existing?.gearCount != null))
+        'gear_count': int.tryParse(_gearCountCtrl.text.trim()),
       if (_existing != null && _classificationChanged) ...{
         'power_kw': null,
         'cylinders': null,
@@ -926,6 +933,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   void _resetModelTechnicalFields() {
     _classificationChanged = true;
     _powerCtrl.clear();
+    _gearCountCtrl.clear();
     _transmission = '';
   }
 
@@ -1531,6 +1539,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         referenceDrivetrainLabel(_drivetrain!.code, _drivetrain!.label, l10n),
       if (_powerCtrl.text.trim().isNotEmpty)
         l10n.vehiclesPowerSummary(_powerCtrl.text.trim()),
+      if (_gearCountCtrl.text.trim().isNotEmpty)
+        '${l10n.catalogFieldGears} : ${_gearCountCtrl.text.trim()}',
     ];
 
     // La transmission a toujours une valeur par defaut : seule, elle ne dit
@@ -1579,6 +1589,28 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             label: l10n.vehiclesTransmissionLabel,
             value: _transmission,
             onChanged: (value) => setState(() => _transmission = value ?? ''),
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            key: const ValueKey('vehicle-gear-count'),
+            controller: _gearCountCtrl,
+            decoration: InputDecoration(
+              labelText: l10n.vehiclesGearCountLabel,
+            ),
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(2),
+            ],
+            validator: (raw) {
+              final text = (raw ?? '').trim();
+              if (text.isEmpty) return null;
+              final value = int.tryParse(text);
+              if (value == null || value < 1 || value > 12) {
+                return l10n.vehiclesGearCountInvalid;
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 16),
 
