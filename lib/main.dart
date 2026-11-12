@@ -21,6 +21,7 @@ import 'core/contact/feuille_contact.dart';
 import 'core/widgets/navigation_bar_theme.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
+import 'features/auth/presentation/widgets/client_account_sheet.dart';
 import 'features/catalog/data/models/accessory.dart';
 import 'features/catalog/data/models/part.dart';
 import 'features/catalog/data/models/vehicle.dart';
@@ -894,6 +895,15 @@ class AppDrawer extends ConsumerWidget {
           // CLIENT FIREBASE
           // ════════════════════════════════════════════════════════
           if (auth.isClient) ...[
+            _DrawerTile(
+              icon: Icons.account_circle_outlined,
+              label: l10n.garageAccountTitle,
+              onTap: () {
+                final racine = Navigator.of(context, rootNavigator: true).context;
+                _close(context);
+                afficherFeuilleCompteClient(racine, auth);
+              },
+            ),
             if (privateSalesEnabled) _DrawerTile(
               icon: Icons.sell_outlined, label: AppLocalizations.of(context).privateSalesMineTitle,
               onTap: () { _close(context); context.push('/my-listings'); },
