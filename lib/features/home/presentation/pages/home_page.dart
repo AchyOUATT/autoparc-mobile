@@ -87,19 +87,20 @@ class _MyVehicleSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // L'accueil ne propose pas d'enregistrer un véhicule. L'ajout reste dans
-    // Mon garage ; un visiteur voit directement le catalogue, sans requête 401.
+    // Un visiteur non connecté n'a pas de garage : l'interroger lui vaudrait
+    // un 401, et l'invitation lui annoncerait « votre session a expiré » —
+    // pour une session qu'il n'a jamais ouverte. On lui montre donc la carte
+    // d'enregistrement, sans requête.
+    //
+    // Exception : qui a répondu « Je vends » au premier lancement et n'a pas
+    // (encore) de session partenaire voit la carte vendeur, plus spécifique.
+    // Dès qu'une session partenaire existe, l'accueil n'est plus celui-ci
+    // (voir `AccueilSelonProfil`).
     if (!ref.watch(authProvider).isClient) {
-      // Sauf pour qui a répondu « Je vends » au premier lancement et n'a pas
-      // (encore) de session partenaire : la carte vendeur, qui l'invite à
-      // ouvrir son compte. Dès qu'une session existe — quel que soit son
-      // statut —, l'accueil n'est plus celui-ci (voir `AccueilSelonProfil`) :
-      // c'est LUI qui garantit « sans session », et une seconde garde ici
-      // serait inatteignable, donc intuable par un banc.
       final vendeur =
           ref.watch(profilUtilisateurProvider) == ProfilUtilisateur.vendeur;
 
-      return vendeur ? const _CarteVendeur() : const SizedBox.shrink();
+      return vendeur ? const _CarteVendeur() : const _AddVehicleCard();
     }
 
     final garage = ref.watch(garageProvider);
@@ -114,10 +115,10 @@ class _MyVehicleSection extends ConsumerWidget {
         onRetry: () => ref.invalidate(garageProvider),
       ),
       data: (vehicles) {
-        if (vehicles.isEmpty) return const SizedBox.shrink();
+        if (vehicles.isEmpty) return const _AddVehicleCard();
 
         final vehicle = ref.watch(homeVehicleProvider);
-        if (vehicle == null) return const SizedBox.shrink();
+        if (vehicle == null) return const _AddVehicleCard();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -477,6 +478,55 @@ class _GarageUnavailable extends StatelessWidget {
             TextButton(
               onPressed: onRetry,
               child: Text(AppLocalizations.of(context).commonRetry),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+/// Pas encore de véhicule : c'est le moment de conversion vers les rappels.
+class _AddVehicleCard extends StatelessWidget {
+  const _AddVehicleCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: cs.primary),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+        child: Column(
+          children: [
+            Icon(Icons.directions_car_outlined, size: 34, color: cs.primary),
+            const SizedBox(height: 10),
+            Text(
+              AppLocalizations.of(context).homeAddVehicleTitle,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              AppLocalizations.of(context).homeAddVehicleBody,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(height: 14),
+            FilledButton(
+              onPressed: () => context.push('/garage/add'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+              ),
+              child: Text(AppLocalizations.of(context).homeAddVehicleCta),
             ),
           ],
         ),
