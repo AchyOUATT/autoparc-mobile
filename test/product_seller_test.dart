@@ -172,44 +172,4 @@ void main() {
     expect(find.byType(SellerContactBar), findsNothing);
     expect(find.text(l10n.catalogAddToCart), findsOneWidget);
   });
-
-  test('le partenaire source sert de contact public si le bloc vendeur manque', () {
-    final json = fixture('vehicle_detail');
-    final commercial = Map<String, dynamic>.from(json['commercial'] as Map);
-    commercial['partner'] = {
-      'id': 8,
-      'company_name': 'Garage historique',
-      'phone': '70003344',
-    };
-    json['commercial'] = commercial;
-    final vehicle = Vehicle.fromJson(json);
-    expect(vehicle.seller, isNull);
-    expect(vehicle.publicContact?.id, 8);
-    expect(vehicle.publicContact?.phone, '70003344');
-    expect(vehicle.publicContact?.companyName, 'Garage historique');
-  });
-
-  testWidgets('un véhicule rattache à un partenaire sans bloc seller propose son numéro', (tester) async {
-    final json = fixture('vehicle_detail');
-    final commercial = Map<String, dynamic>.from(json['commercial'] as Map);
-    commercial['partner'] = {
-      'id': 8,
-      'company_name': 'Garage historique',
-      'phone': '70003344',
-    };
-    json['commercial'] = commercial;
-    final vehicle = Vehicle.fromJson(json);
-    await mount(tester, VehicleDetailPage(vehicleId: vehicle.id), vehicle: vehicle);
-    expect(find.byType(SellerContactBar), findsOneWidget);
-    expect(find.text('Garage historique'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('un véhicule de la boutique garde la barre AutoParc', (tester) async {
-    final vehicle = Vehicle.fromJson(fixture('vehicle_detail'));
-    await mount(tester, VehicleDetailPage(vehicleId: vehicle.id), vehicle: vehicle);
-    expect(vehicle.publicContact, isNull);
-    expect(find.byType(SellerContactBar), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
 }
