@@ -456,6 +456,29 @@ class Vehicle extends Equatable {
   bool get isHeavy => !isEquipment && vehicleType == 'heavy';
   bool get isPassenger => !isEquipment && vehicleType == 'passenger';
 
+  /// Contact public de la fiche : le vendeur renvoyé par l'API, ou à défaut
+  /// le partenaire source déjà présent dans `commercial.partner`.
+  ///
+  /// Sert de filet si l'application est mise à jour avant le serveur, ou
+  /// si une fiche historique porte le partenaire sans le bloc `seller`.
+  /// Un numéro vide laisse la barre AutoParc.
+  ProductSeller? get publicContact {
+    final vendeur = seller;
+    if (vendeur != null && vendeur.phone.contains(RegExp(r'\d'))) {
+      return vendeur;
+    }
+    final partenaire = commercial.partner;
+    if (partenaire == null || !partenaire.phone.contains(RegExp(r'\d'))) {
+      return null;
+    }
+    return ProductSeller(
+      id: partenaire.id,
+      companyName: partenaire.companyName,
+      phone: partenaire.phone,
+      whatsapp: partenaire.whatsapp,
+    );
+  }
+
   /// Private seller inputs; public prices already include the shop margin.
   double? proposedPriceExcludingCommission(String field) =>
       partnerProposedPrices[field];

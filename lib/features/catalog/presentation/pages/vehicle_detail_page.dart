@@ -554,8 +554,8 @@ class _VehicleDetailView extends ConsumerWidget {
       // ── Barre d'action (clients uniquement) ───────────────────
       bottomNavigationBar: isStaff
           ? null
-          : vehicle.seller != null
-          ? SellerContactBar(seller: vehicle.seller!)
+          : vehicle.publicContact != null
+          ? SellerContactBar(seller: vehicle.publicContact!)
           : const _ActionBar(),
     );
   }
