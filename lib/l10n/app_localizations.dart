@@ -11794,6 +11794,174 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Impossible de continuer à l’étape {step} :\n{details}'**
   String vehiclesStepBlocked(int step, String details);
+
+  /// Vehicle category for motorcycles, scooters and mopeds.
+  ///
+  /// In fr, this message translates to:
+  /// **'Deux-roues'**
+  String get vehiclesTypeTwoWheeler;
+
+  /// Catalog filter chip for two-wheelers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Deux-roues'**
+  String get catalogVehicleTypeTwoWheeler;
+
+  /// Section title for motorcycle-specific facts.
+  ///
+  /// In fr, this message translates to:
+  /// **'Configuration deux-roues'**
+  String get twoWheelerConfigurationTitle;
+
+  /// No description provided for @twoWheelerBodyType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type de deux-roues'**
+  String get twoWheelerBodyType;
+
+  /// No description provided for @twoWheelerBodyMotorcycle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Moto'**
+  String get twoWheelerBodyMotorcycle;
+
+  /// No description provided for @twoWheelerBodyScooter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Scooter'**
+  String get twoWheelerBodyScooter;
+
+  /// No description provided for @twoWheelerBodyMoped.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cyclomoteur'**
+  String get twoWheelerBodyMoped;
+
+  /// No description provided for @twoWheelerStroke.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cycle moteur'**
+  String get twoWheelerStroke;
+
+  /// No description provided for @twoWheelerStrokeTwo.
+  ///
+  /// In fr, this message translates to:
+  /// **'2 temps'**
+  String get twoWheelerStrokeTwo;
+
+  /// No description provided for @twoWheelerStrokeFour.
+  ///
+  /// In fr, this message translates to:
+  /// **'4 temps'**
+  String get twoWheelerStrokeFour;
+
+  /// No description provided for @twoWheelerCooling.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refroidissement'**
+  String get twoWheelerCooling;
+
+  /// No description provided for @twoWheelerCoolingAir.
+  ///
+  /// In fr, this message translates to:
+  /// **'Air'**
+  String get twoWheelerCoolingAir;
+
+  /// No description provided for @twoWheelerCoolingLiquid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Liquide'**
+  String get twoWheelerCoolingLiquid;
+
+  /// No description provided for @twoWheelerStarter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Démarrage'**
+  String get twoWheelerStarter;
+
+  /// No description provided for @twoWheelerStarterKick.
+  ///
+  /// In fr, this message translates to:
+  /// **'Kick'**
+  String get twoWheelerStarterKick;
+
+  /// No description provided for @twoWheelerStarterElectric.
+  ///
+  /// In fr, this message translates to:
+  /// **'Électrique'**
+  String get twoWheelerStarterElectric;
+
+  /// No description provided for @twoWheelerStarterBoth.
+  ///
+  /// In fr, this message translates to:
+  /// **'Kick et électrique'**
+  String get twoWheelerStarterBoth;
+
+  /// No description provided for @twoWheelerDrive.
+  ///
+  /// In fr, this message translates to:
+  /// **'Transmission finale'**
+  String get twoWheelerDrive;
+
+  /// No description provided for @twoWheelerDriveChain.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chaîne'**
+  String get twoWheelerDriveChain;
+
+  /// No description provided for @twoWheelerDriveBelt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Courroie'**
+  String get twoWheelerDriveBelt;
+
+  /// No description provided for @twoWheelerDriveShaft.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cardan'**
+  String get twoWheelerDriveShaft;
+
+  /// No description provided for @twoWheelerTransmission.
+  ///
+  /// In fr, this message translates to:
+  /// **'Boîte'**
+  String get twoWheelerTransmission;
+
+  /// No description provided for @twoWheelerTransmissionManual.
+  ///
+  /// In fr, this message translates to:
+  /// **'Manuelle'**
+  String get twoWheelerTransmissionManual;
+
+  /// No description provided for @twoWheelerTransmissionSemiAutomatic.
+  ///
+  /// In fr, this message translates to:
+  /// **'Semi-automatique'**
+  String get twoWheelerTransmissionSemiAutomatic;
+
+  /// No description provided for @twoWheelerTransmissionCvt.
+  ///
+  /// In fr, this message translates to:
+  /// **'Automatique (CVT)'**
+  String get twoWheelerTransmissionCvt;
+
+  /// Optional motorcycle frame number or VIN.
+  ///
+  /// In fr, this message translates to:
+  /// **'N° de cadre ou VIN (optionnel)'**
+  String get vehiclesFrameNumberLabel;
+
+  /// No description provided for @vehiclesFrameNumberHelper.
+  ///
+  /// In fr, this message translates to:
+  /// **'5 à 32 caractères — numéro de cadre ou VIN'**
+  String get vehiclesFrameNumberHelper;
+
+  /// No description provided for @vehiclesFrameNumberInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le numéro de cadre doit faire entre 5 et 32 caractères.'**
+  String get vehiclesFrameNumberInvalid;
 }
 
 class _AppLocalizationsDelegate

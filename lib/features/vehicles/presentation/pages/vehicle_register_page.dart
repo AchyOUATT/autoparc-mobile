@@ -1,14 +1,19 @@
 import 'package:flutter/rendering.dart';
+
 import 'dart:convert';
 
 import '../widgets/heavy_vehicle_configuration.dart';
+import '../widgets/two_wheeler_configuration.dart';
 
 import '../../../catalog/presentation/catalog_reference_labels.dart';
 import '../../../../core/l10n/reference_labels.dart';
 import '../../../../core/l10n/transmission_labels.dart';
+
 import 'package:flutter/material.dart';
+
 import '../../../../l10n/app_localizations.dart';
 import '../../../../l10n/app_localizations_fr.dart';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -124,7 +129,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   Vehicle? get _existing => widget.existing;
 
   // ── Step 0 — Type & Identification ───────────────────────────────
-  String _vehicleType = 'passenger'; // 'passenger' | 'utility' | 'heavy'
+  String _vehicleType =
+      'passenger'; // 'passenger' | 'utility' | 'heavy' | 'two_wheeler'
   String? _bodyStyle; // 'sedan' | 'suv' | 'pickup' | …
   bool _vehicleTypeChosen = false;
   bool _bodyStyleNeedsReselection = false;
@@ -216,6 +222,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   final _descriptionCtrl = TextEditingController();
   late final HeavyVehicleConfigurationController _heavyConfiguration;
   final _heavyConfigurationExpansion = ExpansibleController();
+  late final TwoWheelerConfigurationController _twoWheelerConfiguration;
+  final _twoWheelerConfigurationExpansion = ExpansibleController();
+  final _displacementCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -224,6 +233,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     _heavyConfiguration = HeavyVehicleConfigurationController(
       value: e?.heavyConfiguration,
     );
+    _twoWheelerConfiguration = TwoWheelerConfigurationController();
+    if (e?.twoWheelerConfiguration != null) {
+      _twoWheelerConfiguration.load(e!.twoWheelerConfiguration);
+    }
     _faultDeclaration = e?.faultDeclaration ?? const FaultDeclaration.unknown();
     _faultsReady = e == null;
     _faultBaseline = jsonEncode(_faultDeclaration.toPayload());
@@ -234,6 +247,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       _transmission = e.transmission ?? '';
       _powerCtrl.text = e.powerHp?.toString() ?? '';
       _gearCountCtrl.text = e.gearCount?.toString() ?? '';
+      _displacementCtrl.text = e.engineDisplacementCc?.toString() ?? '';
       _seatsUseInitialDefault = false;
       _doorsUseInitialDefault = false;
       _seatsCtrl.text = e.seats?.toString() ?? '';
@@ -416,8 +430,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     _stepScrollController.dispose();
     _heavyConfiguration.dispose();
     _heavyConfigurationExpansion.dispose();
+    _twoWheelerConfiguration.dispose();
+    _twoWheelerConfigurationExpansion.dispose();
     for (final c in [
       _vinCtrl,
+      _displacementCtrl,
       _plateCtrl,
       _yearCtrl,
       _powerCtrl,
@@ -471,6 +488,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     final valid = invalides == null || invalides.isEmpty;
     if (!valid && etape == 2 && _vehicleType == 'heavy') {
       _heavyConfigurationExpansion.expand();
+    }
+    if (!valid && etape == 2 && _vehicleType == 'two_wheeler') {
+      _twoWheelerConfigurationExpansion.expand();
     }
     return valid;
   }
@@ -705,6 +725,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
   Map<String, dynamic> _buildPayload() {
     final heavyConfiguration = _heavyConfiguration.toValue();
+    final twoWheelerConfiguration = _twoWheelerConfiguration.toValue();
+    final bool isTwoWheeler = _vehicleType == 'two_wheeler';
     final bool forSale = _availability == 'sale' || _availability == 'both';
     final bool forRent = _availability == 'rent' || _availability == 'both';
     final bool hasPlate = _plateCtrl.text.trim().isNotEmpty;
@@ -727,8 +749,12 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         'heavy_configuration': heavyConfiguration.isEmpty
             ? null
             : heavyConfiguration.toJson(),
-      if (_bodyStyle != null || _classificationChanged)
-        'body_style': _bodyStyle,
+      if (isTwoWheeler)
+        'two_wheeler_configuration': twoWheelerConfiguration.isEmpty
+            ? null
+            : twoWheelerConfiguration.toJson(),
+      if (isTwoWheeler || _bodyStyle != null || _classificationChanged)
+        'body_style': isTwoWheeler ? null : _bodyStyle,
       if (_vinCtrl.text.trim().isNotEmpty) 'vin': _vinCtrl.text.trim(),
       // DÉCLARÉ, PAS DÉDUIT. L'API ne retombe sur la présence d'une plaque
       // que lorsque ce champ est absent.
@@ -737,7 +763,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       ..._classification.toPayload(editing: _existing != null),
       if (_color != null) 'color_id': _color!.id,
       'manufacturing_year': int.parse(_yearCtrl.text),
-      'transmission': _transmission.isEmpty ? null : _transmission,
+      'transmission': isTwoWheeler
+          ? null
+          : (_transmission.isEmpty ? null : _transmission),
       if (_powerCtrl.text.isNotEmpty || _classificationChanged)
         'power_hp': int.tryParse(_powerCtrl.text),
       if (!(_existing != null && _classificationChanged) &&
@@ -757,9 +785,17 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         'battery_capacity_kwh': null,
         'electric_range_km': null,
       },
-      if (_seatsCtrl.text.isNotEmpty || _classificationChanged)
+      if (isTwoWheeler ||
+          _displacementCtrl.text.trim().isNotEmpty ||
+          _classificationChanged)
+        'engine_displacement_cc': int.tryParse(_displacementCtrl.text.trim()),
+      if (isTwoWheeler)
+        'seats': int.tryParse(_seatsCtrl.text)
+      else if (_seatsCtrl.text.isNotEmpty || _classificationChanged)
         'seats': int.tryParse(_seatsCtrl.text),
-      if (_doorsCtrl.text.isNotEmpty || _classificationChanged)
+      if (isTwoWheeler)
+        'doors': null
+      else if (_doorsCtrl.text.isNotEmpty || _classificationChanged)
         'doors': int.tryParse(_doorsCtrl.text),
       'condition': _condition,
       'availability': _availability,
@@ -905,7 +941,16 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       _classification.selectModel(null);
       _resetModelTechnicalFields();
     }
-    if (value == 'heavy') _clearInitialPassengerDefaults();
+    if (value == 'heavy' || value == 'two_wheeler') {
+      _clearInitialPassengerDefaults();
+    }
+    if (value == 'two_wheeler') {
+      _bodyStyle = null;
+      _bodyStyleNeedsReselection = false;
+      _drivetrain = null;
+      _transmission = '';
+      _selectedFeatureIds.clear();
+    }
   }
 
   void _selectBodyStyle(String? value) {
@@ -1097,6 +1142,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
     subtitle: Text(switch (_vehicleType) {
       'utility' => l10n.vehiclesTypeUtility,
       'heavy' => l10n.vehiclesTypeHeavy,
+      'two_wheeler' => l10n.vehiclesTypeTwoWheeler,
       _ => l10n.vehiclesTypePassenger,
     }),
     isActive: _step >= 0,
@@ -1119,121 +1165,138 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               (value: 'passenger', label: l10n.vehiclesTypePassenger),
               (value: 'utility', label: l10n.vehiclesTypeUtility),
               (value: 'heavy', label: l10n.vehiclesTypeHeavy),
+              (value: 'two_wheeler', label: l10n.vehiclesTypeTwoWheeler),
             ],
             selected: _vehicleType,
             onChanged: (v) => setState(() => _selectVehicleType(v)),
           ),
           const SizedBox(height: 16),
 
-          // ── Carrosserie ───────────────────────────────────────────
-          DropdownButtonFormField<String>(
-            key: ValueKey('vehicle-body-style-$_bodyStyle'),
-            value: _bodyStyle,
-            // isExpanded, comme tous les autres menus de l'application : sans
-            // lui, le menu prend la largeur de son item le plus long —
-            // « Citadine / Hayon » ici — et deborde sur un petit ecran.
-            isExpanded: true,
-            decoration: InputDecoration(
-              labelText: l10n.vehiclesBodyStyleLabel,
-              hintText: switch (_vehicleType) {
-                'utility' =>
-                  '${l10n.catalogBodyLabelPickup}, ${l10n.catalogBodyLabelVan}',
-                'heavy' =>
-                  '${l10n.catalogBodyLabelBus}, ${l10n.catalogBodyLabelTruck}',
-                _ =>
-                  '${l10n.catalogBodyLabelSedan}, ${l10n.catalogBodyLabelSuv}',
-              },
-              helper: _bodyStyleNeedsReselection
-                  ? Text(l10n.vehiclesBodyStyleReselect)
-                  : null,
-              prefixIcon: Icon(Icons.directions_car_outlined),
-            ),
-            items:
-                [
-                      DropdownMenuItem(
-                        value: 'sedan',
-                        child: Text(l10n.catalogBodyLabelSedan),
-                      ),
-                      DropdownMenuItem(
-                        value: 'hatchback',
-                        child: Text(l10n.catalogBodyLabelHatchback),
-                      ),
-                      DropdownMenuItem(
-                        value: 'suv',
-                        child: Text(l10n.catalogBodyLabelSuv),
-                      ),
-                      DropdownMenuItem(
-                        value: 'estate',
-                        child: Text(l10n.catalogBodyLabelEstate),
-                      ),
-                      DropdownMenuItem(
-                        value: 'coupe',
-                        child: Text(l10n.catalogBodyLabelCoupe),
-                      ),
-                      DropdownMenuItem(
-                        value: 'convertible',
-                        child: Text(l10n.catalogBodyLabelConvertible),
-                      ),
-                      DropdownMenuItem(
-                        value: 'pickup',
-                        child: Text(l10n.catalogBodyLabelPickup),
-                      ),
-                      DropdownMenuItem(
-                        value: 'van',
-                        child: Text(l10n.catalogBodyLabelVan),
-                      ),
-                      DropdownMenuItem(
-                        value: 'minibus',
-                        child: Text(l10n.catalogBodyLabelMinibus),
-                      ),
-                      DropdownMenuItem(
-                        value: 'bus',
-                        child: Text(l10n.catalogBodyLabelBus),
-                      ),
-                      DropdownMenuItem(
-                        value: 'truck',
-                        child: Text(l10n.catalogBodyLabelTruck),
-                      ),
-                      DropdownMenuItem(
-                        value: 'other',
-                        child: Text(l10n.vehiclesFaultCategoryOther),
-                      ),
-                      if (_preserveHistoricalBody &&
-                          _bodyStyle != null &&
-                          _bodyStyle != 'other' &&
-                          vehicleTypeForBodyStyle(_bodyStyle) == null)
+          if (_vehicleType != 'two_wheeler') ...[
+            // ── Carrosserie ───────────────────────────────────────────
+            DropdownButtonFormField<String>(
+              key: ValueKey('vehicle-body-style-$_bodyStyle'),
+              value: _bodyStyle,
+              // isExpanded, comme tous les autres menus de l'application : sans
+              // lui, le menu prend la largeur de son item le plus long —
+              // « Citadine / Hayon » ici — et deborde sur un petit ecran.
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: l10n.vehiclesBodyStyleLabel,
+                hintText: switch (_vehicleType) {
+                  'utility' =>
+                    '${l10n.catalogBodyLabelPickup}, ${l10n.catalogBodyLabelVan}',
+                  'heavy' =>
+                    '${l10n.catalogBodyLabelBus}, ${l10n.catalogBodyLabelTruck}',
+                  _ =>
+                    '${l10n.catalogBodyLabelSedan}, ${l10n.catalogBodyLabelSuv}',
+                },
+                helper: _bodyStyleNeedsReselection
+                    ? Text(l10n.vehiclesBodyStyleReselect)
+                    : null,
+                prefixIcon: Icon(Icons.directions_car_outlined),
+              ),
+              items:
+                  [
                         DropdownMenuItem(
-                          value: _bodyStyle,
-                          child: Text(_bodyStyle!),
+                          value: 'sedan',
+                          child: Text(l10n.catalogBodyLabelSedan),
                         ),
-                    ]
-                    .where(
-                      (item) =>
-                          _bodyFitsType(item.value) ||
-                          (_preserveHistoricalBody && item.value == _bodyStyle),
-                    )
-                    .toList(),
-            onChanged: (v) => setState(() => _selectBodyStyle(v)),
-            validator: (v) =>
-                v == null || (!_bodyFitsType(v) && !_preserveHistoricalBody)
-                ? l10n.vehiclesBodyStyleRequired
-                : null,
-          ),
-          const SizedBox(height: 16),
+                        DropdownMenuItem(
+                          value: 'hatchback',
+                          child: Text(l10n.catalogBodyLabelHatchback),
+                        ),
+                        DropdownMenuItem(
+                          value: 'suv',
+                          child: Text(l10n.catalogBodyLabelSuv),
+                        ),
+                        DropdownMenuItem(
+                          value: 'estate',
+                          child: Text(l10n.catalogBodyLabelEstate),
+                        ),
+                        DropdownMenuItem(
+                          value: 'coupe',
+                          child: Text(l10n.catalogBodyLabelCoupe),
+                        ),
+                        DropdownMenuItem(
+                          value: 'convertible',
+                          child: Text(l10n.catalogBodyLabelConvertible),
+                        ),
+                        DropdownMenuItem(
+                          value: 'pickup',
+                          child: Text(l10n.catalogBodyLabelPickup),
+                        ),
+                        DropdownMenuItem(
+                          value: 'van',
+                          child: Text(l10n.catalogBodyLabelVan),
+                        ),
+                        DropdownMenuItem(
+                          value: 'minibus',
+                          child: Text(l10n.catalogBodyLabelMinibus),
+                        ),
+                        DropdownMenuItem(
+                          value: 'bus',
+                          child: Text(l10n.catalogBodyLabelBus),
+                        ),
+                        DropdownMenuItem(
+                          value: 'truck',
+                          child: Text(l10n.catalogBodyLabelTruck),
+                        ),
+                        DropdownMenuItem(
+                          value: 'other',
+                          child: Text(l10n.vehiclesFaultCategoryOther),
+                        ),
+                        if (_preserveHistoricalBody &&
+                            _bodyStyle != null &&
+                            _bodyStyle != 'other' &&
+                            vehicleTypeForBodyStyle(_bodyStyle) == null)
+                          DropdownMenuItem(
+                            value: _bodyStyle,
+                            child: Text(_bodyStyle!),
+                          ),
+                      ]
+                      .where(
+                        (item) =>
+                            _bodyFitsType(item.value) ||
+                            (_preserveHistoricalBody &&
+                                item.value == _bodyStyle),
+                      )
+                      .toList(),
+              onChanged: (v) => setState(() => _selectBodyStyle(v)),
+              validator: (v) =>
+                  v == null || (!_bodyFitsType(v) && !_preserveHistoricalBody)
+                  ? l10n.vehiclesBodyStyleRequired
+                  : null,
+            ),
+            const SizedBox(height: 16),
+          ],
 
           // ── VIN ───────────────────────────────────────────────────
           TextFormField(
             controller: _vinCtrl,
             decoration: InputDecoration(
-              labelText: l10n.vehiclesVinOptional,
-              hintText: 'WVWZZZ1KZ8W000001',
-              helperText: l10n.vehiclesVinHelper,
+              labelText: _vehicleType == 'two_wheeler'
+                  ? l10n.vehiclesFrameNumberLabel
+                  : l10n.vehiclesVinOptional,
+              hintText: _vehicleType == 'two_wheeler'
+                  ? 'YAMAHAFRAME01'
+                  : 'WVWZZZ1KZ8W000001',
+              helperText: _vehicleType == 'two_wheeler'
+                  ? l10n.vehiclesFrameNumberHelper
+                  : l10n.vehiclesVinHelper,
               prefixIcon: Icon(Icons.qr_code_2),
             ),
-            maxLength: 17,
+            maxLength: _vehicleType == 'two_wheeler' ? 32 : 17,
             textCapitalization: TextCapitalization.characters,
             validator: (v) {
-              if (v != null && v.isNotEmpty && v.length != 17) {
+              if (v == null || v.isEmpty) return null;
+              if (_vehicleType == 'two_wheeler') {
+                if (v.length < 5 || v.length > 32) {
+                  return l10n.vehiclesFrameNumberInvalid;
+                }
+                return null;
+              }
+              if (v.length != 17) {
                 return l10n.vehiclesVinLengthError;
               }
               return null;
@@ -1319,7 +1382,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
 
   Step _buildStep2(CatalogRefs refs) {
     final filteredModels = _brand != null
-        ? refs.modelsForBrand(_brand!.id, bodyStyle: _modelBodyFilter)
+        ? refs.modelsForBrand(
+            _brand!.id,
+            bodyStyle: _modelBodyFilter,
+            vehicleType: _showAllModelsForBody ? null : _vehicleType,
+          )
         : <ModelRef>[];
     final retainCurrentModel =
         _model != null &&
@@ -1395,8 +1462,8 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                   _bodyStyle = null;
                   _bodyStyleNeedsReselection = true;
                 }
-                // A truck must not inherit the passenger car's seat/door defaults.
-                if (vtype == 'heavy') {
+                // A truck or motorcycle must not inherit passenger seat/door defaults.
+                if (vtype == 'heavy' || vtype == 'two_wheeler') {
                   _seatsCtrl.clear();
                   _doorsCtrl.clear();
                   _seatsUseInitialDefault = false;
@@ -1404,15 +1471,15 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                 }
 
                 // Transmission : valeur DB uniquement
-                if (m.defaultTransmission != null)
+                if (m.defaultTransmission != null && vtype != 'two_wheeler')
                   _transmission = m.defaultTransmission!;
 
                 // Places et portes : valeur DB uniquement
-                if (m.defaultSeats != null) {
+                if (vtype != 'two_wheeler' && m.defaultSeats != null) {
                   _seatsCtrl.text = m.defaultSeats.toString();
                   _seatsUseInitialDefault = false;
                 }
-                if (m.defaultDoors != null) {
+                if (vtype != 'two_wheeler' && m.defaultDoors != null) {
                   _doorsCtrl.text = m.defaultDoors.toString();
                   _doorsUseInitialDefault = false;
                 }
@@ -1585,18 +1652,18 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           ),
           const SizedBox(height: 12),
 
-          TransmissionSelector(
-            label: l10n.vehiclesTransmissionLabel,
-            value: _transmission,
-            onChanged: (value) => setState(() => _transmission = value ?? ''),
-          ),
-          const SizedBox(height: 16),
+          if (_vehicleType != 'two_wheeler') ...[
+            TransmissionSelector(
+              label: l10n.vehiclesTransmissionLabel,
+              value: _transmission,
+              onChanged: (value) => setState(() => _transmission = value ?? ''),
+            ),
+            const SizedBox(height: 16),
+          ],
           TextFormField(
             key: const ValueKey('vehicle-gear-count'),
             controller: _gearCountCtrl,
-            decoration: InputDecoration(
-              labelText: l10n.vehiclesGearCountLabel,
-            ),
+            decoration: InputDecoration(labelText: l10n.vehiclesGearCountLabel),
             keyboardType: TextInputType.number,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
@@ -1614,17 +1681,19 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           ),
           const SizedBox(height: 16),
 
-          // Roues motrices
-          VehicleReferenceDropdown<DrivetrainRef>(
-            label: l10n.vehiclesDrivetrainLabel,
-            items: refs.drivetrains,
-            value: _drivetrain,
-            itemLabel: (d) => referenceDrivetrainLabel(d.code, d.label, l10n),
-            onChanged: (d) => setState(() => _drivetrain = d),
-          ),
-          const SizedBox(height: 12),
+          if (_vehicleType != 'two_wheeler') ...[
+            // Roues motrices
+            VehicleReferenceDropdown<DrivetrainRef>(
+              label: l10n.vehiclesDrivetrainLabel,
+              items: refs.drivetrains,
+              value: _drivetrain,
+              itemLabel: (d) => referenceDrivetrainLabel(d.code, d.label, l10n),
+              onChanged: (d) => setState(() => _drivetrain = d),
+            ),
+            const SizedBox(height: 12),
+          ],
 
-          // Puissance / places / portes
+          // Puissance / places / portes — ou cylindrée pour un deux-roues
           Row(
             children: [
               Expanded(
@@ -1639,39 +1708,57 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  key: const ValueKey('vehicle-seats'),
-                  controller: _seatsCtrl,
-                  onChanged: (_) => _seatsUseInitialDefault = false,
-                  decoration: InputDecoration(
-                    labelText: l10n.catalogFieldSeats,
-                    suffixText: 'p',
+              if (_vehicleType == 'two_wheeler')
+                Expanded(
+                  child: TextFormField(
+                    key: const ValueKey('vehicle-displacement'),
+                    controller: _displacementCtrl,
+                    decoration: InputDecoration(
+                      labelText: l10n.catalogFieldDisplacement,
+                      suffixText: 'cm³',
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(5),
+                    ],
                   ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(2),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  key: const ValueKey('vehicle-doors'),
-                  controller: _doorsCtrl,
-                  onChanged: (_) => _doorsUseInitialDefault = false,
-                  decoration: InputDecoration(
-                    labelText: l10n.catalogFieldDoors,
-                    suffixText: 'p',
+                )
+              else ...[
+                Expanded(
+                  child: TextFormField(
+                    key: const ValueKey('vehicle-seats'),
+                    controller: _seatsCtrl,
+                    onChanged: (_) => _seatsUseInitialDefault = false,
+                    decoration: InputDecoration(
+                      labelText: l10n.catalogFieldSeats,
+                      suffixText: 'p',
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(2),
+                    ],
                   ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(1),
-                  ],
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    key: const ValueKey('vehicle-doors'),
+                    controller: _doorsCtrl,
+                    onChanged: (_) => _doorsUseInitialDefault = false,
+                    decoration: InputDecoration(
+                      labelText: l10n.catalogFieldDoors,
+                      suffixText: 'p',
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(1),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
 
@@ -1692,10 +1779,27 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
             ),
           ],
 
+          if (_vehicleType == 'two_wheeler') ...[
+            const SizedBox(height: 16),
+            ExpansionTile(
+              key: const ValueKey('two-wheeler-configuration-section'),
+              controller: _twoWheelerConfigurationExpansion,
+              initiallyExpanded: true,
+              maintainState: true,
+              tilePadding: EdgeInsets.zero,
+              title: Text(l10n.twoWheelerConfigurationTitle),
+              children: [
+                TwoWheelerConfigurationFields(
+                  controller: _twoWheelerConfiguration,
+                ),
+              ],
+            ),
+          ],
+
           _faultDeclarationEditor(),
 
           // ── Équipements / options ────────────────────────────────────
-          if (refs.features.isNotEmpty) ...[
+          if (_vehicleType != 'two_wheeler' && refs.features.isNotEmpty) ...[
             const SizedBox(height: 20),
             const Divider(),
             const SizedBox(height: 8),
