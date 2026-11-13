@@ -6708,4 +6708,90 @@ class AppLocalizationsFr extends AppLocalizations {
   String vehiclesStepBlocked(int step, String details) {
     return 'Impossible de continuer à l’étape $step :\n$details';
   }
+
+  @override
+  String get vehiclesTypeTwoWheeler => 'Deux-roues';
+
+  @override
+  String get catalogVehicleTypeTwoWheeler => 'Deux-roues';
+
+  @override
+  String get twoWheelerConfigurationTitle => 'Configuration deux-roues';
+
+  @override
+  String get twoWheelerBodyType => 'Type de deux-roues';
+
+  @override
+  String get twoWheelerBodyMotorcycle => 'Moto';
+
+  @override
+  String get twoWheelerBodyScooter => 'Scooter';
+
+  @override
+  String get twoWheelerBodyMoped => 'Cyclomoteur';
+
+  @override
+  String get twoWheelerStroke => 'Cycle moteur';
+
+  @override
+  String get twoWheelerStrokeTwo => '2 temps';
+
+  @override
+  String get twoWheelerStrokeFour => '4 temps';
+
+  @override
+  String get twoWheelerCooling => 'Refroidissement';
+
+  @override
+  String get twoWheelerCoolingAir => 'Air';
+
+  @override
+  String get twoWheelerCoolingLiquid => 'Liquide';
+
+  @override
+  String get twoWheelerStarter => 'Démarrage';
+
+  @override
+  String get twoWheelerStarterKick => 'Kick';
+
+  @override
+  String get twoWheelerStarterElectric => 'Électrique';
+
+  @override
+  String get twoWheelerStarterBoth => 'Kick et électrique';
+
+  @override
+  String get twoWheelerDrive => 'Transmission finale';
+
+  @override
+  String get twoWheelerDriveChain => 'Chaîne';
+
+  @override
+  String get twoWheelerDriveBelt => 'Courroie';
+
+  @override
+  String get twoWheelerDriveShaft => 'Cardan';
+
+  @override
+  String get twoWheelerTransmission => 'Boîte';
+
+  @override
+  String get twoWheelerTransmissionManual => 'Manuelle';
+
+  @override
+  String get twoWheelerTransmissionSemiAutomatic => 'Semi-automatique';
+
+  @override
+  String get twoWheelerTransmissionCvt => 'Automatique (CVT)';
+
+  @override
+  String get vehiclesFrameNumberLabel => 'N° de cadre ou VIN (optionnel)';
+
+  @override
+  String get vehiclesFrameNumberHelper =>
+      '5 à 32 caractères — numéro de cadre ou VIN';
+
+  @override
+  String get vehiclesFrameNumberInvalid =>
+      'Le numéro de cadre doit faire entre 5 et 32 caractères.';
 }
