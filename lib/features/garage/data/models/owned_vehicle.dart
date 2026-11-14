@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../vehicles/data/models/two_wheeler_configuration.dart';
+
 import 'fuel_fill.dart';
 import 'vehicle_check.dart';
 
@@ -24,6 +26,8 @@ class OwnedVehicle extends Equatable {
 
   /// Le modèle tel que le propriétaire l'a tapé, faute de l'avoir trouvé.
   final String? modelLibre;
+  final String? vehicleType;
+  final TwoWheelerConfiguration twoWheelerConfiguration;
   final String? vin;
 
   /// Code moteur (ex: "1NZ", "K20", "OM651") — renseigné via décodage VIN
@@ -92,6 +96,8 @@ class OwnedVehicle extends Equatable {
     this.colorId,
     this.vehicleModelId,
     this.modelLibre,
+    this.vehicleType,
+    this.twoWheelerConfiguration = const TwoWheelerConfiguration(),
     this.vin,
     this.engineCode,
     this.engineDisplacementCc,
@@ -118,6 +124,8 @@ class OwnedVehicle extends Equatable {
     this.serviceIntervalKm,
   });
 
+  bool get isTwoWheeler => vehicleType == 'two_wheeler';
+
   /// Nom affiché : le surnom en priorité, sinon la désignation complète.
   String get displayName =>
       nickname?.isNotEmpty == true ? nickname! : designation;
@@ -133,6 +141,12 @@ class OwnedVehicle extends Equatable {
     colorId: json['color_id'] as int?,
     vehicleModelId: json['vehicle_model_id'] as int?,
     modelLibre: json['model_libre'] as String?,
+    vehicleType: json['vehicle_type'] as String?,
+    twoWheelerConfiguration: TwoWheelerConfiguration.fromJson(
+      json['two_wheeler_configuration'] is Map
+          ? Map<String, dynamic>.from(json['two_wheeler_configuration'] as Map)
+          : const <String, dynamic>{},
+    ),
     vin: json['vin'] as String?,
     engineCode: json['engine_code'] as String?,
     engineDisplacementCc: json['engine_displacement_cc'] as int?,

@@ -29,6 +29,12 @@ class GarageRepository {
     return page.data;
   }
 
+  /// Fiche d'un véhicule du garage, pour rouvrir l'édition depuis l'URL.
+  Future<OwnedVehicle> getVehicle(int id) async {
+    final json = await _client.get('${Endpoints.myVehicles}/$id');
+    return OwnedVehicle.fromJson(json['data'] as Map<String, dynamic>);
+  }
+
   /// Ajoute un véhicule au garage.
   Future<OwnedVehicle> addVehicle(Map<String, dynamic> payload) async {
     final json = await _client.post(Endpoints.myVehicles, data: payload);

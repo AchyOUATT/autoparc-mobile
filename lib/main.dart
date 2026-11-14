@@ -35,6 +35,7 @@ import 'features/catalog/presentation/pages/vehicle_list_page.dart';
 import 'features/home/presentation/pages/accueil_selon_profil.dart';
 import 'features/garage/data/models/owned_vehicle.dart';
 import 'features/garage/presentation/pages/add_vehicle_to_garage_page.dart';
+import 'features/garage/presentation/pages/edit_vehicle_in_garage_page.dart';
 import 'features/garage/presentation/pages/compatible_parts_page.dart';
 import 'features/garage/presentation/pages/fuel_fills_page.dart';
 import 'features/garage/presentation/pages/vehicle_check_page.dart';
@@ -238,6 +239,17 @@ GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
       ),
     ),
     GoRoute(path: '/garage/add',    builder: (_, __) => const AddVehicleToGaragePage()),
+    GoRoute(
+      path: '/garage/:id/edit',
+      builder: (_, state) {
+        final id = int.tryParse(state.pathParameters['id'] ?? '');
+        final extra = state.extra;
+        return EditGarageVehiclePage(
+          vehicleId: id,
+          initial: extra is OwnedVehicle && extra.id == id ? extra : null,
+        );
+      },
+    ),
 
     // ── Partenaires (staff) ────────────────────────────────────────
     GoRoute(

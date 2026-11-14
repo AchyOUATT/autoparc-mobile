@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/engine_data.dart';
+import '../../data/models/owned_vehicle.dart';
 import '../providers/garage_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/vin_decode_provider.dart';
@@ -27,7 +28,9 @@ import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class AddVehicleToGaragePage extends ConsumerStatefulWidget {
-  const AddVehicleToGaragePage({super.key});
+  const AddVehicleToGaragePage({super.key, this.existing});
+
+  final OwnedVehicle? existing;
 
   @override
   ConsumerState<AddVehicleToGaragePage> createState() =>
@@ -37,7 +40,8 @@ class AddVehicleToGaragePage extends ConsumerStatefulWidget {
 class _AddVehicleToGaragePageState
     extends ConsumerState<AddVehicleToGaragePage> {
   final _formKey = GlobalKey<FormState>();
-  final _engineDetails = EngineDetailsController();
+  late final EngineDetailsController _engineDetails;
+  bool _refsBound = false;
   bool _submitting = false;
 
   // Champs de formulaire
@@ -76,6 +80,57 @@ class _AddVehicleToGaragePageState
 
   // Suivi des champs pré-remplis par le décodage VIN (pour le style visuel)
   final _prefilledFields = <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existing;
+    _engineDetails = EngineDetailsController(vehicle: existing);
+    if (existing == null) return;
+    _vehicleType = existing.vehicleType ?? 'passenger';
+    _twoWheelerConfiguration.load(existing.twoWheelerConfiguration);
+    _yearCtrl.text = '${existing.year}';
+    _nicknameCtrl.text = existing.nickname ?? '';
+    _plateCtrl.text = existing.plateNumber ?? '';
+    _mileageCtrl.text = existing.mileageKm?.toString() ?? '';
+    _vinCtrl.text = existing.vin ?? '';
+    _modelLibreCtrl.text = existing.modelLibre ?? '';
+    _modeleHorsListe =
+        existing.vehicleModelId == null &&
+        (existing.modelLibre?.isNotEmpty ?? false);
+  }
+
+  void _bindExisting(CatalogRefs refs) {
+    final existing = widget.existing;
+    if (existing == null || _refsBound) return;
+    _refsBound = true;
+    final bound = VehicleClassificationSelection.fromIds(
+      refs,
+      brandId: existing.brandId,
+      modelId: existing.vehicleModelId,
+      trimId: existing.trimId,
+      engineTypeId: existing.engineTypeId,
+      drivetrainId: existing.drivetrainId,
+      engineCode: existing.engineCode,
+    );
+    _classification.brand = bound.brand;
+    _classification.model = bound.model;
+    _classification.trim = bound.trim;
+    _classification.engineType = bound.engineType;
+    _classification.drivetrain = bound.drivetrain;
+    _classification.engineCode = bound.engineCode;
+    _engineDetails.code.text = existing.engineCode ?? _engineDetails.code.text;
+    if (existing.colorId != null) {
+      _color = refs.colors.where((c) => c.id == existing.colorId).firstOrNull;
+    }
+    // An older vehicle may have no stored type. Infer it from the known model
+    // so the filtered menu still contains that model and a save cannot
+    // reclassify a van or truck as a passenger car.
+    if ((existing.vehicleType == null || existing.vehicleType!.isEmpty) &&
+        bound.model?.resolvedVehicleType != null) {
+      _vehicleType = bound.model!.resolvedVehicleType!;
+    }
+  }
 
   @override
   void dispose() {
@@ -225,7 +280,7 @@ class _AddVehicleToGaragePageState
     final twoWheelerConfiguration = _twoWheelerConfiguration.toValue();
     final payload = <String, dynamic>{
       ..._classification.toPayload(
-        editing: false,
+        editing: widget.existing != null,
         allowFreeModel: true,
         modelLibre: modeleLibre,
       ),
@@ -237,17 +292,31 @@ class _AddVehicleToGaragePageState
             : twoWheelerConfiguration.toJson(),
       'manufacturing_year': int.parse(_yearCtrl.text),
       if (_color != null) 'color_id': _color!.id,
-      if (_nicknameCtrl.text.trim().isNotEmpty)
-        'nickname': _nicknameCtrl.text.trim(),
-      if (_plateCtrl.text.trim().isNotEmpty)
-        'plate_number': _plateCtrl.text.trim().toUpperCase(),
-      if (_mileageCtrl.text.isNotEmpty)
-        'mileage_km': int.parse(_mileageCtrl.text),
-      if (_vinCtrl.text.trim().isNotEmpty)
-        'vin': _vinCtrl.text.trim().toUpperCase(),
     };
+    _writeOptionalText(payload, 'nickname', _nicknameCtrl.text);
+    _writeOptionalText(
+      payload,
+      'plate_number',
+      _plateCtrl.text,
+      transform: (value) => value.toUpperCase(),
+    );
+    _writeOptionalText(
+      payload,
+      'vin',
+      _vinCtrl.text,
+      transform: (value) => value.toUpperCase(),
+    );
+    final mileage = _mileageCtrl.text.trim();
+    if (mileage.isNotEmpty) {
+      payload['mileage_km'] = int.parse(mileage);
+    } else if (widget.existing != null) {
+      payload['mileage_km'] = null;
+    }
 
-    final error = await ref.read(garageProvider.notifier).addVehicle(payload);
+    final notifier = ref.read(garageProvider.notifier);
+    final error = widget.existing == null
+        ? await notifier.addVehicle(payload)
+        : await notifier.updateVehicle(widget.existing!.id, payload);
 
     if (!mounted) return;
     setState(() => _submitting = false);
@@ -256,6 +325,24 @@ class _AddVehicleToGaragePageState
       _snack(error, isError: true);
     } else {
       Navigator.of(context).pop();
+    }
+  }
+
+  /// En édition, un champ explicitement vidé part comme `null` pour que
+  /// l'API efface l'ancienne valeur. En création, un champ vide reste omis.
+  void _writeOptionalText(
+    Map<String, dynamic> payload,
+    String key,
+    String raw, {
+    String Function(String value)? transform,
+  }) {
+    final value = raw.trim();
+    if (value.isNotEmpty) {
+      payload[key] = transform == null ? value : transform(value);
+      return;
+    }
+    if (widget.existing != null) {
+      payload[key] = null;
     }
   }
 
@@ -331,7 +418,11 @@ class _AddVehicleToGaragePageState
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).garageAddVehicleTitle),
+        title: Text(
+          widget.existing == null
+              ? AppLocalizations.of(context).garageAddVehicleTitle
+              : AppLocalizations.of(context).garageEditVehicleTitle,
+        ),
         centerTitle: false,
       ),
       body: refsAsync.when(
@@ -363,10 +454,22 @@ class _AddVehicleToGaragePageState
     );
   }
 
+  /// The current model stays in the menu even if it would be hidden by the
+  /// selected type, so an older vehicle can still be saved without being
+  /// reclassified or dropped from the dropdown.
+  List<ModelRef> _modelsForForm(CatalogRefs refs) {
+    if (_brand == null) return const [];
+    final models = refs.modelsForBrand(_brand!.id, vehicleType: _vehicleType);
+    final current = _model;
+    if (current == null || models.any((model) => model.id == current.id)) {
+      return models;
+    }
+    return [current, ...models];
+  }
+
   Widget _buildForm(CatalogRefs refs, VinDecodeState vinState) {
-    final models = _brand != null
-        ? refs.modelsForBrand(_brand!.id, vehicleType: _vehicleType)
-        : <ModelRef>[];
+    _bindExisting(refs);
+    final models = _modelsForForm(refs);
     final trims = _model != null ? refs.trimsForModel(_model!.id) : <TrimRef>[];
 
     return Center(
@@ -458,8 +561,9 @@ class _AddVehicleToGaragePageState
                 child: DropdownButtonFormField<BrandRef>(
                   value: _brand,
                   decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)
-                        .garageBrandRequiredLabel,
+                    labelText: AppLocalizations.of(
+                      context,
+                    ).garageBrandRequiredLabel,
                   ),
                   isExpanded: true,
                   hint: Text(
@@ -494,15 +598,17 @@ class _AddVehicleToGaragePageState
                   child: DropdownButtonFormField<ModelRef>(
                     value: _model,
                     decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)
-                          .garageModelRequiredLabel,
+                      labelText: AppLocalizations.of(
+                        context,
+                      ).garageModelRequiredLabel,
                     ),
                     isExpanded: true,
                     hint: Text(
                       _brand == null
                           ? AppLocalizations.of(context).garageSelectBrandFirst
-                          : AppLocalizations.of(context)
-                                .garageSelectPlaceholder,
+                          : AppLocalizations.of(
+                              context,
+                            ).garageSelectPlaceholder,
                     ),
                     items: models
                         .map(
@@ -534,8 +640,9 @@ class _AddVehicleToGaragePageState
                 TextFormField(
                   controller: _modelLibreCtrl,
                   decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)
-                        .garageModelRequiredLabel,
+                    labelText: AppLocalizations.of(
+                      context,
+                    ).garageModelRequiredLabel,
                     hintText: AppLocalizations.of(context).garageModelExample,
                     prefixIcon: Icon(Icons.edit_outlined),
                   ),
@@ -607,8 +714,9 @@ class _AddVehicleToGaragePageState
                 child: TextFormField(
                   controller: _yearCtrl,
                   decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)
-                        .garageManufacturingYearLabel,
+                    labelText: AppLocalizations.of(
+                      context,
+                    ).garageManufacturingYearLabel,
                     prefixIcon: Icon(Icons.calendar_today),
                   ),
                   keyboardType: TextInputType.number,
@@ -682,8 +790,9 @@ class _AddVehicleToGaragePageState
               _SectionTitle(AppLocalizations.of(context).catalogFieldEngine),
               const SizedBox(height: 4),
               Text(
-                AppLocalizations.of(context)
-                    .garageEngineCompatibilityExplanation,
+                AppLocalizations.of(
+                  context,
+                ).garageEngineCompatibilityExplanation,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -831,8 +940,9 @@ class _AddVehicleToGaragePageState
               TextFormField(
                 controller: _plateCtrl,
                 decoration: InputDecoration(
-                  labelText: AppLocalizations.of(context)
-                      .garageRegistrationLabel,
+                  labelText: AppLocalizations.of(
+                    context,
+                  ).garageRegistrationLabel,
                   hintText: AppLocalizations.of(context).garageRegistrationHint,
                   prefixIcon: Icon(Icons.badge_outlined),
                 ),
@@ -872,7 +982,11 @@ class _AddVehicleToGaragePageState
                 label: Text(
                   _submitting
                       ? AppLocalizations.of(context).garageSaving
-                      : AppLocalizations.of(context).garageAddVehicleTitle,
+                      : (widget.existing == null
+                            ? AppLocalizations.of(context).garageAddVehicleTitle
+                            : AppLocalizations.of(
+                                context,
+                              ).garageEditVehicleTitle),
                 ),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(52),
@@ -931,8 +1045,9 @@ class _CompatibiliteHint extends StatelessWidget {
         Expanded(
           child: Text(
             message,
-            style: Theme.of(context).textTheme.bodySmall
-                ?.copyWith(color: couleur),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: couleur),
           ),
         ),
       ],
@@ -967,8 +1082,9 @@ class _ModeleLibreHint extends StatelessWidget {
           Expanded(
             child: Text(
               AppLocalizations.of(context).garageUnlistedModelServices,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: cs.onSurfaceVariant),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
             ),
           ),
         ],
@@ -984,8 +1100,9 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
     text,
-    style: Theme.of(context).textTheme.titleMedium
-        ?.copyWith(fontWeight: FontWeight.bold),
+    style: Theme.of(
+      context,
+    ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
   );
 }
 
@@ -1061,8 +1178,9 @@ class _VinScanBlock extends StatelessWidget {
             Flexible(
               child: Text(
                 AppLocalizations.of(context).garageVinAutomaticTitle,
-                style: Theme.of(context).textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(width: 8),
@@ -1086,8 +1204,9 @@ class _VinScanBlock extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           AppLocalizations.of(context).garageVinAutomaticExplanation,
-          style: Theme.of(context).textTheme.bodySmall
-              ?.copyWith(color: colorScheme.onSurfaceVariant),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 12),
 
@@ -1110,8 +1229,9 @@ class _VinScanBlock extends StatelessWidget {
                   suffixIcon: _VinStatusIcon(vinState: vinState),
                   helperText: controller.text.isNotEmpty
                       ? (isTwoWheeler
-                            ? AppLocalizations.of(context)
-                                  .vehiclesFrameNumberHelper
+                            ? AppLocalizations.of(
+                                context,
+                              ).vehiclesFrameNumberHelper
                             : AppLocalizations.of(context).garageVinLength(
                                 (controller.text.trim().length).toString(),
                               ))
@@ -1119,12 +1239,13 @@ class _VinScanBlock extends StatelessWidget {
                 ),
                 textCapitalization: TextCapitalization.characters,
                 maxLength: isTwoWheeler ? 32 : 17,
-                buildCounter: (
-                  _, {
-                  required currentLength,
-                  required isFocused,
-                  maxLength,
-                }) => null, // on gère le compteur via helperText
+                buildCounter:
+                    (
+                      _, {
+                      required currentLength,
+                      required isFocused,
+                      maxLength,
+                    }) => null, // on gère le compteur via helperText
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(
                     isTwoWheeler
@@ -1139,8 +1260,9 @@ class _VinScanBlock extends StatelessWidget {
                   if (v == null || v.isEmpty) return null;
                   if (isTwoWheeler) {
                     if (v.length < 5 || v.length > 32) {
-                      return AppLocalizations.of(context)
-                          .vehiclesFrameNumberInvalid;
+                      return AppLocalizations.of(
+                        context,
+                      ).vehiclesFrameNumberInvalid;
                     }
                     return null;
                   }
@@ -1436,17 +1558,19 @@ class _GenerationHint extends StatelessWidget {
                           ),
                           (annee).toString(),
                         )
-                      : AppLocalizations.of(context)
-                            .garageGenerationYearMismatch(
-                              (modele.generation ?? modele.name).toString(),
-                              (garageModelYears(
-                                AppLocalizations.of(context),
-                                modele,
-                              )).toString(),
-                              (annee).toString(),
-                            ),
-                  style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: couleur),
+                      : AppLocalizations.of(
+                          context,
+                        ).garageGenerationYearMismatch(
+                          (modele.generation ?? modele.name).toString(),
+                          (garageModelYears(
+                            AppLocalizations.of(context),
+                            modele,
+                          )).toString(),
+                          (annee).toString(),
+                        ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: couleur),
                 ),
               ),
             ],
@@ -1455,12 +1579,16 @@ class _GenerationHint extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               alternatives.length == 1
-                  ? AppLocalizations.of(context)
-                        .garageGenerationAlternativeQuestion
-                  : AppLocalizations.of(context)
-                        .garageGenerationAlternatives((annee).toString()),
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: couleur, fontWeight: FontWeight.w600),
+                  ? AppLocalizations.of(
+                      context,
+                    ).garageGenerationAlternativeQuestion
+                  : AppLocalizations.of(
+                      context,
+                    ).garageGenerationAlternatives((annee).toString()),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: couleur,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 6),
             Wrap(
@@ -1485,10 +1613,12 @@ class _GenerationHint extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 6),
               child: Text(
-                AppLocalizations.of(context)
-                    .garageGenerationNoAlternative(modele.commercialName),
-                style: Theme.of(context).textTheme.bodySmall
-                    ?.copyWith(color: couleur),
+                AppLocalizations.of(
+                  context,
+                ).garageGenerationNoAlternative(modele.commercialName),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: couleur),
               ),
             ),
         ],
