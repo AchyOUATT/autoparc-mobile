@@ -5129,6 +5129,12 @@ abstract class AppLocalizations {
   /// **'Modifier le véhicule'**
   String get garageEditVehicleTitle;
 
+  /// Écran d'édition du garage ouvert sur un identifiant inconnu ou un lien direct sans véhicule.
+  ///
+  /// In fr, this message translates to:
+  /// **'Véhicule introuvable'**
+  String get garageVehicleNotFound;
+
   /// Texte du parcours garage : RemoveVehicleTitle.
   ///
   /// In fr, this message translates to:

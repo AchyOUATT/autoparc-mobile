@@ -2953,6 +2953,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get garageEditVehicleTitle => 'Modifier le véhicule';
 
   @override
+  String get garageVehicleNotFound => 'Véhicule introuvable';
+
+  @override
   String get garageRemoveVehicleTitle => 'Retirer du garage ?';
 
   @override
