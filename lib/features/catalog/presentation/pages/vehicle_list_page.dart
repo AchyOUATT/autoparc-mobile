@@ -1,5 +1,7 @@
 import 'package:auto/core/widgets/scrollable_center.dart';
+
 import '../../../../core/l10n/reference_labels.dart';
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -488,6 +490,22 @@ class _FilterChips extends ConsumerWidget {
                 ),
               ),
             ),
+            const SizedBox(width: 8),
+            FilterChip(
+              avatar: const Icon(Icons.two_wheeler_outlined, size: 14),
+              label: Text(l10n.catalogVehicleTypeTwoWheeler),
+              selected: filter.vehicleType == 'two_wheeler',
+              onSelected: (_) => update(
+                (f) => f.copyWith(
+                  assetKind: 'road_vehicle',
+                  clearEquipmentType: true,
+                  vehicleType: f.vehicleType == 'two_wheeler'
+                      ? null
+                      : 'two_wheeler',
+                  clearVehicleType: f.vehicleType == 'two_wheeler',
+                ),
+              ),
+            ),
             if (cities.isNotEmpty) ...[
               const SizedBox(width: 20),
               LibelleGroupeFiltres(l10n.catalogFilterGroupCity),
@@ -909,9 +927,8 @@ class VehicleGrid extends StatelessWidget {
               child: Center(
                 child: Text(
                   AppLocalizations.of(context).catalogResultTotal(total),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: Theme.of(context).colorScheme.outline),
                 ),
               ),
             ),
@@ -1476,9 +1493,8 @@ class _VehicleCardState extends State<VehicleCard> {
     // la carte suit son contenu.
     final titre = Text(
       id.fullName,
-      style: Theme.of(
-        context,
-      ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+      style: Theme.of(context).textTheme.titleSmall
+          ?.copyWith(fontWeight: FontWeight.bold),
       maxLines: _lignesDeLaCarte,
       overflow: TextOverflow.ellipsis,
     );
@@ -1487,9 +1503,8 @@ class _VehicleCardState extends State<VehicleCard> {
         ? null
         : Text(
             specs,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: cs.onSurfaceVariant),
             maxLines: _lignesDeLaCarte,
             overflow: TextOverflow.ellipsis,
           );
@@ -1930,10 +1945,8 @@ class _PriceRow extends StatelessWidget {
     // calculer sa réduction, et `titleSmall` est posé par le thème Material —
     // s'il manquait, c'est le thème qui serait cassé, et le dire tout de suite
     // vaut mieux qu'un prix peint à une taille par défaut silencieuse.
-    final style = Theme.of(context).textTheme.titleSmall!.copyWith(
-      fontWeight: FontWeight.w700,
-      color: cs.primary,
-    );
+    final style = Theme.of(context).textTheme.titleSmall!
+        .copyWith(fontWeight: FontWeight.w700, color: cs.primary);
 
     final Widget prix;
     final displayedPrice = vehicleHeadlinePrice(
@@ -2008,10 +2021,8 @@ class _PriceRow extends StatelessWidget {
         if (affaire != null)
           Text(
             affaire,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: cs.tertiary,
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(context).textTheme.labelSmall
+                ?.copyWith(color: cs.tertiary, fontWeight: FontWeight.w600),
             // DEUX LIGNES, ET C'EST LA DERNIÈRE TRONCATURE QUE LE BANC AIT
             // TROUVÉE DANS CE LOT. Elle était à `maxLines: 1` depuis l'origine,
             // ce qui tenait quand la carte était large ; à 119,0 points
@@ -2114,9 +2125,8 @@ class _EmptyView extends ConsumerWidget {
                             actifs.join(l10n.catalogFilterListSeparator),
                           ),
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
+                    style: Theme.of(context).textTheme.bodyMedium
+                        ?.copyWith(color: cs.onSurfaceVariant),
                   ),
                   if (actifs.isNotEmpty) ...[
                     const SizedBox(height: 20),

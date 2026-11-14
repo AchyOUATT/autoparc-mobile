@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 
 import '../../../../core/utils/mileage.dart';
 import '../../../vehicles/data/models/heavy_vehicle_configuration.dart';
+import '../../../vehicles/data/models/two_wheeler_configuration.dart';
 import '../../../vehicles/data/models/equipment_details.dart';
 
 import 'promotion.dart';
@@ -36,8 +37,7 @@ int? _asInt(Object? value) => switch (value) {
 class VehicleFeature extends Equatable {
   final int id;
   final String name;
-  final String
-  category; // 'dotation' | 'confort' | 'securite' | 'multimedia' | 'aide_conduite' | 'autre'
+  final String category; // 'dotation' | 'confort' | 'securite' | 'multimedia' | 'aide_conduite' | 'autre'
 
   const VehicleFeature({
     required this.id,
@@ -74,7 +74,7 @@ class Vehicle extends Equatable {
   final String assetKind; // 'road_vehicle' | 'equipment'
   final String? equipmentType;
   final EquipmentDetails equipmentDetails;
-  final String vehicleType; // 'passenger' | 'utility' | 'heavy'
+  final String vehicleType; // 'passenger' | 'utility' | 'heavy' | 'two_wheeler'
   final String? bodyStyle; // 'sedan' | 'suv' | 'pickup' | 'minibus' | 'bus' | …
   final VehicleIdentity identity;
   final VehicleCommercial commercial;
@@ -173,6 +173,7 @@ class Vehicle extends Equatable {
   final int? gearCount;
   final String? engineCode;
   final HeavyVehicleConfiguration heavyConfiguration;
+  final TwoWheelerConfiguration twoWheelerConfiguration;
 
   /// Consommation mixte, en L/100 km.
   final double? combinedL100km;
@@ -241,6 +242,7 @@ class Vehicle extends Equatable {
     this.gearCount,
     this.engineCode,
     this.heavyConfiguration = const HeavyVehicleConfiguration(),
+    this.twoWheelerConfiguration = const TwoWheelerConfiguration(),
     this.combinedL100km,
     this.officialConsumption,
     this.consumptionReferences = const [],
@@ -383,6 +385,11 @@ class Vehicle extends Equatable {
             ? technique!['heavy_configuration'] as Map<String, dynamic>
             : const <String, dynamic>{},
       ),
+      twoWheelerConfiguration: TwoWheelerConfiguration.fromJson(
+        technique?['two_wheeler_configuration'] is Map<String, dynamic>
+            ? technique!['two_wheeler_configuration'] as Map<String, dynamic>
+            : const <String, dynamic>{},
+      ),
       combinedL100km: _asDouble(
         (json['consumption'] as Map<String, dynamic>?)?['combined_l_100km'],
       ),
@@ -455,6 +462,7 @@ class Vehicle extends Equatable {
   bool get isUtility => !isEquipment && vehicleType == 'utility';
   bool get isHeavy => !isEquipment && vehicleType == 'heavy';
   bool get isPassenger => !isEquipment && vehicleType == 'passenger';
+  bool get isTwoWheeler => !isEquipment && vehicleType == 'two_wheeler';
 
   /// Private seller inputs; public prices already include the shop margin.
   double? proposedPriceExcludingCommission(String field) =>
@@ -467,6 +475,7 @@ class Vehicle extends Equatable {
     inspection,
     faultDeclaration,
     heavyConfiguration,
+    twoWheelerConfiguration,
     assetKind,
     equipmentType,
     equipmentDetails,

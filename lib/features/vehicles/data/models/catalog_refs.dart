@@ -5,11 +5,15 @@ class BrandRef {
   final int id;
   final String name;
   final bool isActive;
-  const BrandRef({required this.id, required this.name, required this.isActive});
+  const BrandRef({
+    required this.id,
+    required this.name,
+    required this.isActive,
+  });
 
   factory BrandRef.fromJson(Map<String, dynamic> j) => BrandRef(
-    id:       j['id']        as int,
-    name:     j['name']      as String,
+    id: j['id'] as int,
+    name: j['name'] as String,
     isActive: j['is_active'] as bool? ?? true,
   );
 }
@@ -17,7 +21,12 @@ class BrandRef {
 /// Shared by catalogue defaults and manual selections in the registration form.
 /// An unspecified or custom body does not determine a vehicle category.
 String? vehicleTypeForBodyStyle(String? bodyStyle) => switch (bodyStyle) {
-  'sedan' || 'hatchback' || 'suv' || 'estate' || 'coupe' || 'convertible' => 'passenger',
+  'sedan' ||
+  'hatchback' ||
+  'suv' ||
+  'estate' ||
+  'coupe' ||
+  'convertible' => 'passenger',
   'pickup' || 'van' || 'minibus' => 'utility',
   'bus' || 'truck' => 'heavy',
   _ => null,
@@ -27,6 +36,7 @@ class ModelRef {
   final int id;
   final int brandId;
   final String name;
+
   /// Other market names of this same reference, supplied by the server.
   /// They help identify the model without changing its canonical name or ID.
   final List<String> aliases;
@@ -52,11 +62,12 @@ class ModelRef {
   final int? productionEnd;
 
   /// Valeurs par défaut renseignées dans la base (priment sur l'inférence).
-  final String? defaultVehicleType;  // passenger | utility | heavy
-  final int?    defaultSeats;
-  final int?    defaultDoors;
-  final String? defaultTransmission; // Gearbox family code (see transmissionCodes).
-  final int?    defaultPowerHp;
+  final String? defaultVehicleType; // passenger | utility | heavy | two_wheeler
+  final int? defaultSeats;
+  final int? defaultDoors;
+  final String?
+  defaultTransmission; // Gearbox family code (see transmissionCodes).
+  final int? defaultPowerHp;
 
   /// Le référentiel propose-t-il encore cette génération au choix ?
   ///
@@ -98,21 +109,21 @@ class ModelRef {
   });
 
   factory ModelRef.fromJson(Map<String, dynamic> j) => ModelRef(
-    id:                  j['id']                   as int,
-    brandId:             j['brand_id']              as int,
-    name:                j['name']                  as String,
-    aliases:             _parseAliases(j['aliases'], j['name'] as String),
-    generation:          j['generation']             as String?,
-    equipmentCategory:   j['equipment_category']     as String?,
-    bodyType:            j['body_type']              as String?,
-    productionStart:     j['production_start']       as int?,
-    productionEnd:       j['production_end']         as int?,
-    defaultVehicleType:  j['default_vehicle_type']  as String?,
-    defaultSeats:        j['default_seats']          as int?,
-    defaultDoors:        j['default_doors']          as int?,
-    defaultTransmission: j['default_transmission']  as String?,
-    defaultPowerHp:      j['default_power_hp']       as int?,
-    isActive:            j['is_active']              as bool? ?? true,
+    id: j['id'] as int,
+    brandId: j['brand_id'] as int,
+    name: j['name'] as String,
+    aliases: _parseAliases(j['aliases'], j['name'] as String),
+    generation: j['generation'] as String?,
+    equipmentCategory: j['equipment_category'] as String?,
+    bodyType: j['body_type'] as String?,
+    productionStart: j['production_start'] as int?,
+    productionEnd: j['production_end'] as int?,
+    defaultVehicleType: j['default_vehicle_type'] as String?,
+    defaultSeats: j['default_seats'] as int?,
+    defaultDoors: j['default_doors'] as int?,
+    defaultTransmission: j['default_transmission'] as String?,
+    defaultPowerHp: j['default_power_hp'] as int?,
+    isActive: j['is_active'] as bool? ?? true,
   );
 
   static List<String> _parseAliases(Object? value, String name) {
@@ -175,29 +186,45 @@ class ModelRef {
 
     // Valeurs déjà normalisées (après tinker de migration)
     const normalized = {
-      'sedan', 'hatchback', 'suv', 'pickup', 'van',
-      'minibus', 'bus', 'estate', 'coupe', 'convertible', 'truck', 'other',
+      'sedan',
+      'hatchback',
+      'suv',
+      'pickup',
+      'van',
+      'minibus',
+      'bus',
+      'estate',
+      'coupe',
+      'convertible',
+      'truck',
+      'other',
     };
     if (normalized.contains(bt)) return bt;
 
     // Termes français / variantes non normalisées
-    if (bt.contains('berline'))                                         return 'sedan';
-    if (bt.contains('citadine') || bt.contains('compacte')
-                                || bt.contains('hatch'))                return 'hatchback';
-    if (bt == 'suv'    || bt.contains('4x4') || bt.contains('4×4')
-                       || bt.contains('crossover')
-                       || bt.contains('tout terrain'))                  return 'suv';
-    if (bt.contains('pick up'))                                         return 'pickup';
-    if (bt.contains('utilitaire') || bt.contains('fourgon'))            return 'van';
-    if (bt.contains('mini bus'))                                        return 'minibus';
-    if (bt == 'bus'    || bt == 'car' || bt.contains('autocar'))        return 'bus';
-    if (bt.contains('break') || bt.contains('wagon')
-                             || bt.contains('estate'))                  return 'estate';
-    if (bt.contains('coup'))                                            return 'coupe';
-    if (bt.contains('cabriolet') || bt.contains('convertible'))        return 'convertible';
-    if (bt.contains('camion') || bt.contains('truck'))                  return 'truck';
-    if (bt.contains('monospace') || bt.contains('mpv'))                 return 'van';
-    if (bt.contains('autre') || bt.contains('other'))                   return 'other';
+    if (bt.contains('berline')) return 'sedan';
+    if (bt.contains('citadine') ||
+        bt.contains('compacte') ||
+        bt.contains('hatch'))
+      return 'hatchback';
+    if (bt == 'suv' ||
+        bt.contains('4x4') ||
+        bt.contains('4×4') ||
+        bt.contains('crossover') ||
+        bt.contains('tout terrain'))
+      return 'suv';
+    if (bt.contains('pick up')) return 'pickup';
+    if (bt.contains('utilitaire') || bt.contains('fourgon')) return 'van';
+    if (bt.contains('mini bus')) return 'minibus';
+    if (bt == 'bus' || bt == 'car' || bt.contains('autocar')) return 'bus';
+    if (bt.contains('break') || bt.contains('wagon') || bt.contains('estate'))
+      return 'estate';
+    if (bt.contains('coup')) return 'coupe';
+    if (bt.contains('cabriolet') || bt.contains('convertible'))
+      return 'convertible';
+    if (bt.contains('camion') || bt.contains('truck')) return 'truck';
+    if (bt.contains('monospace') || bt.contains('mpv')) return 'van';
+    if (bt.contains('autre') || bt.contains('other')) return 'other';
 
     return null; // inconnu → staff choisit manuellement
   }
@@ -209,7 +236,6 @@ class ModelRef {
   /// Déduit le type de véhicule ('passenger' | 'utility' | 'heavy') à partir
   /// du body style inféré. Retourne null si inconnu.
   String? get inferredVehicleType => vehicleTypeForBodyStyle(inferredBodyStyle);
-
 }
 
 class TrimRef {
@@ -218,15 +244,17 @@ class TrimRef {
   final String name;
   final int? defaultEngineTypeId;
   const TrimRef({
-    required this.id, required this.vehicleModelId, required this.name,
+    required this.id,
+    required this.vehicleModelId,
+    required this.name,
     this.defaultEngineTypeId,
   });
 
   factory TrimRef.fromJson(Map<String, dynamic> j) => TrimRef(
-    id:                   j['id']                    as int,
-    vehicleModelId:       j['vehicle_model_id']       as int,
-    name:                 j['name']                   as String,
-    defaultEngineTypeId:  j['default_engine_type_id'] as int?,
+    id: j['id'] as int,
+    vehicleModelId: j['vehicle_model_id'] as int,
+    name: j['name'] as String,
+    defaultEngineTypeId: j['default_engine_type_id'] as int?,
   );
 }
 
@@ -237,16 +265,19 @@ class EngineTypeRef {
   final bool usesFuel;
   final bool usesBattery;
   const EngineTypeRef({
-    required this.id, required this.code, required this.label,
-    required this.usesFuel, required this.usesBattery,
+    required this.id,
+    required this.code,
+    required this.label,
+    required this.usesFuel,
+    required this.usesBattery,
   });
 
   factory EngineTypeRef.fromJson(Map<String, dynamic> j) => EngineTypeRef(
-    id:          j['id']            as int,
-    code:        j['code']          as String,
-    label:       j['label']         as String,
-    usesFuel:    j['uses_fuel']     as bool? ?? true,
-    usesBattery: j['uses_battery']  as bool? ?? false,
+    id: j['id'] as int,
+    code: j['code'] as String,
+    label: j['label'] as String,
+    usesFuel: j['uses_fuel'] as bool? ?? true,
+    usesBattery: j['uses_battery'] as bool? ?? false,
   );
 }
 
@@ -254,11 +285,15 @@ class DrivetrainRef {
   final int id;
   final String code;
   final String label;
-  const DrivetrainRef({required this.id, required this.code, required this.label});
+  const DrivetrainRef({
+    required this.id,
+    required this.code,
+    required this.label,
+  });
 
   factory DrivetrainRef.fromJson(Map<String, dynamic> j) => DrivetrainRef(
-    id:    j['id']    as int,
-    code:  j['code']  as String,
+    id: j['id'] as int,
+    code: j['code'] as String,
     label: j['label'] as String,
   );
 }
@@ -270,8 +305,8 @@ class ColorRef {
   const ColorRef({required this.id, required this.name, this.hexCode});
 
   factory ColorRef.fromJson(Map<String, dynamic> j) => ColorRef(
-    id:      j['id']       as int,
-    name:    j['name']     as String,
+    id: j['id'] as int,
+    name: j['name'] as String,
     hexCode: j['hex_code'] as String?,
   );
 }
@@ -283,7 +318,7 @@ class CountryRef {
   const CountryRef({required this.id, required this.name, this.iso2});
 
   factory CountryRef.fromJson(Map<String, dynamic> j) => CountryRef(
-    id:   j['id']   as int,
+    id: j['id'] as int,
     name: j['name'] as String,
     iso2: j['iso2'] as String?,
   );
@@ -305,11 +340,11 @@ class LocationRef {
   });
 
   factory LocationRef.fromJson(Map<String, dynamic> j) => LocationRef(
-    id:      j['id']       as int,
-    name:    j['name']     as String,
-    city:    j['city']     as String,
-    address: j['address']  as String?,
-    phone:   j['phone']    as String?,
+    id: j['id'] as int,
+    name: j['name'] as String,
+    city: j['city'] as String,
+    address: j['address'] as String?,
+    phone: j['phone'] as String?,
   );
 
   /// Label affiché : "Showroom Paspanga — Ouagadougou"
@@ -324,8 +359,8 @@ class FeatureRef {
   const FeatureRef({required this.id, required this.name, this.category});
 
   factory FeatureRef.fromJson(Map<String, dynamic> j) => FeatureRef(
-    id:       j['id']       as int,
-    name:     j['name']     as String,
+    id: j['id'] as int,
+    name: j['name'] as String,
     category: j['category'] as String?,
   );
 }
@@ -368,6 +403,7 @@ class CatalogRefs {
   List<ModelRef> modelsForBrand(
     int brandId, {
     String? bodyStyle,
+    String? vehicleType,
     String assetKind = 'road_vehicle',
     String? equipmentType,
   }) => vehicleModels
@@ -382,9 +418,21 @@ class CatalogRefs {
                 : !m.isEquipment) &&
             (bodyStyle == null ||
                 bodyStyle == 'other' ||
-                m.inferredBodyStyle == bodyStyle),
+                m.inferredBodyStyle == bodyStyle) &&
+            _modelFitsVehicleType(m, vehicleType),
       )
       .toList();
+
+  /// Keeps untyped catalogue cars in passenger / utility / heavy lists, and
+  /// hides them when registering a two-wheeler. Models with a resolved type
+  /// must match the selected category so a Honda Civic never appears next to
+  /// a CG110.
+  bool _modelFitsVehicleType(ModelRef model, String? vehicleType) {
+    if (vehicleType == null || vehicleType.isEmpty) return true;
+    final resolved = model.resolvedVehicleType;
+    if (resolved != null) return resolved == vehicleType;
+    return vehicleType != 'two_wheeler';
+  }
 
   List<TrimRef> trimsForModel(int modelId) =>
       trims.where((t) => t.vehicleModelId == modelId).toList();
@@ -400,14 +448,16 @@ class CatalogRefs {
   /// Classées de la plus récente à la plus ancienne.
   List<ModelRef> generationsPour(ModelRef modele, int annee) {
     final candidates = vehicleModels
-        .where((m) =>
-            m.id != modele.id &&
-            m.brandId == modele.brandId &&
-            m.name == modele.name &&
-            // Proposer une génération désactivée serait pire que de ne rien
-            // proposer : on corrigerait une erreur par une entrée retirée.
-            m.isActive &&
-            m.couvreAnnee(annee))
+        .where(
+          (m) =>
+              m.id != modele.id &&
+              m.brandId == modele.brandId &&
+              m.name == modele.name &&
+              // Proposer une génération désactivée serait pire que de ne rien
+              // proposer : on corrigerait une erreur par une entrée retirée.
+              m.isActive &&
+              m.couvreAnnee(annee),
+        )
         .toList();
 
     candidates.sort(

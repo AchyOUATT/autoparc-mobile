@@ -1,6 +1,9 @@
 import '../../../../core/l10n/reference_labels.dart';
+
 import 'package:flutter/material.dart';
+
 import '../../../../l10n/app_localizations.dart';
+
 import 'package:flutter/services.dart';
 
 import '../../data/models/catalog_refs.dart';
@@ -27,6 +30,7 @@ class VehicleIdentityFields extends StatelessWidget {
     required this.transmission,
     required this.onTransmissionChanged,
     this.enabled = true,
+    this.vehicleType,
   });
 
   final CatalogRefs refs;
@@ -41,13 +45,16 @@ class VehicleIdentityFields extends StatelessWidget {
   final ValueChanged<ColorRef?> onColorChanged;
   final String? transmission;
   final ValueChanged<String?> onTransmissionChanged;
+  final String? vehicleType;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final brand = selection.brand;
     final model = selection.model;
-    final models = brand == null ? <ModelRef>[] : refs.modelsForBrand(brand.id);
+    final models = brand == null
+        ? <ModelRef>[]
+        : refs.modelsForBrand(brand.id, vehicleType: vehicleType);
     // An inactive saved generation stays selectable for this record only.
     if (model != null &&
         model.brandId == brand?.id &&
@@ -160,7 +167,9 @@ class VehicleIdentityFields extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
-              l10n.privateSalesGenerationWarning(referenceModelYears(model, l10n) ?? ''),
+              l10n.privateSalesGenerationWarning(
+                referenceModelYears(model, l10n) ?? '',
+              ),
             ),
           ),
         const SizedBox(height: 12),
@@ -209,7 +218,8 @@ class VehicleIdentityFields extends StatelessWidget {
           label: l10n.privateSalesFuel,
           items: refs.engineTypes,
           value: selection.engineType,
-          itemLabel: (entry) => referenceFuelLabel(entry.code, entry.label, l10n),
+          itemLabel: (entry) =>
+              referenceFuelLabel(entry.code, entry.label, l10n),
           enabled: enabled,
           onChanged: (value) {
             selection.engineType = value;
@@ -227,7 +237,8 @@ class VehicleIdentityFields extends StatelessWidget {
           label: l10n.privateSalesDrivetrain,
           items: refs.drivetrains,
           value: selection.drivetrain,
-          itemLabel: (entry) => referenceDrivetrainLabel(entry.code, entry.label, l10n),
+          itemLabel: (entry) =>
+              referenceDrivetrainLabel(entry.code, entry.label, l10n),
           enabled: enabled,
           onChanged: (value) {
             selection.drivetrain = value;
