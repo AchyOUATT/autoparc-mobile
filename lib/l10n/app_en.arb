@@ -1167,6 +1167,8 @@
     }
   },
   "garageRemoveVehicleAction": "Remove from garage",
+  "garageEditVehicleAction": "Edit vehicle",
+  "garageEditVehicleTitle": "Edit vehicle",
   "garageRemoveVehicleTitle": "Remove from garage?",
   "garageRemoveVehicleBody": "{value0} will be removed from your garage. This action cannot be undone.",
   "@garageRemoveVehicleBody": {

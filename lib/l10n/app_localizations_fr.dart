@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -2946,6 +2945,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get garageRemoveVehicleAction => 'Retirer du garage';
+
+  @override
+  String get garageEditVehicleAction => 'Modifier le véhicule';
+
+  @override
+  String get garageEditVehicleTitle => 'Modifier le véhicule';
 
   @override
   String get garageRemoveVehicleTitle => 'Retirer du garage ?';

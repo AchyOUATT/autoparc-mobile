@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/engine_data.dart';
+import '../../data/models/owned_vehicle.dart';
 import '../providers/garage_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/vin_decode_provider.dart';
@@ -27,7 +28,9 @@ import '../../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class AddVehicleToGaragePage extends ConsumerStatefulWidget {
-  const AddVehicleToGaragePage({super.key});
+  const AddVehicleToGaragePage({super.key, this.existing});
+
+  final OwnedVehicle? existing;
 
   @override
   ConsumerState<AddVehicleToGaragePage> createState() =>
@@ -37,7 +40,8 @@ class AddVehicleToGaragePage extends ConsumerStatefulWidget {
 class _AddVehicleToGaragePageState
     extends ConsumerState<AddVehicleToGaragePage> {
   final _formKey = GlobalKey<FormState>();
-  final _engineDetails = EngineDetailsController();
+  late final EngineDetailsController _engineDetails;
+  bool _refsBound = false;
   bool _submitting = false;
 
   // Champs de formulaire
@@ -76,6 +80,50 @@ class _AddVehicleToGaragePageState
 
   // Suivi des champs pré-remplis par le décodage VIN (pour le style visuel)
   final _prefilledFields = <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existing;
+    _engineDetails = EngineDetailsController(vehicle: existing);
+    if (existing == null) return;
+    _vehicleType = existing.vehicleType ?? 'passenger';
+    _twoWheelerConfiguration.load(existing.twoWheelerConfiguration);
+    _yearCtrl.text = '${existing.year}';
+    _nicknameCtrl.text = existing.nickname ?? '';
+    _plateCtrl.text = existing.plateNumber ?? '';
+    _mileageCtrl.text = existing.mileageKm?.toString() ?? '';
+    _vinCtrl.text = existing.vin ?? '';
+    _modelLibreCtrl.text = existing.modelLibre ?? '';
+    _modeleHorsListe =
+        existing.vehicleModelId == null &&
+        (existing.modelLibre?.isNotEmpty ?? false);
+  }
+
+  void _bindExisting(CatalogRefs refs) {
+    final existing = widget.existing;
+    if (existing == null || _refsBound) return;
+    _refsBound = true;
+    final bound = VehicleClassificationSelection.fromIds(
+      refs,
+      brandId: existing.brandId,
+      modelId: existing.vehicleModelId,
+      trimId: existing.trimId,
+      engineTypeId: existing.engineTypeId,
+      drivetrainId: existing.drivetrainId,
+      engineCode: existing.engineCode,
+    );
+    _classification.brand = bound.brand;
+    _classification.model = bound.model;
+    _classification.trim = bound.trim;
+    _classification.engineType = bound.engineType;
+    _classification.drivetrain = bound.drivetrain;
+    _classification.engineCode = bound.engineCode;
+    _engineDetails.code.text = existing.engineCode ?? _engineDetails.code.text;
+    if (existing.colorId != null) {
+      _color = refs.colors.where((c) => c.id == existing.colorId).firstOrNull;
+    }
+  }
 
   @override
   void dispose() {
@@ -225,7 +273,7 @@ class _AddVehicleToGaragePageState
     final twoWheelerConfiguration = _twoWheelerConfiguration.toValue();
     final payload = <String, dynamic>{
       ..._classification.toPayload(
-        editing: false,
+        editing: widget.existing != null,
         allowFreeModel: true,
         modelLibre: modeleLibre,
       ),
@@ -247,7 +295,10 @@ class _AddVehicleToGaragePageState
         'vin': _vinCtrl.text.trim().toUpperCase(),
     };
 
-    final error = await ref.read(garageProvider.notifier).addVehicle(payload);
+    final notifier = ref.read(garageProvider.notifier);
+    final error = widget.existing == null
+        ? await notifier.addVehicle(payload)
+        : await notifier.updateVehicle(widget.existing!.id, payload);
 
     if (!mounted) return;
     setState(() => _submitting = false);
@@ -331,7 +382,11 @@ class _AddVehicleToGaragePageState
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(AppLocalizations.of(context).garageAddVehicleTitle),
+        title: Text(
+          widget.existing == null
+              ? AppLocalizations.of(context).garageAddVehicleTitle
+              : AppLocalizations.of(context).garageEditVehicleTitle,
+        ),
         centerTitle: false,
       ),
       body: refsAsync.when(
@@ -364,6 +419,7 @@ class _AddVehicleToGaragePageState
   }
 
   Widget _buildForm(CatalogRefs refs, VinDecodeState vinState) {
+    _bindExisting(refs);
     final models = _brand != null
         ? refs.modelsForBrand(_brand!.id, vehicleType: _vehicleType)
         : <ModelRef>[];
@@ -872,7 +928,10 @@ class _AddVehicleToGaragePageState
                 label: Text(
                   _submitting
                       ? AppLocalizations.of(context).garageSaving
-                      : AppLocalizations.of(context).garageAddVehicleTitle,
+                      : (widget.existing == null
+                            ? AppLocalizations.of(context).garageAddVehicleTitle
+                            : AppLocalizations.of(context)
+                                  .garageEditVehicleTitle),
                 ),
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(52),

@@ -5117,6 +5117,18 @@ abstract class AppLocalizations {
   /// **'Retirer du garage'**
   String get garageRemoveVehicleAction;
 
+  /// No description provided for @garageEditVehicleAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le véhicule'**
+  String get garageEditVehicleAction;
+
+  /// No description provided for @garageEditVehicleTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le véhicule'**
+  String get garageEditVehicleTitle;
+
   /// Texte du parcours garage : RemoveVehicleTitle.
   ///
   /// In fr, this message translates to:

@@ -3944,6 +3944,8 @@
     }
   },
   "garageRemoveVehicleAction": "Retirer du garage",
+  "garageEditVehicleAction": "Modifier le véhicule",
+  "garageEditVehicleTitle": "Modifier le véhicule",
   "@garageRemoveVehicleAction": {
     "description": "Texte du parcours garage : RemoveVehicleAction."
   },

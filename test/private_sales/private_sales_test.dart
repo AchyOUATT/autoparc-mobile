@@ -15,11 +15,14 @@ import 'package:auto/l10n/app_localizations_en.dart';
 import 'package:auto/features/private_sales/presentation/private_listings_page.dart';
 import 'package:auto/l10n/app_localizations.dart';
 import 'package:auto/features/vehicles/data/models/catalog_refs.dart';
+import 'package:auto/features/vehicles/data/models/two_wheeler_configuration.dart';
 import 'package:auto/features/vehicles/presentation/providers/vehicle_refs_provider.dart';
 import 'package:auto/features/vehicles/presentation/widgets/vehicle_identity_fields.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+
 import '../support/polices.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -701,7 +704,12 @@ void main() {
     await tester.pumpAndSettle();
 
     // Sans photo : c'est le premier obstacle, et il est écrit.
-    expect(find.text('Ajoutez au moins une photo.'), findsOneWidget);
+    final photoObstacle = find.text('Ajoutez au moins une photo.');
+    await tester.ensureVisible(
+      find.text('Ajoutez au moins une photo.', skipOffstage: false),
+    );
+    await tester.pumpAndSettle();
+    expect(photoObstacle, findsOneWidget);
     expect(
       tester
           .widget<FilledButton>(
@@ -954,6 +962,48 @@ void main() {
         );
       }
       expect(api.saved.toString(), isNot(contains('PRIVATE-')));
+    },
+  );
+
+  testWidgets(
+    'selling a garage motorcycle carries its type and configuration',
+    (tester) async {
+      saleViewport(tester);
+      final api = FakeSalesApi();
+      const motorcycle = OwnedVehicle(
+        id: 42,
+        designation: 'Yamaha YBR125E',
+        brandId: 3,
+        vehicleModelId: 11,
+        year: 2018,
+        mileageKm: 85000,
+        vehicleType: 'two_wheeler',
+        twoWheelerConfiguration: TwoWheelerConfiguration(
+          bodyType: 'motorcycle',
+          stroke: 'four_stroke',
+          drive: 'chain',
+        ),
+        identity: OwnedVehicleIdentity(brand: 'Yamaha', model: 'YBR125E'),
+        compatibilityReady: true,
+      );
+      await open(tester, api, const PrivateListingForm(vehicle: motorcycle));
+      final twoWheeler = tester.widget<ChoiceChip>(
+        find.widgetWithText(ChoiceChip, 'Deux-roues'),
+      );
+      expect(twoWheeler.selected, isTrue);
+      expect(find.text('Moto'), findsWidgets);
+      await fillSaleCommercial(tester);
+      await saveSaleDraft(tester);
+      expect(api.saved?['owned_vehicle_id'], 42);
+      expect(api.saved?['vehicle_type'], 'two_wheeler');
+      expect(api.saved?['two_wheeler_configuration'], {
+        'body_type': 'motorcycle',
+        'stroke': 'four_stroke',
+        'cooling': null,
+        'starter': null,
+        'drive': 'chain',
+        'transmission': null,
+      });
     },
   );
 

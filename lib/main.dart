@@ -235,6 +235,14 @@ GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
       ),
     ),
     GoRoute(path: '/garage/add',    builder: (_, __) => const AddVehicleToGaragePage()),
+    GoRoute(
+      path: '/garage/:id/edit',
+      builder: (_, state) => AddVehicleToGaragePage(
+        existing: state.extra is OwnedVehicle
+            ? state.extra as OwnedVehicle
+            : null,
+      ),
+    ),
 
     // ── Partenaires (staff) ────────────────────────────────────────
     GoRoute(
