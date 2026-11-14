@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker_android/image_picker_android.dart';
 import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import 'core/demarrage.dart';
 import 'core/l10n/langue.dart';
@@ -121,6 +122,8 @@ Future<void> main() async {
   // anglophone. Les deux lectures tapent la même instance de
   // `SharedPreferences`, déjà chargée.
   final langue = await LangueService.lire();
+  Intl.defaultLocale = LangueService.codeIntl(langue);
+  definirLocaleMontants(langue);
 
   // Le profil déclaré et la session partenaire, pour la même raison que les
   // deux lectures au-dessus : la PREMIÈRE trame doit être la bonne. Sans la
@@ -444,6 +447,7 @@ class _AutoParcAppState extends ConsumerState<AutoParcApp>
         theme: themeAutoParc(Brightness.light),
         darkTheme: themeAutoParc(Brightness.dark),
         locale: langue,
+        localeResolutionCallback: (_, __) => langue,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
       ),
@@ -498,6 +502,7 @@ class _PorteMiseAJour extends ConsumerWidget {
       theme: themeAutoParc(Brightness.light),
       darkTheme: themeAutoParc(Brightness.dark),
       locale: langue,
+      localeResolutionCallback: (_, __) => langue,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: EcranMiseAJour(

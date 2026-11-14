@@ -20,12 +20,13 @@ import 'support/langues.dart';
 ///    francophones. Suivre la locale système ferait basculer une partie du parc
 ///    DÉJÀ INSTALLÉ à la simple mise à jour.
 ///
-///    Et la bascule serait SILENCIEUSE : `AppLocalizations.supportedLocales`
-///    commence par `Locale('en')`, parce que `gen-l10n` range les `.arb` par
-///    ordre alphabétique, et `basicLocaleListResolution` prend le premier
-///    supporté qui corresponde. Un `MaterialApp` sans `locale:` servirait donc
-///    l'anglais à tout appareil réglé en anglais. Le test « la locale du
-///    système ne décide de rien » est la non-vacuité de cette décision.
+///    Et la bascule serait SILENCIEUSE. Sans `locale:` sur le `MaterialApp`,
+///    `basicLocaleListResolution` compare la locale de l'appareil à
+///    `supportedLocales`. Un téléphone en anglais correspond à `Locale('en')`
+///    et l'interface bascule, même si le français est désormais en tête de
+///    liste (via `preferred-supported-locales` dans `l10n.yaml`). Le test
+///    « la locale du système ne décide de rien » est la non-vacuité de cette
+///    décision.
 ///
 /// 2. LE CHOIX SURVIT AU REDÉMARRAGE. `SharedPreferences.resetStatic()` est
 ///    l'outil employé par `premiere_utilisation_test.dart` pour la même
@@ -151,9 +152,10 @@ void main() {
       //
       // Le résultat mesuré : « Home ». `basicLocaleListResolution` compare
       // `platformDispatcher.locales` — ici `[en_US]` — à
-      // `AppLocalizations.supportedLocales`, que `gen-l10n` écrit dans l'ordre
-      // alphabétique des `.arb` et qui commence donc par `Locale('en')`. La
-      // correspondance est franche, et l'anglais gagne.
+      // `AppLocalizations.supportedLocales`, qui contient `Locale('en')`.
+      // La correspondance est franche, et l'anglais gagne, même si le
+      // français est en tête de liste : ce n'est pas l'ordre qui décide
+      // quand la locale de l'appareil est supportée.
       //
       // C'est exactement le scénario que le propriétaire ne veut pas : dans la
       // sous-région, beaucoup d'appareils de propriétaires francophones sont
@@ -262,6 +264,84 @@ void main() {
       );
     });
   });
+
+  group('Le français est la locale de repli déclarée', () {
+    test('supportedLocales commence par le français', () {
+      expect(
+        AppLocalizations.supportedLocales.first,
+        localeFrancais,
+        reason:
+            'Sans cela, une locale d\'appareil non supportée (allemand, etc.) '
+            'tomberait sur l\'anglais, premier fichier .arb par ordre '
+            'alphabétique.',
+      );
+    });
+
+    testWidgets(
+      'une installation neuve sur un appareil en anglais affiche le français',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        tester.platformDispatcher.localesTestValue = const [Locale('en', 'US')];
+        addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+
+        final langue = await LangueService.lire();
+        expect(langue, localeFrancais);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [localeInitialeProvider.overrideWithValue(langue)],
+            child: const _CoqueLangue(propreScope: false),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Accueil'), findsOneWidget);
+        expect(find.text('Home'), findsNothing);
+        expect(
+          Localizations.localeOf(tester.element(find.text('Accueil'))),
+          localeFrancais,
+        );
+      },
+    );
+
+    testWidgets(
+      'un choix explicite d\'anglais est conservé même si l\'appareil est en français',
+      (tester) async {
+        await LangueService.ecrire(localeAnglais);
+        SharedPreferences.resetStatic();
+        tester.platformDispatcher.localesTestValue = const [Locale('fr', 'BF')];
+        addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+
+        final langue = await LangueService.lire();
+        expect(langue, localeAnglais);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [localeInitialeProvider.overrideWithValue(langue)],
+            child: const _CoqueLangue(propreScope: false),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Home'), findsOneWidget);
+        expect(find.text('Accueil'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'une locale d\'appareil non supportée retombe sur le français, pas sur l\'anglais',
+      (tester) async {
+        tester.platformDispatcher.localesTestValue = const [Locale('de', 'DE')];
+        addTearDown(tester.platformDispatcher.clearLocalesTestValue);
+
+        await tester.pumpWidget(const _CoqueSansLocale());
+        await tester.pump();
+
+        expect(find.text('Accueil'), findsOneWidget);
+        expect(find.text('Home'), findsNothing);
+      },
+    );
+  });
 }
 
 /// La coque de langue, réduite à ce qui porte la décision.
@@ -301,9 +381,8 @@ class _CoqueSansLocale extends StatelessWidget {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Builder(
-        builder: (context) => Scaffold(
-          body: Text(AppLocalizations.of(context).commonHome),
-        ),
+        builder: (context) =>
+            Scaffold(body: Text(AppLocalizations.of(context).commonHome)),
       ),
     ),
   );
