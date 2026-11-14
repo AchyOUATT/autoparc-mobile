@@ -75,6 +75,12 @@ class LangueService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_cle, locale.languageCode);
   }
+
+  /// Locale `intl` correspondante : `fr_FR` pour le français (dates et
+  /// montants), `en` pour l'anglais. Utilisée au démarrage, avant le premier
+  /// `build`, pour que rien ne formate encore avec la locale de l'appareil.
+  static String codeIntl(Locale locale) =>
+      locale.languageCode == localeAnglais.languageCode ? 'en' : 'fr_FR';
 }
 
 /// La langue lue par `main()` avant `runApp`, injectée par surcharge.

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Langues proposées dans les réglages Android 13+ (langue par application).
+  Le français est en tête : c'est la langue par défaut d'une installation
+  neuve, y compris sur un téléphone réglé en anglais. L'anglais reste
+  disponible si l'utilisateur le choisit dans l'application ou dans ces
+  réglages.
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="fr" />
+    <locale android:name="en" />
+</locale-config>
