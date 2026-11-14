@@ -1,6 +1,5 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
-
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -6766,4 +6765,95 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get vehiclesFrameNumberInvalid =>
       'The frame number must be between 5 and 32 characters.';
+
+  @override
+  String get repairEstimateTitle => 'Estimated cost';
+
+  @override
+  String get repairEstimateOptionalHint =>
+      'Optional. Leave empty if you do not have a range. A quote alone, without a range, is enough.';
+
+  @override
+  String get repairEstimateCostMin => 'Minimum cost (CFA francs)';
+
+  @override
+  String get repairEstimateCostMax => 'Maximum cost (CFA francs)';
+
+  @override
+  String get repairEstimateSource => 'Estimate source';
+
+  @override
+  String get repairEstimateSourceSeller => 'Seller';
+
+  @override
+  String get repairEstimateSourceWorkshop => 'Workshop or quote';
+
+  @override
+  String get repairEstimateSourceAutoparc => 'AutoParc';
+
+  @override
+  String get repairEstimateDate => 'Estimate date';
+
+  @override
+  String get repairEstimateIncomplete =>
+      'Enter the minimum, maximum, source and date, or leave everything empty.';
+
+  @override
+  String get repairEstimateMinMax =>
+      'The minimum must be a non-negative integer, less than or equal to the maximum.';
+
+  @override
+  String get repairEstimateFutureDate =>
+      'The estimate date cannot be in the future.';
+
+  @override
+  String get repairEstimateStale => 'Outdated estimate';
+
+  @override
+  String get repairEstimateToEstimate => 'Cost to be estimated';
+
+  @override
+  String get repairEstimateNecessary => 'Necessary repair';
+
+  @override
+  String get repairEstimateOptional => 'Optional cosmetic repair';
+
+  @override
+  String get repairNecessityLabel => 'Need for the work';
+
+  @override
+  String get repairBudgetTitle => 'Repair budget';
+
+  @override
+  String get repairBudgetToEstimate => 'Budget to be estimated';
+
+  @override
+  String repairBudgetPartial(String range, String remaining) {
+    return '$range for the priced work · $remaining';
+  }
+
+  @override
+  String repairBudgetRemaining(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count repairs still to be priced',
+      one: '1 repair still to be priced',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repairBudgetOptionalTitle => 'Optional repairs';
+
+  @override
+  String get repairQuoteAttachAfterSave =>
+      'Save the fault first to attach a quote.';
+
+  @override
+  String get repairQuotePrivateNote =>
+      'The quote stays private until AutoParc publishes a copy with personal details masked.';
+
+  @override
+  String get repairQuotePublished => 'View the published quote';
 }

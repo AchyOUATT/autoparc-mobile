@@ -1,3 +1,5 @@
+import 'repair_estimate.dart';
+
 /// Seller-declared condition, separate from a physical AutoParc inspection.
 /// No Flutter or networking dependency: resources and forms share this DTO.
 class FaultDeclaration {
@@ -5,18 +7,21 @@ class FaultDeclaration {
   final DateTime? declaredAt;
   final List<DeclaredVehicleFault> faults;
   final int unresolvedCount;
+  final RepairBudget? repairBudget;
 
   const FaultDeclaration.unknown()
     : state = 'unknown',
       declaredAt = null,
       faults = const [],
-      unresolvedCount = 0;
+      unresolvedCount = 0,
+      repairBudget = null;
 
   FaultDeclaration({
     this.state = 'unknown',
     this.declaredAt,
     List<DeclaredVehicleFault> faults = const [],
     int? unresolvedCount,
+    this.repairBudget,
   }) : faults = List.unmodifiable(faults),
        unresolvedCount = _unresolvedCount(faults, unresolvedCount);
 
@@ -54,6 +59,9 @@ class FaultDeclaration {
         declaredAt: rawDate is String ? DateTime.tryParse(rawDate) : null,
         faults: faults,
         unresolvedCount: count != null && count >= 0 ? count : null,
+        repairBudget: value['repair_budget'] == null
+            ? null
+            : RepairBudget.fromJson(value['repair_budget']),
       );
     } on Object {
       return const FaultDeclaration.unknown();
@@ -76,11 +84,13 @@ class FaultDeclaration {
   FaultDeclaration copyWith({
     String? state,
     List<DeclaredVehicleFault>? faults,
+    RepairBudget? repairBudget,
   }) => FaultDeclaration(
     state: state ?? this.state,
     declaredAt: declaredAt,
     faults: faults ?? this.faults,
     unresolvedCount: faults == null ? unresolvedCount : null,
+    repairBudget: repairBudget ?? this.repairBudget,
   );
 
   /// Dates, authorship, edit permissions and inspection claims are server-owned.
@@ -132,6 +142,9 @@ class DeclaredVehicleFault {
   final bool isSafetyCritical;
   final bool disclosedToBuyer;
   final bool editable;
+  final String repairNecessity;
+  final RepairEstimate? repairEstimate;
+  final PublishedRepairQuote? publishedQuote;
 
   const DeclaredVehicleFault({
     this.id,
@@ -145,6 +158,9 @@ class DeclaredVehicleFault {
     this.isSafetyCritical = false,
     this.disclosedToBuyer = true,
     this.editable = true,
+    this.repairNecessity = 'necessary',
+    this.repairEstimate,
+    this.publishedQuote,
   }) : isOpen = isOpen ?? (status != 'repaired' && status != 'wont_fix');
 
   factory DeclaredVehicleFault.fromJson(Map<String, dynamic> json) {
@@ -168,6 +184,13 @@ class DeclaredVehicleFault {
       isSafetyCritical: json['is_safety_critical'] == true,
       disclosedToBuyer: json['disclosed_to_buyer'] != false,
       editable: json['editable'] != false,
+      repairNecessity: json['repair_necessity'] == 'optional'
+          ? 'optional'
+          : 'necessary',
+      repairEstimate: _estimate(json['repair_estimate']),
+      publishedQuote: json['published_quote'] is Map
+          ? PublishedRepairQuote.fromJson(json['published_quote'])
+          : null,
     );
   }
 
@@ -181,7 +204,8 @@ class DeclaredVehicleFault {
       staffStatuses.contains(status) &&
       title.trim().isNotEmpty &&
       title.runes.length <= 180 &&
-      (description?.runes.length ?? 0) <= 5000;
+      (description?.runes.length ?? 0) <= 5000 &&
+      (repairEstimate == null || repairEstimate!.isValid);
 
   DeclaredVehicleFault copyWith({
     String? category,
@@ -192,6 +216,10 @@ class DeclaredVehicleFault {
     bool? affectsDrivability,
     bool? isSafetyCritical,
     bool? disclosedToBuyer,
+    String? repairNecessity,
+    RepairEstimate? repairEstimate,
+    PublishedRepairQuote? publishedQuote,
+    bool clearEstimate = false,
   }) => DeclaredVehicleFault(
     id: id,
     category: category ?? this.category,
@@ -203,6 +231,11 @@ class DeclaredVehicleFault {
     isSafetyCritical: isSafetyCritical ?? this.isSafetyCritical,
     disclosedToBuyer: disclosedToBuyer ?? this.disclosedToBuyer,
     editable: editable,
+    repairNecessity: repairNecessity ?? this.repairNecessity,
+    repairEstimate: clearEstimate
+        ? null
+        : (repairEstimate ?? this.repairEstimate),
+    publishedQuote: publishedQuote ?? this.publishedQuote,
   );
 
   Map<String, dynamic> toJson() => {
@@ -217,7 +250,18 @@ class DeclaredVehicleFault {
     'affects_drivability': affectsDrivability,
     'is_safety_critical': isSafetyCritical,
     'disclosed_to_buyer': disclosedToBuyer,
+    'repair_necessity': repairNecessity,
+    'repair_estimate': repairEstimate?.toJson(),
   };
+}
+
+RepairEstimate? _estimate(Object? value) {
+  if (value == null) return null;
+  try {
+    return RepairEstimate.fromJson(value);
+  } on Object {
+    return null;
+  }
 }
 
 int? _integer(Object? value) => value is int

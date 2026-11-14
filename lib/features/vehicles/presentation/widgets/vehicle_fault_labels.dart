@@ -37,3 +37,16 @@ String vehicleFaultStatusLabel(String value, AppLocalizations l10n) =>
       'wont_fix' => l10n.vehiclesFaultStatusWontFix,
       _ => value,
     };
+
+String repairEstimateSourceLabel(String value, AppLocalizations l10n) =>
+    switch (value) {
+      'seller' => l10n.repairEstimateSourceSeller,
+      'workshop' => l10n.repairEstimateSourceWorkshop,
+      'autoparc' => l10n.repairEstimateSourceAutoparc,
+      _ => value,
+    };
+
+String repairNecessityLabel(String value, AppLocalizations l10n) =>
+    value == 'optional'
+    ? l10n.repairEstimateOptional
+    : l10n.repairEstimateNecessary;

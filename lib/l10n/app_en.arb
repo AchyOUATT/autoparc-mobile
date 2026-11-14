@@ -2927,5 +2927,41 @@
   "vehiclesFrameNumberLabel": "Frame number or VIN (optional)",
   "@vehiclesFrameNumberLabel": {"description": "Optional motorcycle frame number or VIN."},
   "vehiclesFrameNumberHelper": "5 to 32 characters — frame number or VIN",
-  "vehiclesFrameNumberInvalid": "The frame number must be between 5 and 32 characters."
+  "vehiclesFrameNumberInvalid": "The frame number must be between 5 and 32 characters.",
+  "repairEstimateTitle": "Estimated cost",
+  "repairEstimateOptionalHint": "Optional. Leave empty if you do not have a range. A quote alone, without a range, is enough.",
+  "repairEstimateCostMin": "Minimum cost (CFA francs)",
+  "repairEstimateCostMax": "Maximum cost (CFA francs)",
+  "repairEstimateSource": "Estimate source",
+  "repairEstimateSourceSeller": "Seller",
+  "repairEstimateSourceWorkshop": "Workshop or quote",
+  "repairEstimateSourceAutoparc": "AutoParc",
+  "repairEstimateDate": "Estimate date",
+  "repairEstimateIncomplete": "Enter the minimum, maximum, source and date, or leave everything empty.",
+  "repairEstimateMinMax": "The minimum must be a non-negative integer, less than or equal to the maximum.",
+  "repairEstimateFutureDate": "The estimate date cannot be in the future.",
+  "repairEstimateStale": "Outdated estimate",
+  "repairEstimateToEstimate": "Cost to be estimated",
+  "repairEstimateNecessary": "Necessary repair",
+  "repairEstimateOptional": "Optional cosmetic repair",
+  "repairNecessityLabel": "Need for the work",
+  "repairBudgetTitle": "Repair budget",
+  "repairBudgetToEstimate": "Budget to be estimated",
+  "repairBudgetPartial": "{range} for the priced work · {remaining}",
+  "@repairBudgetPartial": {
+    "placeholders": {
+      "range": {"type": "String"},
+      "remaining": {"type": "String"}
+    }
+  },
+  "repairBudgetRemaining": "{count, plural, one{1 repair still to be priced} other{{count} repairs still to be priced}}",
+  "@repairBudgetRemaining": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "repairBudgetOptionalTitle": "Optional repairs",
+  "repairQuoteAttachAfterSave": "Save the fault first to attach a quote.",
+  "repairQuotePrivateNote": "The quote stays private until AutoParc publishes a copy with personal details masked.",
+  "repairQuotePublished": "View the published quote"
 }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/fault_declaration.dart';
+import '../../data/models/repair_estimate.dart';
 import '../../data/models/vehicle_fault.dart';
 import 'declared_faults_section.dart';
 import 'vehicle_fault_labels.dart';
@@ -266,8 +268,12 @@ class _FaultDraftSheetState extends State<_FaultDraftSheet> {
   final _form = GlobalKey<FormState>();
   late final TextEditingController _title;
   late final TextEditingController _description;
-  late String _category, _severity, _status;
+  late String _category, _severity, _status, _necessity;
   late bool _affectsDrivability, _isSafetyCritical, _disclosedToBuyer;
+  late final TextEditingController _costMin;
+  late final TextEditingController _costMax;
+  String? _source;
+  DateTime? _estimatedAt;
 
   @override
   void initState() {
@@ -281,12 +287,26 @@ class _FaultDraftSheetState extends State<_FaultDraftSheet> {
     _affectsDrivability = fault?.affectsDrivability ?? false;
     _isSafetyCritical = fault?.isSafetyCritical ?? false;
     _disclosedToBuyer = fault?.disclosedToBuyer ?? true;
+    _necessity = fault?.repairNecessity == 'optional'
+        ? 'optional'
+        : 'necessary';
+    final estimate = fault?.repairEstimate;
+    _costMin = TextEditingController(
+      text: estimate == null ? '' : '${estimate.costMin}',
+    );
+    _costMax = TextEditingController(
+      text: estimate == null ? '' : '${estimate.costMax}',
+    );
+    _source = estimate?.source;
+    _estimatedAt = estimate?.estimatedAt;
   }
 
   @override
   void dispose() {
     _title.dispose();
     _description.dispose();
+    _costMin.dispose();
+    _costMax.dispose();
     super.dispose();
   }
 
@@ -307,8 +327,64 @@ class _FaultDraftSheetState extends State<_FaultDraftSheet> {
         isSafetyCritical: _isSafetyCritical,
         disclosedToBuyer: _disclosedToBuyer,
         editable: widget.fault?.editable ?? true,
+        repairNecessity: _necessity,
+        repairEstimate: _estimateOrNull(),
       ),
     );
+  }
+
+  bool get _anyEstimateField =>
+      _costMin.text.trim().isNotEmpty ||
+      _costMax.text.trim().isNotEmpty ||
+      _source != null ||
+      _estimatedAt != null;
+
+  RepairEstimate? _estimateOrNull() {
+    if (!_anyEstimateField) return null;
+    final min = int.tryParse(_costMin.text.trim().replaceAll(' ', ''));
+    final max = int.tryParse(_costMax.text.trim().replaceAll(' ', ''));
+    if (min == null || max == null || _source == null || _estimatedAt == null) {
+      return null;
+    }
+    return RepairEstimate(
+      costMin: min,
+      costMax: max,
+      source: _source!,
+      estimatedAt: _estimatedAt!,
+    );
+  }
+
+  String? _validateEstimate(AppLocalizations l) {
+    if (!_anyEstimateField) return null;
+    final min = int.tryParse(_costMin.text.trim().replaceAll(' ', ''));
+    final max = int.tryParse(_costMax.text.trim().replaceAll(' ', ''));
+    if (min == null || max == null || _source == null || _estimatedAt == null) {
+      return l.repairEstimateIncomplete;
+    }
+    if (min < 0 || min > max) return l.repairEstimateMinMax;
+    final today = DateTime.now();
+    final day = DateTime(
+      _estimatedAt!.year,
+      _estimatedAt!.month,
+      _estimatedAt!.day,
+    );
+    final last = DateTime(today.year, today.month, today.day);
+    if (day.isAfter(last)) return l.repairEstimateFutureDate;
+    return null;
+  }
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final last = DateTime(now.year, now.month, now.day);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _estimatedAt == null || _estimatedAt!.isAfter(last)
+          ? last
+          : _estimatedAt!,
+      firstDate: DateTime(now.year - 20),
+      lastDate: last,
+    );
+    if (picked != null) setState(() => _estimatedAt = picked);
   }
 
   @override
@@ -323,6 +399,9 @@ class _FaultDraftSheetState extends State<_FaultDraftSheet> {
     final statuses = widget.staffStatuses
         ? DeclaredVehicleFault.staffStatuses
         : DeclaredVehicleFault.privateStatuses;
+    final sources = widget.staffStatuses
+        ? RepairEstimate.sources
+        : const ['seller', 'workshop'];
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: SafeArea(
@@ -465,6 +544,114 @@ class _FaultDraftSheetState extends State<_FaultDraftSheet> {
                     onChanged: (value) =>
                         setState(() => _disclosedToBuyer = value),
                   ),
+                const SizedBox(height: 12),
+
+                DropdownButtonFormField<String>(
+                  key: const ValueKey('fault-declaration-necessity'),
+                  initialValue: _necessity,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: l.repairNecessityLabel,
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      value: 'necessary',
+                      child: Text(
+                        l.repairEstimateNecessary,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'optional',
+                      child: Text(
+                        l.repairEstimateOptional,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => _necessity = value ?? _necessity),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  l.repairEstimateTitle,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l.repairEstimateOptionalHint,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  key: const ValueKey('fault-declaration-cost-min'),
+                  controller: _costMin,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: l.repairEstimateCostMin,
+                  ),
+                  validator: (_) => _validateEstimate(l),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  key: const ValueKey('fault-declaration-cost-max'),
+                  controller: _costMax,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: l.repairEstimateCostMax,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  key: const ValueKey('fault-declaration-estimate-source'),
+                  initialValue: sources.contains(_source) ? _source : null,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: l.repairEstimateSource,
+                  ),
+                  items: [
+                    for (final source in sources)
+                      DropdownMenuItem(
+                        value: source,
+                        child: Text(
+                          repairEstimateSourceLabel(source, l),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                  onChanged: (value) => setState(() => _source = value),
+                ),
+                const SizedBox(height: 12),
+                InputDecorator(
+                  decoration: InputDecoration(labelText: l.repairEstimateDate),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          key: const ValueKey(
+                            'fault-declaration-estimate-date',
+                          ),
+                          _estimatedAt == null
+                              ? '—'
+                              : DateFormat('yyyy-MM-dd').format(_estimatedAt!),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: _pickDate,
+                        tooltip: l.repairEstimateDate,
+                        icon: const Icon(Icons.calendar_today_outlined),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  widget.fault?.id == null
+                      ? l.repairQuoteAttachAfterSave
+                      : l.repairQuotePrivateNote,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+
                 const SizedBox(height: 8),
                 Text(
                   l.faultDeclarationSellerNote,

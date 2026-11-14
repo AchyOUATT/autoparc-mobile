@@ -7803,5 +7803,41 @@
   "vehiclesFrameNumberLabel": "N° de cadre ou VIN (optionnel)",
   "@vehiclesFrameNumberLabel": {"description": "Optional motorcycle frame number or VIN."},
   "vehiclesFrameNumberHelper": "5 à 32 caractères — numéro de cadre ou VIN",
-  "vehiclesFrameNumberInvalid": "Le numéro de cadre doit faire entre 5 et 32 caractères."
+  "vehiclesFrameNumberInvalid": "Le numéro de cadre doit faire entre 5 et 32 caractères.",
+  "repairEstimateTitle": "Coût estimé",
+  "repairEstimateOptionalHint": "Facultatif. Laissez vide si vous n’avez pas de fourchette. Un devis seul, sans fourchette, suffit.",
+  "repairEstimateCostMin": "Coût minimum (F CFA)",
+  "repairEstimateCostMax": "Coût maximum (F CFA)",
+  "repairEstimateSource": "Source de l’estimation",
+  "repairEstimateSourceSeller": "Vendeur",
+  "repairEstimateSourceWorkshop": "Atelier ou devis",
+  "repairEstimateSourceAutoparc": "AutoParc",
+  "repairEstimateDate": "Date de l’estimation",
+  "repairEstimateIncomplete": "Renseignez le minimum, le maximum, la source et la date, ou laissez tout vide.",
+  "repairEstimateMinMax": "Le minimum doit être un entier positif ou zéro, inférieur ou égal au maximum.",
+  "repairEstimateFutureDate": "La date d’estimation ne peut pas être dans le futur.",
+  "repairEstimateStale": "Estimation ancienne",
+  "repairEstimateToEstimate": "Coût à estimer",
+  "repairEstimateNecessary": "Reprise nécessaire",
+  "repairEstimateOptional": "Reprise esthétique facultative",
+  "repairNecessityLabel": "Nécessité des travaux",
+  "repairBudgetTitle": "Budget réparations",
+  "repairBudgetToEstimate": "Budget à estimer",
+  "repairBudgetPartial": "{range} pour les travaux chiffrés · {remaining}",
+  "@repairBudgetPartial": {
+    "placeholders": {
+      "range": {"type": "String"},
+      "remaining": {"type": "String"}
+    }
+  },
+  "repairBudgetRemaining": "{count, plural, one{1 réparation reste à chiffrer} other{{count} réparations restent à chiffrer}}",
+  "@repairBudgetRemaining": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "repairBudgetOptionalTitle": "Reprises facultatives",
+  "repairQuoteAttachAfterSave": "Enregistrez d’abord le défaut pour joindre un devis.",
+  "repairQuotePrivateNote": "Le devis reste privé jusqu’à ce qu’AutoParc publie une copie où les coordonnées sont masquées.",
+  "repairQuotePublished": "Voir le devis publié"
 }

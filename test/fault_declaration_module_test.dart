@@ -537,4 +537,81 @@ void main() {
       expect(find.byIcon(Icons.verified_user_outlined), findsNothing);
     },
   );
+
+  testWidgets(
+    'editing a description without touching the range keeps the existing estimate',
+    (tester) async {
+      final key = GlobalKey<_EditorHarnessState>();
+      await _show(
+        tester,
+        _EditorHarness(
+          key: key,
+          initial: FaultDeclaration.fromJson({
+            'state': 'has_faults',
+            'faults': [
+              {
+                ..._row(),
+                'repair_necessity': 'necessary',
+                'repair_estimate': {
+                  'cost_min': 35000,
+                  'cost_max': 50000,
+                  'source': 'workshop',
+                  'estimated_at': '2026-11-01',
+                  'is_stale': false,
+                },
+              },
+            ],
+          }),
+        ),
+        locale: 'fr',
+      );
+      await _tap(tester, _key('fault-declaration-edit-0'));
+      await tester.enterText(
+        _key('fault-declaration-description'),
+        'Bruit confirmé.',
+      );
+      await _tap(tester, _key('fault-declaration-apply'));
+      final fault = key.currentState!.value.faults.single;
+      expect(fault.description, 'Bruit confirmé.');
+      expect(fault.repairEstimate?.costMin, 35000);
+      expect(fault.repairEstimate?.costMax, 50000);
+      expect(fault.toJson()['repair_estimate']['cost_min'], 35000);
+    },
+  );
+
+  testWidgets(
+    'a single amount is not turned into a range and the estimate may stay empty',
+    (tester) async {
+      final key = GlobalKey<_EditorHarnessState>();
+      await _show(
+        tester,
+        _EditorHarness(key: key),
+        locale: 'fr',
+        size: const Size(600, 1600),
+      );
+      await _tap(tester, _key('fault-declaration-state-has_faults'));
+      await _tap(tester, _key('fault-declaration-add'));
+      await tester.enterText(_key('fault-declaration-title'), 'Fuite d’huile');
+      await tester.ensureVisible(_key('fault-declaration-cost-min'));
+      await tester.enterText(_key('fault-declaration-cost-min'), '35000');
+      await tester.ensureVisible(_key('fault-declaration-apply'));
+      await tester.pumpAndSettle();
+      await tester.tap(_key('fault-declaration-apply'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Renseignez le minimum, le maximum, la source et la date, ou laissez tout vide.',
+        ),
+        findsWidgets,
+      );
+      expect(key.currentState!.value.faults, isEmpty);
+      await tester.enterText(_key('fault-declaration-cost-min'), '');
+      await _tap(tester, _key('fault-declaration-apply'));
+      expect(key.currentState!.value.faults.single.repairEstimate, isNull);
+      expect(
+        key.currentState!.value.faults.single.toJson()['repair_estimate'],
+        isNull,
+      );
+    },
+  );
 }
