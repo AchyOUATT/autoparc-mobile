@@ -75,7 +75,10 @@ void main() {
   test('an explicit empty estimate serializes as null, never 0 F CFA', () {
     final payload = DeclaredVehicleFault.fromJson(_fault()).toJson();
     expect(payload['repair_estimate'], isNull);
-    expect(formatCfaRange(35000, 50000, locale: 'fr'), isNot(equals('0 F CFA')));
+    expect(
+      formatCfaRange(35000, 50000, locale: 'fr'),
+      isNot(equals('0 F CFA')),
+    );
   });
 
   test('an incomplete or inverted range is ignored, not forced', () {
@@ -222,6 +225,92 @@ void main() {
       find.textContaining('1 réparation reste à chiffrer'),
       findsOneWidget,
     );
+    expect(find.text('0 F CFA'), findsNothing);
+  });
+  testWidgets(
+    'optional-only work shows optional repairs and never a missing budget',
+    (tester) async {
+      final declaration = FaultDeclaration.fromJson({
+        'state': 'has_faults',
+        'faults': [
+          _fault(estimate: _estimate(stale: false, date: '2026-11-01')),
+        ],
+        'repair_budget': {
+          'status': 'none',
+          'estimated_count': 0,
+          'unestimated_count': 0,
+          'optional': [
+            {
+              'title': 'Pare-chocs arrière rayé',
+              'repair_estimate': _estimate(stale: false, date: '2026-11-01'),
+            },
+          ],
+        },
+      });
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('fr'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: DeclaredFaultsSection(declaration: declaration),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final l = await AppLocalizations.delegate.load(const Locale('fr'));
+      expect(find.text(l.repairBudgetOptionalTitle), findsOneWidget);
+      expect(find.text(l.repairBudgetToEstimate), findsNothing);
+      expect(find.text(l.repairBudgetTitle), findsNothing);
+      expect(find.text('0 F CFA'), findsNothing);
+    },
+  );
+
+  testWidgets('a complete necessary budget shows the range only', (
+    tester,
+  ) async {
+    final declaration = FaultDeclaration.fromJson({
+      'state': 'has_faults',
+      'faults': [
+        _fault(
+          title: 'Freins à réparer',
+          necessity: 'necessary',
+          estimate: _estimate(
+            min: 45000,
+            max: 65000,
+            stale: false,
+            date: '2026-11-01',
+          ),
+        ),
+      ],
+      'repair_budget': {
+        'status': 'complete',
+        'cost_min': 45000,
+        'cost_max': 65000,
+        'estimated_count': 1,
+        'unestimated_count': 0,
+        'optional': <dynamic>[],
+      },
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: DeclaredFaultsSection(declaration: declaration),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final l = await AppLocalizations.delegate.load(const Locale('fr'));
+    expect(find.text(l.repairBudgetTitle), findsOneWidget);
+    expect(find.text(l.repairBudgetToEstimate), findsNothing);
+    expect(find.textContaining('45'), findsWidgets);
     expect(find.text('0 F CFA'), findsNothing);
   });
 }

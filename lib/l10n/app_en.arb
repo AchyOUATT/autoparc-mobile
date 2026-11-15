@@ -2966,5 +2966,18 @@
   "repairBudgetOptionalTitle": "Optional repairs",
   "repairQuoteAttachAfterSave": "Save the fault first to attach a quote.",
   "repairQuotePrivateNote": "The quote stays private until AutoParc publishes a copy with personal details masked.",
-  "repairQuotePublished": "View the published quote"
+  "repairQuotePublished": "View the published quote",
+  "repairQuoteAttach": "Attach a quote",
+  "repairQuoteFromCamera": "Photograph the quote",
+  "repairQuoteFromGallery": "Choose a photo",
+  "repairQuoteFromPdf": "Attach a PDF",
+  "repairQuoteStatusReceived": "Quote received, private pending review",
+  "repairQuoteStatusPrivate": "Private quote, pending review",
+  "repairQuoteStatusPublished": "Published copy, personal details masked",
+  "repairQuoteRemove": "Remove the quote",
+  "repairQuotePublish": "Publish a redacted copy",
+  "repairQuoteUnpublish": "Remove the published copy",
+  "repairQuoteAttachError": "The quote could not be uploaded. Please try again.",
+  "repairQuoteRemoveError": "The quote could not be removed. Please try again.",
+  "repairEstimateRemove": "Remove the estimate"
 }

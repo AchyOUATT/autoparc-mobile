@@ -1,4 +1,5 @@
 import 'package:auto/features/vehicles/data/models/fault_declaration.dart';
+import 'package:auto/features/vehicles/data/repair_quote_repository.dart';
 import 'package:auto/features/vehicles/presentation/widgets/declared_faults_section.dart';
 import 'package:auto/features/vehicles/presentation/widgets/fault_declaration_widget.dart';
 import 'package:auto/l10n/app_localizations.dart';
@@ -39,12 +40,16 @@ class _EditorHarness extends StatefulWidget {
   final bool enabled;
   final bool requireChoice;
   final bool staffStatuses;
+  final RepairQuoteActions? quotes;
+  final RepairQuoteFilePicker? pickQuoteFile;
   const _EditorHarness({
     super.key,
     this.initial = const FaultDeclaration.unknown(),
     this.enabled = true,
     this.requireChoice = false,
     this.staffStatuses = false,
+    this.quotes,
+    this.pickQuoteFile,
   });
   @override
   State<_EditorHarness> createState() => _EditorHarnessState();
@@ -78,6 +83,8 @@ class _EditorHarnessState extends State<_EditorHarness> {
                 enabled: widget.enabled,
                 requireChoice: widget.requireChoice,
                 staffStatuses: widget.staffStatuses,
+                quotes: widget.quotes,
+                pickQuoteFile: widget.pickQuoteFile,
                 onChanged: (next) => setState(() {
                   changes++;
                   value = next;
@@ -611,6 +618,112 @@ void main() {
       expect(
         key.currentState!.value.faults.single.toJson()['repair_estimate'],
         isNull,
+      );
+    },
+  );
+  testWidgets(
+    'removing the estimate clears all four fields and keeps the quote',
+    (tester) async {
+      final key = GlobalKey<_EditorHarnessState>();
+      await _show(
+        tester,
+        _EditorHarness(
+          key: key,
+          initial: FaultDeclaration.fromJson({
+            'state': 'has_faults',
+            'faults': [
+              {
+                ..._row(),
+                'repair_necessity': 'necessary',
+                'repair_estimate': {
+                  'cost_min': 35000,
+                  'cost_max': 50000,
+                  'source': 'workshop',
+                  'estimated_at': '2026-11-01',
+                  'is_stale': false,
+                },
+                'private_quote': {
+                  'id': 8,
+                  'original_name': 'atelier-confidentiel.pdf',
+                  'mime_type': 'application/pdf',
+                  'size': 40,
+                },
+              },
+            ],
+          }),
+        ),
+        locale: 'fr',
+        size: const Size(600, 1800),
+      );
+      await _tap(tester, _key('fault-declaration-edit-0'));
+      await tester.ensureVisible(_key('fault-declaration-clear-estimate'));
+      await _tap(tester, _key('fault-declaration-clear-estimate'));
+      await _tap(tester, _key('fault-declaration-apply'));
+      final fault = key.currentState!.value.faults.single;
+      expect(fault.repairEstimate, isNull);
+      expect(fault.toJson()['repair_estimate'], isNull);
+      expect(fault.privateQuote?.originalName, 'atelier-confidentiel.pdf');
+      expect(fault.title, 'Plaquettes usées');
+    },
+  );
+
+  testWidgets(
+    'a saved fault can attach a private quote that stays pending review',
+    (tester) async {
+      final key = GlobalKey<_EditorHarnessState>();
+      var uploaded = false;
+      await _show(
+        tester,
+        _EditorHarness(
+          key: key,
+          pickQuoteFile: (source) async =>
+              (filename: 'devis-atelier.jpg', bytes: <int>[1, 2, 3]),
+          quotes: RepairQuoteActions(
+            uploadPrivate:
+                ({
+                  required int faultId,
+                  required String filename,
+                  required List<int> bytes,
+                }) async {
+                  uploaded = true;
+                  expect(faultId, 4);
+                  expect(filename, 'devis-atelier.jpg');
+                  return DeclaredVehicleFault.fromJson({
+                    ..._row(),
+                    'private_quote': {
+                      'id': 9,
+                      'original_name': filename,
+                      'mime_type': 'image/jpeg',
+                      'size': bytes.length,
+                    },
+                  });
+                },
+            deletePrivate: ({required int faultId}) async {},
+          ),
+          initial: FaultDeclaration.fromJson({
+            'state': 'has_faults',
+            'faults': [_row()],
+          }),
+        ),
+        locale: 'fr',
+        size: const Size(600, 1800),
+      );
+      await _tap(tester, _key('fault-declaration-edit-0'));
+      await tester.ensureVisible(_key('fault-declaration-quote-attach'));
+      await _tap(tester, _key('fault-declaration-quote-attach'));
+      await _tap(tester, _key('fault-declaration-quote-gallery'));
+      expect(uploaded, isTrue);
+      expect(
+        find.byKey(const ValueKey('fault-declaration-quote-private')),
+        findsOneWidget,
+      );
+      expect(find.textContaining('devis-atelier.jpg'), findsOneWidget);
+      final l = await AppLocalizations.delegate.load(const Locale('fr'));
+      expect(find.text(l.repairQuotePrivateNote), findsNothing);
+      await _tap(tester, _key('fault-declaration-apply'));
+      expect(
+        key.currentState!.value.faults.single.privateQuote?.originalName,
+        'devis-atelier.jpg',
       );
     },
   );

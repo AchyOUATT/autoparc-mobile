@@ -709,6 +709,31 @@ class PartnerRepository {
   Future<void> deleteEquipmentDocument(int vehicleId, int documentId) async =>
       _request('DELETE', '/partner/vehicles/$vehicleId/equipment-documents/$documentId');
 
+  Future<Map<String, dynamic>> uploadRepairQuote(
+    int vehicleId,
+    int faultId, {
+    required String filename,
+    required List<int> bytes,
+  }) async {
+    final form = FormData();
+    form.files.add(
+      MapEntry('document', MultipartFile.fromBytes(bytes, filename: filename)),
+    );
+    return Map<String, dynamic>.from(
+      (await _request(
+            'POST',
+            '/partner/vehicles/$vehicleId/faults/$faultId/repair-quote',
+            data: form,
+          ))['data']
+          as Map,
+    );
+  }
+
+  Future<void> deleteRepairQuote(int vehicleId, int faultId) async => _request(
+    'DELETE',
+    '/partner/vehicles/$vehicleId/faults/$faultId/repair-quote',
+  );
+
   Future<void> setCover(int mediaId) =>
       _request('PATCH', '/partner/media/$mediaId/cover');
   Future<void> deleteMedia(int mediaId) =>

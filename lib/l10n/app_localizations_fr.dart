@@ -6893,4 +6893,48 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get repairQuotePublished => 'Voir le devis publié';
+
+  @override
+  String get repairQuoteAttach => 'Joindre un devis';
+
+  @override
+  String get repairQuoteFromCamera => 'Photographier le devis';
+
+  @override
+  String get repairQuoteFromGallery => 'Choisir une photo';
+
+  @override
+  String get repairQuoteFromPdf => 'Joindre un PDF';
+
+  @override
+  String get repairQuoteStatusReceived =>
+      'Devis reçu, privé en attente de modération';
+
+  @override
+  String get repairQuoteStatusPrivate =>
+      'Devis privé, en attente de modération';
+
+  @override
+  String get repairQuoteStatusPublished =>
+      'Copie publiée, coordonnées masquées';
+
+  @override
+  String get repairQuoteRemove => 'Retirer le devis';
+
+  @override
+  String get repairQuotePublish => 'Publier une copie masquée';
+
+  @override
+  String get repairQuoteUnpublish => 'Retirer la copie publiée';
+
+  @override
+  String get repairQuoteAttachError =>
+      'Le devis n’a pas pu être envoyé. Réessayez.';
+
+  @override
+  String get repairQuoteRemoveError =>
+      'Le devis n’a pas pu être retiré. Réessayez.';
+
+  @override
+  String get repairEstimateRemove => 'Retirer l’estimation';
 }

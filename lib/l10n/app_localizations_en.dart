@@ -6865,4 +6865,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get repairQuotePublished => 'View the published quote';
+
+  @override
+  String get repairQuoteAttach => 'Attach a quote';
+
+  @override
+  String get repairQuoteFromCamera => 'Photograph the quote';
+
+  @override
+  String get repairQuoteFromGallery => 'Choose a photo';
+
+  @override
+  String get repairQuoteFromPdf => 'Attach a PDF';
+
+  @override
+  String get repairQuoteStatusReceived =>
+      'Quote received, private pending review';
+
+  @override
+  String get repairQuoteStatusPrivate => 'Private quote, pending review';
+
+  @override
+  String get repairQuoteStatusPublished =>
+      'Published copy, personal details masked';
+
+  @override
+  String get repairQuoteRemove => 'Remove the quote';
+
+  @override
+  String get repairQuotePublish => 'Publish a redacted copy';
+
+  @override
+  String get repairQuoteUnpublish => 'Remove the published copy';
+
+  @override
+  String get repairQuoteAttachError =>
+      'The quote could not be uploaded. Please try again.';
+
+  @override
+  String get repairQuoteRemoveError =>
+      'The quote could not be removed. Please try again.';
+
+  @override
+  String get repairEstimateRemove => 'Remove the estimate';
 }

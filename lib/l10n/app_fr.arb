@@ -7845,5 +7845,18 @@
   "repairBudgetOptionalTitle": "Reprises facultatives",
   "repairQuoteAttachAfterSave": "Enregistrez d’abord le défaut pour joindre un devis.",
   "repairQuotePrivateNote": "Le devis reste privé jusqu’à ce qu’AutoParc publie une copie où les coordonnées sont masquées.",
-  "repairQuotePublished": "Voir le devis publié"
+  "repairQuotePublished": "Voir le devis publié",
+  "repairQuoteAttach": "Joindre un devis",
+  "repairQuoteFromCamera": "Photographier le devis",
+  "repairQuoteFromGallery": "Choisir une photo",
+  "repairQuoteFromPdf": "Joindre un PDF",
+  "repairQuoteStatusReceived": "Devis reçu, privé en attente de modération",
+  "repairQuoteStatusPrivate": "Devis privé, en attente de modération",
+  "repairQuoteStatusPublished": "Copie publiée, coordonnées masquées",
+  "repairQuoteRemove": "Retirer le devis",
+  "repairQuotePublish": "Publier une copie masquée",
+  "repairQuoteUnpublish": "Retirer la copie publiée",
+  "repairQuoteAttachError": "Le devis n’a pas pu être envoyé. Réessayez.",
+  "repairQuoteRemoveError": "Le devis n’a pas pu être retiré. Réessayez.",
+  "repairEstimateRemove": "Retirer l’estimation"
 }

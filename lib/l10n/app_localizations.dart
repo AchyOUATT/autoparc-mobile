@@ -12130,6 +12130,84 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Voir le devis publié'**
   String get repairQuotePublished;
+
+  /// No description provided for @repairQuoteAttach.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joindre un devis'**
+  String get repairQuoteAttach;
+
+  /// No description provided for @repairQuoteFromCamera.
+  ///
+  /// In fr, this message translates to:
+  /// **'Photographier le devis'**
+  String get repairQuoteFromCamera;
+
+  /// No description provided for @repairQuoteFromGallery.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir une photo'**
+  String get repairQuoteFromGallery;
+
+  /// No description provided for @repairQuoteFromPdf.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joindre un PDF'**
+  String get repairQuoteFromPdf;
+
+  /// No description provided for @repairQuoteStatusReceived.
+  ///
+  /// In fr, this message translates to:
+  /// **'Devis reçu, privé en attente de modération'**
+  String get repairQuoteStatusReceived;
+
+  /// No description provided for @repairQuoteStatusPrivate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Devis privé, en attente de modération'**
+  String get repairQuoteStatusPrivate;
+
+  /// No description provided for @repairQuoteStatusPublished.
+  ///
+  /// In fr, this message translates to:
+  /// **'Copie publiée, coordonnées masquées'**
+  String get repairQuoteStatusPublished;
+
+  /// No description provided for @repairQuoteRemove.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer le devis'**
+  String get repairQuoteRemove;
+
+  /// No description provided for @repairQuotePublish.
+  ///
+  /// In fr, this message translates to:
+  /// **'Publier une copie masquée'**
+  String get repairQuotePublish;
+
+  /// No description provided for @repairQuoteUnpublish.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer la copie publiée'**
+  String get repairQuoteUnpublish;
+
+  /// No description provided for @repairQuoteAttachError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le devis n’a pas pu être envoyé. Réessayez.'**
+  String get repairQuoteAttachError;
+
+  /// No description provided for @repairQuoteRemoveError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le devis n’a pas pu être retiré. Réessayez.'**
+  String get repairQuoteRemoveError;
+
+  /// No description provided for @repairEstimateRemove.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer l’estimation'**
+  String get repairEstimateRemove;
 }
 
 class _AppLocalizationsDelegate

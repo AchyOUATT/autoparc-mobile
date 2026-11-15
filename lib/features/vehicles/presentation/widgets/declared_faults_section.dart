@@ -53,8 +53,9 @@ class DeclaredFaultsSection extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             l.faultDeclarationDate(
-              DateFormat.yMMMd(Localizations.localeOf(context).languageCode)
-                  .format(declaration.declaredAt!.toLocal()),
+              DateFormat.yMMMd(
+                Localizations.localeOf(context).languageCode,
+              ).format(declaration.declaredAt!.toLocal()),
             ),
             style: Theme.of(context).textTheme.bodySmall,
           ),
@@ -258,9 +259,11 @@ class _RepairBudgetSummary extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l.repairBudgetTitle, style: theme.textTheme.titleSmall),
-            const SizedBox(height: 4),
-            Text(_budgetText(l, locale)),
+            if (budget.status != 'none') ...[
+              Text(l.repairBudgetTitle, style: theme.textTheme.titleSmall),
+              const SizedBox(height: 4),
+              Text(_budgetText(l, locale)),
+            ],
             if (budget.optional.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
@@ -284,12 +287,13 @@ class _RepairBudgetSummary extends StatelessWidget {
   }
 
   String _budgetText(AppLocalizations l, String locale) {
-    if (budget.status == 'to_estimate' ||
-        (budget.costMin == null && budget.unestimatedCount > 0)) {
-      if (budget.estimatedCount == 0) return l.repairBudgetToEstimate;
+    if (budget.status == 'to_estimate') {
+      return l.repairBudgetToEstimate;
     }
     if (budget.costMin == null || budget.costMax == null) {
-      return l.repairBudgetToEstimate;
+      return budget.status == 'none'
+          ? l.repairBudgetOptionalTitle
+          : l.repairBudgetToEstimate;
     }
     final range = formatCfaRange(
       budget.costMin!,

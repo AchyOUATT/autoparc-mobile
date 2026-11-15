@@ -144,6 +144,7 @@ class DeclaredVehicleFault {
   final bool editable;
   final String repairNecessity;
   final RepairEstimate? repairEstimate;
+  final PrivateRepairQuote? privateQuote;
   final PublishedRepairQuote? publishedQuote;
 
   const DeclaredVehicleFault({
@@ -160,6 +161,7 @@ class DeclaredVehicleFault {
     this.editable = true,
     this.repairNecessity = 'necessary',
     this.repairEstimate,
+    this.privateQuote,
     this.publishedQuote,
   }) : isOpen = isOpen ?? (status != 'repaired' && status != 'wont_fix');
 
@@ -188,6 +190,9 @@ class DeclaredVehicleFault {
           ? 'optional'
           : 'necessary',
       repairEstimate: _estimate(json['repair_estimate']),
+      privateQuote: json['private_quote'] is Map
+          ? PrivateRepairQuote.fromJson(json['private_quote'])
+          : null,
       publishedQuote: json['published_quote'] is Map
           ? PublishedRepairQuote.fromJson(json['published_quote'])
           : null,
@@ -218,8 +223,11 @@ class DeclaredVehicleFault {
     bool? disclosedToBuyer,
     String? repairNecessity,
     RepairEstimate? repairEstimate,
+    PrivateRepairQuote? privateQuote,
     PublishedRepairQuote? publishedQuote,
     bool clearEstimate = false,
+    bool clearPrivateQuote = false,
+    bool clearPublishedQuote = false,
   }) => DeclaredVehicleFault(
     id: id,
     category: category ?? this.category,
@@ -235,7 +243,12 @@ class DeclaredVehicleFault {
     repairEstimate: clearEstimate
         ? null
         : (repairEstimate ?? this.repairEstimate),
-    publishedQuote: publishedQuote ?? this.publishedQuote,
+    privateQuote: clearPrivateQuote
+        ? null
+        : (privateQuote ?? this.privateQuote),
+    publishedQuote: clearPublishedQuote
+        ? null
+        : (publishedQuote ?? this.publishedQuote),
   );
 
   Map<String, dynamic> toJson() => {

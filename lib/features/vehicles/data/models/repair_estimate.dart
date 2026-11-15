@@ -127,6 +127,40 @@ class RepairBudgetOptional {
       );
 }
 
+class PrivateRepairQuote {
+  final int id;
+  final String? originalName;
+  final String? mimeType;
+  final int? size;
+  final DateTime? uploadedAt;
+
+  const PrivateRepairQuote({
+    required this.id,
+    this.originalName,
+    this.mimeType,
+    this.size,
+    this.uploadedAt,
+  });
+
+  factory PrivateRepairQuote.fromJson(Object? value) {
+    if (value is! Map || value['id'] == null) {
+      throw const FormatException('Invalid private quote');
+    }
+    final uploaded = value['uploaded_at'];
+    return PrivateRepairQuote(
+      id: _integer(value['id']) ?? 0,
+      originalName: value['original_name'] is String
+          ? value['original_name'] as String
+          : null,
+      mimeType: value['mime_type'] is String
+          ? value['mime_type'] as String
+          : null,
+      size: _integer(value['size']),
+      uploadedAt: uploaded is String ? DateTime.tryParse(uploaded) : null,
+    );
+  }
+}
+
 class PublishedRepairQuote {
   final int id;
   final String? url;
