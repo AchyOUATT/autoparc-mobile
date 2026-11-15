@@ -6937,4 +6937,83 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get repairEstimateRemove => 'Retirer l’estimation';
+
+  @override
+  String get privateSalesFeesYourPrice => 'Votre prix';
+
+  @override
+  String privateSalesFeesRate(String rate) {
+    return 'Frais AutoParc ($rate %)';
+  }
+
+  @override
+  String get privateSalesFinalSalePrice => 'Prix de vente final';
+
+  @override
+  String get privateSalesFeesLockedHelp =>
+      'Ce total est figé au moment où vous enregistrez.';
+
+  @override
+  String privateSalesFeesIncluded(String amount, String rate) {
+    return 'dont $amount de frais AutoParc ($rate %)';
+  }
+
+  @override
+  String get shellPrivateListingMargin => 'Paramètres · Frais AutoParc';
+
+  @override
+  String get settingsPrivateListingMarginTitle => 'Frais AutoParc';
+
+  @override
+  String get settingsPrivateListingMarginSaved =>
+      'Taux des frais AutoParc enregistré.';
+
+  @override
+  String get settingsPrivateListingMarginAccessDenied =>
+      'Accès réservé à l’administrateur.';
+
+  @override
+  String get settingsPrivateListingMarginHeading =>
+      'Taux appliqué aux annonces de particuliers';
+
+  @override
+  String get settingsPrivateListingMarginDescription =>
+      'Ce pourcentage s’ajoute au prix saisi par le vendeur. Les annonces déjà enregistrées ne changent pas. Le taux reste à 0 % tant que la nouvelle application n’est pas publiée sur le Play Store.';
+
+  @override
+  String get settingsPrivateListingMarginLabel => 'Taux';
+
+  @override
+  String get settingsPrivateListingMarginHelp =>
+      'Entre 0 et 50, une décimale acceptée.';
+
+  @override
+  String get settingsPrivateListingMarginInvalid => 'Saisissez un nombre.';
+
+  @override
+  String get settingsPrivateListingMarginRange =>
+      'Le taux doit être compris entre 0 et 50 %.';
+
+  @override
+  String get settingsPrivateListingMarginDecimals =>
+      'Le taux peut avoir au plus une décimale.';
+
+  @override
+  String get settingsPrivateListingMarginSave => 'Enregistrer le taux';
+
+  @override
+  String get settingsPrivateListingMarginSaving => 'Enregistrement…';
+
+  @override
+  String get settingsPrivateListingMarginUnknownAuthor => 'un administrateur';
+
+  @override
+  String settingsPrivateListingMarginLastChange(
+    String current,
+    String previous,
+    String author,
+    String when,
+  ) {
+    return 'Dernière modification : $current % (précédemment $previous %) par $author le $when.';
+  }
 }

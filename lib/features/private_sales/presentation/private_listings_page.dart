@@ -9,6 +9,7 @@ import '../../../core/utils/lien_externe.dart';
 import '../../../core/widgets/product_gallery.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
 import '../../inspections/presentation/staff_inspection_widgets.dart';
+import '../../partner_accounts/presentation/marge_recapitulatif.dart';
 import '../data/private_listing_repository.dart';
 import 'private_listing_detail.dart';
 import 'private_listing_form.dart';
@@ -509,7 +510,11 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
         ListTile(
           title: Text(listing.title),
           subtitle: Text(
-            '${formatXof(listing.number('price').toDouble())}\n${privateListingVehicleSummary(listing, l10n)}',
+            [
+              formatXof(listing.number('price').toDouble()),
+              ?_fraisDe(listing),
+              privateListingVehicleSummary(listing, l10n),
+            ].join('\n'),
           ),
           isThreeLine: true,
           onTap: () => _openListing(listing),
@@ -587,4 +592,17 @@ class _PrivateListingsPageState extends ConsumerState<PrivateListingsPage> {
       ],
     ),
   );
+
+  String? _fraisDe(PrivateListing listing) {
+    if (!_mine && !_review) return null;
+    final taux = listing.pricingRate ?? 0;
+    final propose = listing.proposedPrice;
+    final total = listing.number('price');
+    if (taux <= 0 || propose == null || total <= propose) return null;
+    final rate = taux == taux.roundToDouble() ? '${taux.round()}' : '$taux';
+    return l10n.privateSalesFeesIncluded(
+      MargeRecapitulatif.formaterMontant(total - propose),
+      rate,
+    );
+  }
 }

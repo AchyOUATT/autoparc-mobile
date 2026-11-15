@@ -12208,6 +12208,131 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Retirer l’estimation'**
   String get repairEstimateRemove;
+
+  /// Prix saisi par le particulier, avant les frais AutoParc.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre prix'**
+  String get privateSalesFeesYourPrice;
+
+  /// Ligne de frais ajoutés au prix du particulier.
+  ///
+  /// In fr, this message translates to:
+  /// **'Frais AutoParc ({rate} %)'**
+  String privateSalesFeesRate(String rate);
+
+  /// Total public que les acheteurs verront.
+  ///
+  /// In fr, this message translates to:
+  /// **'Prix de vente final'**
+  String get privateSalesFinalSalePrice;
+
+  /// Précise que le taux en vigueur s’applique à cet enregistrement.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce total est figé au moment où vous enregistrez.'**
+  String get privateSalesFeesLockedHelp;
+
+  /// Détail sous le prix public dans Mes annonces et la modération.
+  ///
+  /// In fr, this message translates to:
+  /// **'dont {amount} de frais AutoParc ({rate} %)'**
+  String privateSalesFeesIncluded(String amount, String rate);
+
+  /// Tuile du tiroir pour le taux des frais sur les annonces de particuliers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Paramètres · Frais AutoParc'**
+  String get shellPrivateListingMargin;
+
+  /// No description provided for @settingsPrivateListingMarginTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Frais AutoParc'**
+  String get settingsPrivateListingMarginTitle;
+
+  /// No description provided for @settingsPrivateListingMarginSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taux des frais AutoParc enregistré.'**
+  String get settingsPrivateListingMarginSaved;
+
+  /// No description provided for @settingsPrivateListingMarginAccessDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accès réservé à l’administrateur.'**
+  String get settingsPrivateListingMarginAccessDenied;
+
+  /// No description provided for @settingsPrivateListingMarginHeading.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taux appliqué aux annonces de particuliers'**
+  String get settingsPrivateListingMarginHeading;
+
+  /// No description provided for @settingsPrivateListingMarginDescription.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce pourcentage s’ajoute au prix saisi par le vendeur. Les annonces déjà enregistrées ne changent pas. Le taux reste à 0 % tant que la nouvelle application n’est pas publiée sur le Play Store.'**
+  String get settingsPrivateListingMarginDescription;
+
+  /// No description provided for @settingsPrivateListingMarginLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taux'**
+  String get settingsPrivateListingMarginLabel;
+
+  /// No description provided for @settingsPrivateListingMarginHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Entre 0 et 50, une décimale acceptée.'**
+  String get settingsPrivateListingMarginHelp;
+
+  /// No description provided for @settingsPrivateListingMarginInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez un nombre.'**
+  String get settingsPrivateListingMarginInvalid;
+
+  /// No description provided for @settingsPrivateListingMarginRange.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le taux doit être compris entre 0 et 50 %.'**
+  String get settingsPrivateListingMarginRange;
+
+  /// No description provided for @settingsPrivateListingMarginDecimals.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le taux peut avoir au plus une décimale.'**
+  String get settingsPrivateListingMarginDecimals;
+
+  /// No description provided for @settingsPrivateListingMarginSave.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer le taux'**
+  String get settingsPrivateListingMarginSave;
+
+  /// No description provided for @settingsPrivateListingMarginSaving.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrement…'**
+  String get settingsPrivateListingMarginSaving;
+
+  /// No description provided for @settingsPrivateListingMarginUnknownAuthor.
+  ///
+  /// In fr, this message translates to:
+  /// **'un administrateur'**
+  String get settingsPrivateListingMarginUnknownAuthor;
+
+  /// Historique du dernier changement de taux, affiché à l’administrateur.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dernière modification : {current} % (précédemment {previous} %) par {author} le {when}.'**
+  String settingsPrivateListingMarginLastChange(
+    String current,
+    String previous,
+    String author,
+    String when,
+  );
 }
 
 class _AppLocalizationsDelegate

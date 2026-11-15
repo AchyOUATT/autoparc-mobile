@@ -7858,5 +7858,67 @@
   "repairQuoteUnpublish": "Retirer la copie publiée",
   "repairQuoteAttachError": "Le devis n’a pas pu être envoyé. Réessayez.",
   "repairQuoteRemoveError": "Le devis n’a pas pu être retiré. Réessayez.",
-  "repairEstimateRemove": "Retirer l’estimation"
+  "repairEstimateRemove": "Retirer l’estimation",
+  "privateSalesFeesYourPrice": "Votre prix",
+  "@privateSalesFeesYourPrice": {
+    "description": "Prix saisi par le particulier, avant les frais AutoParc."
+  },
+  "privateSalesFeesRate": "Frais AutoParc ({rate} %)",
+  "@privateSalesFeesRate": {
+    "description": "Ligne de frais ajoutés au prix du particulier.",
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "privateSalesFinalSalePrice": "Prix de vente final",
+  "@privateSalesFinalSalePrice": {
+    "description": "Total public que les acheteurs verront."
+  },
+  "privateSalesFeesLockedHelp": "Ce total est figé au moment où vous enregistrez.",
+  "@privateSalesFeesLockedHelp": {
+    "description": "Précise que le taux en vigueur s’applique à cet enregistrement."
+  },
+  "privateSalesFeesIncluded": "dont {amount} de frais AutoParc ({rate} %)",
+  "@privateSalesFeesIncluded": {
+    "description": "Détail sous le prix public dans Mes annonces et la modération.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "shellPrivateListingMargin": "Paramètres · Frais AutoParc",
+  "@shellPrivateListingMargin": {
+    "description": "Tuile du tiroir pour le taux des frais sur les annonces de particuliers."
+  },
+  "settingsPrivateListingMarginTitle": "Frais AutoParc",
+  "settingsPrivateListingMarginSaved": "Taux des frais AutoParc enregistré.",
+  "settingsPrivateListingMarginAccessDenied": "Accès réservé à l’administrateur.",
+  "settingsPrivateListingMarginHeading": "Taux appliqué aux annonces de particuliers",
+  "settingsPrivateListingMarginDescription": "Ce pourcentage s’ajoute au prix saisi par le vendeur. Les annonces déjà enregistrées ne changent pas. Le taux reste à 0 % tant que la nouvelle application n’est pas publiée sur le Play Store.",
+  "settingsPrivateListingMarginLabel": "Taux",
+  "settingsPrivateListingMarginHelp": "Entre 0 et 50, une décimale acceptée.",
+  "settingsPrivateListingMarginInvalid": "Saisissez un nombre.",
+  "settingsPrivateListingMarginRange": "Le taux doit être compris entre 0 et 50 %.",
+  "settingsPrivateListingMarginDecimals": "Le taux peut avoir au plus une décimale.",
+  "settingsPrivateListingMarginSave": "Enregistrer le taux",
+  "settingsPrivateListingMarginSaving": "Enregistrement…",
+  "settingsPrivateListingMarginUnknownAuthor": "un administrateur",
+  "settingsPrivateListingMarginLastChange": "Dernière modification : {current} % (précédemment {previous} %) par {author} le {when}.",
+  "@settingsPrivateListingMarginLastChange": {
+    "description": "Historique du dernier changement de taux, affiché à l’administrateur.",
+    "placeholders": {
+      "current": { "type": "String" },
+      "previous": { "type": "String" },
+      "author": { "type": "String" },
+      "when": { "type": "String" }
+    }
+  }
+
 }
+

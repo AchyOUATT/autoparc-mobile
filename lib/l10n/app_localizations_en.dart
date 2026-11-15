@@ -6908,4 +6908,82 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get repairEstimateRemove => 'Remove the estimate';
+
+  @override
+  String get privateSalesFeesYourPrice => 'Your price';
+
+  @override
+  String privateSalesFeesRate(String rate) {
+    return 'AutoParc fees ($rate %)';
+  }
+
+  @override
+  String get privateSalesFinalSalePrice => 'Final selling price';
+
+  @override
+  String get privateSalesFeesLockedHelp =>
+      'This total is locked when you save.';
+
+  @override
+  String privateSalesFeesIncluded(String amount, String rate) {
+    return 'including $amount AutoParc fees ($rate %)';
+  }
+
+  @override
+  String get shellPrivateListingMargin => 'Settings · AutoParc fees';
+
+  @override
+  String get settingsPrivateListingMarginTitle => 'AutoParc fees';
+
+  @override
+  String get settingsPrivateListingMarginSaved => 'AutoParc fee rate saved.';
+
+  @override
+  String get settingsPrivateListingMarginAccessDenied =>
+      'Access restricted to the administrator.';
+
+  @override
+  String get settingsPrivateListingMarginHeading =>
+      'Rate applied to private listings';
+
+  @override
+  String get settingsPrivateListingMarginDescription =>
+      'This percentage is added to the price entered by the seller. Existing listings do not change. The rate stays at 0 % until the new app is published on the Play Store.';
+
+  @override
+  String get settingsPrivateListingMarginLabel => 'Rate';
+
+  @override
+  String get settingsPrivateListingMarginHelp =>
+      'Between 0 and 50, one decimal allowed.';
+
+  @override
+  String get settingsPrivateListingMarginInvalid => 'Enter a number.';
+
+  @override
+  String get settingsPrivateListingMarginRange =>
+      'The rate must be between 0 and 50 %.';
+
+  @override
+  String get settingsPrivateListingMarginDecimals =>
+      'The rate may have at most one decimal.';
+
+  @override
+  String get settingsPrivateListingMarginSave => 'Save the rate';
+
+  @override
+  String get settingsPrivateListingMarginSaving => 'Saving…';
+
+  @override
+  String get settingsPrivateListingMarginUnknownAuthor => 'an administrator';
+
+  @override
+  String settingsPrivateListingMarginLastChange(
+    String current,
+    String previous,
+    String author,
+    String when,
+  ) {
+    return 'Last change: $current % (previously $previous %) by $author on $when.';
+  }
 }

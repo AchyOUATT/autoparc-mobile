@@ -68,6 +68,7 @@ import 'features/private_sales/presentation/private_listing_form.dart';
 import 'features/partner_accounts/presentation/partner_applications_page.dart';
 import 'features/partner_accounts/presentation/partner_notifications_page.dart';
 import 'features/settings/presentation/contact_settings_page.dart';
+import 'features/settings/presentation/private_listing_margin_settings_page.dart';
 import 'core/providers/shell_scaffold_provider.dart';
 import 'core/local/catalog_local_cache.dart';
 import 'features/vehicles/presentation/providers/vehicle_refs_provider.dart';
@@ -133,8 +134,9 @@ Future<void> main() async {
   // Un coffre qui ne répond pas dans les temps ne bloque pas le démarrage :
   // voir `sessionPartenaireAuDemarrage`.
   final profil = await ProfilService.lire();
-  final sessionPartenaire =
-      await sessionPartenaireAuDemarrage(SecurePartnerTokenStore());
+  final sessionPartenaire = await sessionPartenaireAuDemarrage(
+    SecurePartnerTokenStore(),
+  );
 
   runApp(
     ProviderScope(
@@ -161,34 +163,42 @@ GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
   initialLocation: destinationDeDepart(demoVue: onboardingDone),
   routes: [
     if (privateSalesEnabled) ...[
-      GoRoute(path: '/private-listings', builder: (_, __) => const PrivateListingsPage()),
-      GoRoute(path: '/my-listings', builder: (_, __) => const PrivateListingsPage(mode: PrivateListingMode.mine)),
-      GoRoute(path: '/private-listing-reviews', builder: (_, __) => const PrivateListingsPage(mode: PrivateListingMode.review)),
-      GoRoute(path: '/sell', builder: (_, state) => PrivateListingForm(vehicle: state.extra is OwnedVehicle ? state.extra as OwnedVehicle : null)),
+      GoRoute(
+        path: '/private-listings',
+        builder: (_, __) => const PrivateListingsPage(),
+      ),
+      GoRoute(
+        path: '/my-listings',
+        builder: (_, __) =>
+            const PrivateListingsPage(mode: PrivateListingMode.mine),
+      ),
+      GoRoute(
+        path: '/private-listing-reviews',
+        builder: (_, __) =>
+            const PrivateListingsPage(mode: PrivateListingMode.review),
+      ),
+      GoRoute(
+        path: '/sell',
+        builder: (_, state) => PrivateListingForm(
+          vehicle: state.extra is OwnedVehicle
+              ? state.extra as OwnedVehicle
+              : null,
+        ),
+      ),
     ],
     // La question du premier lancement, AVANT la démonstration : voir
     // `destinationDeDepart` dans core/demarrage.dart.
-    GoRoute(
-      path: '/bienvenue',
-      builder: (_, _) => const ChoixDeProfilPage(),
-    ),
-    GoRoute(
-      path: '/onboarding',
-      builder: (_, __) => const OnboardingPage(),
-    ),
-    GoRoute(
-      path: '/login',
-      builder: (_, __) => const LoginPage(),
-    ),
+    GoRoute(path: '/bienvenue', builder: (_, _) => const ChoixDeProfilPage()),
+    GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingPage()),
+    GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
     GoRoute(
       path: '/partner',
       // `?inscription=1` : le vendeur qui vient de répondre à la question du
       // premier lancement arrive sur l'onglet Inscription. Un paramètre de
       // requête et non `extra`, pour que le chemin se suffise — il est aussi
       // la cible de la carte « Vous vendez ? » de l'accueil.
-      builder: (_, state) => PartnerAccountPage(
-        inscription: inscriptionDemandee(state.uri),
-      ),
+      builder: (_, state) =>
+          PartnerAccountPage(inscription: inscriptionDemandee(state.uri)),
     ),
     // La boîte aux lettres du partenaire a sa route : le tiroir y mène
     // directement, sans passer par le hub de l'espace partenaire.
@@ -204,6 +214,10 @@ GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
       path: '/settings/contact',
       builder: (_, _) => const ContactSettingsPage(),
     ),
+    GoRoute(
+      path: '/settings/private-listing-margin',
+      builder: (_, _) => const PrivateListingMarginSettingsPage(),
+    ),
 
     // Shell avec NavigationBar (3 onglets catalogue)
     ShellRoute(
@@ -211,12 +225,15 @@ GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
       routes: [
         // L'accueil dépend de qui tient le téléphone : tableau de bord pour un
         // partenaire, accueil acheteur sinon — voir `AccueilSelonProfil`.
-        GoRoute(path: '/',            builder: (_, _) => const AccueilSelonProfil()),
+        GoRoute(path: '/', builder: (_, _) => const AccueilSelonProfil()),
         // La recherche véhicules quitte la racine : elle sert l'acheteur de
         // passage, quand l'accueil sert le propriétaire, qui lui revient.
-        GoRoute(path: '/vehicles',    builder: (_, __) => const VehicleListPage()),
-        GoRoute(path: '/accessories', builder: (_, __) => const AccessoryListPage()),
-        GoRoute(path: '/parts',       builder: (_, __) => const PartListPage()),
+        GoRoute(path: '/vehicles', builder: (_, __) => const VehicleListPage()),
+        GoRoute(
+          path: '/accessories',
+          builder: (_, __) => const AccessoryListPage(),
+        ),
+        GoRoute(path: '/parts', builder: (_, __) => const PartListPage()),
       ],
     ),
 
@@ -227,18 +244,26 @@ GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
     GoRoute(path: '/cart', builder: (_, __) => const CartPage()),
 
     // ── Routes statiques AVANT les routes paramétrées ──────────────
-    GoRoute(path: '/vehicles/new',    builder: (_, __) => const VehicleRegistrationPage()),
-    GoRoute(path: '/parts/new',       builder: (_, __) => const AddPartPage()),
-    GoRoute(path: '/accessories/new', builder: (_, __) => const AddAccessoryPage()),
+    GoRoute(
+      path: '/vehicles/new',
+      builder: (_, __) => const VehicleRegistrationPage(),
+    ),
+    GoRoute(path: '/parts/new', builder: (_, __) => const AddPartPage()),
+    GoRoute(
+      path: '/accessories/new',
+      builder: (_, __) => const AddAccessoryPage(),
+    ),
 
     // ── Upload photos (staff) ──────────────────────────────────────
     GoRoute(
       path: '/media-upload',
-      builder: (_, state) => MediaUploadPage(
-        config: state.extra as MediaUploadConfig,
-      ),
+      builder: (_, state) =>
+          MediaUploadPage(config: state.extra as MediaUploadConfig),
     ),
-    GoRoute(path: '/garage/add',    builder: (_, __) => const AddVehicleToGaragePage()),
+    GoRoute(
+      path: '/garage/add',
+      builder: (_, __) => const AddVehicleToGaragePage(),
+    ),
     GoRoute(
       path: '/garage/:id/edit',
       builder: (_, state) {
@@ -252,14 +277,8 @@ GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
     ),
 
     // ── Partenaires (staff) ────────────────────────────────────────
-    GoRoute(
-      path: '/partners',
-      builder: (_, __) => const PartnerListPage(),
-    ),
-    GoRoute(
-      path: '/partners/new',
-      builder: (_, __) => const PartnerFormPage(),
-    ),
+    GoRoute(path: '/partners', builder: (_, __) => const PartnerListPage()),
+    GoRoute(path: '/partners/new', builder: (_, __) => const PartnerFormPage()),
     GoRoute(
       path: '/partners/:id/edit',
       builder: (_, state) {
@@ -278,19 +297,10 @@ GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
     ),
 
     // ── Besoins clients ────────────────────────────────────────────
-    GoRoute(
-      path: '/needs/new',
-      builder: (_, state) => const SubmitNeedPage(),
-    ),
+    GoRoute(path: '/needs/new', builder: (_, state) => const SubmitNeedPage()),
     // Route statique AVANT /needs/:id ou /needs (catch-all)
-    GoRoute(
-      path: '/needs/mine',
-      builder: (_, __) => const ClientNeedsPage(),
-    ),
-    GoRoute(
-      path: '/needs',
-      builder: (_, __) => const NeedsListPage(),
-    ),
+    GoRoute(path: '/needs/mine', builder: (_, __) => const ClientNeedsPage()),
+    GoRoute(path: '/needs', builder: (_, __) => const NeedsListPage()),
 
     // ── Notifications ──────────────────────────────────────────────
     GoRoute(
@@ -300,11 +310,11 @@ GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
     GoRoute(
       path: '/garage/:id/parts',
       builder: (_, state) {
-        final id      = int.parse(state.pathParameters['id']!);
+        final id = int.parse(state.pathParameters['id']!);
         final vehicle = state.extra as OwnedVehicle?;
         // Catégorie passée en requête, et non par `extra` : on arrive ici
         // depuis un contrôle avant voyage, dont `extra` porte déjà le véhicule.
-        final params  = state.uri.queryParameters;
+        final params = state.uri.queryParameters;
         return CompatiblePartsPage(
           ownedVehicleId: id,
           vehicle: vehicle,
@@ -319,7 +329,7 @@ GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
     GoRoute(
       path: '/garage/:id/check',
       builder: (_, state) {
-        final id      = int.parse(state.pathParameters['id']!);
+        final id = int.parse(state.pathParameters['id']!);
         final vehicle = state.extra as OwnedVehicle?;
         return VehicleCheckPage(ownedVehicleId: id, vehicle: vehicle);
       },
@@ -331,7 +341,7 @@ GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
     GoRoute(
       path: '/garage/:id/fuel',
       builder: (_, state) {
-        final id      = int.parse(state.pathParameters['id']!);
+        final id = int.parse(state.pathParameters['id']!);
         final vehicle = state.extra as OwnedVehicle?;
         return FuelFillsPage(ownedVehicleId: id, vehicle: vehicle);
       },
@@ -348,7 +358,7 @@ GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
     GoRoute(
       path: '/vehicles/:id',
       builder: (_, state) {
-        final id      = int.parse(state.pathParameters['id']!);
+        final id = int.parse(state.pathParameters['id']!);
         final vehicle = state.extra as Vehicle?;
         return VehicleDetailPage(vehicleId: id, initialVehicle: vehicle);
       },
@@ -363,9 +373,12 @@ GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
     GoRoute(
       path: '/accessories/:id',
       builder: (_, state) {
-        final id        = int.parse(state.pathParameters['id']!);
+        final id = int.parse(state.pathParameters['id']!);
         final accessory = state.extra as Accessory?;
-        return AccessoryDetailPage(accessoryId: id, initialAccessory: accessory);
+        return AccessoryDetailPage(
+          accessoryId: id,
+          initialAccessory: accessory,
+        );
       },
     ),
     GoRoute(
@@ -378,7 +391,7 @@ GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
     GoRoute(
       path: '/parts/:id',
       builder: (_, state) {
-        final id   = int.parse(state.pathParameters['id']!);
+        final id = int.parse(state.pathParameters['id']!);
         final part = state.extra as Part?;
         return PartDetailPage(partId: id, initialPart: part);
       },
@@ -545,10 +558,10 @@ class _AppShellState extends ConsumerState<_AppShell> {
   /// construction, et non à la compilation. Il est pris dans [_libelles], dans
   /// le même ordre.
   static const _tabs = [
-    (path: '/',            icon: Icons.home_outlined),
-    (path: '/vehicles',    icon: Icons.directions_car_outlined),
+    (path: '/', icon: Icons.home_outlined),
+    (path: '/vehicles', icon: Icons.directions_car_outlined),
     (path: '/accessories', icon: Icons.tune_outlined),
-    (path: '/parts',       icon: Icons.settings_outlined),
+    (path: '/parts', icon: Icons.settings_outlined),
   ];
 
   /// Les intitulés des quatre onglets, dans l'ordre de [_tabs].
@@ -571,7 +584,7 @@ class _AppShellState extends ConsumerState<_AppShell> {
         apiClient: ref.read(apiClientProvider),
         l10n: AppLocalizations.of(context),
         onTap: (data) {
-          final type      = data['type'] as String? ?? '';
+          final type = data['type'] as String? ?? '';
           final vehicleId = int.tryParse(data['vehicle_id']?.toString() ?? '');
           if (mounted) {
             switch (type) {
@@ -586,10 +599,12 @@ class _AppShellState extends ConsumerState<_AppShell> {
               // assurance ou une visite technique en saisissant la nouvelle
               // date au garage.
               case 'maintenance_service':
-                final ownedId =
-                    int.tryParse(data['owned_vehicle_id']?.toString() ?? '');
+                final ownedId = int.tryParse(
+                  data['owned_vehicle_id']?.toString() ?? '',
+                );
                 context.push(
-                    ownedId != null ? '/garage/$ownedId/parts' : '/garage');
+                  ownedId != null ? '/garage/$ownedId/parts' : '/garage',
+                );
               case 'maintenance_technical_inspection':
               case 'maintenance_insurance':
                 context.push('/garage');
@@ -607,11 +622,14 @@ class _AppShellState extends ConsumerState<_AppShell> {
               // partagent une seule portée, et deux `final ownedId` dans le
               // même aiguillage ne compilent pas.
               case 'fuel_anomaly':
-                final vehiculeSuivi =
-                    int.tryParse(data['owned_vehicle_id']?.toString() ?? '');
-                context.push(vehiculeSuivi != null
-                    ? '/garage/$vehiculeSuivi/fuel'
-                    : '/garage');
+                final vehiculeSuivi = int.tryParse(
+                  data['owned_vehicle_id']?.toString() ?? '',
+                );
+                context.push(
+                  vehiculeSuivi != null
+                      ? '/garage/$vehiculeSuivi/fuel'
+                      : '/garage',
+                );
 
               default:
                 context.push('/notifications');
@@ -668,11 +686,15 @@ class _AppShellState extends ConsumerState<_AppShell> {
   @override
   Widget build(BuildContext context) {
     final scaffoldKey = ref.watch(shellScaffoldKeyProvider);
-    final location    = GoRouterState.of(context).uri.path;
-    final tabIndex    = _tabs.indexWhere((t) => t.path == location).clamp(0, _tabs.length - 1);
-    final libelles    = _libelles(AppLocalizations.of(context));
+    final location = GoRouterState.of(context).uri.path;
+    final tabIndex = _tabs
+        .indexWhere((t) => t.path == location)
+        .clamp(0, _tabs.length - 1);
+    final libelles = _libelles(AppLocalizations.of(context));
     ref.listen(langueProvider, (_, locale) {
-      AppLocalizations.delegate.load(locale).then(FcmAppService.instance.updateLanguage);
+      AppLocalizations.delegate
+          .load(locale)
+          .then(FcmAppService.instance.updateLanguage);
     });
 
     // canPop: false intercepte le Retour systeme pour tout le shell.
@@ -716,9 +738,9 @@ class _AppShellState extends ConsumerState<_AppShell> {
           destinations: [
             for (var i = 0; i < _tabs.length; i++)
               NavigationDestination(
-                icon:         Icon(_tabs[i].icon),
+                icon: Icon(_tabs[i].icon),
                 selectedIcon: Icon(_tabs[i].icon),
-                label:        libelles[i],
+                label: libelles[i],
               ),
           ],
         ),
@@ -740,19 +762,18 @@ class AppDrawer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final auth   = ref.watch(authProvider);
+    final auth = ref.watch(authProvider);
     final unread = ref.watch(unreadCountProvider).valueOrNull ?? 0;
     final sessionPartenaire = ref.watch(partnerSessionProvider);
     final partenaire = sessionPartenaire.profile;
     final profil = ref.watch(profilUtilisateurProvider);
-    final cs     = Theme.of(context).colorScheme;
-    final l10n   = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
 
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-
           // ── En-tête compte ──────────────────────────────────────
           UserAccountsDrawerHeader(
             decoration: BoxDecoration(color: cs.primary),
@@ -799,12 +820,15 @@ class AppDrawer extends ConsumerWidget {
                     // n'est pas traduit par ce lot, et la phrase qui l'encadre
                     // l'est — c'est le même partage que partout ailleurs dans
                     // ce lot, et il est écrit dans lib/l10n/CONVENTION.md.
-                    auth.isStaff  ? l10n.shellAccountStaff(auth.staffUser?.role ?? '') :
-                    auth.isClient ? (auth.firebaseUser?.email ?? '') :
-                    // Le partenaire suit la règle du personnel : « Session à
-                    // confirmer… » tant que le profil n'est qu'une lecture du
-                    // coffre, puis son statut.
-                    partenaire != null
+                    auth.isStaff
+                        ? l10n.shellAccountStaff(auth.staffUser?.role ?? '')
+                        : auth.isClient
+                        ? (auth.firebaseUser?.email ?? '')
+                        :
+                          // Le partenaire suit la règle du personnel : « Session à
+                          // confirmer… » tant que le profil n'est qu'une lecture du
+                          // coffre, puis son statut.
+                          partenaire != null
                         ? (sessionPartenaire.sessionAConfirmer
                               ? l10n.shellSessionToConfirm
                               : partenaire.approved
@@ -834,36 +858,66 @@ class AppDrawer extends ConsumerWidget {
           // STAFF
           // ════════════════════════════════════════════════════════
           if (auth.isStaff) ...[
-            if (auth.canManageSettings) _DrawerTile(
-              icon: Icons.settings_phone_outlined,
-              label: l10n.shellContactSettings,
-              onTap: () { _close(context); context.push('/settings/contact'); },
-            ),
-            if (auth.canManagePartners) _DrawerTile(
-              icon: Icons.how_to_reg_outlined,
-              label: AppLocalizations.of(context).shellPartnerApplications,
-              onTap: () { _close(context); context.push('/partner-applications'); },
-            ),
-            if (privateSalesEnabled && auth.canManageCatalog) _DrawerTile(
-              icon: Icons.fact_check_outlined,
-              label: l10n.privateSalesReviewTitle,
-              onTap: () { _close(context); context.push('/private-listing-reviews'); },
-            ),
+            if (auth.canManageSettings)
+              _DrawerTile(
+                icon: Icons.settings_phone_outlined,
+                label: l10n.shellContactSettings,
+                onTap: () {
+                  _close(context);
+                  context.push('/settings/contact');
+                },
+              ),
+            if (auth.canManagePrivateListingMargin)
+              _DrawerTile(
+                icon: Icons.percent_outlined,
+                label: l10n.shellPrivateListingMargin,
+                onTap: () {
+                  _close(context);
+                  context.push('/settings/private-listing-margin');
+                },
+              ),
+            if (auth.canManagePartners)
+              _DrawerTile(
+                icon: Icons.how_to_reg_outlined,
+                label: AppLocalizations.of(context).shellPartnerApplications,
+                onTap: () {
+                  _close(context);
+                  context.push('/partner-applications');
+                },
+              ),
+            if (privateSalesEnabled && auth.canManageCatalog)
+              _DrawerTile(
+                icon: Icons.fact_check_outlined,
+                label: l10n.privateSalesReviewTitle,
+                onTap: () {
+                  _close(context);
+                  context.push('/private-listing-reviews');
+                },
+              ),
             _DrawerTile(
               icon: Icons.list_alt_outlined,
               label: l10n.shellClientNeeds,
-              onTap: () { _close(context); context.push('/needs'); },
+              onTap: () {
+                _close(context);
+                context.push('/needs');
+              },
             ),
             _DrawerTile(
               icon: Icons.handshake_outlined,
               label: l10n.shellPartners,
-              onTap: () { _close(context); context.push('/partners'); },
+              onTap: () {
+                _close(context);
+                context.push('/partners');
+              },
             ),
             _DrawerTile(
               icon: Icons.notifications_outlined,
               label: l10n.shellNotifications,
               badge: unread,
-              onTap: () { _close(context); context.push('/notifications'); },
+              onTap: () {
+                _close(context);
+                context.push('/notifications');
+              },
             ),
             const Divider(),
             _DrawerTile(
@@ -916,24 +970,38 @@ class AppDrawer extends ConsumerWidget {
               icon: Icons.account_circle_outlined,
               label: l10n.garageAccountTitle,
               onTap: () {
-                final racine = Navigator.of(context, rootNavigator: true).context;
+                final racine = Navigator.of(
+                  context,
+                  rootNavigator: true,
+                ).context;
                 _close(context);
                 afficherFeuilleCompteClient(racine, auth);
               },
             ),
-            if (privateSalesEnabled) _DrawerTile(
-              icon: Icons.sell_outlined, label: AppLocalizations.of(context).privateSalesMineTitle,
-              onTap: () { _close(context); context.push('/my-listings'); },
-            ),
+            if (privateSalesEnabled)
+              _DrawerTile(
+                icon: Icons.sell_outlined,
+                label: AppLocalizations.of(context).privateSalesMineTitle,
+                onTap: () {
+                  _close(context);
+                  context.push('/my-listings');
+                },
+              ),
             _DrawerTile(
               icon: Icons.garage_outlined,
               label: l10n.shellMyGarage,
-              onTap: () { _close(context); context.push('/garage'); },
+              onTap: () {
+                _close(context);
+                context.push('/garage');
+              },
             ),
             _DrawerTile(
               icon: Icons.list_alt_outlined,
               label: l10n.shellMyNeeds,
-              onTap: () { _close(context); context.push('/needs/mine'); },
+              onTap: () {
+                _close(context);
+                context.push('/needs/mine');
+              },
             ),
             _DrawerTile(
               icon: Icons.phone_outlined,
@@ -978,21 +1046,31 @@ class AppDrawer extends ConsumerWidget {
             // Pas pour le personnel : `/` lui rend SON accueil (personnel >
             // partenaire, voir `AccueilSelonProfil`), et une tuile « Tableau
             // de bord » qui ouvrirait autre chose mentirait.
-            if (!auth.isStaff) _DrawerTile(
-              icon: Icons.dashboard_outlined,
-              label: l10n.shellPartnerDashboard,
-              onTap: () { _close(context); context.go('/'); },
-            ),
+            if (!auth.isStaff)
+              _DrawerTile(
+                icon: Icons.dashboard_outlined,
+                label: l10n.shellPartnerDashboard,
+                onTap: () {
+                  _close(context);
+                  context.go('/');
+                },
+              ),
             _DrawerTile(
               icon: Icons.storefront_outlined,
               label: l10n.shellPartnerListings,
-              onTap: () { _close(context); context.push('/partner'); },
+              onTap: () {
+                _close(context);
+                context.push('/partner');
+              },
             ),
             _DrawerTile(
               icon: Icons.campaign_outlined,
               label: l10n.partnerAccountsCustomerRequests,
               badge: ref.watch(partnerUnreadCountProvider).valueOrNull ?? 0,
-              onTap: () { _close(context); context.push('/partner/demandes'); },
+              onTap: () {
+                _close(context);
+                context.push('/partner/demandes');
+              },
             ),
             _DrawerTile(
               icon: Icons.phone_outlined,
@@ -1028,14 +1106,22 @@ class AppDrawer extends ConsumerWidget {
           // ANONYME — ni session du personnel, ni client, ni partenaire
           // ════════════════════════════════════════════════════════
           if (!auth.isAuthenticated && partenaire == null) ...[
-            if (privateSalesEnabled) _DrawerTile(
-              icon: Icons.directions_car_outlined, label: AppLocalizations.of(context).privateSalesBrowseTitle,
-              onTap: () { _close(context); context.push('/private-listings'); },
-            ),
+            if (privateSalesEnabled)
+              _DrawerTile(
+                icon: Icons.directions_car_outlined,
+                label: AppLocalizations.of(context).privateSalesBrowseTitle,
+                onTap: () {
+                  _close(context);
+                  context.push('/private-listings');
+                },
+              ),
             _DrawerTile(
               icon: Icons.login,
               label: l10n.shellSignIn,
-              onTap: () { _close(context); context.push('/login'); },
+              onTap: () {
+                _close(context);
+                context.push('/login');
+              },
             ),
           ],
 
@@ -1104,26 +1190,29 @@ class AppDrawer extends ConsumerWidget {
           // plus : la page explique un espace fermé et encaisse un 503.
           if (partenaire == null &&
               (profil == ProfilUtilisateur.vendeur ||
-                  !ref.watch(espacePartenaireFermeProvider))) _DrawerTile(
-            icon: Icons.storefront_outlined,
-            label: AppLocalizations.of(context).shellPartnerSpace,
-            onTap: () { _close(context); context.push('/partner'); },
-          ),
+                  !ref.watch(espacePartenaireFermeProvider)))
+            _DrawerTile(
+              icon: Icons.storefront_outlined,
+              label: AppLocalizations.of(context).shellPartnerSpace,
+              onTap: () {
+                _close(context);
+                context.push('/partner');
+              },
+            ),
           const TuileLangue(),
         ],
       ),
     );
   }
-
 }
 
 // ── Tuile drawer ──────────────────────────────────────────────────
 
 class _DrawerTile extends StatelessWidget {
   final IconData icon;
-  final String   label;
+  final String label;
   final VoidCallback onTap;
-  final int    badge;
+  final int badge;
   final Color? color;
 
   const _DrawerTile({
@@ -1139,7 +1228,10 @@ class _DrawerTile extends StatelessWidget {
     final effective = color ?? Theme.of(context).colorScheme.onSurface;
     return ListTile(
       leading: badge > 0
-          ? Badge(label: Text('$badge'), child: Icon(icon, color: effective))
+          ? Badge(
+              label: Text('$badge'),
+              child: Icon(icon, color: effective),
+            )
           : Icon(icon, color: effective),
       title: Text(label, style: TextStyle(color: effective)),
       onTap: onTap,
