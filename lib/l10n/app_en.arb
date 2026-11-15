@@ -2979,5 +2979,67 @@
   "repairQuoteUnpublish": "Remove the published copy",
   "repairQuoteAttachError": "The quote could not be uploaded. Please try again.",
   "repairQuoteRemoveError": "The quote could not be removed. Please try again.",
-  "repairEstimateRemove": "Remove the estimate"
+  "repairEstimateRemove": "Remove the estimate",
+  "privateSalesFeesYourPrice": "Your price",
+  "@privateSalesFeesYourPrice": {
+    "description": "Price entered by the private seller, before AutoParc fees."
+  },
+  "privateSalesFeesRate": "AutoParc fees ({rate} %)",
+  "@privateSalesFeesRate": {
+    "description": "Fee line added to the private seller's price.",
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "privateSalesFinalSalePrice": "Final selling price",
+  "@privateSalesFinalSalePrice": {
+    "description": "Public total buyers will see."
+  },
+  "privateSalesFeesLockedHelp": "This total is locked when you save.",
+  "@privateSalesFeesLockedHelp": {
+    "description": "Explains that the current rate applies to this save."
+  },
+  "privateSalesFeesIncluded": "including {amount} AutoParc fees ({rate} %)",
+  "@privateSalesFeesIncluded": {
+    "description": "Breakdown under the public price in My listings and moderation.",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
+  "shellPrivateListingMargin": "Settings · AutoParc fees",
+  "@shellPrivateListingMargin": {
+    "description": "Drawer tile for the private-listing fee rate."
+  },
+  "settingsPrivateListingMarginTitle": "AutoParc fees",
+  "settingsPrivateListingMarginSaved": "AutoParc fee rate saved.",
+  "settingsPrivateListingMarginAccessDenied": "Access restricted to the administrator.",
+  "settingsPrivateListingMarginHeading": "Rate applied to private listings",
+  "settingsPrivateListingMarginDescription": "This percentage is added to the price entered by the seller. Existing listings do not change. The rate stays at 0 % until the new app is published on the Play Store.",
+  "settingsPrivateListingMarginLabel": "Rate",
+  "settingsPrivateListingMarginHelp": "Between 0 and 50, one decimal allowed.",
+  "settingsPrivateListingMarginInvalid": "Enter a number.",
+  "settingsPrivateListingMarginRange": "The rate must be between 0 and 50 %.",
+  "settingsPrivateListingMarginDecimals": "The rate may have at most one decimal.",
+  "settingsPrivateListingMarginSave": "Save the rate",
+  "settingsPrivateListingMarginSaving": "Saving…",
+  "settingsPrivateListingMarginUnknownAuthor": "an administrator",
+  "settingsPrivateListingMarginLastChange": "Last change: {current} % (previously {previous} %) by {author} on {when}.",
+  "@settingsPrivateListingMarginLastChange": {
+    "description": "History of the last rate change, shown to the administrator.",
+    "placeholders": {
+      "current": { "type": "String" },
+      "previous": { "type": "String" },
+      "author": { "type": "String" },
+      "when": { "type": "String" }
+    }
+  }
+
 }
+

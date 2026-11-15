@@ -30,6 +30,24 @@ class PrivateListing {
 
   String get status => text('status');
 
+  Map<String, dynamic>? get privatePricing {
+    final detail = fields['private_pricing'];
+    if (detail is! Map) return null;
+    return Map<String, dynamic>.from(detail);
+  }
+
+  int? get proposedPrice {
+    final raw = privatePricing?['prix_propose'];
+    if (raw == null) return null;
+    return int.tryParse('$raw');
+  }
+
+  double? get pricingRate {
+    final raw = privatePricing?['taux'];
+    if (raw == null) return null;
+    return double.tryParse('$raw');
+  }
+
   /// Le numero SAISI par le vendeur, que le personnel appellera.
   String get phoneClaimed => text('phone_claimed');
 

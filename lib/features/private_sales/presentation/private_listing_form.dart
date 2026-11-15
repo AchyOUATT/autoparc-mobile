@@ -19,6 +19,8 @@ import '../../vehicles/data/models/two_wheeler_configuration.dart';
 import '../../vehicles/data/models/fault_declaration.dart';
 import '../../vehicles/data/repair_quote_repository.dart';
 import '../../vehicles/presentation/widgets/fault_declaration_widget.dart';
+import '../../partner_accounts/presentation/marge_recapitulatif.dart';
+import '../data/private_listing_margin_repository.dart';
 import '../data/private_listing_repository.dart';
 import 'private_listing_labels.dart';
 
@@ -71,6 +73,13 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
     ]) {
       _inputs[key] = TextEditingController(text: _saved?.text(key) ?? '');
     }
+    final proposed = _saved?.proposedPrice;
+    if (proposed != null) {
+      _inputs['price']!.text = '$proposed';
+    }
+    _inputs['price']!.addListener(() {
+      if (mounted) setState(() {});
+    });
     _inputs['mileage_km']!.text = _saved?.mileageKm?.toString() ?? '';
     // ASYMETRIE VOULUE : on ECRIT `phone` et on LIT `phone_claimed`.
     //
@@ -125,6 +134,11 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
     _vehicleType = vehicle.vehicleType ?? 'passenger';
     _twoWheelerConfiguration.load(vehicle.twoWheelerConfiguration);
     _dirty = true;
+  }
+
+  int? _prixSaisi() {
+    final brut = _inputs['price']?.text.replaceAll(RegExp(r'\s'), '') ?? '';
+    return int.tryParse(brut);
   }
 
   int? _id(Object? value) => value == null || readListingInt(value) <= 0
@@ -206,6 +220,10 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
           _faultDeclaration = saved.faultDeclaration;
           _faultsDirty = false;
           _dirty = false;
+          final net = saved.proposedPrice;
+          if (net != null) {
+            _inputs['price']!.text = '$net';
+          }
         });
       }
     });
@@ -490,6 +508,15 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
               l10n.privateSalesPriceLabel,
               numeric: true,
               enabled: editable,
+            ),
+            MargeRecapitulatif(
+              prixPropose: _prixSaisi(),
+              pourcentage:
+                  ref.watch(privateListingMarginRateProvider).valueOrNull ?? 0,
+              libellePrixSaisi: l10n.privateSalesFeesYourPrice,
+              libelleTaux: l10n.privateSalesFeesRate,
+              libelle: l10n.privateSalesFinalSalePrice,
+              aide: l10n.privateSalesFeesLockedHelp,
             ),
             _field(
               'city',

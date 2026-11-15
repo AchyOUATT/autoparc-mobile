@@ -27,6 +27,9 @@ class MargeRecapitulatif extends StatelessWidget {
     required this.prixPropose,
     required this.pourcentage,
     this.libelle,
+    this.libellePrixSaisi,
+    this.libelleTaux,
+    this.aide,
   });
 
   /// Le prix que le vendeur vient de taper, ou null tant qu'il n'a rien tapé.
@@ -37,6 +40,15 @@ class MargeRecapitulatif extends StatelessWidget {
 
   /// Ce que le total représente, pour distinguer une vente d'une location.
   final String? libelle;
+
+  /// Libellé du prix saisi, à la place de « Votre prix ».
+  final String? libellePrixSaisi;
+
+  /// Libellé du taux, à la place de « Marge boutique (X %) ».
+  final String Function(String taux)? libelleTaux;
+
+  /// Texte d'aide sous le total.
+  final String? aide;
 
   /// Le total, arrondi comme le serveur l'arrondit.
   ///
@@ -93,15 +105,17 @@ class MargeRecapitulatif extends StatelessWidget {
         children: [
           _ligne(
             context,
-            AppLocalizations.of(context).partnerAccountsMarginYourPrice,
+            libellePrixSaisi ??
+                AppLocalizations.of(context).partnerAccountsMarginYourPrice,
             '${formaterMontant(prix)} FCFA',
           ),
           const SizedBox(height: 4),
           _ligne(
             context,
-            AppLocalizations.of(
-              context,
-            ).partnerAccountsMarginRate(_taux(pourcentage)),
+            libelleTaux?.call(_taux(pourcentage)) ??
+                AppLocalizations.of(
+                  context,
+                ).partnerAccountsMarginRate(_taux(pourcentage)),
             '+ ${formaterMontant(total(prix, pourcentage) - prix)} FCFA',
           ),
           const Divider(height: 14),
@@ -114,7 +128,8 @@ class MargeRecapitulatif extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            AppLocalizations.of(context).partnerAccountsMarginLockedHelp,
+            aide ??
+                AppLocalizations.of(context).partnerAccountsMarginLockedHelp,
             style: textes.bodySmall?.copyWith(color: couleurs.onSurfaceVariant),
           ),
         ],

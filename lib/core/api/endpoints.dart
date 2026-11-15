@@ -6,14 +6,16 @@ class Endpoints {
   Endpoints._();
 
   // ignore: dead_code
-  static const String _emulator  = 'http://10.0.2.2:8000/api';
+  static const String _emulator = 'http://10.0.2.2:8000/api';
   // ignore: dead_code
-  static const String _device    = 'http://192.168.30.75:8000/api';
+  static const String _device = 'http://192.168.30.75:8000/api';
   // ignore: dead_code
-  static const String _ngrok     = 'https://jujitsu-platinum-glimpse.ngrok-free.dev/api';
+  static const String _ngrok =
+      'https://jujitsu-platinum-glimpse.ngrok-free.dev/api';
+
   /// URL de production Railway — mettre à jour après déploiement.
   // ignore: dead_code
-  static const String _render   = 'https://autoparc-backend.onrender.com/api';
+  static const String _render = 'https://autoparc-backend.onrender.com/api';
 
   /// URL de l'API.
   ///
@@ -42,8 +44,9 @@ class Endpoints {
   /// `hasEnvironment` sépare « valeur fournie » de « valeur par défaut », ce
   /// que [baseUrl] seul ne dit pas : l'émulateur passé exprès et l'émulateur
   /// pris par défaut donnent la même chaîne.
-  static const bool urlFournieALaCompilation =
-      bool.hasEnvironment('API_BASE_URL');
+  static const bool urlFournieALaCompilation = bool.hasEnvironment(
+    'API_BASE_URL',
+  );
 
   /// Vrai quand [baseUrl] est l'une des adresses de développement.
   ///
@@ -92,12 +95,13 @@ class Endpoints {
   /// compilation dans tous les modes — `dart compile kernel
   /// -Ddart.vm.product=true` échoue sur ce fichier sans `API_BASE_URL`, et
   /// réussit avec.
-  static const GardeAdresseRelease garde =
-      GardeAdresseRelease.verifiee(!_modeRelease || adressePubliable);
+  static const GardeAdresseRelease garde = GardeAdresseRelease.verifiee(
+    !_modeRelease || adressePubliable,
+  );
 
   // ── Auth ────────────────────────────────────────────────────────
-  static const String login  = '/login';
-  static const String me     = '/me';
+  static const String login = '/login';
+  static const String me = '/me';
   static const String logout = '/logout';
 
   // ── Plancher de version (public) ─────────────────────────────────
@@ -111,27 +115,31 @@ class Endpoints {
   // ── Contact AutoParc ─────────────────────────────────────────────
   static const String appContact = '/app/contact';
   static const String contactSettings = '/settings/contact';
+  static const String appPrivateListingMargin = '/app/private-listing-margin';
+  static const String privateListingMarginSettings =
+      '/settings/private-listing-margin';
 
   // ── Catalogue public ────────────────────────────────────────────
-  static const String catalogVehicles       = '/catalog/vehicles';
+  static const String catalogVehicles = '/catalog/vehicles';
   static const String catalogVehicleListings = '/catalog/vehicle-listings';
-  static const String catalogParts          = '/catalog/parts';
-  static const String catalogAccessories    = '/catalog/accessories';
-  static const String catalogSync           = '/catalog/sync';
-  static const String catalogBrands         = '/catalog/brands';
-  static const String catalogCountries      = '/catalog/countries';
+  static const String catalogParts = '/catalog/parts';
+  static const String catalogAccessories = '/catalog/accessories';
+  static const String catalogSync = '/catalog/sync';
+  static const String catalogBrands = '/catalog/brands';
+  static const String catalogCountries = '/catalog/countries';
   static const String catalogPartCategories = '/catalog/part-categories';
 
   /// Les catégories d'accessoires qui portent au moins un article en vente.
   /// Les libellés et icônes restent côté application : l'API ne rend que des
   /// valeurs.
-  static const String catalogAccessoryCategories = '/catalog/accessory-categories';
-  static const String catalogManufacturers  = '/catalog/manufacturers';
-  static const String compatibleParts       = '/catalog/compatible-parts';
-  static const String catalogMotorisations  = '/catalog/motorisations';
+  static const String catalogAccessoryCategories =
+      '/catalog/accessory-categories';
+  static const String catalogManufacturers = '/catalog/manufacturers';
+  static const String compatibleParts = '/catalog/compatible-parts';
+  static const String catalogMotorisations = '/catalog/motorisations';
 
   // ── Back-office stock (staff) ───────────────────────────────────
-  static const String staffParts       = '/parts';
+  static const String staffParts = '/parts';
   static const String staffAccessories = '/accessories';
 
   // ── Mon garage (client Firebase) ────────────────────────────────
@@ -169,7 +177,7 @@ class Endpoints {
   ///
   /// Google Play l'exige de toute application qui permet d'en créer un : la
   /// demande doit pouvoir partir de l'application elle-même.
-  static const String myAccount  = '/my/account';
+  static const String myAccount = '/my/account';
 
   // ── Décodage VIN (public) ────────────────────────────────────────
   static String vinDecode(String vin) => '/catalog/vin-decode/$vin';
@@ -180,52 +188,57 @@ class Endpoints {
       '/my/parts/$partId/garage-compatibility';
 
   // ── OEM ─────────────────────────────────────────────────────────
-  static String oemVehicles(String number)         => '/oem/$number/vehicles';
-  static String oemModels(String number)           => '/oem/$number/models';
-  static String oemCrossRefs(String number)        => '/oem/$number/cross-references';
+  static String oemVehicles(String number) => '/oem/$number/vehicles';
+  static String oemModels(String number) => '/oem/$number/models';
+  static String oemCrossRefs(String number) => '/oem/$number/cross-references';
 
   // ── Accessoires ─────────────────────────────────────────────────
-  static String accessoryDetail(int id)            => '/catalog/accessories/$id';
+  static String accessoryDetail(int id) => '/catalog/accessories/$id';
 
   // ── Pièces détachées ─────────────────────────────────────────────
-  static String partDetail(int id)                 => '/catalog/parts/$id';
+  static String partDetail(int id) => '/catalog/parts/$id';
 
   // ── Véhicules (staff) ─────────────────────────────────────────────
-  static const String staffVehicles                = '/vehicles';
-  static String staffVehicleDetail(int id)         => '/vehicles/$id';
-  static String vehicleFeatures(int id)            => '/vehicles/$id/features';
+  static const String staffVehicles = '/vehicles';
+  static String staffVehicleDetail(int id) => '/vehicles/$id';
+  static String vehicleFeatures(int id) => '/vehicles/$id/features';
 
   // ── Commandes (staff) ─────────────────────────────────────────────
-  static const String staffOrders                  = '/orders';
-  static const String staffCustomers               = '/customers';
+  static const String staffOrders = '/orders';
+  static const String staffCustomers = '/customers';
 
   // ── CRUD staff pièces / accessoires ──────────────────────────────
-  static String staffPartDetail(int id)        => '/parts/$id';
-  static String staffAccessoryDetail(int id)   => '/accessories/$id';
+  static String staffPartDetail(int id) => '/parts/$id';
+  static String staffAccessoryDetail(int id) => '/accessories/$id';
 
   // ── Disponibilité (staff) ─────────────────────────────────────────
-  static String partAvailability(int id)       => '/parts/$id/availability';
-  static String accessoryAvailability(int id)  => '/accessories/$id/availability';
+  static String partAvailability(int id) => '/parts/$id/availability';
+  static String accessoryAvailability(int id) =>
+      '/accessories/$id/availability';
 
   // ── Partenaires (staff) ───────────────────────────────────────────
-  static const String partners                    = '/partners';
-  static String partnerDetail(int id)             => '/partners/$id';
-  static String partPartners(int id)              => '/parts/$id/partners';
-  static String partPartnerDetach(int pId, int rId) => '/parts/$pId/partners/$rId';
-  static String accessoryPartners(int id)         => '/accessories/$id/partners';
-  static String accessoryPartnerDetach(int aId, int rId) => '/accessories/$aId/partners/$rId';
-  static String vehiclePartners(int id)           => '/vehicles/$id/partners';
-  static String vehiclePartnerDetach(int vId, int rId) => '/vehicles/$vId/partners/$rId';
+  static const String partners = '/partners';
+  static String partnerDetail(int id) => '/partners/$id';
+  static String partPartners(int id) => '/parts/$id/partners';
+  static String partPartnerDetach(int pId, int rId) =>
+      '/parts/$pId/partners/$rId';
+  static String accessoryPartners(int id) => '/accessories/$id/partners';
+  static String accessoryPartnerDetach(int aId, int rId) =>
+      '/accessories/$aId/partners/$rId';
+  static String vehiclePartners(int id) => '/vehicles/$id/partners';
+  static String vehiclePartnerDetach(int vId, int rId) =>
+      '/vehicles/$vId/partners/$rId';
 
   // ── Médias (staff) ────────────────────────────────────────────────
-  static String vehicleMedia(int id)       => '/vehicles/$id/media';
-  static String partMedia(int id)          => '/parts/$id/media';
-  static String accessoryMedia(int id)     => '/accessories/$id/media';
-  static String vehicleMediaReorder(int id)    => '/vehicles/$id/media/reorder';
-  static String partMediaReorder(int id)       => '/parts/$id/media/reorder';
-  static String accessoryMediaReorder(int id)  => '/accessories/$id/media/reorder';
-  static String mediaItem(int id)          => '/media/$id';
-  static String mediaSetCover(int id)      => '/media/$id/cover';
+  static String vehicleMedia(int id) => '/vehicles/$id/media';
+  static String partMedia(int id) => '/parts/$id/media';
+  static String accessoryMedia(int id) => '/accessories/$id/media';
+  static String vehicleMediaReorder(int id) => '/vehicles/$id/media/reorder';
+  static String partMediaReorder(int id) => '/parts/$id/media/reorder';
+  static String accessoryMediaReorder(int id) =>
+      '/accessories/$id/media/reorder';
+  static String mediaItem(int id) => '/media/$id';
+  static String mediaSetCover(int id) => '/media/$id/cover';
 }
 
 /// Porteur du seul `assert` que Dart évalue à la compilation.
@@ -247,7 +260,7 @@ class GardeAdresseRelease {
   /// Le message nomme la commande à taper, parce que l'erreur tombe au milieu
   /// d'une trace de compilation Dart où rien d'autre ne dit quoi faire.
   const GardeAdresseRelease.verifiee(bool adressePubliable)
-      : assert(adressePubliable, _message);
+    : assert(adressePubliable, _message);
 
   static const String _message =
       'Build de RELEASE sans adresse de production : API_BASE_URL n\'a pas été '

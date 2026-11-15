@@ -93,6 +93,9 @@ class AuthState {
   /// Paramètres de contact de la plateforme.
   bool get canManageSettings => _roleIn(const {'admin', 'manager'});
 
+  /// Taux des frais AutoParc sur les annonces de particuliers.
+  bool get canManagePrivateListingMargin => _roleIn(const {'admin'});
+
   /// Envoyer une notification a tous les clients.
   bool get canBroadcast => _roleIn(const {'admin', 'manager'});
 
@@ -238,7 +241,8 @@ class AuthNotifier extends StateNotifier<AuthState>
 
       if (utilisateur != null) {
         if (_pendingFirebaseUid == utilisateur.uid) return;
-        if (state.isClient && state.verified &&
+        if (state.isClient &&
+            state.verified &&
             state.firebaseUser?.uid == utilisateur.uid) {
           return;
         }
