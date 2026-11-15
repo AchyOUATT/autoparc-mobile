@@ -11980,6 +11980,234 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Le numéro de cadre doit faire entre 5 et 32 caractères.'**
   String get vehiclesFrameNumberInvalid;
+
+  /// No description provided for @repairEstimateTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Coût estimé'**
+  String get repairEstimateTitle;
+
+  /// No description provided for @repairEstimateOptionalHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Facultatif. Laissez vide si vous n’avez pas de fourchette. Un devis seul, sans fourchette, suffit.'**
+  String get repairEstimateOptionalHint;
+
+  /// No description provided for @repairEstimateCostMin.
+  ///
+  /// In fr, this message translates to:
+  /// **'Coût minimum (F CFA)'**
+  String get repairEstimateCostMin;
+
+  /// No description provided for @repairEstimateCostMax.
+  ///
+  /// In fr, this message translates to:
+  /// **'Coût maximum (F CFA)'**
+  String get repairEstimateCostMax;
+
+  /// No description provided for @repairEstimateSource.
+  ///
+  /// In fr, this message translates to:
+  /// **'Source de l’estimation'**
+  String get repairEstimateSource;
+
+  /// No description provided for @repairEstimateSourceSeller.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vendeur'**
+  String get repairEstimateSourceSeller;
+
+  /// No description provided for @repairEstimateSourceWorkshop.
+  ///
+  /// In fr, this message translates to:
+  /// **'Atelier ou devis'**
+  String get repairEstimateSourceWorkshop;
+
+  /// No description provided for @repairEstimateSourceAutoparc.
+  ///
+  /// In fr, this message translates to:
+  /// **'AutoParc'**
+  String get repairEstimateSourceAutoparc;
+
+  /// No description provided for @repairEstimateDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date de l’estimation'**
+  String get repairEstimateDate;
+
+  /// No description provided for @repairEstimateIncomplete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Renseignez le minimum, le maximum, la source et la date, ou laissez tout vide.'**
+  String get repairEstimateIncomplete;
+
+  /// No description provided for @repairEstimateMinMax.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le minimum doit être un entier positif ou zéro, inférieur ou égal au maximum.'**
+  String get repairEstimateMinMax;
+
+  /// No description provided for @repairEstimateFutureDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'La date d’estimation ne peut pas être dans le futur.'**
+  String get repairEstimateFutureDate;
+
+  /// No description provided for @repairEstimateStale.
+  ///
+  /// In fr, this message translates to:
+  /// **'Estimation ancienne'**
+  String get repairEstimateStale;
+
+  /// No description provided for @repairEstimateToEstimate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Coût à estimer'**
+  String get repairEstimateToEstimate;
+
+  /// No description provided for @repairEstimateNecessary.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reprise nécessaire'**
+  String get repairEstimateNecessary;
+
+  /// No description provided for @repairEstimateOptional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reprise esthétique facultative'**
+  String get repairEstimateOptional;
+
+  /// No description provided for @repairNecessityLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nécessité des travaux'**
+  String get repairNecessityLabel;
+
+  /// No description provided for @repairBudgetTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Budget réparations'**
+  String get repairBudgetTitle;
+
+  /// No description provided for @repairBudgetToEstimate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Budget à estimer'**
+  String get repairBudgetToEstimate;
+
+  /// No description provided for @repairBudgetPartial.
+  ///
+  /// In fr, this message translates to:
+  /// **'{range} pour les travaux chiffrés · {remaining}'**
+  String repairBudgetPartial(String range, String remaining);
+
+  /// No description provided for @repairBudgetRemaining.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{1 réparation reste à chiffrer} other{{count} réparations restent à chiffrer}}'**
+  String repairBudgetRemaining(int count);
+
+  /// No description provided for @repairBudgetOptionalTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reprises facultatives'**
+  String get repairBudgetOptionalTitle;
+
+  /// No description provided for @repairQuoteAttachAfterSave.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrez d’abord le défaut pour joindre un devis.'**
+  String get repairQuoteAttachAfterSave;
+
+  /// No description provided for @repairQuotePrivateNote.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le devis reste privé jusqu’à ce qu’AutoParc publie une copie où les coordonnées sont masquées.'**
+  String get repairQuotePrivateNote;
+
+  /// No description provided for @repairQuotePublished.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir le devis publié'**
+  String get repairQuotePublished;
+
+  /// No description provided for @repairQuoteAttach.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joindre un devis'**
+  String get repairQuoteAttach;
+
+  /// No description provided for @repairQuoteFromCamera.
+  ///
+  /// In fr, this message translates to:
+  /// **'Photographier le devis'**
+  String get repairQuoteFromCamera;
+
+  /// No description provided for @repairQuoteFromGallery.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisir une photo'**
+  String get repairQuoteFromGallery;
+
+  /// No description provided for @repairQuoteFromPdf.
+  ///
+  /// In fr, this message translates to:
+  /// **'Joindre un PDF'**
+  String get repairQuoteFromPdf;
+
+  /// No description provided for @repairQuoteStatusReceived.
+  ///
+  /// In fr, this message translates to:
+  /// **'Devis reçu, privé en attente de modération'**
+  String get repairQuoteStatusReceived;
+
+  /// No description provided for @repairQuoteStatusPrivate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Devis privé, en attente de modération'**
+  String get repairQuoteStatusPrivate;
+
+  /// No description provided for @repairQuoteStatusPublished.
+  ///
+  /// In fr, this message translates to:
+  /// **'Copie publiée, coordonnées masquées'**
+  String get repairQuoteStatusPublished;
+
+  /// No description provided for @repairQuoteRemove.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer le devis'**
+  String get repairQuoteRemove;
+
+  /// No description provided for @repairQuotePublish.
+  ///
+  /// In fr, this message translates to:
+  /// **'Publier une copie masquée'**
+  String get repairQuotePublish;
+
+  /// No description provided for @repairQuoteUnpublish.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer la copie publiée'**
+  String get repairQuoteUnpublish;
+
+  /// No description provided for @repairQuoteAttachError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le devis n’a pas pu être envoyé. Réessayez.'**
+  String get repairQuoteAttachError;
+
+  /// No description provided for @repairQuoteRemoveError.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le devis n’a pas pu être retiré. Réessayez.'**
+  String get repairQuoteRemoveError;
+
+  /// No description provided for @repairEstimateRemove.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer l’estimation'**
+  String get repairEstimateRemove;
 }
 
 class _AppLocalizationsDelegate

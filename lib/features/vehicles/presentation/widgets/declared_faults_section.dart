@@ -3,6 +3,10 @@ import 'package:intl/intl.dart';
 
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/fault_declaration.dart';
+import '../../data/models/repair_estimate.dart';
+
+import 'package:url_launcher/url_launcher.dart';
+
 import 'vehicle_fault_labels.dart';
 
 /// Public seller statements. Nothing here creates or implies an inspection.
@@ -61,6 +65,11 @@ class DeclaredFaultsSection extends StatelessWidget {
           l.faultDeclarationSellerNote,
           style: Theme.of(context).textTheme.bodySmall,
         ),
+        if (declaration.repairBudget != null &&
+            !declaration.repairBudget!.isEmpty) ...[
+          const SizedBox(height: 12),
+          _RepairBudgetSummary(budget: declaration.repairBudget!),
+        ],
         if (declaration.state == 'has_faults' ||
             declaration.faults.isNotEmpty) ...[
           const SizedBox(height: 8),
@@ -122,6 +131,8 @@ class DeclaredFaultCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(fault.description!),
             ],
+            const SizedBox(height: 8),
+            _FaultRepairEstimate(fault: fault),
             if (fault.affectsDrivability || fault.isSafetyCritical) ...[
               const SizedBox(height: 8),
               Wrap(
@@ -168,4 +179,133 @@ class _Flag extends StatelessWidget {
       ),
     ],
   );
+}
+
+class _FaultRepairEstimate extends StatelessWidget {
+  final DeclaredVehicleFault fault;
+  const _FaultRepairEstimate({required this.fault});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).languageCode;
+    final theme = Theme.of(context);
+    final estimate = fault.repairEstimate;
+    final quote = fault.publishedQuote;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          repairNecessityLabel(fault.repairNecessity, l),
+          style: theme.textTheme.bodySmall,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          estimate == null
+              ? l.repairEstimateToEstimate
+              : formatCfaRange(
+                  estimate.costMin,
+                  estimate.costMax,
+                  locale: locale,
+                ),
+          style: theme.textTheme.bodyMedium,
+        ),
+        if (estimate != null) ...[
+          const SizedBox(height: 2),
+          Text(
+            '${repairEstimateSourceLabel(estimate.source, l)} · ${DateFormat.yMMMd(locale).format(estimate.estimatedAt)}',
+            style: theme.textTheme.bodySmall,
+          ),
+          if (estimate.isStale)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                l.repairEstimateStale,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ),
+        ],
+        if (quote?.url != null)
+          TextButton(
+            onPressed: () => launchUrl(
+              Uri.parse(quote!.url!),
+              mode: LaunchMode.externalApplication,
+            ),
+            child: Text(l.repairQuotePublished),
+          ),
+      ],
+    );
+  }
+}
+
+class _RepairBudgetSummary extends StatelessWidget {
+  final RepairBudget budget;
+  const _RepairBudgetSummary({required this.budget});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).languageCode;
+    final theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (budget.status != 'none') ...[
+              Text(l.repairBudgetTitle, style: theme.textTheme.titleSmall),
+              const SizedBox(height: 4),
+              Text(_budgetText(l, locale)),
+            ],
+            if (budget.optional.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                l.repairBudgetOptionalTitle,
+                style: theme.textTheme.labelLarge,
+              ),
+              for (final item in budget.optional)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    item.estimate == null
+                        ? '${item.title} · ${l.repairEstimateToEstimate}'
+                        : '${item.title} · ${formatCfaRange(item.estimate!.costMin, item.estimate!.costMax, locale: locale)}',
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _budgetText(AppLocalizations l, String locale) {
+    if (budget.status == 'to_estimate') {
+      return l.repairBudgetToEstimate;
+    }
+    if (budget.costMin == null || budget.costMax == null) {
+      return budget.status == 'none'
+          ? l.repairBudgetOptionalTitle
+          : l.repairBudgetToEstimate;
+    }
+    final range = formatCfaRange(
+      budget.costMin!,
+      budget.costMax!,
+      locale: locale,
+    );
+    if (budget.status == 'partial' || budget.unestimatedCount > 0) {
+      return l.repairBudgetPartial(
+        range,
+        l.repairBudgetRemaining(budget.unestimatedCount),
+      );
+    }
+    return range;
+  }
 }

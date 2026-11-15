@@ -20,6 +20,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/models/catalog_refs.dart';
 import '../../data/models/fault_declaration.dart';
+import '../../data/repair_quote_repository.dart';
 import '../../data/models/vehicle_classification_selection.dart';
 import '../../data/vehicle_fault_repository.dart';
 import '../providers/vehicle_refs_provider.dart';
@@ -413,6 +414,19 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
               value: _faultDeclaration,
               enabled: !_submitting,
               staffStatuses: !widget.mode.estPartenaire,
+              quotes: _existing?.id == null
+                  ? null
+                  : ref
+                        .read(repairQuoteRepositoryProvider)
+                        .actionsFor(
+                          RepairQuoteHost.vehicle(
+                            _existing!.id,
+                            partner: widget.mode.estPartenaire,
+                          ),
+                          canPublish:
+                              !widget.mode.estPartenaire &&
+                              ref.watch(authProvider).canManageFaults,
+                        ),
               onChanged: (declaration) => setState(() {
                 _faultDeclaration = declaration;
                 _faultsDirty =

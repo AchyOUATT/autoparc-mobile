@@ -6774,4 +6774,138 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get vehiclesFrameNumberInvalid =>
       'The frame number must be between 5 and 32 characters.';
+
+  @override
+  String get repairEstimateTitle => 'Estimated cost';
+
+  @override
+  String get repairEstimateOptionalHint =>
+      'Optional. Leave empty if you do not have a range. A quote alone, without a range, is enough.';
+
+  @override
+  String get repairEstimateCostMin => 'Minimum cost (CFA francs)';
+
+  @override
+  String get repairEstimateCostMax => 'Maximum cost (CFA francs)';
+
+  @override
+  String get repairEstimateSource => 'Estimate source';
+
+  @override
+  String get repairEstimateSourceSeller => 'Seller';
+
+  @override
+  String get repairEstimateSourceWorkshop => 'Workshop or quote';
+
+  @override
+  String get repairEstimateSourceAutoparc => 'AutoParc';
+
+  @override
+  String get repairEstimateDate => 'Estimate date';
+
+  @override
+  String get repairEstimateIncomplete =>
+      'Enter the minimum, maximum, source and date, or leave everything empty.';
+
+  @override
+  String get repairEstimateMinMax =>
+      'The minimum must be a non-negative integer, less than or equal to the maximum.';
+
+  @override
+  String get repairEstimateFutureDate =>
+      'The estimate date cannot be in the future.';
+
+  @override
+  String get repairEstimateStale => 'Outdated estimate';
+
+  @override
+  String get repairEstimateToEstimate => 'Cost to be estimated';
+
+  @override
+  String get repairEstimateNecessary => 'Necessary repair';
+
+  @override
+  String get repairEstimateOptional => 'Optional cosmetic repair';
+
+  @override
+  String get repairNecessityLabel => 'Need for the work';
+
+  @override
+  String get repairBudgetTitle => 'Repair budget';
+
+  @override
+  String get repairBudgetToEstimate => 'Budget to be estimated';
+
+  @override
+  String repairBudgetPartial(String range, String remaining) {
+    return '$range for the priced work · $remaining';
+  }
+
+  @override
+  String repairBudgetRemaining(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count repairs still to be priced',
+      one: '1 repair still to be priced',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repairBudgetOptionalTitle => 'Optional repairs';
+
+  @override
+  String get repairQuoteAttachAfterSave =>
+      'Save the fault first to attach a quote.';
+
+  @override
+  String get repairQuotePrivateNote =>
+      'The quote stays private until AutoParc publishes a copy with personal details masked.';
+
+  @override
+  String get repairQuotePublished => 'View the published quote';
+
+  @override
+  String get repairQuoteAttach => 'Attach a quote';
+
+  @override
+  String get repairQuoteFromCamera => 'Photograph the quote';
+
+  @override
+  String get repairQuoteFromGallery => 'Choose a photo';
+
+  @override
+  String get repairQuoteFromPdf => 'Attach a PDF';
+
+  @override
+  String get repairQuoteStatusReceived =>
+      'Quote received, private pending review';
+
+  @override
+  String get repairQuoteStatusPrivate => 'Private quote, pending review';
+
+  @override
+  String get repairQuoteStatusPublished =>
+      'Published copy, personal details masked';
+
+  @override
+  String get repairQuoteRemove => 'Remove the quote';
+
+  @override
+  String get repairQuotePublish => 'Publish a redacted copy';
+
+  @override
+  String get repairQuoteUnpublish => 'Remove the published copy';
+
+  @override
+  String get repairQuoteAttachError =>
+      'The quote could not be uploaded. Please try again.';
+
+  @override
+  String get repairQuoteRemoveError =>
+      'The quote could not be removed. Please try again.';
+
+  @override
+  String get repairEstimateRemove => 'Remove the estimate';
 }

@@ -6802,4 +6802,139 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get vehiclesFrameNumberInvalid =>
       'Le numéro de cadre doit faire entre 5 et 32 caractères.';
+
+  @override
+  String get repairEstimateTitle => 'Coût estimé';
+
+  @override
+  String get repairEstimateOptionalHint =>
+      'Facultatif. Laissez vide si vous n’avez pas de fourchette. Un devis seul, sans fourchette, suffit.';
+
+  @override
+  String get repairEstimateCostMin => 'Coût minimum (F CFA)';
+
+  @override
+  String get repairEstimateCostMax => 'Coût maximum (F CFA)';
+
+  @override
+  String get repairEstimateSource => 'Source de l’estimation';
+
+  @override
+  String get repairEstimateSourceSeller => 'Vendeur';
+
+  @override
+  String get repairEstimateSourceWorkshop => 'Atelier ou devis';
+
+  @override
+  String get repairEstimateSourceAutoparc => 'AutoParc';
+
+  @override
+  String get repairEstimateDate => 'Date de l’estimation';
+
+  @override
+  String get repairEstimateIncomplete =>
+      'Renseignez le minimum, le maximum, la source et la date, ou laissez tout vide.';
+
+  @override
+  String get repairEstimateMinMax =>
+      'Le minimum doit être un entier positif ou zéro, inférieur ou égal au maximum.';
+
+  @override
+  String get repairEstimateFutureDate =>
+      'La date d’estimation ne peut pas être dans le futur.';
+
+  @override
+  String get repairEstimateStale => 'Estimation ancienne';
+
+  @override
+  String get repairEstimateToEstimate => 'Coût à estimer';
+
+  @override
+  String get repairEstimateNecessary => 'Reprise nécessaire';
+
+  @override
+  String get repairEstimateOptional => 'Reprise esthétique facultative';
+
+  @override
+  String get repairNecessityLabel => 'Nécessité des travaux';
+
+  @override
+  String get repairBudgetTitle => 'Budget réparations';
+
+  @override
+  String get repairBudgetToEstimate => 'Budget à estimer';
+
+  @override
+  String repairBudgetPartial(String range, String remaining) {
+    return '$range pour les travaux chiffrés · $remaining';
+  }
+
+  @override
+  String repairBudgetRemaining(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count réparations restent à chiffrer',
+      one: '1 réparation reste à chiffrer',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repairBudgetOptionalTitle => 'Reprises facultatives';
+
+  @override
+  String get repairQuoteAttachAfterSave =>
+      'Enregistrez d’abord le défaut pour joindre un devis.';
+
+  @override
+  String get repairQuotePrivateNote =>
+      'Le devis reste privé jusqu’à ce qu’AutoParc publie une copie où les coordonnées sont masquées.';
+
+  @override
+  String get repairQuotePublished => 'Voir le devis publié';
+
+  @override
+  String get repairQuoteAttach => 'Joindre un devis';
+
+  @override
+  String get repairQuoteFromCamera => 'Photographier le devis';
+
+  @override
+  String get repairQuoteFromGallery => 'Choisir une photo';
+
+  @override
+  String get repairQuoteFromPdf => 'Joindre un PDF';
+
+  @override
+  String get repairQuoteStatusReceived =>
+      'Devis reçu, privé en attente de modération';
+
+  @override
+  String get repairQuoteStatusPrivate =>
+      'Devis privé, en attente de modération';
+
+  @override
+  String get repairQuoteStatusPublished =>
+      'Copie publiée, coordonnées masquées';
+
+  @override
+  String get repairQuoteRemove => 'Retirer le devis';
+
+  @override
+  String get repairQuotePublish => 'Publier une copie masquée';
+
+  @override
+  String get repairQuoteUnpublish => 'Retirer la copie publiée';
+
+  @override
+  String get repairQuoteAttachError =>
+      'Le devis n’a pas pu être envoyé. Réessayez.';
+
+  @override
+  String get repairQuoteRemoveError =>
+      'Le devis n’a pas pu être retiré. Réessayez.';
+
+  @override
+  String get repairEstimateRemove => 'Retirer l’estimation';
 }

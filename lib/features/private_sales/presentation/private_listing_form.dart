@@ -17,6 +17,7 @@ import '../../vehicles/presentation/widgets/vehicle_identity_fields.dart';
 import '../../vehicles/presentation/widgets/two_wheeler_configuration.dart';
 import '../../vehicles/data/models/two_wheeler_configuration.dart';
 import '../../vehicles/data/models/fault_declaration.dart';
+import '../../vehicles/data/repair_quote_repository.dart';
 import '../../vehicles/presentation/widgets/fault_declaration_widget.dart';
 import '../data/private_listing_repository.dart';
 import 'private_listing_labels.dart';
@@ -287,8 +288,9 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
     );
     if (mounted) {
       setState(() => _saved = saved);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.privateSalesSubmitted)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.privateSalesSubmitted)));
     }
   });
 
@@ -466,6 +468,16 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
             FaultDeclarationWidget(
               value: _faultDeclaration,
               enabled: editable && !_busy,
+              quotes: (_saved ?? widget.existing)?.id == null
+                  ? null
+                  : ref
+                        .read(repairQuoteRepositoryProvider)
+                        .actionsFor(
+                          RepairQuoteHost.listing(
+                            (_saved ?? widget.existing)!.id,
+                          ),
+                          canPublish: ref.watch(authProvider).canManageCatalog,
+                        ),
               onChanged: (declaration) => setState(() {
                 _faultDeclaration = declaration;
                 _faultsDirty = true;
