@@ -94,8 +94,8 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
-    Locale('en'),
     Locale('fr'),
+    Locale('en'),
   ];
 
   /// Nom de la destination d'accueil. UNE SEULE CLÉ pour l'onglet de la barre du bas, la tuile « Parcourir » de l'accueil et le titre de la page : le code demande déjà que les trois coïncident (« deux rangements différents pour les mêmes destinations obligeraient à relire à chaque fois »), et une clé partagée rend la divergence impossible.
@@ -5116,6 +5116,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Retirer du garage'**
   String get garageRemoveVehicleAction;
+
+  /// No description provided for @garageEditVehicleAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le véhicule'**
+  String get garageEditVehicleAction;
+
+  /// No description provided for @garageEditVehicleTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier le véhicule'**
+  String get garageEditVehicleTitle;
+
+  /// Écran d'édition du garage ouvert sur un identifiant inconnu ou un lien direct sans véhicule.
+  ///
+  /// In fr, this message translates to:
+  /// **'Véhicule introuvable'**
+  String get garageVehicleNotFound;
 
   /// Texte du parcours garage : RemoveVehicleTitle.
   ///

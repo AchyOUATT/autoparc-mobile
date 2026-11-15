@@ -759,6 +759,12 @@ class _MoreMenu extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return PopupMenuButton<String>(
       onSelected: (action) async {
+        if (action == 'edit') {
+          if (context.mounted) {
+            await context.push('/garage/${vehicle.id}/edit', extra: vehicle);
+          }
+          return;
+        }
         if (action == 'delete') {
           final confirm = await _confirmDelete(context, vehicle.displayName);
           if (confirm == true && context.mounted) {
@@ -774,6 +780,15 @@ class _MoreMenu extends ConsumerWidget {
         }
       },
       itemBuilder: (_) => [
+        PopupMenuItem(
+          value: 'edit',
+          child: ListTile(
+            leading: const Icon(Icons.edit_outlined),
+            title: Text(AppLocalizations.of(context).garageEditVehicleAction),
+            contentPadding: EdgeInsets.zero,
+            minLeadingWidth: 0,
+          ),
+        ),
         PopupMenuItem(
           value: 'delete',
           child: ListTile(

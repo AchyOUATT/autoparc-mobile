@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker_android/image_picker_android.dart';
 import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import 'core/demarrage.dart';
 import 'core/l10n/langue.dart';
@@ -34,6 +35,7 @@ import 'features/catalog/presentation/pages/vehicle_list_page.dart';
 import 'features/home/presentation/pages/accueil_selon_profil.dart';
 import 'features/garage/data/models/owned_vehicle.dart';
 import 'features/garage/presentation/pages/add_vehicle_to_garage_page.dart';
+import 'features/garage/presentation/pages/edit_vehicle_in_garage_page.dart';
 import 'features/garage/presentation/pages/compatible_parts_page.dart';
 import 'features/garage/presentation/pages/fuel_fills_page.dart';
 import 'features/garage/presentation/pages/vehicle_check_page.dart';
@@ -121,6 +123,8 @@ Future<void> main() async {
   // anglophone. Les deux lectures tapent la même instance de
   // `SharedPreferences`, déjà chargée.
   final langue = await LangueService.lire();
+  Intl.defaultLocale = LangueService.codeIntl(langue);
+  definirLocaleMontants(langue);
 
   // Le profil déclaré et la session partenaire, pour la même raison que les
   // deux lectures au-dessus : la PREMIÈRE trame doit être la bonne. Sans la
@@ -235,6 +239,17 @@ GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
       ),
     ),
     GoRoute(path: '/garage/add',    builder: (_, __) => const AddVehicleToGaragePage()),
+    GoRoute(
+      path: '/garage/:id/edit',
+      builder: (_, state) {
+        final id = int.tryParse(state.pathParameters['id'] ?? '');
+        final extra = state.extra;
+        return EditGarageVehiclePage(
+          vehicleId: id,
+          initial: extra is OwnedVehicle && extra.id == id ? extra : null,
+        );
+      },
+    ),
 
     // ── Partenaires (staff) ────────────────────────────────────────
     GoRoute(
@@ -444,6 +459,7 @@ class _AutoParcAppState extends ConsumerState<AutoParcApp>
         theme: themeAutoParc(Brightness.light),
         darkTheme: themeAutoParc(Brightness.dark),
         locale: langue,
+        localeResolutionCallback: (_, __) => langue,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
       ),
@@ -498,6 +514,7 @@ class _PorteMiseAJour extends ConsumerWidget {
       theme: themeAutoParc(Brightness.light),
       darkTheme: themeAutoParc(Brightness.dark),
       locale: langue,
+      localeResolutionCallback: (_, __) => langue,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: EcranMiseAJour(

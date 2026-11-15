@@ -24,3 +24,9 @@ nullable-getter: false
 # synthétique `flutter_gen` : ce dernier est en voie de retrait, et un fichier
 # généré qu'on peut OUVRIR est un fichier dont on peut lire le `switch` de
 # repli quand une clé rend le mauvais texte.
+
+# L'anglais en tête de `supportedLocales` (ordre alphabétique des .arb) ferait
+# de l'anglais le repli de `basicLocaleListResolution`, et la locale par
+# défaut déclarée à Android / iOS. Le français doit rester le premier.
+preferred-supported-locales:
+  - fr

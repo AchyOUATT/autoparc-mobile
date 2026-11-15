@@ -58,6 +58,30 @@ class VehicleCardHeader extends StatelessWidget {
                         color: cs.onSurfaceVariant,
                       ),
                     ),
+                    if (vehicle.isTwoWheeler) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.two_wheeler_outlined,
+                            size: 16,
+                            color: cs.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              _twoWheelerLabel(
+                                AppLocalizations.of(context),
+                                vehicle,
+                              ),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: cs.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -116,12 +140,24 @@ class _VehicleFact extends StatelessWidget {
         Flexible(
           child: Text(
             value,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(context).textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
       ],
     );
   }
+}
+
+String _twoWheelerLabel(AppLocalizations l10n, OwnedVehicle vehicle) {
+  final body = switch (vehicle.twoWheelerConfiguration.bodyType) {
+    'motorcycle' => l10n.twoWheelerBodyMotorcycle,
+    'scooter' => l10n.twoWheelerBodyScooter,
+    'moped' => l10n.twoWheelerBodyMoped,
+    'other' => l10n.heavyConfigurationOther,
+    _ => null,
+  };
+  return body == null
+      ? l10n.vehiclesTypeTwoWheeler
+      : '${l10n.vehiclesTypeTwoWheeler} · $body';
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../../../l10n/app_localizations.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,6 +14,8 @@ import '../../vehicles/data/models/catalog_refs.dart';
 import '../../vehicles/data/models/vehicle_classification_selection.dart';
 import '../../vehicles/presentation/providers/vehicle_refs_provider.dart';
 import '../../vehicles/presentation/widgets/vehicle_identity_fields.dart';
+import '../../vehicles/presentation/widgets/two_wheeler_configuration.dart';
+import '../../vehicles/data/models/two_wheeler_configuration.dart';
 import '../../vehicles/data/models/fault_declaration.dart';
 import '../../vehicles/presentation/widgets/fault_declaration_widget.dart';
 import '../data/private_listing_repository.dart';
@@ -44,6 +48,8 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
   FaultDeclaration _faultDeclaration = const FaultDeclaration.unknown();
   String? _error, _transmission;
   String? _editingSession;
+  String _vehicleType = 'passenger';
+  final _twoWheelerConfiguration = TwoWheelerConfigurationController();
   PrivateListingRepository get _repo =>
       ref.read(privateListingRepositoryProvider);
 
@@ -82,6 +88,18 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
         _freeModelController.text.isNotEmpty;
     _transmission = _saved?.fields['transmission'] as String?;
     _whatsapp = _saved?.fields['whatsapp_enabled'] == true;
+    final savedType = _saved?.fields['vehicle_type'];
+    if (savedType is String && savedType.isNotEmpty) {
+      _vehicleType = savedType;
+    }
+    final savedConfig = _saved?.fields['two_wheeler_configuration'];
+    if (savedConfig is Map) {
+      _twoWheelerConfiguration.load(
+        TwoWheelerConfiguration.fromJson(
+          Map<String, dynamic>.from(savedConfig),
+        ),
+      );
+    }
     if (_source != null) _prefill(_source!);
   }
 
@@ -91,6 +109,7 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
       controller.dispose();
     }
     _freeModelController.dispose();
+    _twoWheelerConfiguration.dispose();
     super.dispose();
   }
 
@@ -102,6 +121,8 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
         vehicle.vehicleModelId == null && _freeModelController.text.isNotEmpty;
     _inputs['year']!.text = '${vehicle.year}';
     _inputs['mileage_km']!.text = vehicle.mileageKm?.toString() ?? '';
+    _vehicleType = vehicle.vehicleType ?? 'passenger';
+    _twoWheelerConfiguration.load(vehicle.twoWheelerConfiguration);
     _dirty = true;
   }
 
@@ -168,6 +189,12 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
         'drivetrain_id': _classification.drivetrain?.id,
         'color_id': _color?.id,
         'transmission': _transmission,
+        'vehicle_type': _vehicleType,
+        if (_vehicleType == 'two_wheeler')
+          'two_wheeler_configuration':
+              _twoWheelerConfiguration.toValue().isEmpty
+              ? null
+              : _twoWheelerConfiguration.toValue().toJson(),
         if (_saved == null || _faultsDirty) ..._faultDeclaration.toPayload(),
         if (_saved == null && _source != null) 'owned_vehicle_id': _source!.id,
       };
@@ -260,9 +287,8 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
     );
     if (mounted) {
       setState(() => _saved = saved);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.privateSalesSubmitted)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.privateSalesSubmitted)));
     }
   });
 
@@ -363,9 +389,54 @@ class _PrivateListingFormState extends ConsumerState<PrivateListingForm> {
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
+            Text(
+              l10n.catalogFieldCategory,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final option in [
+                  ('passenger', l10n.vehiclesTypePassenger),
+                  ('utility', l10n.vehiclesTypeUtility),
+                  ('heavy', l10n.vehiclesTypeHeavy),
+                  ('two_wheeler', l10n.vehiclesTypeTwoWheeler),
+                ])
+                  ChoiceChip(
+                    label: Text(option.$2),
+                    selected: _vehicleType == option.$1,
+                    onSelected: editable && !_busy
+                        ? (_) => setState(() {
+                            if (_vehicleType == option.$1) return;
+                            _vehicleType = option.$1;
+                            final modelType =
+                                _classification.model?.resolvedVehicleType;
+                            if (modelType != null &&
+                                modelType != _vehicleType) {
+                              _classification.selectModel(null);
+                            }
+                            if (_vehicleType != 'two_wheeler') {
+                              _twoWheelerConfiguration.clear();
+                            }
+                            _dirty = true;
+                          })
+                        : null,
+                  ),
+              ],
+            ),
+            if (_vehicleType == 'two_wheeler') ...[
+              const SizedBox(height: 16),
+              TwoWheelerConfigurationFields(
+                controller: _twoWheelerConfiguration,
+              ),
+            ],
+            const SizedBox(height: 16),
             VehicleIdentityFields(
               refs: refs,
               selection: _classification,
+              vehicleType: _vehicleType,
               yearController: _inputs['year']!,
               mileageController: _inputs['mileage_km']!,
               freeModelController: _freeModelController,

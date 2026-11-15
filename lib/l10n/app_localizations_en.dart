@@ -2932,6 +2932,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get garageRemoveVehicleAction => 'Remove from garage';
 
   @override
+  String get garageEditVehicleAction => 'Edit vehicle';
+
+  @override
+  String get garageEditVehicleTitle => 'Edit vehicle';
+
+  @override
+  String get garageVehicleNotFound => 'Vehicle not found';
+
+  @override
   String get garageRemoveVehicleTitle => 'Remove from garage?';
 
   @override
