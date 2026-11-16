@@ -18,6 +18,7 @@ import '../../../../core/widgets/bouton_flottant_effacable.dart';
 import '../../../../core/widgets/catalog_image.dart';
 import '../../../../core/widgets/grille_maconnerie.dart';
 import '../../../../core/widgets/titre_barre.dart';
+import '../../../../core/widgets/scrollable_center.dart';
 import '../../../../core/api/api_exception.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../../features/cart/presentation/pages/cart_page.dart';
@@ -1110,7 +1111,7 @@ class _ErrorView extends StatelessWidget {
   const _ErrorView({required this.error, required this.onRetry});
 
   @override
-  Widget build(BuildContext context) => Center(
+  Widget build(BuildContext context) => ScrollableCenter(
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
