@@ -1,5 +1,6 @@
 import 'package:auto/features/auth/data/auth_repository.dart';
 import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -63,6 +64,7 @@ Vehicle _vehicule({
   bool immatricule = true,
   String condition = 'used',
   int? mileage,
+  bool? dedouane,
 }) {
   final json =
       jsonDecode(jsonEncode(_fixture()['data'])) as Map<String, dynamic>;
@@ -72,6 +74,9 @@ Vehicle _vehicule({
   };
   (json['commercial'] as Map<String, dynamic>)['condition'] = condition;
   (json['technical'] as Map<String, dynamic>)['mileage_km'] = mileage;
+  if (dedouane != null) {
+    json['import'] = {'customs_cleared': dedouane};
+  }
   json.addAll(<String, dynamic>{
     'brand_id': _marque.id,
     'vehicle_model_id': _modele.id,
@@ -267,6 +272,19 @@ void _saisirKilometrage(WidgetTester tester, String valeur) {
   tester.widget<TextField>(champ).controller!.text = valeur;
 }
 
+/// Le choix de dédouanement, lu ou actionné même hors de l'étape visible.
+ChoiceChip _puceDedouanement(WidgetTester tester, String libelle) {
+  return tester.widget<ChoiceChip>(
+    find.widgetWithText(ChoiceChip, libelle, skipOffstage: false),
+  );
+}
+
+void _choisirDedouanement(WidgetTester tester, {required bool dedouane}) {
+  _puceDedouanement(tester, dedouane ? 'Dédouané' : 'Non dédouané').onSelected!(
+    true,
+  );
+}
+
 void main() {
   late _DepotPartenaire partenaire;
   late _DepotPersonnel personnel;
@@ -397,7 +415,10 @@ void main() {
     _saisirKilometrage(tester, '85000');
     await _enregistrer(tester);
 
-    expect(partenaire.charge!['import'], {'odometer_at_import_km': 85000});
+    expect(partenaire.charge!['import'], {
+      'odometer_at_import_km': 85000,
+      'customs_cleared': true,
+    });
     expect(partenaire.charge!.containsKey('registration'), isFalse);
   });
 
@@ -452,6 +473,7 @@ void main() {
 
         expect(partenaire.charge![registered ? 'registration' : 'import'], {
           registered ? 'mileage_km' : 'odometer_at_import_km': null,
+          if (!registered) 'customs_cleared': true,
         });
       },
     );
@@ -559,5 +581,111 @@ void main() {
     );
 
     expect(find.textContaining(annonce, skipOffstage: false), findsNothing);
+  });
+
+  // ── DÉDOUANEMENT : DEUX ÉTATS, PAS D'« EN COURS » ────────────────────────
+  //
+  // Le serveur n'a jamais stocké qu'un booléen. L'écran, lui, montrait
+  // « En attente » sur la fiche, ce qui laissait croire à une procédure en
+  // cours. Deux choix seulement, le défaut est « dédouané », et le bloc
+  // `import` les porte dès qu'on enregistre un non-immatriculé.
+
+  testWidgets('un importé propose dédouané ou non, jamais en cours', (
+    tester,
+  ) async {
+    await _ouvrir(
+      tester,
+      mode: VehicleFormMode.partenaire,
+      partenaire: partenaire,
+      personnel: personnel,
+      existant: _vehicule(immatricule: false),
+    );
+
+    expect(find.text('Dédouanement', skipOffstage: false), findsOneWidget);
+    expect(find.text('Dédouané', skipOffstage: false), findsOneWidget);
+    expect(find.text('Non dédouané', skipOffstage: false), findsOneWidget);
+    expect(find.text('En attente', skipOffstage: false), findsNothing);
+    expect(find.text('En cours', skipOffstage: false), findsNothing);
+    expect(_puceDedouanement(tester, 'Dédouané').selected, isTrue);
+    expect(_puceDedouanement(tester, 'Non dédouané').selected, isFalse);
+  });
+
+  testWidgets('un immatriculé n’a rien à dédouaner', (tester) async {
+    await _ouvrir(
+      tester,
+      mode: VehicleFormMode.partenaire,
+      partenaire: partenaire,
+      personnel: personnel,
+      existant: _vehicule(),
+    );
+
+    expect(find.text('Dédouanement', skipOffstage: false), findsNothing);
+    expect(find.text('Non dédouané', skipOffstage: false), findsNothing);
+  });
+
+  testWidgets('l’enregistrement d’un importé envoie le dédouanement', (
+    tester,
+  ) async {
+    await _ouvrir(
+      tester,
+      mode: VehicleFormMode.partenaire,
+      partenaire: partenaire,
+      personnel: personnel,
+      existant: _vehicule(immatricule: false),
+    );
+    await _enregistrer(tester);
+
+    expect(partenaire.charge!['import'], {'customs_cleared': true});
+  });
+
+  testWidgets('cocher non dédouané l’envoie au serveur', (tester) async {
+    await _ouvrir(
+      tester,
+      mode: VehicleFormMode.partenaire,
+      partenaire: partenaire,
+      personnel: personnel,
+      existant: _vehicule(immatricule: false),
+    );
+    _choisirDedouanement(tester, dedouane: false);
+    await tester.pump();
+    await _enregistrer(tester);
+
+    expect(partenaire.charge!['import'], {'customs_cleared': false});
+  });
+
+  testWidgets('un dossier déjà non dédouané reste prérempli et sauvegardé', (
+    tester,
+  ) async {
+    await _ouvrir(
+      tester,
+      mode: VehicleFormMode.partenaire,
+      partenaire: partenaire,
+      personnel: personnel,
+      existant: _vehicule(immatricule: false, dedouane: false),
+    );
+
+    expect(_puceDedouanement(tester, 'Non dédouané').selected, isTrue);
+    expect(_puceDedouanement(tester, 'Dédouané').selected, isFalse);
+
+    await _enregistrer(tester);
+    expect(partenaire.charge!['import'], {'customs_cleared': false});
+  });
+
+  testWidgets('un véhicule déjà dédouané reste prérempli et sauvegardé', (
+    tester,
+  ) async {
+    await _ouvrir(
+      tester,
+      mode: VehicleFormMode.partenaire,
+      partenaire: partenaire,
+      personnel: personnel,
+      existant: _vehicule(immatricule: false, dedouane: true),
+    );
+
+    expect(_puceDedouanement(tester, 'Dédouané').selected, isTrue);
+    expect(_puceDedouanement(tester, 'Non dédouané').selected, isFalse);
+
+    await _enregistrer(tester);
+    expect(partenaire.charge!['import'], {'customs_cleared': true});
   });
 }

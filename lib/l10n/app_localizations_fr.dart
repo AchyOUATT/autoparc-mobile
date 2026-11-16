@@ -553,7 +553,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get catalogCustomsYes => '✓ Oui';
 
   @override
-  String get catalogCustomsPending => '⏳ En attente';
+  String get catalogCustomsNo => '✗ Non';
 
   @override
   String get catalogRightHandDrive => 'Droite (RHD)';
@@ -3733,6 +3733,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get vehiclesOriginCountryHint => 'Provenance du véhicule importé';
+
+  @override
+  String get vehiclesCustomsLabel => 'Dédouanement';
+
+  @override
+  String get vehiclesCustomsCleared => 'Dédouané';
+
+  @override
+  String get vehiclesCustomsNotCleared => 'Non dédouané';
 
   @override
   String get vehiclesAvailabilityLabel => 'Disponible pour';

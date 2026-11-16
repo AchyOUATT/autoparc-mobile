@@ -34,11 +34,25 @@ int? _asInt(Object? value) => switch (value) {
   _ => int.tryParse(value.toString()),
 };
 
+/// Accepte le booléen Laravel et d'éventuelles formes textuelles. Une valeur
+/// inconnue — y compris un ancien libellé d'« en cours » — revient à non
+/// dédouané, plutôt que de faire échouer tout le parsing de la fiche.
+bool? _asBool(Object? value) => switch (value) {
+  null => null,
+  bool b => b,
+  num n => n != 0,
+  String s => switch (s.toLowerCase().trim()) {
+    'true' || '1' || 'yes' || 'oui' => true,
+    'false' || '0' || 'no' || 'non' => false,
+    _ => false,
+  },
+  _ => false,
+};
+
 class VehicleFeature extends Equatable {
   final int id;
   final String name;
-  final String
-  category; // 'dotation' | 'confort' | 'securite' | 'multimedia' | 'aide_conduite' | 'autre'
+  final String category; // 'dotation' | 'confort' | 'securite' | 'multimedia' | 'aide_conduite' | 'autre'
 
   const VehicleFeature({
     required this.id,
@@ -742,7 +756,7 @@ class VehicleImport extends Equatable {
   factory VehicleImport.fromJson(Map<String, dynamic> json) => VehicleImport(
     originCountry: json['origin_country'] as String?,
     originCountryIso2: json['origin_country_iso2'] as String?,
-    customsCleared: json['customs_cleared'] as bool? ?? false,
+    customsCleared: _asBool(json['customs_cleared']) ?? false,
     portOfEntry: json['port_of_entry'] as String?,
     steeringside: json['steering_side'] as String?,
     odometerAtImportKm: parseMileageKm(json['odometer_at_import_km']),

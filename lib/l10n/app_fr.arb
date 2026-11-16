@@ -752,9 +752,9 @@
   "@catalogCustomsYes": {
     "description": "Valeur de la ligne « Dédouané » du bloc d'import. La coche fait partie de la valeur : elle porte l'information à elle seule pour qui parcourt la fiche des yeux."
   },
-  "catalogCustomsPending": "⏳ En attente",
-  "@catalogCustomsPending": {
-    "description": "Valeur de la ligne « Dédouané » quand les droits ne sont pas acquittés. Le sablier fait partie de la valeur, comme la coche de catalogCustomsYes : c'est un montant restant à payer par l'acheteur, et il doit se voir sans être lu."
+  "catalogCustomsNo": "✗ Non",
+  "@catalogCustomsNo": {
+    "description": "Valeur de la ligne « Dédouané » quand le véhicule n'est pas dédouané. Un véhicule est dédouané ou non : il n'y a pas d'état intermédiaire. La croix fait partie de la valeur, comme la coche de catalogCustomsYes."
   },
   "catalogRightHandDrive": "Droite (RHD)",
   "@catalogRightHandDrive": {
@@ -5007,6 +5007,18 @@
   "vehiclesOriginCountryHint": "Provenance du véhicule importé",
   "@vehiclesOriginCountryHint": {
     "description": "Aide du pays d’origine."
+  },
+  "vehiclesCustomsLabel": "Dédouanement",
+  "@vehiclesCustomsLabel": {
+    "description": "Titre du choix de dédouanement, sur un véhicule non immatriculé. Deux valeurs seulement : dédouané, ou non."
+  },
+  "vehiclesCustomsCleared": "Dédouané",
+  "@vehiclesCustomsCleared": {
+    "description": "Option du formulaire : les droits de douane sont acquittés."
+  },
+  "vehiclesCustomsNotCleared": "Non dédouané",
+  "@vehiclesCustomsNotCleared": {
+    "description": "Option du formulaire : les droits de douane ne sont pas acquittés. Ce n'est pas un état transitoire."
   },
   "vehiclesAvailabilityLabel": "Disponible pour",
   "@vehiclesAvailabilityLabel": {
