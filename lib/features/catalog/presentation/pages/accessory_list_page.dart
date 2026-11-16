@@ -1,5 +1,7 @@
 import 'package:auto/core/widgets/scrollable_center.dart';
+
 import '../widgets/garage_registration_prompt.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -272,15 +274,29 @@ class _FilterBar extends ConsumerWidget {
 
     // La rangée s'affichait inconditionnellement : 48 dp de vide quand il n'y
     // avait ni catégorie occupée ni ville.
-    if (categories.isEmpty && cities.isEmpty) {
+    final peutGerer = ref.watch(
+      authProvider.select((auth) => auth.canManageCatalog),
+    );
+    if (categories.isEmpty && cities.isEmpty && !peutGerer) {
       return const SizedBox.shrink();
     }
 
     // Même bande que les véhicules et les pièces depuis ce lot : la hauteur
     // vient du plancher de cible tactile des puces au lieu d'être écrite ici,
     // et les bords s'estompent — voir `BandeFiltres`.
+    final l10n = AppLocalizations.of(context);
     return BandeFiltres(
       children: [
+        if (peutGerer)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              avatar: const Icon(Icons.visibility_off_outlined, size: 14),
+              label: Text(l10n.catalogFilterInactive),
+              selected: filter.inactiveOnly,
+              onSelected: (on) => update((f) => f.copyWith(inactiveOnly: on)),
+            ),
+          ),
         // Chips de catégorie
         ...categories.map((cat) {
           final selected = filter.category == cat.value;
@@ -397,9 +413,8 @@ class _AccessoryList extends StatelessWidget {
               child: Center(
                 child: Text(
                   AppLocalizations.of(context).catalogResultTotal(total),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: Theme.of(context).colorScheme.outline),
                 ),
               ),
             ),
@@ -519,6 +534,29 @@ class _AccessoryCardState extends ConsumerState<_AccessoryCard> {
                             ),
                           ),
                   ),
+                if (!accessory.isActive)
+                  Positioned(
+                    bottom: 6,
+                    left: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.error.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context).catalogBadgeInactive,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
 
@@ -539,9 +577,8 @@ class _AccessoryCardState extends ConsumerState<_AccessoryCard> {
                   // principal de la carte.
                   Text(
                     accessory.name,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelSmall?.copyWith(color: cs.onSurface),
+                    style: Theme.of(context).textTheme.labelSmall
+                        ?.copyWith(color: cs.onSurface),
                   ),
                   // LES MODÈLES AUXQUELS L'ACCESSOIRE SE DESTINE, à la même
                   // place et avec le même widget que sur la carte des pièces.
@@ -712,6 +749,7 @@ class _EmptyView extends ConsumerWidget {
       // Le nom de la ville vient du référentiel du serveur et reste en
       // français jusqu'à la vague serveur : pas de clé.
       if (f.city != null) f.city!,
+      if (f.inactiveOnly) l10n.catalogFilterTermInactive,
     ];
 
     // Il défile, pour la raison mesurée et écrite dans `_EmptyView` de
@@ -743,9 +781,8 @@ class _EmptyView extends ConsumerWidget {
                             actifs.join(l10n.catalogFilterListSeparator),
                           ),
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
+                    style: Theme.of(context).textTheme.bodyMedium
+                        ?.copyWith(color: cs.onSurfaceVariant),
                   ),
                 ),
                 if (actifs.isNotEmpty) ...[

@@ -1,5 +1,6 @@
 import '../widgets/garage_registration_prompt.dart';
 import '../../../catalog/presentation/catalog_reference_labels.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -280,7 +281,11 @@ class _FilterBar extends ConsumerWidget {
       });
     }
 
-    if (categories.isEmpty && cities.isEmpty) {
+    final peutGerer = ref.watch(
+      authProvider.select((auth) => auth.canManageCatalog),
+    );
+
+    if (categories.isEmpty && cities.isEmpty && !peutGerer) {
       return const SizedBox.shrink();
     }
 
@@ -289,8 +294,19 @@ class _FilterBar extends ConsumerWidget {
     // de cible tactile des puces elles-mêmes, et les bords s'estompent au lieu
     // de se couper net — voir `BandeFiltres`. En laisser deux pages à l'ancien
     // dessin aurait eu l'air d'un défaut, comme pour les barres de recherche.
+    final l10n = AppLocalizations.of(context);
     return BandeFiltres(
       children: [
+        if (peutGerer)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              avatar: const Icon(Icons.visibility_off_outlined, size: 14),
+              label: Text(l10n.catalogFilterInactive),
+              selected: filter.inactiveOnly,
+              onSelected: (on) => update((f) => f.copyWith(inactiveOnly: on)),
+            ),
+          ),
         for (final c in categories)
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -381,9 +397,8 @@ class _PartList extends StatelessWidget {
               child: Center(
                 child: Text(
                   AppLocalizations.of(context).catalogResultTotal(total),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: Theme.of(context).colorScheme.outline),
                 ),
               ),
             ),
@@ -556,6 +571,29 @@ class _PartCardState extends ConsumerState<_PartCard> {
                       ),
                     ),
                   ),
+                if (!part.isActive)
+                  Positioned(
+                    bottom: 6,
+                    left: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.error.withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context).catalogBadgeInactive,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
 
@@ -585,9 +623,8 @@ class _PartCardState extends ConsumerState<_PartCard> {
                   // il passerait pour une mention secondaire.
                   Text(
                     part.name,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelSmall?.copyWith(color: cs.onSurface),
+                    style: Theme.of(context).textTheme.labelSmall
+                        ?.copyWith(color: cs.onSurface),
                   ),
                   // LES MODÈLES COMPATIBLES, SOUS LE NOM ET AU-DESSUS DU PRIX.
                   //
@@ -949,9 +986,8 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
             // effet — un bouton qui ne fait rien se lit comme une panne.
             Tooltip(
               message: _selected!.modeleHorsCatalogue
-                  ? AppLocalizations.of(
-                      context,
-                    ).catalogGarageFitmentUnknownModel
+                  ? AppLocalizations.of(context)
+                        .catalogGarageFitmentUnknownModel
                   : AppLocalizations.of(context).catalogGarageFitmentTooltip,
               child: FilterChip(
                 label: Text(
@@ -1002,6 +1038,7 @@ class _EmptyView extends ConsumerWidget {
       // français jusqu'à la vague serveur : pas de clé.
       if (filtre.city != null) filtre.city!,
       if (filtre.inStockOnly) l10n.catalogFilterTermInStock,
+      if (filtre.inactiveOnly) l10n.catalogFilterTermInactive,
     ];
 
     // Il défile, pour la raison mesurée et écrite dans `_EmptyView` de
@@ -1032,9 +1069,8 @@ class _EmptyView extends ConsumerWidget {
                         actifs.join(l10n.catalogFilterListSeparator),
                       ),
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
+                      style: Theme.of(context).textTheme.bodyMedium
+                          ?.copyWith(color: cs.onSurfaceVariant),
                     ),
                     const SizedBox(height: 20),
                     FilledButton.tonalIcon(
@@ -1049,9 +1085,8 @@ class _EmptyView extends ConsumerWidget {
                     Text(
                       l10n.catalogPartCatalogEmpty,
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
+                      style: Theme.of(context).textTheme.bodyMedium
+                          ?.copyWith(color: cs.onSurfaceVariant),
                     ),
                   ],
                   TextButton.icon(

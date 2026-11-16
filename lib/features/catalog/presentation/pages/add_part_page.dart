@@ -1,6 +1,9 @@
 import '../catalog_reference_labels.dart';
+
 import 'package:flutter/material.dart';
+
 import '../../../../l10n/app_localizations.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -111,7 +114,9 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
     }
 
     try {
-      final complete = await ref.read(catalogRepositoryProvider).getPart(e.id);
+      final complete = await ref
+          .read(catalogRepositoryProvider)
+          .getPart(e.id, forStaff: true);
       if (!mounted) return;
       setState(() => _fitments = _versEntrees(complete.fitments ?? const []));
     } catch (erreur) {

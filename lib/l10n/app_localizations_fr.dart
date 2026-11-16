@@ -334,6 +334,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get catalogFilterTermInStock => 'en stock';
 
   @override
+  String get catalogFilterInactive => 'Inactives';
+
+  @override
+  String get catalogFilterTermInactive => 'inactives';
+
+  @override
+  String get catalogBadgeInactive => 'Inactive';
+
+  @override
   String get catalogPartAddCta => 'Nouvelle pièce';
 
   @override

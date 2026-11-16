@@ -130,6 +130,7 @@ class AccessoryFilter {
   final double? priceMax;
   final String? city;
   final int?    locationId;
+  final bool inactiveOnly;
 
   const AccessoryFilter({
     this.search,
@@ -137,6 +138,7 @@ class AccessoryFilter {
     this.priceMax,
     this.city,
     this.locationId,
+    this.inactiveOnly = false,
   });
 
   AccessoryFilter copyWith({
@@ -145,6 +147,7 @@ class AccessoryFilter {
     double? priceMax,
     String? city,
     int?    locationId,
+    bool? inactiveOnly,
     bool clearSearch   = false,
     bool clearCategory = false,
     bool clearCity     = false,
@@ -156,6 +159,7 @@ class AccessoryFilter {
         priceMax:   priceMax      ?? this.priceMax,
         city:       clearCity     ? null : (city       ?? this.city),
         locationId: clearLocation ? null : (locationId ?? this.locationId),
+        inactiveOnly: inactiveOnly ?? this.inactiveOnly,
       );
 }
 
@@ -172,6 +176,7 @@ class PartFilter {
   final int? vehicleModelId;
   final String? city;
   final int? locationId;
+  final bool inactiveOnly;
 
   const PartFilter({
     this.search,
@@ -181,6 +186,7 @@ class PartFilter {
     this.vehicleModelId,
     this.city,
     this.locationId,
+    this.inactiveOnly = false,
   });
 
   PartFilter copyWith({
@@ -191,6 +197,7 @@ class PartFilter {
     int? vehicleModelId,
     String? city,
     int? locationId,
+    bool? inactiveOnly,
     bool clearCity = false,
     bool clearLocation = false,
     bool clearVehicleModel = false,
@@ -215,6 +222,7 @@ class PartFilter {
         vehicleModelId:clearVehicleModel ? null : (vehicleModelId ?? this.vehicleModelId),
         city:          clearCity     ? null : (city       ?? this.city),
         locationId:    clearLocation ? null : (locationId ?? this.locationId),
+        inactiveOnly:  inactiveOnly  ?? this.inactiveOnly,
       );
 }
 
@@ -375,13 +383,17 @@ class AccessoryListNotifier extends AutoDisposeNotifier<PagedState<Accessory>> {
             priceMax: filter.priceMax,
             city: filter.city,
             locationId: filter.locationId,
+            inactiveOnly: filter.inactiveOnly,
           );
       // Une déconnexion, un filtre ou un rafraîchissement a pu remplacer
       // cette liste pendant l’appel : sa réponse ne doit plus être affichée.
       if (generation != _generation) return;
       _page = nextPage;
+      final articles = filter.inactiveOnly
+          ? resp.data.where((article) => !article.isActive).toList()
+          : resp.data;
       state = state.copyWith(
-        items: isFirst ? resp.data : [...state.items, ...resp.data],
+        items: isFirst ? articles : [...state.items, ...articles],
         total: resp.total,
         hasMore: resp.hasNextPage,
         isLoading: false,
@@ -421,19 +433,27 @@ class PartListNotifier extends AutoDisposeNotifier<PagedState<Part>> {
   static const _perPage = 20;
   int _page = 0;
   bool _fetching = false;
+  int _generation = 0;
 
   @override
   PagedState<Part> build() {
     ref.watch(partFilterProvider);
+    ref.watch(authProvider.select((auth) => auth.isStaff));
+    final generation = ++_generation;
+    ref.onDispose(() => _generation++);
     _page = 0;
     _fetching = false;
-    Future.microtask(_fetchNext);
+    Future.microtask(() {
+      if (generation == _generation) _fetchNext();
+    });
     return const PagedState.loading();
   }
 
   Future<void> _fetchNext() async {
     if (_fetching) return;
     _fetching = true;
+    final generation = _generation;
+    final forStaff = ref.read(authProvider).isStaff;
     final nextPage = _page + 1;
     final isFirst  = nextPage == 1;
 
@@ -446,6 +466,7 @@ class PartListNotifier extends AutoDisposeNotifier<PagedState<Part>> {
     try {
       final filter = ref.read(partFilterProvider);
       final resp   = await ref.read(catalogRepositoryProvider).getParts(
+        forStaff:      forStaff,
         page:          nextPage,
         perPage:       _perPage,
         search:        filter.search,
@@ -455,10 +476,17 @@ class PartListNotifier extends AutoDisposeNotifier<PagedState<Part>> {
         vehicleModelId:filter.vehicleModelId,
         city:          filter.city,
         locationId:    filter.locationId,
+        inactiveOnly:  filter.inactiveOnly,
       );
+      // Une déconnexion, un filtre ou un rafraîchissement a pu remplacer
+      // cette liste pendant l'appel : sa réponse ne doit plus être affichée.
+      if (generation != _generation) return;
       _page = nextPage;
+      final pieces = filter.inactiveOnly
+          ? resp.data.where((piece) => !piece.isActive).toList()
+          : resp.data;
       state = state.copyWith(
-        items:         isFirst ? resp.data : [...state.items, ...resp.data],
+        items:         isFirst ? pieces : [...state.items, ...pieces],
         total:         resp.total,
         hasMore:       resp.hasNextPage,
         isLoading:     false,
@@ -466,13 +494,14 @@ class PartListNotifier extends AutoDisposeNotifier<PagedState<Part>> {
         clearError:    true,
       );
     } catch (e) {
+      if (generation != _generation) return;
       state = state.copyWith(
         isLoading:     false,
         isLoadingMore: false,
         error:         e,
       );
     } finally {
-      _fetching = false;
+      if (generation == _generation) _fetching = false;
     }
   }
 
@@ -482,6 +511,7 @@ class PartListNotifier extends AutoDisposeNotifier<PagedState<Part>> {
   }
 
   Future<void> refresh() async {
+    _generation++;
     _page = 0;
     _fetching = false;
     state = const PagedState.loading();
@@ -519,7 +549,8 @@ final accessoryDetailProvider =
 
 final partDetailProvider =
     FutureProvider.autoDispose.family<Part, int>((ref, id) async {
-  return ref.read(catalogRepositoryProvider).getPart(id);
+  final forStaff = ref.watch(authProvider.select((auth) => auth.isStaff));
+  return ref.read(catalogRepositoryProvider).getPart(id, forStaff: forStaff);
 });
 
 /// Catégories de pièces — chargées une fois.

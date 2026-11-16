@@ -680,6 +680,24 @@ abstract class AppLocalizations {
   /// **'en stock'**
   String get catalogFilterTermInStock;
 
+  /// Pastille de filtre de la liste des pièces et des accessoires, visible seulement pour le personnel qui gère le catalogue. Elle n'affiche que les fiches inactives, typiquement celles saisies en attente de prix et de stock.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inactives'**
+  String get catalogFilterInactive;
+
+  /// Terme listé par catalogActiveFilters quand le filtre Inactives est posé. Voir catalogFilterTermInStock.
+  ///
+  /// In fr, this message translates to:
+  /// **'inactives'**
+  String get catalogFilterTermInactive;
+
+  /// Badge posé sur la carte d'une pièce ou d'un accessoire inactif, dans la liste du personnel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inactive'**
+  String get catalogBadgeInactive;
+
   /// Bouton flottant de la liste des pièces, visible pour le seul personnel habilité. Il mène à un écran de saisie du personnel, qui n'est PAS traduit par cette vague ; le bouton l'est, parce qu'il s'affiche sur une page cliente.
   ///
   /// In fr, this message translates to:

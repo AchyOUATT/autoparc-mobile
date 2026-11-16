@@ -67,6 +67,7 @@ import 'package:auto/shared/models/paginated_response.dart';
 import 'package:auto/l10n/app_localizations.dart';
 
 import 'support/langues.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -931,14 +932,12 @@ Accessory _accessoire({
   return Accessory.fromJson(json);
 }
 
-Map<String, dynamic> _gabarit(String chemin) =>
-    jsonDecode(
-          jsonEncode(
-            (jsonDecode(File(chemin).readAsStringSync())
-                as Map<String, dynamic>)['data'][0],
-          ),
-        )
-        as Map<String, dynamic>;
+Map<String, dynamic> _gabarit(String chemin) => jsonDecode(
+  jsonEncode(
+    (jsonDecode(File(chemin).readAsStringSync())
+        as Map<String, dynamic>)['data'][0],
+  ),
+) as Map<String, dynamic>;
 
 /// Monte une liste d'articles dans la coque de l'application.
 ///
@@ -1059,6 +1058,7 @@ class _DepotArticles implements CatalogRepository {
 
   @override
   Future<PaginatedResponse<Part>> getParts({
+    bool forStaff = false,
     int page = 1,
     int perPage = 20,
     String? search,
@@ -1072,6 +1072,7 @@ class _DepotArticles implements CatalogRepository {
     int? year,
     String? city,
     int? locationId,
+    bool inactiveOnly = false,
   }) async => PaginatedResponse<Part>(
     data: pieces,
     currentPage: 1,
@@ -1092,6 +1093,7 @@ class _DepotArticles implements CatalogRepository {
     int? vehicleModelId,
     String? city,
     int? locationId,
+    bool inactiveOnly = false,
   }) async => PaginatedResponse<Accessory>(
     data: accessoires,
     currentPage: 1,
