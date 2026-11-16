@@ -552,7 +552,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogCustomsYes => '✓ Yes';
 
   @override
-  String get catalogCustomsPending => '⏳ Pending';
+  String get catalogCustomsNo => '✗ No';
 
   @override
   String get catalogRightHandDrive => 'Right (RHD)';
@@ -3716,6 +3716,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get vehiclesOriginCountryHint => 'Origin of the imported vehicle';
+
+  @override
+  String get vehiclesCustomsLabel => 'Customs clearance';
+
+  @override
+  String get vehiclesCustomsCleared => 'Cleared';
+
+  @override
+  String get vehiclesCustomsNotCleared => 'Not cleared';
 
   @override
   String get vehiclesAvailabilityLabel => 'Available for';

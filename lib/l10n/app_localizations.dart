@@ -1088,11 +1088,11 @@ abstract class AppLocalizations {
   /// **'✓ Oui'**
   String get catalogCustomsYes;
 
-  /// Valeur de la ligne « Dédouané » quand les droits ne sont pas acquittés. Le sablier fait partie de la valeur, comme la coche de catalogCustomsYes : c'est un montant restant à payer par l'acheteur, et il doit se voir sans être lu.
+  /// Valeur de la ligne « Dédouané » quand le véhicule n'est pas dédouané. Un véhicule est dédouané ou non : il n'y a pas d'état intermédiaire. La croix fait partie de la valeur, comme la coche de catalogCustomsYes.
   ///
   /// In fr, this message translates to:
-  /// **'⏳ En attente'**
-  String get catalogCustomsPending;
+  /// **'✗ Non'**
+  String get catalogCustomsNo;
 
   /// Valeur de la ligne « Conduite ». LE SIGLE EST CONSERVÉ DANS LES DEUX LANGUES : « RHD » est la mention qui figure sur les documents d'importation, et un acheteur la reconnaît même sans lire le mot qui la précède.
   ///
@@ -6484,6 +6484,24 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Provenance du véhicule importé'**
   String get vehiclesOriginCountryHint;
+
+  /// Titre du choix de dédouanement, sur un véhicule non immatriculé. Deux valeurs seulement : dédouané, ou non.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dédouanement'**
+  String get vehiclesCustomsLabel;
+
+  /// Option du formulaire : les droits de douane sont acquittés.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dédouané'**
+  String get vehiclesCustomsCleared;
+
+  /// Option du formulaire : les droits de douane ne sont pas acquittés. Ce n'est pas un état transitoire.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non dédouané'**
+  String get vehiclesCustomsNotCleared;
 
   /// Titre du choix de disponibilité.
   ///

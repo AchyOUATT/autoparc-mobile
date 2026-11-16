@@ -216,6 +216,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   /// renseigner autrement qu'en base.
   CountryRef? _paysOrigine;
 
+  /// Dédouané ou non, pour un véhicule non immatriculé. Il n'y a pas d'état
+  /// intermédiaire : le choix part à « non dédouané », et c'est aussi la
+  /// valeur par défaut du serveur si le champ est omis.
+  bool _dedouane = false;
+
   /// La promotion en cours de saisie, en mode PARTENAIRE seulement.
   ///
   /// Le personnel a sa propre mise en avant, `deal_type`, qui ne touche pas
@@ -297,6 +302,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       // partant à faux, et la charge utile le déclarant désormais
       // explicitement.
       _immatricule = e.isRegistered;
+      _dedouane = e.import_?.customsCleared ?? false;
 
       // La promotion enregistree. Le serveur ne rend ce bloc que pendant
       // la fenetre : une promotion finie ne revient pas, et c'est exact —
@@ -901,12 +907,12 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         'deal_ends_at': _promotion.fin?.toIso8601String(),
       } else if (widget.mode.estPartenaire && _existing != null)
         'deal_price': null,
-      if (!_immatricule &&
-          (mileage != null || clearingMileage || _paysOrigine != null))
+      if (!_immatricule)
         'import': {
           if (mileage != null || clearingMileage)
             'odometer_at_import_km': mileage,
           'origin_country_id': ?_paysOrigine?.id,
+          'customs_cleared': _dedouane,
         },
     };
   }
@@ -1987,6 +1993,29 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                     );
                   },
                 ),
+            ],
+
+            // Dédouanement — uniquement pour un véhicule NON IMMATRICULÉ.
+            // Un véhicule immatriculé localement n'a rien à dédouaner, et le
+            // serveur n'écrit le bloc `import` que dans ce cas. Deux valeurs
+            // seulement : dédouané, ou non.
+            if (!_immatricule) ...[
+              Text(
+                l10n.vehiclesCustomsLabel,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 6),
+              _ChoiceGroup<bool>(
+                options: [
+                  (value: true, label: l10n.vehiclesCustomsCleared),
+                  (value: false, label: l10n.vehiclesCustomsNotCleared),
+                ],
+                selected: _dedouane,
+                onChanged: (v) => setState(() => _dedouane = v),
+              ),
+              const SizedBox(height: 16),
             ],
 
             if (!widget.saleOnly) ...[

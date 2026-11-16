@@ -876,7 +876,7 @@ class _ImportSection extends StatelessWidget {
           l10n.catalogCustomsCleared,
           import_.customsCleared
               ? l10n.catalogCustomsYes
-              : l10n.catalogCustomsPending,
+              : l10n.catalogCustomsNo,
         ),
         if (import_.isRightHandDrive)
           _InfoRow(l10n.catalogFieldHandedness, l10n.catalogRightHandDrive),
