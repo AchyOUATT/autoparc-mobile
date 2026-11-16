@@ -88,6 +88,11 @@ class _RentalVehicleRegisterPageState
     _transmission = existing.transmission;
     _site.text = existing.commercial.site ?? '';
     _city.text = existing.commercial.city ?? '';
+    if (widget.mode.estPartenaire) {
+      final profil = ref.read(espace.partnerSessionProvider).profile;
+      if (_city.text.trim().isEmpty) _city.text = profil?.city ?? '';
+      if (_site.text.trim().isEmpty) _site.text = profil?.address ?? '';
+    }
     _description.text = existing.description ?? '';
     _selectedFeatureIds.addAll(existing.features.map((feature) => feature.id));
     _initialFeatureIds.addAll(_selectedFeatureIds);

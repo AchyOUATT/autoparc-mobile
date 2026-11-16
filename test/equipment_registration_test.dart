@@ -169,7 +169,11 @@ class _PartnerSession extends StateNotifier<partner.PartnerSession>
         const partner.PartnerSession(
           profile: partner.PartnerProfile(
             user: {'role': 'partner'},
-            account: {'status': 'approved', 'contact_name': 'Vendeur'},
+            account: {
+              'status': 'approved',
+              'contact_name': 'Vendeur',
+              'city': 'Ouagadougou',
+            },
             boutique: {'marge_pourcentage': 10},
           ),
         ),

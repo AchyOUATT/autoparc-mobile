@@ -13,6 +13,8 @@ import 'package:auto/core/local/catalog_local_cache.dart';
 import 'package:auto/features/catalog/data/models/vehicle.dart';
 import 'package:auto/features/partner_accounts/data/partner_repository.dart'
     as espace;
+import 'package:auto/features/partner_accounts/presentation/partner_session.dart'
+    as session;
 import 'package:auto/features/partners/data/models/partner.dart';
 import 'package:auto/features/partners/data/partner_repository.dart'
     as annuaire;
@@ -110,6 +112,26 @@ const _refs = CatalogRefs(
   locations: [_agence],
 );
 
+class _SessionPartenaire extends StateNotifier<session.PartnerSession>
+    implements session.PartnerSessionNotifier {
+  _SessionPartenaire()
+    : super(
+        const session.PartnerSession(
+          profile: espace.PartnerProfile(
+            user: {'role': 'partner'},
+            account: {
+              'status': 'approved',
+              'contact_name': 'Vendeur',
+              'city': 'Ouagadougou',
+            },
+          ),
+        ),
+      );
+
+  @override
+  Object? noSuchMethod(Invocation invocation) => null;
+}
+
 class _DepotPartenaire extends espace.PartnerRepository {
   Map<String, dynamic>? charge;
   int? identifiant;
@@ -201,6 +223,9 @@ Future<void> _ouvrir(
         catalogRefsProvider.overrideWith((_) async => _refs),
         countriesProvider.overrideWith((_) async => <CountryRef>[]),
         espace.partnerRepositoryProvider.overrideWithValue(partenaire),
+        session.partnerSessionProvider.overrideWith(
+          (_) => _SessionPartenaire(),
+        ),
         vehicleAdminRepositoryProvider.overrideWithValue(personnel),
         annuaire.partnerRepositoryProvider.overrideWithValue(_Annuaire()),
       ],

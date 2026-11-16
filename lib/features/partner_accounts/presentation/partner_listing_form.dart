@@ -114,10 +114,11 @@ class _PartnerListingFormPageState
     if (_editing) {
       _city.text = _text(listing['city']);
       _site.text = _text(listing['site']);
-    } else {
+    }
+    if (_city.text.trim().isEmpty || _site.text.trim().isEmpty) {
       final profil = ref.read(partnerSessionProvider).profile;
-      _city.text = profil?.city ?? '';
-      _site.text = profil?.address ?? '';
+      if (_city.text.trim().isEmpty) _city.text = profil?.city ?? '';
+      if (_site.text.trim().isEmpty) _site.text = profil?.address ?? '';
     }
     _loadReferences();
   }

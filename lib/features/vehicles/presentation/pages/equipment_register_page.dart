@@ -150,6 +150,11 @@ class _EquipmentRegisterPageState extends ConsumerState<EquipmentRegisterPage> {
     _quickCoupler = existing.equipmentDetails.quickCoupler;
     _site.text = existing.commercial.site ?? '';
     _city.text = existing.commercial.city ?? '';
+    if (widget.mode.estPartenaire) {
+      final profil = ref.read(espace.partnerSessionProvider).profile;
+      if (_city.text.trim().isEmpty) _city.text = profil?.city ?? '';
+      if (_site.text.trim().isEmpty) _site.text = profil?.address ?? '';
+    }
     _description.text = existing.description ?? '';
     final publicPrices = <String, num?>{
       'sale_price': existing.commercial.salePrice,

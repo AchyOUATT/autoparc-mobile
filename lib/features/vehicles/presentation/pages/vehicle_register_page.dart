@@ -285,6 +285,12 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
         _rentalDepositCtrl.text = _fmtPrice(e.commercial.rentalDeposit!);
       if (e.commercial.site != null) _siteCtrl.text = e.commercial.site!;
       if (e.commercial.city != null) _cityCtrl.text = e.commercial.city!;
+      if (widget.mode.estPartenaire) {
+        final profil = ref.read(espace.partnerSessionProvider).profile;
+        if (_cityCtrl.text.trim().isEmpty) _cityCtrl.text = profil?.city ?? '';
+        if (_siteCtrl.text.trim().isEmpty)
+          _siteCtrl.text = profil?.address ?? '';
+      }
       _selectedFeatureIds.addAll(e.features.map((f) => f.id));
       // Sans cette ligne, modifier un véhicule immatriculé le renverrait
       // « non immatriculé » au premier enregistrement — le commutateur
