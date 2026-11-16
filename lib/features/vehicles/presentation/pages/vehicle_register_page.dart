@@ -217,9 +217,9 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   CountryRef? _paysOrigine;
 
   /// Dédouané ou non, pour un véhicule non immatriculé. Il n'y a pas d'état
-  /// intermédiaire : le choix part à « non dédouané », et c'est aussi la
-  /// valeur par défaut du serveur si le champ est omis.
-  bool _dedouane = false;
+  /// intermédiaire : le choix part à « dédouané ». Un dossier déjà enregistré
+  /// conserve sa valeur ; s'il n'y en a pas encore, on reprend ce défaut.
+  bool _dedouane = true;
 
   /// La promotion en cours de saisie, en mode PARTENAIRE seulement.
   ///
@@ -302,7 +302,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       // partant à faux, et la charge utile le déclarant désormais
       // explicitement.
       _immatricule = e.isRegistered;
-      _dedouane = e.import_?.customsCleared ?? false;
+      _dedouane = e.import_?.customsCleared ?? true;
 
       // La promotion enregistree. Le serveur ne rend ce bloc que pendant
       // la fenetre : une promotion finie ne revient pas, et c'est exact —
