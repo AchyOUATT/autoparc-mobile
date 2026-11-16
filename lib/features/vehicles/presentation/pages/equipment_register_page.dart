@@ -84,6 +84,7 @@ class _EquipmentRegisterPageState extends ConsumerState<EquipmentRegisterPage> {
   final _monthly = TextEditingController();
   final _deposit = TextEditingController();
   final _site = TextEditingController();
+  final _city = TextEditingController();
   final _description = TextEditingController();
   final _details = <String, TextEditingController>{};
   final _initialPrices = <String, num?>{};
@@ -128,7 +129,14 @@ class _EquipmentRegisterPageState extends ConsumerState<EquipmentRegisterPage> {
         text: value is num ? _amountText(value) : value?.toString() ?? '',
       );
     }
-    if (existing == null) return;
+    if (existing == null) {
+      if (widget.mode.estPartenaire) {
+        final profil = ref.read(espace.partnerSessionProvider).profile;
+        _city.text = profil?.city ?? '';
+        _site.text = profil?.address ?? '';
+      }
+      return;
+    }
     _type = existing.equipmentType;
     _brandId = existing.brandId;
     _modelId = existing.vehicleModelId;
@@ -141,6 +149,12 @@ class _EquipmentRegisterPageState extends ConsumerState<EquipmentRegisterPage> {
     _cabin = existing.equipmentDetails.cabin;
     _quickCoupler = existing.equipmentDetails.quickCoupler;
     _site.text = existing.commercial.site ?? '';
+    _city.text = existing.commercial.city ?? '';
+    if (widget.mode.estPartenaire) {
+      final profil = ref.read(espace.partnerSessionProvider).profile;
+      if (_city.text.trim().isEmpty) _city.text = profil?.city ?? '';
+      if (_site.text.trim().isEmpty) _site.text = profil?.address ?? '';
+    }
     _description.text = existing.description ?? '';
     final publicPrices = <String, num?>{
       'sale_price': existing.commercial.salePrice,
@@ -169,6 +183,7 @@ class _EquipmentRegisterPageState extends ConsumerState<EquipmentRegisterPage> {
       _monthly,
       _deposit,
       _site,
+      _city,
       _description,
       ..._details.values,
     ]) {
@@ -300,7 +315,10 @@ class _EquipmentRegisterPageState extends ConsumerState<EquipmentRegisterPage> {
                   _initialPrices[entry.key]
             : _number(entry.value.text, money: true) != null)
           entry.key: _number(entry.value.text, money: true),
-      if (_editing
+      if (widget.mode.estPartenaire) ...{
+        'city': _city.text.trim().isEmpty ? null : _city.text.trim(),
+        'site': site,
+      } else if (_editing
           ? site != _text(existing!.commercial.site ?? '')
           : site != null)
         'site': site,
@@ -750,12 +768,29 @@ class _EquipmentRegisterPageState extends ConsumerState<EquipmentRegisterPage> {
                       ),
                       _gap,
                     ],
+                    if (widget.mode.estPartenaire) ...[
+                      TextFormField(
+                        key: const ValueKey('equip-city'),
+                        controller: _city,
+                        enabled: !_saving,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: InputDecoration(
+                          labelText: l10n.partnerLocationCityLabel,
+                        ),
+                        validator: (value) => (value ?? '').trim().isEmpty
+                            ? l10n.partnerLocationCityRequired
+                            : null,
+                      ),
+                      _gap,
+                    ],
                     TextFormField(
                       key: const ValueKey('equip-site'),
                       controller: _site,
                       enabled: !_saving,
                       decoration: InputDecoration(
-                        labelText: l10n.rentalVehiclePickupPlace,
+                        labelText: widget.mode.estPartenaire
+                            ? l10n.partnerLocationAddressLabel
+                            : l10n.rentalVehiclePickupPlace,
                       ),
                     ),
                     _gap,

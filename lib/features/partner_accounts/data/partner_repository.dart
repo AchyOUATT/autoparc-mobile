@@ -91,6 +91,23 @@ class PartnerProfile {
   String? get reviewReason => account['review_reason']?.toString();
   bool get approved => status == 'approved';
 
+  /// Ville par defaut, ou null si elle n'est pas renseignee.
+  String? get city {
+    final value = account['city']?.toString().trim();
+    return (value == null || value.isEmpty) ? null : value;
+  }
+
+  /// Adresse ou lieu par defaut, facultatif.
+  String? get address {
+    final value = account['address']?.toString().trim();
+    return (value == null || value.isEmpty) ? null : value;
+  }
+
+  String get emplacementResume {
+    if (city == null) return '';
+    return address == null ? city! : '$city — $address';
+  }
+
   /// Pour retourner au coffre, d'où un démarrage optimiste le relira.
   ///
   /// Les clés sont celles du serveur, parce que c'est [PartnerProfile.fromJson]
@@ -325,7 +342,9 @@ class PartnerDashboard {
     return PartnerDashboard(
       counts: {
         for (final kind in PartnerListingKind.values)
-          kind: PartnerDashboardCounts.fromJson(lecture.map(listings[kind.name])),
+          kind: PartnerDashboardCounts.fromJson(
+            lecture.map(listings[kind.name]),
+          ),
       },
       unreadNotifications: lecture.entier(json['unread_notifications']) ?? 0,
     );
@@ -356,14 +375,15 @@ List<Map<String, dynamic>> partnerMaps(dynamic data) =>
         .map((item) => Map<String, dynamic>.from(item as Map))
         .toList();
 
-final partnerRepositoryProvider = Provider<PartnerRepository>(
-  (ref) {
-    final repository = PartnerRepository();
-    repository.setLanguage(ref.read(langueProvider).languageCode);
-    ref.listen(langueProvider, (_, locale) => repository.setLanguage(locale.languageCode));
-    return repository;
-  },
-);
+final partnerRepositoryProvider = Provider<PartnerRepository>((ref) {
+  final repository = PartnerRepository();
+  repository.setLanguage(ref.read(langueProvider).languageCode);
+  ref.listen(
+    langueProvider,
+    (_, locale) => repository.setLanguage(locale.languageCode),
+  );
+  return repository;
+});
 
 /// Own Dio and token key: a partner session never becomes a staff session.
 class PartnerRepository {
@@ -409,11 +429,16 @@ class PartnerRepository {
         path,
         data: data,
         queryParameters: query,
-        options: Options(method: method, headers: headers, responseType: responseType),
+        options: Options(
+          method: method,
+          headers: headers,
+          responseType: responseType,
+        ),
       );
       return response.data;
     } on DioException catch (error) {
-      final body = decodeApiErrorBody(error.response?.data) ?? <String, dynamic>{};
+      final body =
+          decodeApiErrorBody(error.response?.data) ?? <String, dynamic>{};
       final fields = <String, String>{};
       if (body['errors'] is Map) {
         for (final entry in (body['errors'] as Map).entries) {
@@ -537,6 +562,29 @@ class PartnerRepository {
       _request('POST', '/partner/notifications/read-all');
 
   Future<PartnerSessionStockee?> sessionStockee() => _tokens.readSession();
+
+  Future<PartnerProfile> updateEmplacement({
+    String? city,
+    String? address,
+    bool clearAddress = false,
+  }) async {
+    final body = <String, dynamic>{
+      'city': city,
+      'address': clearAddress || (address == null || address.isEmpty)
+          ? null
+          : address,
+    };
+    final result = PartnerProfile.fromJson(
+      Map<String, dynamic>.from(
+        await _request('PATCH', '/partner/me', data: body),
+      ),
+    );
+    final session = await _tokens.readSession();
+    if (session != null) {
+      await _tokens.writeSession(session.token, result.toJson());
+    }
+    return result;
+  }
 
   Future<PartnerProfile> getMe() async {
     try {
@@ -685,29 +733,51 @@ class PartnerRepository {
   }
 
   Future<List<Map<String, dynamic>>> equipmentDocuments(int vehicleId) async =>
-      ((await _request('GET', '/partner/vehicles/$vehicleId/equipment-documents'))['data'] as List)
-          .map((item) => Map<String, dynamic>.from(item as Map)).toList();
+      ((await _request(
+                'GET',
+                '/partner/vehicles/$vehicleId/equipment-documents',
+              ))['data']
+              as List)
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList();
 
-  Future<Map<String, dynamic>> uploadEquipmentDocument(int vehicleId, {
+  Future<Map<String, dynamic>> uploadEquipmentDocument(
+    int vehicleId, {
     required String filename,
     required List<int> bytes,
     required Map<String, String> fields,
   }) async {
     final form = FormData.fromMap(fields);
-    form.files.add(MapEntry('document', MultipartFile.fromBytes(bytes, filename: filename)));
-    return Map<String, dynamic>.from((await _request(
-      'POST', '/partner/vehicles/$vehicleId/equipment-documents', data: form,
-    ))['data'] as Map);
+    form.files.add(
+      MapEntry('document', MultipartFile.fromBytes(bytes, filename: filename)),
+    );
+    return Map<String, dynamic>.from(
+      (await _request(
+            'POST',
+            '/partner/vehicles/$vehicleId/equipment-documents',
+            data: form,
+          ))['data']
+          as Map,
+    );
   }
 
-  Future<List<int>> downloadEquipmentDocument(int vehicleId, int documentId) async =>
-      List<int>.from(await _request('GET',
-        '/partner/vehicles/$vehicleId/equipment-documents/$documentId/download',
-        responseType: ResponseType.bytes,
-      ) as List);
+  Future<List<int>> downloadEquipmentDocument(
+    int vehicleId,
+    int documentId,
+  ) async => List<int>.from(
+    await _request(
+          'GET',
+          '/partner/vehicles/$vehicleId/equipment-documents/$documentId/download',
+          responseType: ResponseType.bytes,
+        )
+        as List,
+  );
 
   Future<void> deleteEquipmentDocument(int vehicleId, int documentId) async =>
-      _request('DELETE', '/partner/vehicles/$vehicleId/equipment-documents/$documentId');
+      _request(
+        'DELETE',
+        '/partner/vehicles/$vehicleId/equipment-documents/$documentId',
+      );
 
   Future<Map<String, dynamic>> uploadRepairQuote(
     int vehicleId,

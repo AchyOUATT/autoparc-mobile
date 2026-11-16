@@ -37,7 +37,8 @@ int? _asInt(Object? value) => switch (value) {
 class VehicleFeature extends Equatable {
   final int id;
   final String name;
-  final String category; // 'dotation' | 'confort' | 'securite' | 'multimedia' | 'aide_conduite' | 'autre'
+  final String
+  category; // 'dotation' | 'confort' | 'securite' | 'multimedia' | 'aide_conduite' | 'autre'
 
   const VehicleFeature({
     required this.id,
@@ -617,6 +618,7 @@ class VehicleCommercial extends Equatable {
   final String currency;
   final bool priceNegotiable;
   final String? site;
+  final String? city;
   final int? locationId;
   final String? locationName; // "Showroom Paspanga"
   final String? locationCity; // "Ouagadougou"
@@ -642,6 +644,7 @@ class VehicleCommercial extends Equatable {
     required this.currency,
     required this.priceNegotiable,
     this.site,
+    this.city,
     this.locationId,
     this.locationName,
     this.locationCity,
@@ -669,6 +672,7 @@ class VehicleCommercial extends Equatable {
         currency: json['currency'] as String? ?? 'XOF',
         priceNegotiable: json['price_negotiable'] as bool? ?? false,
         site: json['site'] as String?,
+        city: json['city'] as String?,
         locationId: json['location_id'] as int?,
         locationName:
             (json['location'] as Map<String, dynamic>?)?['name'] as String?,
@@ -682,11 +686,25 @@ class VehicleCommercial extends Equatable {
       );
 
   /// Label de localisation affiché sur les cartes et fiches.
+  /// Ville publique : celle de l'annonce, sinon celle de l'agence AutoParc.
+  String? get displayCity {
+    for (final value in [city, locationCity]) {
+      final ville = value?.trim();
+      if (ville != null && ville.isNotEmpty) return ville;
+    }
+    return null;
+  }
+
+  String? get displayPlace {
+    final lieu = site?.trim();
+    return (lieu == null || lieu.isEmpty) ? null : lieu;
+  }
+
   String? get locationLabel {
     if (locationName != null && locationCity != null)
       return '$locationName — $locationCity';
     if (locationCity != null) return locationCity;
-    return site; // fallback sur l'ancien champ texte libre
+    return site;
   }
 
   @override

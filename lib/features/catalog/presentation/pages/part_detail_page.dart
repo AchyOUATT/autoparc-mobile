@@ -79,7 +79,9 @@ class PartDetailPage extends ConsumerWidget {
         appBar: AppBar(),
         body: partAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text(messageFor(e, l10n: AppLocalizations.of(context)))),
+          error: (e, _) => Center(
+            child: Text(messageFor(e, l10n: AppLocalizations.of(context))),
+          ),
           data: (_) => const SizedBox.shrink(),
         ),
       );
@@ -121,7 +123,10 @@ class PartDetailPage extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(messageFor(e, l10n: AppLocalizations.of(context))), backgroundColor: cs.error),
+            SnackBar(
+              content: Text(messageFor(e, l10n: AppLocalizations.of(context))),
+              backgroundColor: cs.error,
+            ),
           );
         }
       }
@@ -354,6 +359,21 @@ class PartDetailPage extends ConsumerWidget {
                   showQuantity: part.seller == null || part.stock.hasQuantity,
                 ),
                 const SizedBox(height: 12),
+                if ((part.city ?? '').isNotEmpty ||
+                    (part.site ?? '').isNotEmpty) ...[
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.place_outlined),
+                    title: Text(l10n.catalogSectionLocation),
+                    subtitle: Text(
+                      [
+                        if ((part.city ?? '').isNotEmpty) part.city!,
+                        if ((part.site ?? '').isNotEmpty) part.site!,
+                      ].join(' — '),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
 
                 // ── Infos produit ─────────────────────────────────────
                 _InfoCard(part: part),
@@ -537,7 +557,11 @@ class _StockCard extends StatelessWidget {
   final PartStock stock;
   final bool inStock;
   final bool showQuantity;
-  const _StockCard({required this.stock, required this.inStock, this.showQuantity = true});
+  const _StockCard({
+    required this.stock,
+    required this.inStock,
+    this.showQuantity = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -605,7 +629,10 @@ class _InfoCard extends StatelessWidget {
             // référentiel du serveur et restent en français jusqu'à la vague
             // serveur : seuls leurs libellés sont traduits.
             if (part.categoryName != null)
-              _InfoRow(l10n.catalogFieldCategory, catalogPartCategoryLabel(part.categoryName!, l10n)),
+              _InfoRow(
+                l10n.catalogFieldCategory,
+                catalogPartCategoryLabel(part.categoryName!, l10n),
+              ),
             if (part.manufacturer != null)
               _InfoRow(l10n.catalogFieldManufacturer, part.manufacturer!),
             // garantie désactivée temporairement

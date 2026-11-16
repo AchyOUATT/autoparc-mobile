@@ -7,18 +7,20 @@ import '../../../../shared/models/product_seller.dart';
 
 /// Accessoire (esthétique, confort, sécurité, multimédia, utilitaire).
 class Accessory extends Equatable {
-  final int     id;
+  final int id;
   final String? sku;
-  final String  name;
+  final String name;
   final String? description;
-  final String  categoryValue;
-  final String  categoryLabel;
-  final int?    manufacturerId;
+  final String? city;
+  final String? site;
+  final String categoryValue;
+  final String categoryLabel;
+  final int? manufacturerId;
   final String? manufacturer;
   final AccessoryPricing pricing;
-  final AccessoryStock   stock;
-  final int?    warrantyMonths;
-  final bool    isActive;
+  final AccessoryStock stock;
+  final int? warrantyMonths;
+  final bool isActive;
   final ProductSeller? seller;
 
   /// Le marqueur de version que l'adresse de partage porte en `?m=`, `null`
@@ -68,6 +70,8 @@ class Accessory extends Equatable {
     this.sku,
     required this.name,
     this.description,
+    this.city,
+    this.site,
     required this.categoryValue,
     required this.categoryLabel,
     this.manufacturerId,
@@ -86,7 +90,7 @@ class Accessory extends Equatable {
   });
 
   factory Accessory.fromJson(Map<String, dynamic> json) {
-    final category  = json['category'] as Map<String, dynamic>;
+    final category = json['category'] as Map<String, dynamic>;
     final mediaList = json['media'] as List?;
     var photos = const <String>[];
     if (mediaList != null && mediaList.isNotEmpty) {
@@ -99,8 +103,11 @@ class Accessory extends Equatable {
       // le choix de l'identité plutôt que de l'URL, et pour la raison du
       // filtre appliqué après coup à la couverture comme au reste.
       final autres = mediaList.where((m) => !identical(m, coverItem)).toList()
-        ..sort((a, b) => ((a['position'] as int?) ?? 0)
-            .compareTo((b['position'] as int?) ?? 0));
+        ..sort(
+          (a, b) => ((a['position'] as int?) ?? 0).compareTo(
+            (b['position'] as int?) ?? 0,
+          ),
+        );
 
       photos = <dynamic>[coverItem, ...autres]
           .map((m) => m['url'] as String? ?? '')
@@ -108,28 +115,34 @@ class Accessory extends Equatable {
           .toList(growable: false);
     }
     return Accessory(
-      id:             json['id']              as int,
-      sku:            json['sku']             as String?,
-      name:           json['name']            as String,
-      description:    json['description']     as String?,
-      categoryValue:  category['value']       as String,
-      categoryLabel:  category['label']       as String,
+      id: json['id'] as int,
+      sku: json['sku'] as String?,
+      name: json['name'] as String,
+      description: json['description'] as String?,
+      city:
+          json['city'] as String? ??
+          ((json['stock'] as Map?)?['location'] as Map?)?['city'] as String?,
+      site: json['site'] as String?,
+      categoryValue: category['value'] as String,
+      categoryLabel: category['label'] as String,
       manufacturerId: json['manufacturer_id'] as int?,
-      manufacturer:   json['manufacturer']    as String?,
-      pricing:        AccessoryPricing.fromJson(json['pricing'] as Map<String, dynamic>),
-      stock:          AccessoryStock.fromJson(json['stock']     as Map<String, dynamic>),
+      manufacturer: json['manufacturer'] as String?,
+      pricing: AccessoryPricing.fromJson(
+        json['pricing'] as Map<String, dynamic>,
+      ),
+      stock: AccessoryStock.fromJson(json['stock'] as Map<String, dynamic>),
       warrantyMonths: json['warranty_months'] as int?,
-      isActive:       json['is_active']       as bool? ?? true,
+      isActive: json['is_active'] as bool? ?? true,
       seller: json['seller'] is Map<String, dynamic>
           ? ProductSeller.fromJson(json['seller'] as Map<String, dynamic>)
           : null,
       // Clef absente → `null`, et le partage repart sur l'adresse nue. Pas de
       // `?? ''` : « absent » et « vide » doivent arriver distinctement à
       // `adresseArticle`, qui les traite déjà tous les deux.
-      shareVersion:   json['share_version']   as String?,
-      deal:           Promotion.fromJson(json['deal']),
-      coverUrl:       photos.isEmpty ? null : photos.first,
-      photoUrls:      photos,
+      shareVersion: json['share_version'] as String?,
+      deal: Promotion.fromJson(json['deal']),
+      coverUrl: photos.isEmpty ? null : photos.first,
+      photoUrls: photos,
       fitments: (json['fitments'] as List?)
           ?.cast<Map<String, dynamic>>()
           .toList(growable: false),
@@ -178,12 +191,13 @@ class AccessoryPricing extends Equatable {
     required this.priceIncludingVat,
   });
 
-  factory AccessoryPricing.fromJson(Map<String, dynamic> json) => AccessoryPricing(
-    sellingPrice:      _d(json['selling_price']),
-    currency:          json['currency'] as String? ?? 'XOF',
-    vatRate:           _d(json['vat_rate']),
-    priceIncludingVat: _d(json['price_including_vat']),
-  );
+  factory AccessoryPricing.fromJson(Map<String, dynamic> json) =>
+      AccessoryPricing(
+        sellingPrice: _d(json['selling_price']),
+        currency: json['currency'] as String? ?? 'XOF',
+        vatRate: _d(json['vat_rate']),
+        priceIncludingVat: _d(json['price_including_vat']),
+      );
 
   @override
   List<Object?> get props => [sellingPrice, currency];
@@ -207,8 +221,8 @@ class AccessoryStock extends Equatable {
   });
 
   factory AccessoryStock.fromJson(Map<String, dynamic> json) => AccessoryStock(
-    isAvailable:    json['is_available']    as bool? ?? true,
-    hasQuantity:    json['quantity'] != null,
+    isAvailable: json['is_available'] as bool? ?? true,
+    hasQuantity: json['quantity'] != null,
     // Tolerant, comme alert_threshold juste dessous. Laravel ne rafraichit pas
     // le modele apres create() : un champ absent de la requete reste null en
     // memoire, meme quand la colonne porte un default(0) que la base applique.
@@ -216,17 +230,18 @@ class AccessoryStock extends Equatable {
     // _TypeError — ni ApiException ni DioException —, et l'ecran affichait
     // « Une erreur est survenue » sur un enregistrement pourtant reussi.
     // Reproduit en test le 2026-10-16.
-    quantity:       json['quantity']        as int? ?? 0,
+    quantity: json['quantity'] as int? ?? 0,
     alertThreshold: json['alert_threshold'] as int? ?? 0,
-    isLow:          json['is_low']          as bool? ?? false,
+    isLow: json['is_low'] as bool? ?? false,
     // Le texte libre du formulaire d'abord — c'est lui que l'ecran de saisie
     // ecrit, sous la cle "storage_location". Tout le monde relisait "location",
     // qui est la localite liee : un OBJET {id, name, city}, et seulement quand
     // la relation est chargee. Resultat, l'emplacement saisi n'etait jamais
     // reaffiche, ni sur la fiche, ni au pre-remplissage de l'edition — et le
     // jour ou une localite aurait ete liee, le cast en String aurait leve.
-    location:       (json['storage_location'] as String?)
-                    ?? ((json['location'] as Map<String, dynamic>?)?['name'] as String?),
+    location:
+        (json['storage_location'] as String?) ??
+        ((json['location'] as Map<String, dynamic>?)?['name'] as String?),
   );
 
   @override

@@ -176,6 +176,16 @@ class _PartnerListingsPageState extends ConsumerState<PartnerListingsPage> {
       if (quantity == null) return;
     }
     if (!mounted) return;
+    if (action == 'publish' && !_villeDe(item).isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).partnerLocationCityRequiredToPublish,
+          ),
+        ),
+      );
+      return;
+    }
     setState(() => _working = true);
     try {
       switch (action) {
@@ -247,6 +257,21 @@ class _PartnerListingsPageState extends ConsumerState<PartnerListingsPage> {
     );
     input.dispose();
     return value;
+  }
+
+  String _villeDe(Map<String, dynamic> item) {
+    final commercial = item['commercial'];
+    if (commercial is Map && commercial['city'] != null) {
+      final ville = commercial['city'].toString().trim();
+      final lieu = commercial['site']?.toString().trim();
+      if (lieu != null && lieu.isNotEmpty) return '$ville — $lieu';
+      return ville;
+    }
+    final ville = item['city']?.toString().trim() ?? '';
+    final lieu = item['site']?.toString().trim();
+    if (ville.isEmpty) return lieu ?? '';
+    if (lieu != null && lieu.isNotEmpty) return '$ville — $lieu';
+    return ville;
   }
 
   String _title(Map<String, dynamic> item) =>
@@ -451,7 +476,8 @@ class _PartnerListingsPageState extends ConsumerState<PartnerListingsPage> {
     final commercial =
         item['commercial'] as Map? ?? item['pricing'] as Map? ?? const {};
     final stock = item['stock'] as Map?;
-    final price = widget.kind == PartnerListingKind.vehicles &&
+    final price =
+        widget.kind == PartnerListingKind.vehicles &&
             commercial['availability'] == 'rent'
         ? null
         : commercial['sale_price'] ?? commercial['selling_price'];
@@ -506,6 +532,7 @@ class _PartnerListingsPageState extends ConsumerState<PartnerListingsPage> {
               [
                 if (price != null)
                   '${_montant(price)} ${commercial['currency'] ?? 'FCFA'}',
+                if (_villeDe(item).isNotEmpty) _villeDe(item),
                 ?marge,
                 if (stock != null)
                   AppLocalizations.of(

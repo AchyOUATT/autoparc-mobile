@@ -93,8 +93,16 @@ class _AccessoryListPageState extends ConsumerState<AccessoryListPage> {
   Widget build(BuildContext context) {
     final paged = ref.watch(accessoryListProvider);
     final filter = ref.watch(accessoryFilterProvider);
-    final cities =
-        ref.watch(catalogRefsProvider).valueOrNull?.cities ?? const <String>[];
+    final cities = <String>{
+      for (final city
+          in ref.watch(catalogRefsProvider).valueOrNull?.cities ??
+              const <String>[])
+        if (city.trim().isNotEmpty) city.trim(),
+      for (final accessory in paged.items)
+        if (accessory.city?.trim() case final ville? when ville.isNotEmpty)
+          ville,
+      if (filter.city?.trim() case final city? when city.isNotEmpty) city,
+    }.toList()..sort();
     final auth = ref.watch(authProvider);
     final isStaff = auth.isStaff;
 
@@ -541,6 +549,22 @@ class _AccessoryCardState extends ConsumerState<_AccessoryCard> {
                   // deux formes de la même ligne se seraient mises à diverger,
                   // et c'est l'écran qui l'aurait montré.
                   LigneCompatibilite(resume: accessory.compatibility),
+                  if ((accessory.city ?? '').isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        [
+                          accessory.city!,
+                          if ((accessory.site ?? '').isNotEmpty)
+                            accessory.site!,
+                        ].join(' — '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 6),
                   // ── LE PRIX AFFICHE PORTE DEJA LA REMISE ────────────────
                   //

@@ -98,8 +98,15 @@ class _PartListPageState extends ConsumerState<PartListPage> {
   Widget build(BuildContext context) {
     final paged = ref.watch(partListProvider);
     final filter = ref.watch(partFilterProvider);
-    final cities =
-        ref.watch(catalogRefsProvider).valueOrNull?.cities ?? const <String>[];
+    final cities = <String>{
+      for (final city
+          in ref.watch(catalogRefsProvider).valueOrNull?.cities ??
+              const <String>[])
+        if (city.trim().isNotEmpty) city.trim(),
+      for (final part in paged.items)
+        if (part.city?.trim() case final ville? when ville.isNotEmpty) ville,
+      if (filter.city?.trim() case final city? when city.isNotEmpty) city,
+    }.toList()..sort();
     final auth = ref.watch(authProvider);
     final isStaff = auth.isStaff;
 
@@ -596,6 +603,21 @@ class _PartCardState extends ConsumerState<_PartCard> {
                   // `SizedBox.shrink()` et l'écart ci-dessous se referme
                   // dessus.
                   LigneCompatibilite(resume: part.compatibility),
+                  if ((part.city ?? '').isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        [
+                          part.city!,
+                          if ((part.site ?? '').isNotEmpty) part.site!,
+                        ].join(' — '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 6),
                   // ── LE PRIX AFFICHE PORTE DEJA LA REMISE ────────────────
                   //
@@ -666,15 +688,15 @@ class _PartPlaceholder extends StatelessWidget {
             color: isOem ? cs.onPrimaryContainer : cs.onSecondaryContainer,
           ),
           if (type != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            type!,
-            style: TextStyle(
-              color: isOem ? cs.onPrimaryContainer : cs.onSecondaryContainer,
-              fontWeight: FontWeight.w600,
-              fontSize: 10,
+            const SizedBox(height: 4),
+            Text(
+              type!,
+              style: TextStyle(
+                color: isOem ? cs.onPrimaryContainer : cs.onSecondaryContainer,
+                fontWeight: FontWeight.w600,
+                fontSize: 10,
+              ),
             ),
-          ),
           ],
         ],
       ),

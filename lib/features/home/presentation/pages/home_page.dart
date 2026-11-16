@@ -486,7 +486,6 @@ class _GarageUnavailable extends StatelessWidget {
   }
 }
 
-
 /// Pas encore de véhicule : c'est le moment de conversion vers les rappels.
 class _AddVehicleCard extends StatelessWidget {
   const _AddVehicleCard();
@@ -510,15 +509,17 @@ class _AddVehicleCard extends StatelessWidget {
             Text(
               AppLocalizations.of(context).homeAddVehicleTitle,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
             Text(
               AppLocalizations.of(context).homeAddVehicleBody,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: cs.onSurfaceVariant),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
             ),
             const SizedBox(height: 14),
             FilledButton(
@@ -575,21 +576,25 @@ class _CarteVendeur extends ConsumerWidget {
             Text(
               l10n.homeSellerTitle,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
             Text(
               l10n.homeSellerBody,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: cs.onSurfaceVariant),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
             ),
             const SizedBox(height: 14),
             FilledButton(
               key: const Key('accueil-vendeur-ouvrir'),
               onPressed: () => context.push(cheminInscriptionVendeur),
-              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(44),
+              ),
               child: Text(l10n.homeSellerOpenAccount),
             ),
             // Deux liens sous le bouton, qui passent l'un sous l'autre quand
@@ -686,7 +691,9 @@ class _SessionVendeur extends ConsumerWidget {
                 children: [
                   TextButton(
                     key: const Key('accueil-session-vendeur-compris'),
-                    onPressed: ref.read(partnerSessionProvider.notifier).clearNotice,
+                    onPressed: ref
+                        .read(partnerSessionProvider.notifier)
+                        .clearNotice,
                     child: Text(l10n.homeSellerUnderstood),
                   ),
                   TextButton(
@@ -1082,13 +1089,16 @@ class _DealTile extends StatelessWidget {
                           vehicle.equipmentType,
                           AppLocalizations.of(context),
                         ),
-                        style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
                     ],
-                    if (c.locationCity != null) ...[
+                    if (c.displayCity != null) ...[
                       const SizedBox(height: 2),
                       Text(
-                        c.locationCity!,
+                        c.displayCity!,
                         style: TextStyle(
                           fontSize: 11,
                           color: cs.onSurfaceVariant,

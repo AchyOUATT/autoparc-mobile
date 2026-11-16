@@ -53,6 +53,7 @@ class _Session extends StateNotifier<PartnerSession>
                     'id': 12,
                     'company_name': 'Own partner',
                     'status': 'approved',
+                    'city': 'Ouagadougou',
                   },
                 )
               : null,
@@ -162,6 +163,18 @@ Future<void> _open(
     ),
   );
   await tester.pumpAndSettle();
+  if (mode.estPartenaire) {
+    final city = find.byKey(
+      const ValueKey('partner-vehicle-city'),
+      skipOffstage: false,
+    );
+    if (city.evaluate().isNotEmpty) {
+      final field = tester.widget<TextFormField>(city);
+      if ((field.controller?.text ?? '').trim().isEmpty) {
+        field.controller!.text = 'Ouagadougou';
+      }
+    }
+  }
 }
 
 Finder get _supplier => find.byWidgetPredicate(

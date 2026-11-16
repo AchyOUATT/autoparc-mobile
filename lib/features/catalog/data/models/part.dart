@@ -7,20 +7,23 @@ import '../../../../shared/models/product_seller.dart';
 
 /// Pièce détachée (OEM / aftermarket / occasion).
 class Part extends Equatable {
-  final int     id;
+  final int id;
   final String? sku;
-  final String  name;
+  final String name;
   final String? description;
-  final String? type;       // 'oem' | 'oes' | 'aftermarket' | 'salvage' | null (origine non renseignée)
-  final String  condition;  // 'new' | 'refurbished' | 'used'
-  final int?    categoryId;
+  final String? city;
+  final String? site;
+  final String?
+  type; // 'oem' | 'oes' | 'aftermarket' | 'salvage' | null (origine non renseignée)
+  final String condition; // 'new' | 'refurbished' | 'used'
+  final int? categoryId;
   final String? categoryName;
-  final int?    manufacturerId;
+  final int? manufacturerId;
   final String? manufacturer;
   final PartPricing pricing;
-  final PartStock   stock;
-  final int?    warrantyMonths;
-  final bool    isActive;
+  final PartStock stock;
+  final int? warrantyMonths;
+  final bool isActive;
   final ProductSeller? seller;
 
   /// Le marqueur de version que l'adresse de partage porte en `?m=`, `null`
@@ -101,6 +104,8 @@ class Part extends Equatable {
     this.sku,
     required this.name,
     this.description,
+    this.city,
+    this.site,
     required this.type,
     required this.condition,
     this.categoryId,
@@ -135,8 +140,11 @@ class Part extends Equatable {
       // la même adresse — le catalogue en a eu deux pointant sur « /0 » après
       // une panne de stockage — et un filtre par URL les aurait tous perdus.
       final autres = mediaList.where((m) => !identical(m, coverItem)).toList()
-        ..sort((a, b) => ((a['position'] as int?) ?? 0)
-            .compareTo((b['position'] as int?) ?? 0));
+        ..sort(
+          (a, b) => ((a['position'] as int?) ?? 0).compareTo(
+            (b['position'] as int?) ?? 0,
+          ),
+        );
 
       // Le filtre des adresses vides s'applique à la couverture comme au
       // reste, et c'est tout le correctif : elle était lue à part, avant le
@@ -149,32 +157,37 @@ class Part extends Equatable {
           .toList(growable: false);
     }
     return Part(
-      id:             json['id']              as int,
-      sku:            json['sku']             as String?,
-      name:           json['name']            as String,
-      description:    json['description']     as String?,
+      id: json['id'] as int,
+      sku: json['sku'] as String?,
+      name: json['name'] as String,
+      description: json['description'] as String?,
+      city:
+          json['city'] as String? ??
+          ((json['stock'] as Map?)?['location'] as Map?)?['city'] as String?,
+      site: json['site'] as String?,
       // Also accept the compatibility sentinel from a cached legacy response.
-      type:           json['type'] == 'unknown' ? null : json['type'] as String?,
-      condition:      json['condition']       as String,
-      categoryId:     json['category_id']     as int?,
-      categoryName:   (json['category'] as Map<String, dynamic>?)?['name'] as String?,
+      type: json['type'] == 'unknown' ? null : json['type'] as String?,
+      condition: json['condition'] as String,
+      categoryId: json['category_id'] as int?,
+      categoryName:
+          (json['category'] as Map<String, dynamic>?)?['name'] as String?,
       manufacturerId: json['manufacturer_id'] as int?,
-      manufacturer:   json['manufacturer']   as String?,
-      pricing:        PartPricing.fromJson(json['pricing'] as Map<String, dynamic>),
-      stock:          PartStock.fromJson(json['stock']     as Map<String, dynamic>),
+      manufacturer: json['manufacturer'] as String?,
+      pricing: PartPricing.fromJson(json['pricing'] as Map<String, dynamic>),
+      stock: PartStock.fromJson(json['stock'] as Map<String, dynamic>),
       warrantyMonths: json['warranty_months'] as int?,
-      isActive:       json['is_active']       as bool? ?? true,
+      isActive: json['is_active'] as bool? ?? true,
       seller: json['seller'] is Map<String, dynamic>
           ? ProductSeller.fromJson(json['seller'] as Map<String, dynamic>)
           : null,
       // Clef absente → `null`, et le partage repart sur l'adresse nue. Pas de
       // `?? ''` : « absent » et « vide » doivent arriver distinctement à
       // `adresseArticle`, qui les traite déjà tous les deux.
-      shareVersion:   json['share_version']   as String?,
-      deal:           Promotion.fromJson(json['deal']),
+      shareVersion: json['share_version'] as String?,
+      deal: Promotion.fromJson(json['deal']),
       // Le même premier élément, nommé : les deux ne peuvent plus diverger.
-      coverUrl:       photos.isEmpty ? null : photos.first,
-      photoUrls:      photos,
+      coverUrl: photos.isEmpty ? null : photos.first,
+      photoUrls: photos,
       // Clé absente → null, c'est-à-dire « la réponse ne le dit pas ».
       fitments: (json['fitments'] as List?)
           ?.cast<Map<String, dynamic>>()
@@ -201,9 +214,9 @@ class Part extends Equatable {
   /// `Accessory`.
   bool get aUnePagePublique => isActive;
 
-  bool get isOem         => type == 'oem';
+  bool get isOem => type == 'oem';
   bool get isAftermarket => type == 'aftermarket';
-  bool get isNew         => condition == 'new';
+  bool get isNew => condition == 'new';
 
   bool get isAvailableForSale => seller != null
       ? stock.isAvailable && (!stock.hasQuantity || stock.quantity > 0)
@@ -230,9 +243,9 @@ class PartPricing extends Equatable {
   });
 
   factory PartPricing.fromJson(Map<String, dynamic> json) => PartPricing(
-    sellingPrice:      _d(json['selling_price']),
-    currency:          json['currency'] as String? ?? 'XOF',
-    vatRate:           _d(json['vat_rate']),
+    sellingPrice: _d(json['selling_price']),
+    currency: json['currency'] as String? ?? 'XOF',
+    vatRate: _d(json['vat_rate']),
     priceIncludingVat: _d(json['price_including_vat']),
   );
 
@@ -258,8 +271,8 @@ class PartStock extends Equatable {
   });
 
   factory PartStock.fromJson(Map<String, dynamic> json) => PartStock(
-    isAvailable:    json['is_available']    as bool? ?? true,
-    hasQuantity:    json['quantity'] != null,
+    isAvailable: json['is_available'] as bool? ?? true,
+    hasQuantity: json['quantity'] != null,
     // Tolerant, comme alert_threshold juste dessous. Laravel ne rafraichit pas
     // le modele apres create() : un champ absent de la requete reste null en
     // memoire, meme quand la colonne porte un default(0) que la base applique.
@@ -267,17 +280,18 @@ class PartStock extends Equatable {
     // _TypeError — ni ApiException ni DioException —, et l'ecran affichait
     // « Une erreur est survenue » sur un enregistrement pourtant reussi.
     // Reproduit en test le 2026-10-16.
-    quantity:       json['quantity']        as int? ?? 0,
+    quantity: json['quantity'] as int? ?? 0,
     alertThreshold: json['alert_threshold'] as int? ?? 0,
-    isLow:          json['is_low']          as bool? ?? false,
+    isLow: json['is_low'] as bool? ?? false,
     // Le texte libre du formulaire d'abord — c'est lui que l'ecran de saisie
     // ecrit, sous la cle "storage_location". Tout le monde relisait "location",
     // qui est la localite liee : un OBJET {id, name, city}, et seulement quand
     // la relation est chargee. Resultat, l'emplacement saisi n'etait jamais
     // reaffiche, ni sur la fiche, ni au pre-remplissage de l'edition — et le
     // jour ou une localite aurait ete liee, le cast en String aurait leve.
-    location:       (json['storage_location'] as String?)
-                    ?? ((json['location'] as Map<String, dynamic>?)?['name'] as String?),
+    location:
+        (json['storage_location'] as String?) ??
+        ((json['location'] as Map<String, dynamic>?)?['name'] as String?),
   );
 
   @override

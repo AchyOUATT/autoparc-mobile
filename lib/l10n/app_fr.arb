@@ -7918,7 +7918,18 @@
       "author": { "type": "String" },
       "when": { "type": "String" }
     }
-  }
-
+  },
+  "partnerLocationTitle": "Mon emplacement",
+  "partnerLocationSubtitle": "Ville et lieu repris sur vos nouvelles annonces. Vous pouvez les modifier pour une annonce précise.",
+  "partnerLocationEmpty": "Aucun emplacement renseigné",
+  "partnerLocationCityLabel": "Ville",
+  "partnerLocationAddressLabel": "Adresse ou lieu (facultatif)",
+  "partnerLocationAddressHint": "Quartier, site ou point de retrait",
+  "partnerLocationSave": "Enregistrer l’emplacement",
+  "partnerLocationSaving": "Enregistrement…",
+  "partnerLocationSaved": "Emplacement enregistré.",
+  "partnerLocationCityRequired": "Indiquez la ville.",
+  "partnerLocationCityRequiredToPublish": "Indiquez la ville de cette annonce avant de la publier.",
+  "catalogFieldCity": "Ville",
+  "catalogFieldPlace": "Lieu"
 }
-

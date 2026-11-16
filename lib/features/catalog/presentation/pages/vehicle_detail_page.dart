@@ -506,9 +506,12 @@ class _VehicleDetailView extends ConsumerWidget {
                   ],
 
                   // ── Localisation ────────────────────────────────
-                  if (c.site != null) ...[
+                  if (c.displayCity != null || c.displayPlace != null) ...[
                     _SectionTitle(l10n.catalogSectionLocation),
-                    _InfoRow(l10n.catalogFieldBranch, c.site!),
+                    if (c.displayCity != null)
+                      _InfoRow(l10n.catalogFieldCity, c.displayCity!),
+                    if (c.displayPlace != null)
+                      _InfoRow(l10n.catalogFieldPlace, c.displayPlace!),
                     const SizedBox(height: 20),
                   ],
 
@@ -573,8 +576,9 @@ class _VehicleDetailView extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final refs = ref.read(catalogRefsProvider).valueOrNull;
     if (refs == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.catalogRefsUnavailable)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.catalogRefsUnavailable)));
       return;
     }
 
@@ -598,8 +602,9 @@ class _VehicleDetailView extends ConsumerWidget {
           .syncVehicleFeatures(vehicle.id, result.toList());
       ref.invalidate(vehicleDetailProvider(vehicle.id));
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(l10n.catalogFeaturesUpdated)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.catalogFeaturesUpdated)));
       }
     } catch (e) {
       if (context.mounted) {
@@ -1018,8 +1023,9 @@ class _FeaturePickerSheetState extends State<_FeaturePickerSheet> {
                     const SizedBox(width: 10),
                     Text(
                       AppLocalizations.of(context).catalogFeaturesSheetTitle,
-                      style: Theme.of(context).textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const Spacer(),
                     _saving
@@ -1247,8 +1253,9 @@ class _PartnerCard extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               AppLocalizations.of(context).catalogSectionPartner,
-              style: Theme.of(context).textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
           ListTile(
@@ -1310,8 +1317,9 @@ class _SectionTitle extends StatelessWidget {
     padding: const EdgeInsets.only(bottom: 10),
     child: Text(
       title,
-      style: Theme.of(context).textTheme.titleMedium
-          ?.copyWith(fontWeight: FontWeight.bold),
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
     ),
   );
 }
@@ -1365,8 +1373,9 @@ class _InfoRow extends StatelessWidget {
     // `outline` est un role de bordure : a 4,27:1 mesure, ces libelles
     // passaient sous le seuil AA de 4,5:1 pour du texte de 12sp.
     // `onSurfaceVariant` est le role prevu pour du texte secondaire.
-    final styleLibelle = Theme.of(context).textTheme.bodySmall
-        ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
+    final styleLibelle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
     final styleValeur = Theme.of(context).textTheme.bodyMedium;
 
     return Padding(
@@ -1466,8 +1475,9 @@ class _ColorRow extends StatelessWidget {
             width: 140,
             child: Text(
               l10n.catalogFieldColour,
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: cs.onSurfaceVariant),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
             ),
           ),
           Expanded(

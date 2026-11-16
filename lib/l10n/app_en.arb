@@ -3039,7 +3039,18 @@
       "author": { "type": "String" },
       "when": { "type": "String" }
     }
-  }
-
+  },
+  "partnerLocationTitle": "My location",
+  "partnerLocationSubtitle": "City and place copied onto your new listings. You can change them for a specific listing.",
+  "partnerLocationEmpty": "No location set",
+  "partnerLocationCityLabel": "City",
+  "partnerLocationAddressLabel": "Address or place (optional)",
+  "partnerLocationAddressHint": "Area, site or pickup point",
+  "partnerLocationSave": "Save location",
+  "partnerLocationSaving": "Saving…",
+  "partnerLocationSaved": "Location saved.",
+  "partnerLocationCityRequired": "Enter the city.",
+  "partnerLocationCityRequiredToPublish": "Enter this listing’s city before publishing it.",
+  "catalogFieldCity": "City",
+  "catalogFieldPlace": "Place"
 }
-

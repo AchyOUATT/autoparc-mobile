@@ -50,6 +50,7 @@ class _RentalVehicleRegisterPageState
   final _monthly = TextEditingController();
   final _deposit = TextEditingController();
   final _site = TextEditingController();
+  final _city = TextEditingController();
   final _description = TextEditingController();
 
   BrandRef? _brand;
@@ -73,12 +74,25 @@ class _RentalVehicleRegisterPageState
   void initState() {
     super.initState();
     final existing = widget.existing;
-    if (existing == null) return;
+    if (existing == null) {
+      if (widget.mode.estPartenaire) {
+        final profil = ref.read(espace.partnerSessionProvider).profile;
+        _city.text = profil?.city ?? '';
+        _site.text = profil?.address ?? '';
+      }
+      return;
+    }
 
     _year.text = existing.identity.year?.toString() ?? '';
     _seats.text = existing.seats?.toString() ?? '';
     _transmission = existing.transmission;
     _site.text = existing.commercial.site ?? '';
+    _city.text = existing.commercial.city ?? '';
+    if (widget.mode.estPartenaire) {
+      final profil = ref.read(espace.partnerSessionProvider).profile;
+      if (_city.text.trim().isEmpty) _city.text = profil?.city ?? '';
+      if (_site.text.trim().isEmpty) _site.text = profil?.address ?? '';
+    }
     _description.text = existing.description ?? '';
     _selectedFeatureIds.addAll(existing.features.map((feature) => feature.id));
     _initialFeatureIds.addAll(_selectedFeatureIds);
@@ -118,6 +132,7 @@ class _RentalVehicleRegisterPageState
       _monthly,
       _deposit,
       _site,
+      _city,
       _description,
     ]) {
       controller.dispose();
@@ -258,7 +273,10 @@ class _RentalVehicleRegisterPageState
       if ((!_editing && deposit != null) ||
           (_editing && deposit != _initialDeposit))
         'rental_deposit': deposit,
-      if ((!_editing && site != null) ||
+      if (widget.mode.estPartenaire) ...{
+        'city': _city.text.trim().isEmpty ? null : _city.text.trim(),
+        'site': site,
+      } else if ((!_editing && site != null) ||
           (_editing && site != _optionalText(existing!.commercial.site ?? '')))
         'site': site,
       if ((!_editing && description != null) ||
@@ -617,13 +635,32 @@ class _RentalVehicleRegisterPageState
                       ),
                       spacing(),
                     ],
+                    if (widget.mode.estPartenaire) ...[
+                      TextFormField(
+                        key: const ValueKey('rental-city'),
+                        controller: _city,
+                        enabled: !_saving,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: InputDecoration(
+                          labelText: l10n.partnerLocationCityLabel,
+                        ),
+                        validator: (value) => (value ?? '').trim().isEmpty
+                            ? l10n.partnerLocationCityRequired
+                            : null,
+                      ),
+                      spacing(),
+                    ],
                     TextFormField(
                       key: const ValueKey('rental-site'),
                       controller: _site,
                       enabled: !_saving,
                       decoration: InputDecoration(
-                        labelText: l10n.rentalVehiclePickupPlace,
-                        helperText: l10n.rentalVehiclePickupPlaceHelp,
+                        labelText: widget.mode.estPartenaire
+                            ? l10n.partnerLocationAddressLabel
+                            : l10n.rentalVehiclePickupPlace,
+                        helperText: widget.mode.estPartenaire
+                            ? l10n.partnerLocationAddressHint
+                            : l10n.rentalVehiclePickupPlaceHelp,
                         helperMaxLines: 4,
                       ),
                     ),

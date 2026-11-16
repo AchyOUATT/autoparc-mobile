@@ -198,6 +198,19 @@ Future<void> _open(
       await tester.pump(const Duration(milliseconds: 20));
     }
   }
+
+  if (mode.estPartenaire) {
+    final city = find.byKey(
+      const ValueKey('partner-vehicle-city'),
+      skipOffstage: false,
+    );
+    if (city.evaluate().isNotEmpty) {
+      final field = tester.widget<TextFormField>(city);
+      if ((field.controller?.text ?? '').trim().isEmpty) {
+        field.controller!.text = 'Ouagadougou';
+      }
+    }
+  }
 }
 
 Future<void> _submit(WidgetTester tester) async {

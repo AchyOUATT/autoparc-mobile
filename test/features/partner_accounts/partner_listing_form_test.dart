@@ -1,4 +1,5 @@
 import 'package:auto/features/partner_accounts/data/partner_repository.dart';
+import 'package:auto/features/partner_accounts/presentation/partner_session.dart';
 import 'package:auto/features/partner_accounts/presentation/partner_listing_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +17,27 @@ import 'package:auto/l10n/app_localizations.dart';
 /// retrait de la navigation. Ils passaient — sur du code que plus aucun
 /// vendeur ne traversait. Une suite verte sur du code mort ne mesure rien, et
 /// laisse croire que le chemin reel est tenu.
+
+class _Session extends StateNotifier<PartnerSession>
+    implements PartnerSessionNotifier {
+  _Session()
+    : super(
+        const PartnerSession(
+          profile: PartnerProfile(
+            user: {'role': 'partner'},
+            account: {
+              'status': 'approved',
+              'contact_name': 'Vendeur',
+              'city': 'Ouagadougou',
+            },
+          ),
+        ),
+      );
+
+  @override
+  Object? noSuchMethod(Invocation invocation) => null;
+}
+
 class _Repository extends PartnerRepository {
   Map<String, dynamic>? saved;
   PartnerListingKind? savedKind;
@@ -23,29 +45,48 @@ class _Repository extends PartnerRepository {
 
   @override
   Future<PartnerReferences> references() async => const PartnerReferences(
-    brands: [{'id': 1, 'name': 'Toyota'}],
+    brands: [
+      {'id': 1, 'name': 'Toyota'},
+    ],
     models: [
       {'id': 10, 'brand_id': 1, 'name': 'Corolla', 'generation': 'E180'},
       {'id': 11, 'brand_id': 1, 'name': 'Corolla', 'generation': 'E210'},
     ],
-    engineTypes: [{'id': 20, 'label': 'Essence'}],
-    partCategories: [{'id': 30, 'name': 'Filtration', 'children': [
-      {'id': 31, 'name': 'Filtres à huile'},
-    ]}],
+    engineTypes: [
+      {'id': 20, 'label': 'Essence'},
+    ],
+    partCategories: [
+      {
+        'id': 30,
+        'name': 'Filtration',
+        'children': [
+          {'id': 31, 'name': 'Filtres à huile'},
+        ],
+      },
+    ],
     manufacturers: [],
   );
 
   @override
-  Future<PartnerListingPage> listListings(PartnerListingKind kind, {
-    int page = 1, String? query,
+  Future<PartnerListingPage> listListings(
+    PartnerListingKind kind, {
+    int page = 1,
+    String? query,
   }) async => const PartnerListingPage(
-    items: [{'id': 41, 'designation': 'Corolla donneuse', 'reference': 'VEH-41'}],
-    page: 1, lastPage: 1, total: 1,
+    items: [
+      {'id': 41, 'designation': 'Corolla donneuse', 'reference': 'VEH-41'},
+    ],
+    page: 1,
+    lastPage: 1,
+    total: 1,
   );
 
   @override
-  Future<Map<String, dynamic>> saveListing(PartnerListingKind kind,
-      Map<String, dynamic> data, {int? id}) async {
+  Future<Map<String, dynamic>> saveListing(
+    PartnerListingKind kind,
+    Map<String, dynamic> data, {
+    int? id,
+  }) async {
     saved = data;
     savedKind = kind;
     editedId = id;
@@ -53,23 +94,40 @@ class _Repository extends PartnerRepository {
   }
 }
 
-Future<void> _open(WidgetTester tester, _Repository repository,
-    PartnerListingKind kind, {Map<String, dynamic>? listing}) async {
-  await tester.pumpWidget(ProviderScope(
-    overrides: [partnerRepositoryProvider.overrideWithValue(repository)],
-    child: MaterialApp(
-      locale: const Locale('fr'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Builder(builder: (context) => Scaffold(
-      body: TextButton(
-        onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => PartnerListingFormPage(kind: kind, initialListing: listing),
-        )),
-        child: const Text('Ouvrir formulaire'),
+Future<void> _open(
+  WidgetTester tester,
+  _Repository repository,
+  PartnerListingKind kind, {
+  Map<String, dynamic>? listing,
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        partnerRepositoryProvider.overrideWithValue(repository),
+        partnerSessionProvider.overrideWith((_) => _Session()),
+      ],
+      child: MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => PartnerListingFormPage(
+                    kind: kind,
+                    initialListing: listing,
+                  ),
+                ),
+              ),
+              child: const Text('Ouvrir formulaire'),
+            ),
+          ),
+        ),
       ),
-    ))),
-  ));
+    ),
+  );
   await tester.tap(find.text('Ouvrir formulaire'));
   await tester.pumpAndSettle();
 }
@@ -90,8 +148,10 @@ Future<void> _enter(WidgetTester tester, String label, String value) async {
 }
 
 Future<void> _submit(WidgetTester tester, {bool editing = false}) async {
-  final button = find.widgetWithText(FilledButton,
-      editing ? 'Enregistrer les modifications' : 'Enregistrer le brouillon');
+  final button = find.widgetWithText(
+    FilledButton,
+    editing ? 'Enregistrer les modifications' : 'Enregistrer le brouillon',
+  );
   await tester.ensureVisible(button);
   await tester.tap(button);
   await tester.pumpAndSettle();
@@ -105,28 +165,48 @@ void main() {
   /// véhicule », sans qu'un mot ne soit dit. C'est exactement le retour en
   /// arrière silencieux que ce lot supprime.
   testWidgets('ouvrir cet écran pour un véhicule est refusé', (tester) async {
-    await tester.pumpWidget(ProviderScope(
-      overrides: [partnerRepositoryProvider.overrideWithValue(_Repository())],
-      child: const MaterialApp(
-        locale: const Locale('fr'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: PartnerListingFormPage(kind: PartnerListingKind.vehicles),
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [partnerRepositoryProvider.overrideWithValue(_Repository())],
+        child: const MaterialApp(
+          locale: const Locale('fr'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: PartnerListingFormPage(kind: PartnerListingKind.vehicles),
+        ),
       ),
-    ));
+    );
 
-    expect(tester.takeException(), isAssertionError,
-        reason: 'Un véhicule partenaire passe par VehicleRegisterPage : cet '
-            'écran ne sait plus en décrire un.');
+    expect(
+      tester.takeException(),
+      isAssertionError,
+      reason:
+          'Un véhicule partenaire passe par VehicleRegisterPage : cet '
+          'écran ne sait plus en décrire un.',
+    );
   });
 
-  testWidgets('la pièce d’occasion transmet son propre véhicule donneur', (tester) async {
+  testWidgets('la pièce d’occasion transmet son propre véhicule donneur', (
+    tester,
+  ) async {
     final repository = _Repository();
     await _open(tester, repository, PartnerListingKind.parts);
     await _enter(tester, 'Nom de l’article', 'Filtre en bon état');
-    await _choose(tester, find.byType(DropdownButtonFormField<int>).first, 'Filtres à huile');
-    await _choose(tester, find.byType(DropdownButtonFormField<String>).first, 'D’occasion');
-    await _choose(tester, find.byType(DropdownButtonFormField<int>).at(1), 'Corolla donneuse');
+    await _choose(
+      tester,
+      find.byType(DropdownButtonFormField<int>).first,
+      'Filtres à huile',
+    );
+    await _choose(
+      tester,
+      find.byType(DropdownButtonFormField<String>).first,
+      'D’occasion',
+    );
+    await _choose(
+      tester,
+      find.byType(DropdownButtonFormField<int>).at(1),
+      'Corolla donneuse',
+    );
     await _enter(tester, 'Prix de vente (FCFA)', '2500');
     await _enter(tester, 'Quantité en stock', '3');
     await _submit(tester);
@@ -138,13 +218,19 @@ void main() {
     expect(repository.saved, containsPair('stock_quantity', 3));
   });
 
-  testWidgets('une pièce ne demande plus son origine et n’en invente aucune', (tester) async {
+  testWidgets('une pièce ne demande plus son origine et n’en invente aucune', (
+    tester,
+  ) async {
     final repository = _Repository();
     await _open(tester, repository, PartnerListingKind.parts);
     expect(find.text('Origine de la pièce'), findsNothing);
     expect(find.text('OEM'), findsNothing);
     await _enter(tester, 'Nom de l’article', 'Filtre neuf');
-    await _choose(tester, find.byType(DropdownButtonFormField<int>).first, 'Filtres à huile');
+    await _choose(
+      tester,
+      find.byType(DropdownButtonFormField<int>).first,
+      'Filtres à huile',
+    );
     await _enter(tester, 'Prix de vente (FCFA)', '2500');
     await _enter(tester, 'Quantité en stock', '3');
     await _submit(tester);
@@ -153,13 +239,24 @@ void main() {
     expect(repository.saved, containsPair('condition', 'new'));
   });
 
-  testWidgets('modifier une pièce ne renvoie pas son origine historique', (tester) async {
+  testWidgets('modifier une pièce ne renvoie pas son origine historique', (
+    tester,
+  ) async {
     final repository = _Repository();
-    await _open(tester, repository, PartnerListingKind.parts, listing: {
-      'id': 18, 'name': 'Alternateur', 'type': 'oem', 'condition': 'refurbished',
-      'category': {'id': 31, 'name': 'Filtres à huile'},
-      'pricing': {'selling_price': '50000.00'}, 'stock': {'quantity': 1},
-    });
+    await _open(
+      tester,
+      repository,
+      PartnerListingKind.parts,
+      listing: {
+        'id': 18,
+        'name': 'Alternateur',
+        'type': 'oem',
+        'condition': 'refurbished',
+        'category': {'id': 31, 'name': 'Filtres à huile'},
+        'pricing': {'selling_price': '50000.00'},
+        'stock': {'quantity': 1},
+      },
+    );
     await _submit(tester, editing: true);
 
     expect(repository.editedId, 18);
@@ -167,12 +264,22 @@ void main() {
     expect(repository.saved, containsPair('condition', 'refurbished'));
   });
 
-  testWidgets('un accessoire conserve sa catégorie et son stock en édition', (tester) async {
+  testWidgets('un accessoire conserve sa catégorie et son stock en édition', (
+    tester,
+  ) async {
     final repository = _Repository();
-    await _open(tester, repository, PartnerListingKind.accessories, listing: {
-      'id': 17, 'name': 'Coussin de siège', 'category': {'value': 'confort'},
-      'pricing': {'selling_price': '9000.00'}, 'stock': {'quantity': 4},
-    });
+    await _open(
+      tester,
+      repository,
+      PartnerListingKind.accessories,
+      listing: {
+        'id': 17,
+        'name': 'Coussin de siège',
+        'category': {'value': 'confort'},
+        'pricing': {'selling_price': '9000.00'},
+        'stock': {'quantity': 4},
+      },
+    );
     await _enter(tester, 'Prix de vente (FCFA)', '9500');
     await _submit(tester, editing: true);
 
