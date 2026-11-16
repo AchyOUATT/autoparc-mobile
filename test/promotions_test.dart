@@ -44,16 +44,22 @@ import 'support/langues.dart';
 class _Session extends StateNotifier<espace.PartnerSession>
     implements espace.PartnerSessionNotifier {
   _Session({double plafond = 40})
-      : super(espace.PartnerSession(
+    : super(
+        espace.PartnerSession(
           profile: espace.PartnerProfile(
             user: const {'role': 'partner'},
-            account: const {'status': 'approved', 'contact_name': 'Salif'},
+            account: const {
+              'status': 'approved',
+              'contact_name': 'Salif',
+              'city': 'Ouagadougou',
+            },
             boutique: {
               'marge_pourcentage': 0,
               'promotion_remise_max_pourcentage': plafond,
             },
           ),
-        ));
+        ),
+      );
 
   @override
   Object? noSuchMethod(Invocation invocation) => null;
@@ -65,8 +71,11 @@ class _Depot extends espace.PartnerRepository {
   @override
   Future<espace.PartnerReferences> references() async =>
       const espace.PartnerReferences(
-        brands: [], models: [], engineTypes: [],
-        partCategories: [], manufacturers: [],
+        brands: [],
+        models: [],
+        engineTypes: [],
+        partCategories: [],
+        manufacturers: [],
       );
 
   @override
@@ -141,11 +150,14 @@ void main() {
   );
 
   Future<void> poser(WidgetTester tester, Widget enfant) async {
-    await tester.pumpWidget(MaterialApp(
-      locale: const Locale('fr'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(body: enfant)));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('fr'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: enfant),
+      ),
+    );
     await tester.pump();
   }
 
@@ -158,15 +170,22 @@ void main() {
   testWidgets('le prix normal s affiche barre', (tester) async {
     await poser(tester, const PrixNormalBarre(promotion: active));
 
-    final texte = tester.widget<Text>(find.byKey(const Key('promotion-prix-barre')));
+    final texte = tester.widget<Text>(
+      find.byKey(const Key('promotion-prix-barre')),
+    );
     expect(texte.style?.decoration, TextDecoration.lineThrough);
   });
 
   testWidgets('sans promotion, rien ne s affiche', (tester) async {
-    await poser(tester, const Column(children: [
-      PastillePromotion(promotion: null),
-      PrixNormalBarre(promotion: null),
-    ]));
+    await poser(
+      tester,
+      const Column(
+        children: [
+          PastillePromotion(promotion: null),
+          PrixNormalBarre(promotion: null),
+        ],
+      ),
+    );
 
     expect(find.byKey(const Key('promotion-pastille')), findsNothing);
     expect(find.byKey(const Key('promotion-prix-barre')), findsNothing);
@@ -180,10 +199,15 @@ void main() {
       endsAt: DateTime.now().subtract(const Duration(days: 1)),
     );
 
-    await poser(tester, Column(children: [
-      PastillePromotion(promotion: finie),
-      PrixNormalBarre(promotion: finie),
-    ]));
+    await poser(
+      tester,
+      Column(
+        children: [
+          PastillePromotion(promotion: finie),
+          PrixNormalBarre(promotion: finie),
+        ],
+      ),
+    );
 
     expect(find.byKey(const Key('promotion-pastille')), findsNothing);
     expect(find.byKey(const Key('promotion-prix-barre')), findsNothing);
@@ -196,46 +220,53 @@ void main() {
   // pastille ni prix barre, l'acheteur ne voit qu'un prix.
 
   Vehicle vehicule({Map<String, dynamic>? promotion}) {
-    final page = jsonDecode(
-      File('test/fixtures/vehicles_list.json').readAsStringSync(),
-    ) as Map<String, dynamic>;
-    final brut = Map<String, dynamic>.from(
-      (page['data'] as List).first as Map,
-    );
+    final page =
+        jsonDecode(File('test/fixtures/vehicles_list.json').readAsStringSync())
+            as Map<String, dynamic>;
+    final brut = Map<String, dynamic>.from((page['data'] as List).first as Map);
     (brut['commercial'] as Map<String, dynamic>)['availability'] = 'sale';
     (brut['commercial'] as Map<String, dynamic>)['sale_price'] = '4000000.00';
     if (promotion != null) {
       brut['deal'] = promotion;
       // Le serveur pose aussi ce libelle, pour l application deja publiee.
-      (brut['commercial'] as Map<String, dynamic>)['deal_label'] = 'Promo -20 %';
+      (brut['commercial'] as Map<String, dynamic>)['deal_label'] =
+          'Promo -20 %';
     }
 
     return Vehicle.fromJson(brut);
   }
 
   Future<void> poserCarte(WidgetTester tester, Vehicle v) async {
-    await tester.pumpWidget(ProviderScope(
-      child: MaterialApp(
-        locale: localeFr,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: Center(child: SizedBox(width: 163, child: VehicleCard(vehicle: v))),
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          locale: localeFr,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Center(
+                child: SizedBox(width: 163, child: VehicleCard(vehicle: v)),
+              ),
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 
-  testWidgets('la carte dit la remise et barre le prix normal',
-      (tester) async {
-    await poserCarte(tester, vehicule(promotion: const {
-      'price': 4000000,
-      'normal_price': 5000000,
-      'discount_percent': 20,
-    }));
+  testWidgets('la carte dit la remise et barre le prix normal', (tester) async {
+    await poserCarte(
+      tester,
+      vehicule(
+        promotion: const {
+          'price': 4000000,
+          'normal_price': 5000000,
+          'discount_percent': 20,
+        },
+      ),
+    );
 
     expect(find.byKey(const Key('promotion-pastille')), findsOneWidget);
     expect(find.byKey(const Key('promotion-prix-barre')), findsOneWidget);
@@ -244,21 +275,25 @@ void main() {
   /// Le serveur pose `deal_label` a « Promo -20 % » pour l application DEJA
   /// PUBLIEE, qui ne connait pas le bloc `deal`. Cette version-ci a mieux :
   /// afficher les deux dirait deux fois « -20 % » sur une carte de 163 points.
-  testWidgets('le libelle du serveur s efface devant la pastille',
-      (tester) async {
-    final v = vehicule(promotion: const {
-      'price': 4000000,
-      'normal_price': 5000000,
-      'discount_percent': 20,
-    });
+  testWidgets('le libelle du serveur s efface devant la pastille', (
+    tester,
+  ) async {
+    final v = vehicule(
+      promotion: const {
+        'price': 4000000,
+        'normal_price': 5000000,
+        'discount_percent': 20,
+      },
+    );
     await poserCarte(tester, v);
 
     expect(find.text('Promo -20 %'), findsNothing);
     expect(find.text('-20 %'), findsOneWidget);
   });
 
-  testWidgets('une carte sans promotion n affiche rien de plus',
-      (tester) async {
+  testWidgets('une carte sans promotion n affiche rien de plus', (
+    tester,
+  ) async {
     await poserCarte(tester, vehicule());
 
     expect(find.byKey(const Key('promotion-pastille')), findsNothing);
@@ -285,21 +320,25 @@ void main() {
     double plafond = 40,
     Map<String, dynamic>? annonce,
   }) async {
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        espace.partnerRepositoryProvider.overrideWithValue(depot),
-        espace.partnerSessionProvider.overrideWith((_) => _Session(plafond: plafond)),
-      ],
-      child: MaterialApp(
-        locale: const Locale('fr'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: espace.PartnerListingFormPage(
-          kind: espace.PartnerListingKind.accessories,
-          initialListing: annonce,
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          espace.partnerRepositoryProvider.overrideWithValue(depot),
+          espace.partnerSessionProvider.overrideWith(
+            (_) => _Session(plafond: plafond),
+          ),
+        ],
+        child: MaterialApp(
+          locale: const Locale('fr'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: espace.PartnerListingFormPage(
+            kind: espace.PartnerListingKind.accessories,
+            initialListing: annonce,
+          ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 
@@ -310,6 +349,14 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<void> basculerPromotion(WidgetTester tester) async {
+    final commutateur = find.byKey(const Key('promotion-activer'));
+    await tester.ensureVisible(commutateur);
+    await tester.pumpAndSettle();
+    await tester.tap(commutateur);
+    await tester.pumpAndSettle();
+  }
+
   Future<void> saisirPrix(WidgetTester tester, String valeur) async {
     final champ = find.widgetWithText(TextFormField, 'Prix de vente (FCFA)');
     await tester.ensureVisible(champ);
@@ -317,43 +364,51 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('sans prix de vente, la promotion n est pas proposable',
-      (tester) async {
+  testWidgets('sans prix de vente, la promotion n est pas proposable', (
+    tester,
+  ) async {
     await ouvrirFormulaire(tester, _Depot());
 
     final commutateur = tester.widget<SwitchListTile>(
       find.byKey(const Key('promotion-activer')),
     );
 
-    expect(commutateur.onChanged, isNull,
-        reason: 'Le serveur refuse une promotion sans prix a remiser : la '
-            'laisser cliquable ferait composer l impossible.');
+    expect(
+      commutateur.onChanged,
+      isNull,
+      reason:
+          'Le serveur refuse une promotion sans prix a remiser : la '
+          'laisser cliquable ferait composer l impossible.',
+    );
     expect(find.text('Indiquez d’abord un prix de vente.'), findsOneWidget);
   });
 
-  testWidgets('une remise au-dela du plafond est refusee a la saisie',
-      (tester) async {
+  testWidgets('une remise au-dela du plafond est refusee a la saisie', (
+    tester,
+  ) async {
     await ouvrirFormulaire(tester, _Depot());
     await saisirPrix(tester, '10000');
 
-    await tester.tap(find.byKey(const Key('promotion-activer')));
-    await tester.pumpAndSettle();
+    await basculerPromotion(tester);
 
     // 10 000 -> 5 000 : 50 %, au-dela du plafond de 40.
     await remplir(tester, 'promotion-prix', '5000');
 
     expect(find.textContaining('ne peut pas dépasser 40 %'), findsOneWidget);
-    expect(find.textContaining('50.0 %'), findsOneWidget,
-        reason: 'Le vendeur doit lire SA remise autant que le plafond.');
+    expect(
+      find.textContaining('50.0 %'),
+      findsOneWidget,
+      reason: 'Le vendeur doit lire SA remise autant que le plafond.',
+    );
   });
 
-  testWidgets('une remise sous le plafond annonce ce que verra l acheteur',
-      (tester) async {
+  testWidgets('une remise sous le plafond annonce ce que verra l acheteur', (
+    tester,
+  ) async {
     await ouvrirFormulaire(tester, _Depot());
     await saisirPrix(tester, '10000');
 
-    await tester.tap(find.byKey(const Key('promotion-activer')));
-    await tester.pumpAndSettle();
+    await basculerPromotion(tester);
 
     await remplir(tester, 'promotion-prix', '8000');
 
@@ -365,32 +420,35 @@ void main() {
     await ouvrirFormulaire(tester, _Depot(), plafond: 60);
     await saisirPrix(tester, '10000');
 
-    await tester.tap(find.byKey(const Key('promotion-activer')));
-    await tester.pumpAndSettle();
+    await basculerPromotion(tester);
 
     await remplir(tester, 'promotion-prix', '5000');
 
-    expect(find.textContaining('ne peut pas dépasser'), findsNothing,
-        reason: 'A 60 % de plafond, une remise de 50 % passe.');
+    expect(
+      find.textContaining('ne peut pas dépasser'),
+      findsNothing,
+      reason: 'A 60 % de plafond, une remise de 50 % passe.',
+    );
   });
 
   /// Le serveur exige les deux bornes des qu'il y a un prix : les poser par
   /// defaut epargne deux selecteurs au vendeur presse, et evite un 422 sur une
   /// promotion par ailleurs valide.
-  testWidgets('activer la promotion pose une fenetre par defaut',
-      (tester) async {
+  testWidgets('activer la promotion pose une fenetre par defaut', (
+    tester,
+  ) async {
     final depot = _Depot();
     await ouvrirFormulaire(tester, depot);
     await saisirPrix(tester, '10000');
 
-    await tester.tap(find.byKey(const Key('promotion-activer')));
-    await tester.pumpAndSettle();
+    await basculerPromotion(tester);
 
     expect(find.byKey(const Key('promotion-debut')), findsOneWidget);
     expect(find.byKey(const Key('promotion-fin')), findsOneWidget);
 
     final aujourdHui = DateTime.now();
-    final debut = '${aujourdHui.day.toString().padLeft(2, '0')}/'
+    final debut =
+        '${aujourdHui.day.toString().padLeft(2, '0')}/'
         '${aujourdHui.month.toString().padLeft(2, '0')}';
     expect(find.text(debut), findsOneWidget);
   });
@@ -401,15 +459,18 @@ void main() {
 
     await saisirPrix(tester, '10000');
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Nom de l’article'), 'Tapis',
+      find.widgetWithText(TextFormField, 'Nom de l’article'),
+      'Tapis',
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('promotion-activer')));
-    await tester.pumpAndSettle();
+    await basculerPromotion(tester);
     await remplir(tester, 'promotion-prix', '8000');
 
-    final bouton = find.widgetWithText(FilledButton, 'Enregistrer le brouillon');
+    final bouton = find.widgetWithText(
+      FilledButton,
+      'Enregistrer le brouillon',
+    );
     await tester.ensureVisible(bouton);
     await tester.tap(bouton);
     await tester.pumpAndSettle();
@@ -423,18 +484,23 @@ void main() {
   /// Sans promotion a la CREATION, les trois champs ne partent pas : le
   /// serveur exige les bornes des qu'il y a un prix, et envoyer trois nuls
   /// pour rien brouille la charge.
-  testWidgets('sans promotion, aucun champ de promotion ne part',
-      (tester) async {
+  testWidgets('sans promotion, aucun champ de promotion ne part', (
+    tester,
+  ) async {
     final depot = _Depot();
     await ouvrirFormulaire(tester, depot);
 
     await saisirPrix(tester, '10000');
     await tester.enterText(
-      find.widgetWithText(TextFormField, 'Nom de l’article'), 'Tapis',
+      find.widgetWithText(TextFormField, 'Nom de l’article'),
+      'Tapis',
     );
     await tester.pumpAndSettle();
 
-    final bouton = find.widgetWithText(FilledButton, 'Enregistrer le brouillon');
+    final bouton = find.widgetWithText(
+      FilledButton,
+      'Enregistrer le brouillon',
+    );
     await tester.ensureVisible(bouton);
     await tester.tap(bouton);
     await tester.pumpAndSettle();
@@ -444,30 +510,39 @@ void main() {
 
   /// A l'EDITION en revanche, un `deal_price` nul RETIRE la promotion, ce qui
   /// doit rester possible sans attendre sa date de fin.
-  testWidgets('a l edition, retirer la promotion envoie un prix nul',
-      (tester) async {
+  testWidgets('a l edition, retirer la promotion envoie un prix nul', (
+    tester,
+  ) async {
     final depot = _Depot();
-    await ouvrirFormulaire(tester, depot, annonce: {
-      'id': 7,
-      'name': 'Tapis',
-      'pricing': {'selling_price': '10000.00'},
-      'stock': {'quantity': 3},
-      'deal': {
-        'price': 8000,
-        'normal_price': 10000,
-        'discount_percent': 20,
-        'starts_at': DateTime.now().toIso8601String(),
-        'ends_at': DateTime.now().add(const Duration(days: 7)).toIso8601String(),
+    await ouvrirFormulaire(
+      tester,
+      depot,
+      annonce: {
+        'id': 7,
+        'name': 'Tapis',
+        'pricing': {'selling_price': '10000.00'},
+        'stock': {'quantity': 3},
+        'deal': {
+          'price': 8000,
+          'normal_price': 10000,
+          'discount_percent': 20,
+          'starts_at': DateTime.now().toIso8601String(),
+          'ends_at': DateTime.now()
+              .add(const Duration(days: 7))
+              .toIso8601String(),
+        },
       },
-    });
+    );
 
     // La promotion enregistree est reprise : le commutateur est actif.
     expect(find.byKey(const Key('promotion-prix')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('promotion-activer')));
-    await tester.pumpAndSettle();
+    await basculerPromotion(tester);
 
-    final bouton = find.widgetWithText(FilledButton, 'Enregistrer les modifications');
+    final bouton = find.widgetWithText(
+      FilledButton,
+      'Enregistrer les modifications',
+    );
     await tester.ensureVisible(bouton);
     await tester.tap(bouton);
     await tester.pumpAndSettle();

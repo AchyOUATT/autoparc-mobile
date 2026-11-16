@@ -701,14 +701,10 @@ class VehicleCommercial extends Equatable {
   }
 
   String? get locationLabel {
-    final ville = displayCity;
-    final lieu = displayPlace;
-    if (ville != null && lieu != null) return '$ville — $lieu';
-    return ville ??
-        lieu ??
-        (locationName != null && locationCity != null
-            ? '$locationName — $locationCity'
-            : locationCity ?? site);
+    if (locationName != null && locationCity != null)
+      return '$locationName — $locationCity';
+    if (locationCity != null) return locationCity;
+    return site;
   }
 
   @override

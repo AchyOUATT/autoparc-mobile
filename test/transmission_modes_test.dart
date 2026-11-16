@@ -167,6 +167,19 @@ Future<void> _registration(
     ),
   );
   await tester.pumpAndSettle();
+
+  if (mode.estPartenaire) {
+    final city = find.byKey(
+      const ValueKey('partner-vehicle-city'),
+      skipOffstage: false,
+    );
+    if (city.evaluate().isNotEmpty) {
+      final field = tester.widget<TextFormField>(city);
+      if ((field.controller?.text ?? '').trim().isEmpty) {
+        field.controller!.text = 'Ouagadougou';
+      }
+    }
+  }
 }
 
 Finder _chip(String label) =>

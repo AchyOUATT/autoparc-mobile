@@ -105,8 +105,9 @@ void main() {
 
   setUpAll(() async {
     for (final langue in langues.entries) {
-      badgeOffre[langue.key] =
-          (await chargerTextes(langue.value)).catalogOfferBoth;
+      badgeOffre[langue.key] = (await chargerTextes(
+        langue.value,
+      )).catalogOfferBoth;
     }
   });
 
@@ -528,64 +529,63 @@ void main() {
   // ── Le garde-fou de la coque ──────────────────────────────────────────────
 
   for (final langue in langues.entries) {
-  testWidgets(
-      'la coque retire bien ses 112 points à la liste, en ${langue.key}', (
-    tester,
-  ) async {
-    // LE DÉFAUT QUE LE RELECTEUR A RELEVÉ, rendu impossible à reconduire. La
-    // version précédente comptait les annonces contre 512,0 points à 360
-    // d'écran ; la liste n'en a que 400,0. L'écart venait d'ici.
-    //
-    // La hauteur de la barre n'est pas écrite en clair : elle est LUE dans
-    // `barreNavigationTheme`, qui est la source de vérité de l'application. Si
-    // quelqu'un y change 64, ce test suit au lieu de mentir.
-    await poserPage(
+    testWidgets('la coque retire bien ses 112 points à la liste, en ${langue.key}', (
       tester,
-      ecran: const Size(360, 720),
-      echelle: 1.0,
-      mode: Brightness.light,
-      vehicules: [vehicule()],
-      locale: langue.value,
-    );
+    ) async {
+      // LE DÉFAUT QUE LE RELECTEUR A RELEVÉ, rendu impossible à reconduire. La
+      // version précédente comptait les annonces contre 512,0 points à 360
+      // d'écran ; la liste n'en a que 400,0. L'écart venait d'ici.
+      //
+      // La hauteur de la barre n'est pas écrite en clair : elle est LUE dans
+      // `barreNavigationTheme`, qui est la source de vérité de l'application. Si
+      // quelqu'un y change 64, ce test suit au lieu de mentir.
+      await poserPage(
+        tester,
+        ecran: const Size(360, 720),
+        echelle: 1.0,
+        mode: Brightness.light,
+        vehicules: [vehicule()],
+        locale: langue.value,
+      );
 
-    final barre = tester.renderObject<RenderBox>(find.byType(NavigationBar));
-    final attendue =
-        barreNavigationTheme(
-          themeAutoParc(Brightness.light).colorScheme,
-        ).height! +
-        48;
+      final barre = tester.renderObject<RenderBox>(find.byType(NavigationBar));
+      final attendue =
+          barreNavigationTheme(
+            themeAutoParc(Brightness.light).colorScheme,
+          ).height! +
+          48;
 
-    expect(
-      barre.size.height,
-      closeTo(attendue, 0.01),
-      reason:
-          'La coque de mesure ne reproduit plus celle de `_AppShell` : '
-          'la barre fait ${barre.size.height.toStringAsFixed(1)} points au '
-          'lieu de ${attendue.toStringAsFixed(1)}. Tout le tableau de densité '
-          'mesurerait une page qui n\'existe pas.',
-    );
+      expect(
+        barre.size.height,
+        closeTo(attendue, 0.01),
+        reason:
+            'La coque de mesure ne reproduit plus celle de `_AppShell` : '
+            'la barre fait ${barre.size.height.toStringAsFixed(1)} points au '
+            'lieu de ${attendue.toStringAsFixed(1)}. Tout le tableau de densité '
+            'mesurerait une page qui n\'existe pas.',
+      );
 
-    // 392,0 : TROIS ÉTATS SE SONT SUCCÉDÉ ICI, et les garder écrits évite de
-    // refaire deux fois le même raisonnement.
-    //   400,0  deux bandes de 44 — cible tactile rabotée à 44, sous le
-    //          plancher Material de 48, et personne ne le voyait ;
-    //   440,0  une bande de 48 — 40 points rendus, mais les carrosseries
-    //          derrière un défilement horizontal ;
-    //   392,0  deux bandes de 48 — les carrosseries revisibles, et 8 points
-    //          de moins qu'à l'origine parce que la cible tactile, elle, est
-    //          désormais respectée.
-    // Le dernier état est celui que le propriétaire a choisi en connaissant
-    // le prix : voir le tableau de densité, deux cases y perdent.
-    expect(
-      utile(tester),
-      closeTo(392.0, 0.01),
-      reason:
-          'La liste dispose de ${utile(tester).toStringAsFixed(1)} points '
-          'à 360 × 720 au lieu de 392,0. Le chrome de la page a changé, et '
-          'les comptes d\'annonces du tableau avec lui — remesurez avant de '
-          'les réécrire.',
-    );
-  });
+      // 392,0 : TROIS ÉTATS SE SONT SUCCÉDÉ ICI, et les garder écrits évite de
+      // refaire deux fois le même raisonnement.
+      //   400,0  deux bandes de 44 — cible tactile rabotée à 44, sous le
+      //          plancher Material de 48, et personne ne le voyait ;
+      //   440,0  une bande de 48 — 40 points rendus, mais les carrosseries
+      //          derrière un défilement horizontal ;
+      //   392,0  deux bandes de 48 — les carrosseries revisibles, et 8 points
+      //          de moins qu'à l'origine parce que la cible tactile, elle, est
+      //          désormais respectée.
+      // Le dernier état est celui que le propriétaire a choisi en connaissant
+      // le prix : voir le tableau de densité, deux cases y perdent.
+      expect(
+        utile(tester),
+        closeTo(392.0, 0.01),
+        reason:
+            'La liste dispose de ${utile(tester).toStringAsFixed(1)} points '
+            'à 360 × 720 au lieu de 392,0. Le chrome de la page a changé, et '
+            'les comptes d\'annonces du tableau avec lui — remesurez avant de '
+            'les réécrire.',
+      );
+    });
   }
 
   // ── LE TABLEAU DE TRONCATURE, remesuré à chaque exécution ─────────────────
@@ -595,168 +595,167 @@ void main() {
       for (final echelle in echelles) {
         for (final mode in modes.entries) {
           for (final langue in langues.entries) {
-          testWidgets(
-              '${ecran.key}, texte x$echelle, ${mode.key}, ${langue.key}', (
-            tester,
-          ) async {
-            final exception = await poserPage(
+            testWidgets('${ecran.key}, texte x$echelle, ${mode.key}, ${langue.key}', (
               tester,
-              ecran: ecran.value,
-              echelle: echelle,
-              mode: mode.value,
-              vehicules: List.generate(4, (_) => vehicule()),
-              locale: langue.value,
-            );
-
-            final mesures = lignes(tester, langue.key);
-
-            final rapport = <String>[];
-            mesures.forEach((nom, p) {
-              rapport.add(
-                '${nom.padRight(8)}'
-                ' ${voulue(p).toStringAsFixed(1).padLeft(6)}'
-                '/${recue(p).toStringAsFixed(1).padLeft(6)}'
-                ' mot=${motLePlusLarge(p).toStringAsFixed(1).padLeft(6)}'
-                ' lignes=${lignesPosees(p)}'
-                ' corps=${(p.text as TextSpan).style?.fontSize?.toStringAsFixed(1) ?? "?"}'
-                ' ${p.didExceedMaxLines ? "COUPÉ peint=\"${peint(p, recue(p))}\"" : "entier"}',
-              );
-            });
-
-            // ignore: avoid_print
-            print(
-              '── troncature ${ecran.key}, x$echelle, ${mode.key}, '
-              '${langue.key} ──'
-              '\n   ${rapport.join('\n   ')}',
-            );
-
-            // ── 1 ET 2 : LA SÉVÉRITÉ DÉPEND DE L'ÉCHELLE, PAS LA MESURE ─────
-            //
-            // Tout est mesuré aux quatre échelles et le rapport ci-dessus est
-            // imprimé dans les quatre cas. Jusqu'à 1,5 un défaut fait tomber le
-            // test ; à 2,0 il ne le fait tomber que s'il rend une information
-            // FAUSSE — et sur cette carte, ce sont les lignes qui portent un
-            // CHIFFRE : le prix et les caractéristiques, dont le kilométrage.
-            // `support/echelles.dart` porte la décision et sa raison, et
-            // `porteUnNombre` l'implémentation de « faux » contre
-            // « incomplet ».
-            //
-            // CE TABLEAU EST VERT À 2,0 AUJOURD'HUI, aux vingt-quatre cases, et
-            // c'est précisément ce que la carte a coûté : elle a été dessinée
-            // pour ne jamais tronquer au dernier cran d'Android, et son tableau
-            // de densité rend ZÉRO annonce entière à 320 points dès l'échelle
-            // 1,3. La règle ne retire donc rien ici — elle rend seulement
-            // possible d'accepter une dégradation future à 2,0 sans toucher au
-            // banc, ce qui est exactement la décision du propriétaire.
-            mesures.forEach((nom, p) {
-              if (!tenue(echelle) && !porteUnNombre(texteDe(p))) return;
-
-              // 1. AUCUNE LIGNE N'EST TRONQUÉE.
-              expect(
-                p.didExceedMaxLines,
-                isFalse,
-                reason:
-                    '$nom TRONQUÉ en ${ecran.key} à l\'échelle $echelle '
-                    '(thème ${mode.key}) : ${voulue(p).toStringAsFixed(1)} '
-                    'points voulus pour ${recue(p).toStringAsFixed(1)} '
-                    'reçus. Il n\'en reste peint que '
-                    '« ${peint(p, recue(p))} ».'
-                    '${tenue(echelle) ? "" : " Cette ligne porte un CHIFFRE : "
-                        "l’échelle 2,0 ne l’exempte pas, parce qu’un nombre "
-                        "coupé se lit comme un AUTRE nombre."}',
+            ) async {
+              final exception = await poserPage(
+                tester,
+                ecran: ecran.value,
+                echelle: echelle,
+                mode: mode.value,
+                vehicules: List.generate(4, (_) => vehicule()),
+                locale: langue.value,
               );
 
-              // 2. AUCUN MOT NE DÉBORDE DE SA LIGNE. C'est la troncature que
-              //    `didExceedMaxLines` ne voit pas, et que le `Card` coupe
-              //    sans rien signaler.
-              expect(
-                motLePlusLarge(p),
-                lessThanOrEqualTo(recue(p) + 0.01),
-                reason:
-                    '$nom a un mot de '
-                    '${motLePlusLarge(p).toStringAsFixed(1)} points pour '
-                    '${recue(p).toStringAsFixed(1)} reçus en ${ecran.key} à '
-                    'l\'échelle $echelle : il sera rogné par le `Card` sans '
-                    'ellipse, donc en silence.',
+              final mesures = lignes(tester, langue.key);
+
+              final rapport = <String>[];
+              mesures.forEach((nom, p) {
+                rapport.add(
+                  '${nom.padRight(8)}'
+                  ' ${voulue(p).toStringAsFixed(1).padLeft(6)}'
+                  '/${recue(p).toStringAsFixed(1).padLeft(6)}'
+                  ' mot=${motLePlusLarge(p).toStringAsFixed(1).padLeft(6)}'
+                  ' lignes=${lignesPosees(p)}'
+                  ' corps=${(p.text as TextSpan).style?.fontSize?.toStringAsFixed(1) ?? "?"}'
+                  ' ${p.didExceedMaxLines ? "COUPÉ peint=\"${peint(p, recue(p))}\"" : "entier"}',
+                );
+              });
+
+              // ignore: avoid_print
+              print(
+                '── troncature ${ecran.key}, x$echelle, ${mode.key}, '
+                '${langue.key} ──'
+                '\n   ${rapport.join('\n   ')}',
               );
 
-              // 3. ET LE NOMBRE NE SE REPLIE PAS DANS LE MOT. C'est la
-              //    troncature qu'aucun des deux détecteurs ci-dessus ne voit :
-              //    un montant est un seul segment insécable — U+202F entre les
-              //    milliers, U+00A0 devant la devise —, et quand il ne tient
-              //    pas, le moteur se rabat sur une coupure CARACTÈRE PAR
-              //    CARACTÈRE. `didExceedMaxLines` reste faux faute de
-              //    `maxLines`, et `minIntrinsicWidth` retombe à la largeur
-              //    d'UN caractère, soit 17,74 points sur la carte d'une pièce.
-              //    Seul le nombre de LIGNES POSÉES le voit.
+              // ── 1 ET 2 : LA SÉVÉRITÉ DÉPEND DE L'ÉCHELLE, PAS LA MESURE ─────
               //
-              //    La carte d'un véhicule ne l'a jamais eu — `_PrixAjuste`
-              //    réduit le corps plutôt que de laisser couper — et cette
-              //    assertion est là pour que ça reste vrai : c'est le défaut
-              //    que les cartes de pièce et d'accessoire portent, chiffré
-              //    dans `bandes_filtres_test.dart`.
+              // Tout est mesuré aux quatre échelles et le rapport ci-dessus est
+              // imprimé dans les quatre cas. Jusqu'à 1,5 un défaut fait tomber le
+              // test ; à 2,0 il ne le fait tomber que s'il rend une information
+              // FAUSSE — et sur cette carte, ce sont les lignes qui portent un
+              // CHIFFRE : le prix et les caractéristiques, dont le kilométrage.
+              // `support/echelles.dart` porte la décision et sa raison, et
+              // `porteUnNombre` l'implémentation de « faux » contre
+              // « incomplet ».
+              //
+              // CE TABLEAU EST VERT À 2,0 AUJOURD'HUI, aux vingt-quatre cases, et
+              // c'est précisément ce que la carte a coûté : elle a été dessinée
+              // pour ne jamais tronquer au dernier cran d'Android, et son tableau
+              // de densité rend ZÉRO annonce entière à 320 points dès l'échelle
+              // 1,3. La règle ne retire donc rien ici — elle rend seulement
+              // possible d'accepter une dégradation future à 2,0 sans toucher au
+              // banc, ce qui est exactement la décision du propriétaire.
+              mesures.forEach((nom, p) {
+                if (!tenue(echelle) && !porteUnNombre(texteDe(p))) return;
+
+                // 1. AUCUNE LIGNE N'EST TRONQUÉE.
+                expect(
+                  p.didExceedMaxLines,
+                  isFalse,
+                  reason:
+                      '$nom TRONQUÉ en ${ecran.key} à l\'échelle $echelle '
+                      '(thème ${mode.key}) : ${voulue(p).toStringAsFixed(1)} '
+                      'points voulus pour ${recue(p).toStringAsFixed(1)} '
+                      'reçus. Il n\'en reste peint que '
+                      '« ${peint(p, recue(p))} ».'
+                      '${tenue(echelle) ? "" : " Cette ligne porte un CHIFFRE : "
+                                "l’échelle 2,0 ne l’exempte pas, parce qu’un nombre "
+                                "coupé se lit comme un AUTRE nombre."}',
+                );
+
+                // 2. AUCUN MOT NE DÉBORDE DE SA LIGNE. C'est la troncature que
+                //    `didExceedMaxLines` ne voit pas, et que le `Card` coupe
+                //    sans rien signaler.
+                expect(
+                  motLePlusLarge(p),
+                  lessThanOrEqualTo(recue(p) + 0.01),
+                  reason:
+                      '$nom a un mot de '
+                      '${motLePlusLarge(p).toStringAsFixed(1)} points pour '
+                      '${recue(p).toStringAsFixed(1)} reçus en ${ecran.key} à '
+                      'l\'échelle $echelle : il sera rogné par le `Card` sans '
+                      'ellipse, donc en silence.',
+                );
+
+                // 3. ET LE NOMBRE NE SE REPLIE PAS DANS LE MOT. C'est la
+                //    troncature qu'aucun des deux détecteurs ci-dessus ne voit :
+                //    un montant est un seul segment insécable — U+202F entre les
+                //    milliers, U+00A0 devant la devise —, et quand il ne tient
+                //    pas, le moteur se rabat sur une coupure CARACTÈRE PAR
+                //    CARACTÈRE. `didExceedMaxLines` reste faux faute de
+                //    `maxLines`, et `minIntrinsicWidth` retombe à la largeur
+                //    d'UN caractère, soit 17,74 points sur la carte d'une pièce.
+                //    Seul le nombre de LIGNES POSÉES le voit.
+                //
+                //    La carte d'un véhicule ne l'a jamais eu — `_PrixAjuste`
+                //    réduit le corps plutôt que de laisser couper — et cette
+                //    assertion est là pour que ça reste vrai : c'est le défaut
+                //    que les cartes de pièce et d'accessoire portent, chiffré
+                //    dans `bandes_filtres_test.dart`.
+                expect(
+                  coupeDansLeMot(p),
+                  isFalse,
+                  reason:
+                      '$nom est coupé DANS LE MOT en ${ecran.key} à l\'échelle '
+                      '$echelle : son plus long segment insécable fait '
+                      '${motLePlusLargeLibre(p).toStringAsFixed(2)} points '
+                      'libre et retombe à '
+                      '${motLePlusLarge(p).toStringAsFixed(2)} à la largeur '
+                      'reçue (${recue(p).toStringAsFixed(2)}), sur '
+                      '${lignesPosees(p)} lignes. « ${texteDe(p)} » se lit '
+                      'désormais comme une AUTRE valeur — et `_PrixAjuste` est '
+                      'là pour l\'empêcher.',
+                );
+              });
+
+              // 3. LE PRIX GARDE SON CORPS DEMANDÉ TANT QU'IL LE PEUT, ET NE
+              //    DESCEND JAMAIS SOUS LE PLANCHER DE CONFORT.
+              //
+              //    Deux colonnes ne laissent au prix que 119,0 points à 320
+              //    points d'écran et 139,0 à 360. « 99 999 999 FCFA » en réclame
+              //    136,5 au corps nominal de 18,2 à l'échelle 1,3 : la réduction
+              //    s'y déclenche déjà à 320 points, et c'est voulu — un prix
+              //    rendu plus petit reste VRAI, un prix coupé devient FAUX.
+              //
+              //    Ce qui est verrouillé est donc l'encadrement, pas le corps
+              //    exact : jamais plus que le corps demandé, jamais moins que
+              //    celui qu'aurait ce prix sur un téléphone qui n'a rien réglé.
+              final corpsPrix =
+                  (mesures['prix']!.text as TextSpan).style!.fontSize!;
               expect(
-                coupeDansLeMot(p),
-                isFalse,
+                corpsPrix,
+                lessThanOrEqualTo(14.0 * echelle + 0.05),
                 reason:
-                    '$nom est coupé DANS LE MOT en ${ecran.key} à l\'échelle '
-                    '$echelle : son plus long segment insécable fait '
-                    '${motLePlusLargeLibre(p).toStringAsFixed(2)} points '
-                    'libre et retombe à '
-                    '${motLePlusLarge(p).toStringAsFixed(2)} à la largeur '
-                    'reçue (${recue(p).toStringAsFixed(2)}), sur '
-                    '${lignesPosees(p)} lignes. « ${texteDe(p)} » se lit '
-                    'désormais comme une AUTRE valeur — et `_PrixAjuste` est '
-                    'là pour l\'empêcher.',
+                    'Le prix est peint en '
+                    '${corpsPrix.toStringAsFixed(1)}, plus GRAND que le corps '
+                    'demandé (${(14.0 * echelle).toStringAsFixed(1)}).',
+              );
+              expect(
+                corpsPrix,
+                greaterThanOrEqualTo(14.0),
+                reason:
+                    'Le prix est descendu à '
+                    '${corpsPrix.toStringAsFixed(1)} en ${ecran.key} à '
+                    'l\'échelle $echelle, sous le corps qu\'il aurait au '
+                    'réglage par défaut : le plancher de confort a cédé. On ne '
+                    'rend pas le prix plus petit à quelqu\'un qui a grossi ses '
+                    'polices.',
+              );
+
+              // 4. Aucune bande rayée. Acquis par construction — la rangée n'a
+              //    plus de budget vertical imposé d'en haut —, et l'assertion
+              //    reste parce que c'est exactement ce qu'un `childAspectRatio`
+              //    réintroduirait.
+              expect(
+                exception,
+                isNull,
+                reason:
+                    'Débordement en ${ecran.key} à l\'échelle $echelle, '
+                    'thème ${mode.key}, en ${langue.key}.',
               );
             });
-
-            // 3. LE PRIX GARDE SON CORPS DEMANDÉ TANT QU'IL LE PEUT, ET NE
-            //    DESCEND JAMAIS SOUS LE PLANCHER DE CONFORT.
-            //
-            //    Deux colonnes ne laissent au prix que 119,0 points à 320
-            //    points d'écran et 139,0 à 360. « 99 999 999 FCFA » en réclame
-            //    136,5 au corps nominal de 18,2 à l'échelle 1,3 : la réduction
-            //    s'y déclenche déjà à 320 points, et c'est voulu — un prix
-            //    rendu plus petit reste VRAI, un prix coupé devient FAUX.
-            //
-            //    Ce qui est verrouillé est donc l'encadrement, pas le corps
-            //    exact : jamais plus que le corps demandé, jamais moins que
-            //    celui qu'aurait ce prix sur un téléphone qui n'a rien réglé.
-            final corpsPrix =
-                (mesures['prix']!.text as TextSpan).style!.fontSize!;
-            expect(
-              corpsPrix,
-              lessThanOrEqualTo(14.0 * echelle + 0.05),
-              reason:
-                  'Le prix est peint en '
-                  '${corpsPrix.toStringAsFixed(1)}, plus GRAND que le corps '
-                  'demandé (${(14.0 * echelle).toStringAsFixed(1)}).',
-            );
-            expect(
-              corpsPrix,
-              greaterThanOrEqualTo(14.0),
-              reason:
-                  'Le prix est descendu à '
-                  '${corpsPrix.toStringAsFixed(1)} en ${ecran.key} à '
-                  'l\'échelle $echelle, sous le corps qu\'il aurait au '
-                  'réglage par défaut : le plancher de confort a cédé. On ne '
-                  'rend pas le prix plus petit à quelqu\'un qui a grossi ses '
-                  'polices.',
-            );
-
-            // 4. Aucune bande rayée. Acquis par construction — la rangée n'a
-            //    plus de budget vertical imposé d'en haut —, et l'assertion
-            //    reste parce que c'est exactement ce qu'un `childAspectRatio`
-            //    réintroduirait.
-            expect(
-              exception,
-              isNull,
-              reason:
-                  'Débordement en ${ecran.key} à l\'échelle $echelle, '
-                  'thème ${mode.key}, en ${langue.key}.',
-            );
-          });
           }
         }
       }
@@ -1186,14 +1185,23 @@ void main() {
             'annonce entière à 320 points dès le réglage par défaut.',
       );
       expect(
-        find.textContaining('Paspanga'),
+        find.descendant(
+          of: find.byType(VehicleCard),
+          matching: find.textContaining('Paspanga'),
+        ),
         findsNothing,
         reason:
             'La ville est revenue sur la carte : elle coûte une annonce '
             'entière à 320 points dès « Grande police », et « Dioulasso » '
             'est un mot plus large que la ligne à l\'échelle 2,0.',
       );
-      expect(find.textContaining('Bobo-Dioulasso'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(VehicleCard),
+          matching: find.textContaining('Bobo-Dioulasso'),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('la boîte de vitesses reste hors de la ligne de '
@@ -1398,45 +1406,45 @@ void main() {
       // comme un autre prix. Mesurer une seule langue laissait l'autre
       // ponctuation sans aucun banc.
       for (final langue in langues.values) {
-      for (final echelle in [1.0, 2.0]) {
-        final exception = await poserPage(
-          tester,
-          ecran: const Size(320, 640),
-          echelle: echelle,
-          mode: Brightness.light,
-          vehicules: [v],
-          locale: langue,
-        );
-
-        expect(exception, isNull, reason: '$quoi fait déborder la carte.');
-
-        for (final p in tester.renderObjectList<RenderParagraph>(
-          find.descendant(
-            of: find.byType(VehicleCard),
-            matching: find.byType(RichText),
-          ),
-        )) {
-          final texte = (p.text as TextSpan).toPlainText();
-          expect(
-            p.didExceedMaxLines,
-            isFalse,
-            reason:
-                '$quoi : « $texte » est coupé à 320 points et à '
-                'l\'échelle $echelle — ${voulue(p).toStringAsFixed(1)} '
-                'voulus pour ${recue(p).toStringAsFixed(1)} reçus, il n\'en '
-                'reste que « ${peint(p, recue(p))} ».',
+        for (final echelle in [1.0, 2.0]) {
+          final exception = await poserPage(
+            tester,
+            ecran: const Size(320, 640),
+            echelle: echelle,
+            mode: Brightness.light,
+            vehicules: [v],
+            locale: langue,
           );
-          expect(
-            motLePlusLarge(p),
-            lessThanOrEqualTo(recue(p) + 0.01),
-            reason:
-                '$quoi : un mot de « $texte » fait '
-                '${motLePlusLarge(p).toStringAsFixed(1)} points pour '
-                '${recue(p).toStringAsFixed(1)} reçus à l\'échelle $echelle, '
-                'et sera rogné en silence.',
-          );
+
+          expect(exception, isNull, reason: '$quoi fait déborder la carte.');
+
+          for (final p in tester.renderObjectList<RenderParagraph>(
+            find.descendant(
+              of: find.byType(VehicleCard),
+              matching: find.byType(RichText),
+            ),
+          )) {
+            final texte = (p.text as TextSpan).toPlainText();
+            expect(
+              p.didExceedMaxLines,
+              isFalse,
+              reason:
+                  '$quoi : « $texte » est coupé à 320 points et à '
+                  'l\'échelle $echelle — ${voulue(p).toStringAsFixed(1)} '
+                  'voulus pour ${recue(p).toStringAsFixed(1)} reçus, il n\'en '
+                  'reste que « ${peint(p, recue(p))} ».',
+            );
+            expect(
+              motLePlusLarge(p),
+              lessThanOrEqualTo(recue(p) + 0.01),
+              reason:
+                  '$quoi : un mot de « $texte » fait '
+                  '${motLePlusLarge(p).toStringAsFixed(1)} points pour '
+                  '${recue(p).toStringAsFixed(1)} reçus à l\'échelle $echelle, '
+                  'et sera rogné en silence.',
+            );
+          }
         }
-      }
       }
     }
 
@@ -2029,108 +2037,117 @@ void main() {
     /// la seule chose qui dira, le jour où quelqu'un y touche, combien il a
     /// coûté.
     final attendu = <String, int>{
-      '320x640-1.0-fr': 2, '320x640-1.0-en': 2,
-      '320x640-1.3-fr': 0, '320x640-1.3-en': 0,
-      '320x640-1.5-fr': 0, '320x640-1.5-en': 0,
-      '320x640-2.0-fr': 0, '320x640-2.0-en': 0,
-      '360x720-1.0-fr': 2, '360x720-1.0-en': 2,
-      '360x720-1.3-fr': 2, '360x720-1.3-en': 2,
-      '360x720-1.5-fr': 2, '360x720-1.5-en': 2,
-      '360x720-2.0-fr': 0, '360x720-2.0-en': 0,
-      '411x923-1.0-fr': 4, '411x923-1.0-en': 4,
-      '411x923-1.3-fr': 2, '411x923-1.3-en': 2,
-      '411x923-1.5-fr': 2, '411x923-1.5-en': 2,
-      '411x923-2.0-fr': 2, '411x923-2.0-en': 2,
+      '320x640-1.0-fr': 2,
+      '320x640-1.0-en': 2,
+      '320x640-1.3-fr': 0,
+      '320x640-1.3-en': 0,
+      '320x640-1.5-fr': 0,
+      '320x640-1.5-en': 0,
+      '320x640-2.0-fr': 0,
+      '320x640-2.0-en': 0,
+      '360x720-1.0-fr': 2,
+      '360x720-1.0-en': 2,
+      '360x720-1.3-fr': 2,
+      '360x720-1.3-en': 2,
+      '360x720-1.5-fr': 2,
+      '360x720-1.5-en': 2,
+      '360x720-2.0-fr': 0,
+      '360x720-2.0-en': 0,
+      '411x923-1.0-fr': 4,
+      '411x923-1.0-en': 4,
+      '411x923-1.3-fr': 2,
+      '411x923-1.3-en': 2,
+      '411x923-1.5-fr': 2,
+      '411x923-1.5-en': 2,
+      '411x923-2.0-fr': 2,
+      '411x923-2.0-en': 2,
     };
 
     for (final ecran in ecrans.entries) {
       for (final echelle in echelles) {
         for (final langue in langues.entries) {
-        testWidgets(
-            '${ecran.key}, texte x$echelle, ${langue.key} : la rangée et le '
-            'compte', (
-          tester,
-        ) async {
-          await poserPage(
-            tester,
-            ecran: ecran.value,
-            echelle: echelle,
-            mode: Brightness.light,
-            vehicules: List.generate(8, (_) => vehicule()),
-            locale: langue.value,
-          );
-
-          final hauteurListe = utile(tester);
-          final r = rangs(tester);
-          expect(r, isNotEmpty);
-
-          final hauteurRangee = r.first.bas - r.first.haut;
-
-          // Les huit véhicules sont identiques, donc les rangées posées doivent
-          // l'être aussi. L'assertion n'est pas décorative : c'est elle qui
-          // autorise à déduire le compte d'une seule hauteur de rangée.
-          for (final rangee in r) {
-            expect(
-              rangee.bas - rangee.haut,
-              closeTo(hauteurRangee, 0.01),
-              reason:
-                  'Deux rangées du même contenu n\'ont pas la même '
-                  'hauteur : le compte ci-dessous ne vaut plus rien.',
+          testWidgets('${ecran.key}, texte x$echelle, ${langue.key} : la rangée et le '
+              'compte', (tester) async {
+            await poserPage(
+              tester,
+              ecran: ecran.value,
+              echelle: echelle,
+              mode: Brightness.light,
+              vehicules: List.generate(8, (_) => vehicule()),
+              locale: langue.value,
             );
-          }
 
-          // Le pas entre deux rangées, LU quand une seconde rangée est posée.
-          // Sinon c'est l'écart du `Padding` de la rangée, qui est une
-          // constante du code et non une mesure supposée.
-          final ecart = r.length > 1 ? r[1].haut - r[0].bas : 10.0;
+            final hauteurListe = utile(tester);
+            final r = rangs(tester);
+            expect(r, isNotEmpty);
 
-          // Combien de rangées tiennent ENTIÈREMENT sous le pli.
-          var rangees = 0;
-          while (r.first.haut +
-                  (rangees + 1) * hauteurRangee +
-                  rangees * ecart <=
-              hauteurListe + 0.01) {
-            rangees++;
-          }
-          final n = rangees * 2;
+            final hauteurRangee = r.first.bas - r.first.haut;
 
-          // Recoupement : le comptage direct des cartes entièrement visibles
-          // doit donner le même chiffre, tant que le constructeur paresseux en a
-          // posé au moins une de plus.
-          final direct =
-              r.where((x) => x.bas <= hauteurListe + 0.01).length * 2;
-          if (r.length * 2 > direct) {
+            // Les huit véhicules sont identiques, donc les rangées posées doivent
+            // l'être aussi. L'assertion n'est pas décorative : c'est elle qui
+            // autorise à déduire le compte d'une seule hauteur de rangée.
+            for (final rangee in r) {
+              expect(
+                rangee.bas - rangee.haut,
+                closeTo(hauteurRangee, 0.01),
+                reason:
+                    'Deux rangées du même contenu n\'ont pas la même '
+                    'hauteur : le compte ci-dessous ne vaut plus rien.',
+              );
+            }
+
+            // Le pas entre deux rangées, LU quand une seconde rangée est posée.
+            // Sinon c'est l'écart du `Padding` de la rangée, qui est une
+            // constante du code et non une mesure supposée.
+            final ecart = r.length > 1 ? r[1].haut - r[0].bas : 10.0;
+
+            // Combien de rangées tiennent ENTIÈREMENT sous le pli.
+            var rangees = 0;
+            while (r.first.haut +
+                    (rangees + 1) * hauteurRangee +
+                    rangees * ecart <=
+                hauteurListe + 0.01) {
+              rangees++;
+            }
+            final n = rangees * 2;
+
+            // Recoupement : le comptage direct des cartes entièrement visibles
+            // doit donner le même chiffre, tant que le constructeur paresseux en a
+            // posé au moins une de plus.
+            final direct =
+                r.where((x) => x.bas <= hauteurListe + 0.01).length * 2;
+            if (r.length * 2 > direct) {
+              expect(
+                direct,
+                n,
+                reason:
+                    'Le comptage direct ($direct) et la déduction ($n) ne '
+                    's\'accordent pas.',
+              );
+            }
+
+            // ignore: avoid_print
+            print(
+              '── densité ${ecran.key}, x$echelle, ${langue.key} : '
+              'rangée ${hauteurRangee.toStringAsFixed(1)}, '
+              'pas ${(hauteurRangee + ecart).toStringAsFixed(1)}, '
+              'première à ${r.first.haut.toStringAsFixed(1)}, '
+              'liste ${hauteurListe.toStringAsFixed(1)} → '
+              '$n annonce(s) entière(s)',
+            );
+
             expect(
-              direct,
               n,
+              attendu['${ecran.key}-$echelle-${langue.key}'],
               reason:
-                  'Le comptage direct ($direct) et la déduction ($n) ne '
-                  's\'accordent pas.',
+                  'La densité a changé en ${ecran.key} à l\'échelle '
+                  '$echelle, en ${langue.key} : rangée de ${hauteurRangee.toStringAsFixed(1)} '
+                  'points, première à ${r.first.haut.toStringAsFixed(1)}, pour '
+                  '${hauteurListe.toStringAsFixed(1)} de liste. C\'est le '
+                  'chiffre que ce lot avait pour objet — s\'il baisse, '
+                  'dites-le avant de le livrer.',
             );
-          }
-
-          // ignore: avoid_print
-          print(
-            '── densité ${ecran.key}, x$echelle, ${langue.key} : '
-            'rangée ${hauteurRangee.toStringAsFixed(1)}, '
-            'pas ${(hauteurRangee + ecart).toStringAsFixed(1)}, '
-            'première à ${r.first.haut.toStringAsFixed(1)}, '
-            'liste ${hauteurListe.toStringAsFixed(1)} → '
-            '$n annonce(s) entière(s)',
-          );
-
-          expect(
-            n,
-            attendu['${ecran.key}-$echelle-${langue.key}'],
-            reason:
-                'La densité a changé en ${ecran.key} à l\'échelle '
-                '$echelle, en ${langue.key} : rangée de ${hauteurRangee.toStringAsFixed(1)} '
-                'points, première à ${r.first.haut.toStringAsFixed(1)}, pour '
-                '${hauteurListe.toStringAsFixed(1)} de liste. C\'est le '
-                'chiffre que ce lot avait pour objet — s\'il baisse, '
-                'dites-le avant de le livrer.',
-          );
-        });
+          });
         }
       }
     }
