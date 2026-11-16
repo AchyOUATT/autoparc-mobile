@@ -41,7 +41,9 @@ class AccessoryDetailPage extends ConsumerWidget {
         appBar: AppBar(),
         body: detailAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text(messageFor(e, l10n: AppLocalizations.of(context)))),
+          error: (e, _) => Center(
+            child: Text(messageFor(e, l10n: AppLocalizations.of(context))),
+          ),
           data: (_) => const SizedBox.shrink(),
         ),
       );
@@ -92,7 +94,10 @@ class _AccessoryDetailView extends ConsumerWidget {
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(messageFor(e, l10n: AppLocalizations.of(context))), backgroundColor: cs.error),
+            SnackBar(
+              content: Text(messageFor(e, l10n: AppLocalizations.of(context))),
+              backgroundColor: cs.error,
+            ),
           );
         }
       }
@@ -265,6 +270,21 @@ class _AccessoryDetailView extends ConsumerWidget {
             showQuantity: accessory.seller == null || s.hasQuantity,
           ),
           const SizedBox(height: 20),
+          if ((accessory.city ?? '').isNotEmpty ||
+              (accessory.site ?? '').isNotEmpty) ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.place_outlined),
+              title: Text(l10n.catalogSectionLocation),
+              subtitle: Text(
+                [
+                  if ((accessory.city ?? '').isNotEmpty) accessory.city!,
+                  if ((accessory.site ?? '').isNotEmpty) accessory.site!,
+                ].join(' — '),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
 
           // ── Informations ──────────────────────────────────────
           Text(
@@ -283,7 +303,14 @@ class _AccessoryDetailView extends ConsumerWidget {
           //
           // Avant le SKU parce qu'un accessoire a toujours une catégorie,
           // jamais forcément une référence.
-          _InfoRow(l10n.catalogFieldCategory, catalogAccessoryCategoryLabel(accessory.categoryValue, accessory.categoryLabel, l10n)),
+          _InfoRow(
+            l10n.catalogFieldCategory,
+            catalogAccessoryCategoryLabel(
+              accessory.categoryValue,
+              accessory.categoryLabel,
+              l10n,
+            ),
+          ),
           if (accessory.sku != null)
             _InfoRow(l10n.catalogFieldSku, accessory.sku!),
           if (accessory.manufacturer != null)
@@ -446,7 +473,11 @@ class _StockCard extends StatelessWidget {
   final AccessoryStock stock;
   final bool inStock;
   final bool showQuantity;
-  const _StockCard({required this.stock, required this.inStock, this.showQuantity = true});
+  const _StockCard({
+    required this.stock,
+    required this.inStock,
+    this.showQuantity = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -474,7 +505,9 @@ class _StockCard extends StatelessWidget {
               children: [
                 Text(
                   inStock
-                      ? (showQuantity ? l10n.catalogStockQuantity(stock.quantity) : l10n.catalogStockIn)
+                      ? (showQuantity
+                            ? l10n.catalogStockQuantity(stock.quantity)
+                            : l10n.catalogStockIn)
                       : l10n.catalogOutOfStock,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: color,

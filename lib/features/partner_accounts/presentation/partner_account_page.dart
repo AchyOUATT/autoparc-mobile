@@ -9,6 +9,7 @@ import 'partner_listings_page.dart';
 import 'partner_notifications_page.dart';
 import 'partner_session.dart';
 import 'partner_localizations.dart';
+import 'partner_location_page.dart';
 import '../../../core/api/api_exception.dart';
 import '../../auth/presentation/pages/password_recovery_page.dart';
 
@@ -126,7 +127,8 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
                 // Avant, le vendeur remplissait sept champs, envoyait, et
                 // lisait le motif du serveur en rouge sous le formulaire —
                 // au tout premier contact avec l'application.
-                : ref.watch(espacePartenaireFermeProvider) || session.espaceFerme
+                : ref.watch(espacePartenaireFermeProvider) ||
+                      session.espaceFerme
                 ? _ferme(context, session)
                 : _login(context, session),
           ),
@@ -162,8 +164,12 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
           Text(
             _register
                 ? (widget.inscription
-                      ? AppLocalizations.of(context).partnerAccountsSellerIntroTitle
-                      : AppLocalizations.of(context).partnerAccountsCompanyIntro)
+                      ? AppLocalizations.of(
+                          context,
+                        ).partnerAccountsSellerIntroTitle
+                      : AppLocalizations.of(
+                          context,
+                        ).partnerAccountsCompanyIntro)
                 : AppLocalizations.of(context).partnerAccountsActivityIntro,
             style: Theme.of(context).textTheme.headlineSmall,
           ),
@@ -171,8 +177,12 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
           Text(
             _register
                 ? (widget.inscription
-                      ? AppLocalizations.of(context).partnerAccountsSellerIntroBody
-                      : AppLocalizations.of(context).partnerAccountsRegisterIntro)
+                      ? AppLocalizations.of(
+                          context,
+                        ).partnerAccountsSellerIntroBody
+                      : AppLocalizations.of(
+                          context,
+                        ).partnerAccountsRegisterIntro)
                 : AppLocalizations.of(context).partnerAccountsLoginIntro,
           ),
           const SizedBox(height: 24),
@@ -361,7 +371,9 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
                           ),
                         ),
                       ),
-                child: Text(AppLocalizations.of(context).passwordRecoveryForgot),
+                child: Text(
+                  AppLocalizations.of(context).passwordRecoveryForgot,
+                ),
               ),
             ),
           if (_register)
@@ -405,7 +417,9 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
           Text(
             widget.inscription && _register
                 ? AppLocalizations.of(context).partnerAccountsSellerIntroFooter
-                : AppLocalizations.of(context).partnerAccountsPublishingAfterApproval,
+                : AppLocalizations.of(
+                    context,
+                  ).partnerAccountsPublishingAfterApproval,
             textAlign: TextAlign.center,
           ),
         ],
@@ -494,6 +508,28 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
           ),
           const SizedBox(height: 8),
           Text(AppLocalizations.of(context).partnerAccountsCreateListingHelp),
+
+          const SizedBox(height: 16),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: ListTile(
+              key: const Key('partner-tuile-emplacement'),
+              leading: const Icon(Icons.place_outlined, size: 32),
+              title: Text(AppLocalizations.of(context).partnerLocationTitle),
+              subtitle: Text(
+                profile.emplacementResume.isNotEmpty
+                    ? profile.emplacementResume
+                    : AppLocalizations.of(context).partnerLocationEmpty,
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const PartnerLocationPage(),
+                ),
+              ),
+            ),
+          ),
+
           const SizedBox(height: 24),
           for (final kind in PartnerListingKind.values)
             Padding(
@@ -658,6 +694,19 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
           ),
         const SizedBox(height: 12),
         Text(description, textAlign: TextAlign.center),
+        if (session.profile != null) ...[
+          const SizedBox(height: 20),
+          OutlinedButton.icon(
+            key: const Key('partner-emplacement-attente'),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const PartnerLocationPage(),
+              ),
+            ),
+            icon: const Icon(Icons.place_outlined),
+            label: Text(AppLocalizations.of(context).partnerLocationTitle),
+          ),
+        ],
         if (reason?.isNotEmpty == true)
           Padding(
             padding: const EdgeInsets.only(top: 20),
@@ -729,8 +778,7 @@ class _PartnerAccountPageState extends ConsumerState<PartnerAccountPage> {
       const SizedBox(height: 24),
       FilledButton.icon(
         key: const Key('partner-ferme-catalogue'),
-        onPressed: () =>
-            context.canPop() ? context.pop() : context.go('/'),
+        onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         icon: const Icon(Icons.storefront_outlined),
         label: Text(AppLocalizations.of(context).partnerAccountsClosedBrowse),
       ),

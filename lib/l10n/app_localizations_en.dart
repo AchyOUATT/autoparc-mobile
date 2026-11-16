@@ -6986,4 +6986,45 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return 'Last change: $current % (previously $previous %) by $author on $when.';
   }
+
+  @override
+  String get partnerLocationTitle => 'My location';
+
+  @override
+  String get partnerLocationSubtitle =>
+      'City and place copied onto your new listings. You can change them for a specific listing.';
+
+  @override
+  String get partnerLocationEmpty => 'No location set';
+
+  @override
+  String get partnerLocationCityLabel => 'City';
+
+  @override
+  String get partnerLocationAddressLabel => 'Address or place (optional)';
+
+  @override
+  String get partnerLocationAddressHint => 'Area, site or pickup point';
+
+  @override
+  String get partnerLocationSave => 'Save location';
+
+  @override
+  String get partnerLocationSaving => 'Saving…';
+
+  @override
+  String get partnerLocationSaved => 'Location saved.';
+
+  @override
+  String get partnerLocationCityRequired => 'Enter the city.';
+
+  @override
+  String get partnerLocationCityRequiredToPublish =>
+      'Enter this listing’s city before publishing it.';
+
+  @override
+  String get catalogFieldCity => 'City';
+
+  @override
+  String get catalogFieldPlace => 'Place';
 }

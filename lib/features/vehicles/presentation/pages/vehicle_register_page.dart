@@ -205,6 +205,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
   final _rentalDepositCtrl = TextEditingController();
   final _mileageCtrl = TextEditingController();
   final _siteCtrl = TextEditingController();
+  final _cityCtrl = TextEditingController();
   LocationRef? _selectedLocation; // agence / showroom structuré
 
   /// Le pays d'origine d'un vehicule importe.
@@ -283,6 +284,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       if (e.commercial.rentalDeposit != null)
         _rentalDepositCtrl.text = _fmtPrice(e.commercial.rentalDeposit!);
       if (e.commercial.site != null) _siteCtrl.text = e.commercial.site!;
+      if (e.commercial.city != null) _cityCtrl.text = e.commercial.city!;
       _selectedFeatureIds.addAll(e.features.map((f) => f.id));
       // Sans cette ligne, modifier un véhicule immatriculé le renverrait
       // « non immatriculé » au premier enregistrement — le commutateur
@@ -301,6 +303,10 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           fin: promo.endsAt,
         );
       }
+    } else if (widget.mode.estPartenaire) {
+      final profil = ref.read(espace.partnerSessionProvider).profile;
+      _cityCtrl.text = profil?.city ?? '';
+      _siteCtrl.text = profil?.address ?? '';
     }
   }
 
@@ -462,6 +468,7 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
       _rentalDepositCtrl,
       _mileageCtrl,
       _siteCtrl,
+      _cityCtrl,
       _descriptionCtrl,
     ])
       c.dispose();
@@ -846,7 +853,11 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
           (_existing != null ||
               forRent && _rentalDepositCtrl.text.trim().isNotEmpty))
         'rental_deposit': forRent ? _parsePrice(_rentalDepositCtrl.text) : null,
-      if (_siteCtrl.text.isNotEmpty) 'site': _siteCtrl.text.trim(),
+      if (widget.mode.estPartenaire) ...{
+        'city': _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
+        'site': _siteCtrl.text.trim().isEmpty ? null : _siteCtrl.text.trim(),
+      } else if (_siteCtrl.text.isNotEmpty)
+        'site': _siteCtrl.text.trim(),
       if (_descriptionCtrl.text.isNotEmpty)
         'description': _descriptionCtrl.text.trim(),
       'currency': 'XOF',
@@ -2157,6 +2168,32 @@ class _VehicleRegisterPageState extends ConsumerState<VehicleRegisterPage> {
                   labelText: l10n.vehiclesSiteLabel,
                   hintText: l10n.vehiclesSiteHint,
                   prefixIcon: Icon(Icons.location_on_outlined),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (widget.mode.estPartenaire) ...[
+              TextFormField(
+                key: const ValueKey('partner-vehicle-city'),
+                controller: _cityCtrl,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  labelText: l10n.partnerLocationCityLabel,
+                  prefixIcon: const Icon(Icons.location_city_outlined),
+                ),
+                validator: (value) => (value ?? '').trim().isEmpty
+                    ? l10n.partnerLocationCityRequired
+                    : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                key: const ValueKey('partner-vehicle-site'),
+                controller: _siteCtrl,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(
+                  labelText: l10n.partnerLocationAddressLabel,
+                  hintText: l10n.partnerLocationAddressHint,
+                  prefixIcon: const Icon(Icons.place_outlined),
                 ),
               ),
               const SizedBox(height: 12),

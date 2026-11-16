@@ -402,6 +402,14 @@ class _PartnerApplicationsPageState
                   AppLocalizations.of(context).partnerAccountsMissingPhone,
             ),
             if (courriel != null) Text(courriel),
+            if (json.texte(account['city']) != null)
+              Text(
+                [
+                  json.texte(account['city'])!,
+                  if (json.texte(account['address']) != null)
+                    json.texte(account['address'])!,
+                ].join(' — '),
+              ),
             if (json.texte(account['review_reason']) != null) ...[
               const SizedBox(height: 8),
               Text(

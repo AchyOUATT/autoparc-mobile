@@ -33,6 +33,8 @@ class _PartnerListingFormPageState
   final _stock = TextEditingController(text: '0');
   final _sku = TextEditingController();
   final _manufacturerReference = TextEditingController();
+  final _city = TextEditingController();
+  final _site = TextEditingController();
   PartnerReferences? _references;
   Object? _loadError;
   Object? _saveError;
@@ -109,6 +111,14 @@ class _PartnerListingFormPageState
       _map(listing['category'])['value'] ??
           (listing['category'] is String ? listing['category'] : 'utilitaire'),
     );
+    if (_editing) {
+      _city.text = _text(listing['city']);
+      _site.text = _text(listing['site']);
+    } else {
+      final profil = ref.read(partnerSessionProvider).profile;
+      _city.text = profil?.city ?? '';
+      _site.text = profil?.address ?? '';
+    }
     _loadReferences();
   }
 
@@ -121,6 +131,8 @@ class _PartnerListingFormPageState
       _stock,
       _sku,
       _manufacturerReference,
+      _city,
+      _site,
     ]) {
       controller.dispose();
     }
@@ -212,6 +224,8 @@ class _PartnerListingFormPageState
       'selling_price': _number(_salePrice),
       'stock_quantity': int.parse(_stock.text.trim()),
       'manufacturer_id': _manufacturerId,
+      'city': _city.text.trim().isEmpty ? null : _city.text.trim(),
+      'site': _site.text.trim().isEmpty ? null : _site.text.trim(),
     };
     if (_part) {
       data.addAll({
@@ -601,5 +615,13 @@ class _PartnerListingFormPageState
             : null;
       },
     ),
+    _field(
+      AppLocalizations.of(context).partnerLocationCityLabel,
+      _city,
+      validator: (value) => (value ?? '').trim().isEmpty
+          ? AppLocalizations.of(context).partnerLocationCityRequired
+          : null,
+    ),
+    _field(AppLocalizations.of(context).partnerLocationAddressLabel, _site),
   ];
 }

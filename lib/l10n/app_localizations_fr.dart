@@ -7016,4 +7016,45 @@ class AppLocalizationsFr extends AppLocalizations {
   ) {
     return 'Dernière modification : $current % (précédemment $previous %) par $author le $when.';
   }
+
+  @override
+  String get partnerLocationTitle => 'Mon emplacement';
+
+  @override
+  String get partnerLocationSubtitle =>
+      'Ville et lieu repris sur vos nouvelles annonces. Vous pouvez les modifier pour une annonce précise.';
+
+  @override
+  String get partnerLocationEmpty => 'Aucun emplacement renseigné';
+
+  @override
+  String get partnerLocationCityLabel => 'Ville';
+
+  @override
+  String get partnerLocationAddressLabel => 'Adresse ou lieu (facultatif)';
+
+  @override
+  String get partnerLocationAddressHint => 'Quartier, site ou point de retrait';
+
+  @override
+  String get partnerLocationSave => 'Enregistrer l’emplacement';
+
+  @override
+  String get partnerLocationSaving => 'Enregistrement…';
+
+  @override
+  String get partnerLocationSaved => 'Emplacement enregistré.';
+
+  @override
+  String get partnerLocationCityRequired => 'Indiquez la ville.';
+
+  @override
+  String get partnerLocationCityRequiredToPublish =>
+      'Indiquez la ville de cette annonce avant de la publier.';
+
+  @override
+  String get catalogFieldCity => 'Ville';
+
+  @override
+  String get catalogFieldPlace => 'Lieu';
 }

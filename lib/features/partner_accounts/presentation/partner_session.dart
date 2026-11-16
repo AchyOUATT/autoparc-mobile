@@ -11,7 +11,16 @@ import '../data/partner_repository.dart';
 const String sessionRevoquee = 'revoked';
 
 class PartnerSession {
-  const PartnerSession({this.profile, this.loading = false, this.error, this.deniedStatus, this.reviewReason, this.restoreFailed = false, this.verified = true, this.espaceFerme = false});
+  const PartnerSession({
+    this.profile,
+    this.loading = false,
+    this.error,
+    this.deniedStatus,
+    this.reviewReason,
+    this.restoreFailed = false,
+    this.verified = true,
+    this.espaceFerme = false,
+  });
   final PartnerProfile? profile;
   final bool loading;
   final String? error;
@@ -69,7 +78,11 @@ PartnerSession sessionInitialeDepuis(PartnerSessionStockee? stockee) {
 
   final profil = profilDepuisLeCoffre(stockee.profile);
 
-  return PartnerSession(profile: profil, verified: false, loading: profil == null);
+  return PartnerSession(
+    profile: profil,
+    verified: false,
+    loading: profil == null,
+  );
 }
 
 /// La session partenaire telle que `main()` la lit AVANT `runApp`.
@@ -106,16 +119,20 @@ Future<PartnerSession> sessionPartenaireAuDemarrage(
 /// Le défaut est l'état de départ historique du notifier, « on ne sait pas
 /// encore » : les bancs qui ne surchargent rien gardent exactement le
 /// comportement qu'ils ont toujours éprouvé.
-final sessionPartenaireInitialeProvider =
-    Provider<PartnerSession>((_) => const PartnerSession(loading: true));
+final sessionPartenaireInitialeProvider = Provider<PartnerSession>(
+  (_) => const PartnerSession(loading: true),
+);
 
-final partnerSessionProvider = StateNotifierProvider<PartnerSessionNotifier, PartnerSession>((ref) =>
-  PartnerSessionNotifier(
-    ref.watch(partnerRepositoryProvider),
-    initiale: ref.read(sessionPartenaireInitialeProvider),
-  ));
+final partnerSessionProvider =
+    StateNotifierProvider<PartnerSessionNotifier, PartnerSession>(
+      (ref) => PartnerSessionNotifier(
+        ref.watch(partnerRepositoryProvider),
+        initiale: ref.read(sessionPartenaireInitialeProvider),
+      ),
+    );
 
-class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsBindingObserver {
+class PartnerSessionNotifier extends StateNotifier<PartnerSession>
+    with WidgetsBindingObserver {
   /// [initiale] : ce que `main()` a lu au coffre avant `runApp`, pour que la
   /// première trame soit déjà la bonne. `restore()` relit et vérifie quand
   /// même : la lecture du démarrage n'est qu'une avance, pas une autorité.
@@ -179,8 +196,6 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
     super.dispose();
   }
 
-
-
   /// Ouvre l'espace partenaire sur le coffre, PUIS vérifie.
   ///
   /// ── CE QUE CELA SUPPRIME ─────────────────────────────────────────────────
@@ -239,16 +254,30 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
       // « Visiteur » sans un mot. `revoked` dit « fermée, motif à la
       // reconnexion », et c'est ce que la carte de l'accueil affiche.
       state = error.sessionRejected
-          ? PartnerSession(error: error.message,
-              deniedStatus: error.accountStatus ?? (profil != null ? sessionRevoquee : null),
-              reviewReason: error.reviewReason)
-          : PartnerSession(profile: profil, verified: false, error: error.message,
-              restoreFailed: true, deniedStatus: error.accountStatus, reviewReason: error.reviewReason,
-              espaceFerme: error.statusCode == 503);
+          ? PartnerSession(
+              error: error.message,
+              deniedStatus:
+                  error.accountStatus ??
+                  (profil != null ? sessionRevoquee : null),
+              reviewReason: error.reviewReason,
+            )
+          : PartnerSession(
+              profile: profil,
+              verified: false,
+              error: error.message,
+              restoreFailed: true,
+              deniedStatus: error.accountStatus,
+              reviewReason: error.reviewReason,
+              espaceFerme: error.statusCode == 503,
+            );
     } catch (_) {
       if (!mounted || generation != _generation) return;
-      state = PartnerSession(profile: profil, verified: false,
-        error: 'Impossible de vérifier votre session. Réessayez.', restoreFailed: true);
+      state = PartnerSession(
+        profile: profil,
+        verified: false,
+        error: 'Impossible de vérifier votre session. Réessayez.',
+        restoreFailed: true,
+      );
     }
   }
 
@@ -257,7 +286,8 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
     state = const PartnerSession(loading: true);
     try {
       final profile = await action();
-      if (mounted && generation == _generation) state = PartnerSession(profile: profile);
+      if (mounted && generation == _generation)
+        state = PartnerSession(profile: profile);
       // Une session qui NAÎT dans cette version n'a jamais connu l'ancien
       // accueil : la ligne « votre accueil est maintenant votre tableau de
       // bord » ne s'adresse qu'aux sessions restaurées d'un coffre antérieur.
@@ -266,9 +296,18 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
       // où le canal reste muet et bloquait l'inscription.
       NoticeTableauDeBord.marquerVue().ignore();
     } on PartnerApiException catch (error) {
-      if (mounted && generation == _generation) state = PartnerSession(error: error.message, deniedStatus: error.accountStatus, reviewReason: error.reviewReason, espaceFerme: error.statusCode == 503);
+      if (mounted && generation == _generation)
+        state = PartnerSession(
+          error: error.message,
+          deniedStatus: error.accountStatus,
+          reviewReason: error.reviewReason,
+          espaceFerme: error.statusCode == 503,
+        );
     } catch (_) {
-      if (mounted && generation == _generation) state = const PartnerSession(error: 'La connexion n’a pas abouti. Réessayez.');
+      if (mounted && generation == _generation)
+        state = const PartnerSession(
+          error: 'La connexion n’a pas abouti. Réessayez.',
+        );
     }
   }
 
@@ -276,7 +315,25 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
   /// `PartnerRepository.login`.
   Future<void> login(String identifiant, String password) =>
       _authenticate(() => _repository.login(identifiant, password));
-  Future<void> register(Map<String, dynamic> fields) => _authenticate(() => _repository.register(fields));
+  Future<void> register(Map<String, dynamic> fields) =>
+      _authenticate(() => _repository.register(fields));
+
+  /// Enregistre l'emplacement par defaut et met a jour le profil en session.
+  Future<void> updateEmplacement({
+    String? city,
+    String? address,
+    bool clearAddress = false,
+  }) async {
+    final profile = await _repository.updateEmplacement(
+      city: city,
+      address: address,
+      clearAddress: clearAddress,
+    );
+    if (mounted) {
+      state = PartnerSession(profile: profile, verified: state.verified);
+    }
+  }
+
   /// Reinterroge le serveur sur la session courante.
   ///
   /// ── `silencieux` : CE QU'IL EVITE ──────────────────────────────────────
@@ -311,26 +368,40 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
     // `_verifier()` laisse l'etat intact quand le serveur se tait.
     final confirme = state.verified;
 
-    state = PartnerSession(profile: previous, loading: ! silencieux, verified: confirme);
+    state = PartnerSession(
+      profile: previous,
+      loading: !silencieux,
+      verified: confirme,
+    );
 
     try {
       final profile = await _repository.getMe();
-      if (mounted && generation == _generation) state = PartnerSession(profile: profile);
+      if (mounted && generation == _generation)
+        state = PartnerSession(profile: profile);
     } on PartnerApiException catch (error) {
       if (mounted && generation == _generation) {
         // Même règle qu'à la restauration : un 401 nu sur une session connue
         // est une session fermée, pas un simple visiteur.
-        state = PartnerSession(profile: error.sessionRejected ? null : previous,
+        state = PartnerSession(
+          profile: error.sessionRejected ? null : previous,
           verified: error.sessionRejected ? true : confirme,
           error: error.message,
-          deniedStatus: error.accountStatus ?? (error.sessionRejected && previous != null ? sessionRevoquee : null),
+          deniedStatus:
+              error.accountStatus ??
+              (error.sessionRejected && previous != null
+                  ? sessionRevoquee
+                  : null),
           reviewReason: error.reviewReason,
-          espaceFerme: error.statusCode == 503);
+          espaceFerme: error.statusCode == 503,
+        );
       }
     } catch (_) {
       if (mounted && generation == _generation) {
-        state = PartnerSession(profile: previous, verified: confirme,
-          error: 'Actualisation impossible. Réessayez.');
+        state = PartnerSession(
+          profile: previous,
+          verified: confirme,
+          error: 'Actualisation impossible. Réessayez.',
+        );
       }
     }
   }
@@ -346,13 +417,18 @@ class PartnerSessionNotifier extends StateNotifier<PartnerSession> with WidgetsB
     _perimerLesVerifications();
     state = const PartnerSession(loading: true);
 
-    try { await _repository.logout(); } catch (_) { /* Local token is cleared even offline. */ }
+    try {
+      await _repository.logout();
+    } catch (_) {
+      /* Local token is cleared even offline. */
+    }
 
     if (mounted) {
       _perimerLesVerifications();
       state = const PartnerSession();
     }
   }
+
   void clearNotice() {
     _perimerLesVerifications();
     state = const PartnerSession();

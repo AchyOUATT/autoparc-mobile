@@ -12333,6 +12333,84 @@ abstract class AppLocalizations {
     String author,
     String when,
   );
+
+  /// No description provided for @partnerLocationTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon emplacement'**
+  String get partnerLocationTitle;
+
+  /// No description provided for @partnerLocationSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ville et lieu repris sur vos nouvelles annonces. Vous pouvez les modifier pour une annonce précise.'**
+  String get partnerLocationSubtitle;
+
+  /// No description provided for @partnerLocationEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun emplacement renseigné'**
+  String get partnerLocationEmpty;
+
+  /// No description provided for @partnerLocationCityLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ville'**
+  String get partnerLocationCityLabel;
+
+  /// No description provided for @partnerLocationAddressLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse ou lieu (facultatif)'**
+  String get partnerLocationAddressLabel;
+
+  /// No description provided for @partnerLocationAddressHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Quartier, site ou point de retrait'**
+  String get partnerLocationAddressHint;
+
+  /// No description provided for @partnerLocationSave.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer l’emplacement'**
+  String get partnerLocationSave;
+
+  /// No description provided for @partnerLocationSaving.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrement…'**
+  String get partnerLocationSaving;
+
+  /// No description provided for @partnerLocationSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Emplacement enregistré.'**
+  String get partnerLocationSaved;
+
+  /// No description provided for @partnerLocationCityRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indiquez la ville.'**
+  String get partnerLocationCityRequired;
+
+  /// No description provided for @partnerLocationCityRequiredToPublish.
+  ///
+  /// In fr, this message translates to:
+  /// **'Indiquez la ville de cette annonce avant de la publier.'**
+  String get partnerLocationCityRequiredToPublish;
+
+  /// No description provided for @catalogFieldCity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ville'**
+  String get catalogFieldCity;
+
+  /// No description provided for @catalogFieldPlace.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lieu'**
+  String get catalogFieldPlace;
 }
 
 class _AppLocalizationsDelegate
