@@ -52,7 +52,8 @@ bool? _asBool(Object? value) => switch (value) {
 class VehicleFeature extends Equatable {
   final int id;
   final String name;
-  final String category; // 'dotation' | 'confort' | 'securite' | 'multimedia' | 'aide_conduite' | 'autre'
+  final String
+  category; // 'dotation' | 'confort' | 'securite' | 'multimedia' | 'aide_conduite' | 'autre'
 
   const VehicleFeature({
     required this.id,
@@ -96,6 +97,14 @@ class Vehicle extends Equatable {
   final String? description;
   final Map<String, double> partnerProposedPrices;
   final VehicleImport? import_;
+
+  /// Statut de dédouanement renvoyé au premier niveau par l'API, ou `null`
+  /// s'il est absent (ancienne réponse) ou s'il s'agit d'un engin.
+  ///
+  /// La lecture passe par [customsCleared] : sans dossier et sans champ,
+  /// un véhicule routier est considéré comme dédouané.
+  final bool? declaredCustomsCleared;
+
   final int faultsCount;
 
   /// Compte rendu staff encore valable, distinct de la modération de l'annonce.
@@ -237,6 +246,7 @@ class Vehicle extends Equatable {
     this.description,
     this.partnerProposedPrices = const {},
     this.import_,
+    this.declaredCustomsCleared,
     required this.faultsCount,
     this.inspection,
     this.faultDeclaration = const FaultDeclaration.unknown(),
@@ -361,6 +371,7 @@ class Vehicle extends Equatable {
       import_: json['import'] != null
           ? VehicleImport.fromJson(json['import'] as Map<String, dynamic>)
           : null,
+      declaredCustomsCleared: _asBool(json['customs_cleared']),
       faultsCount: json['faults_count'] as int? ?? 0,
       inspection: StaffInspectionSummary.parse(json['inspection']),
       faultDeclaration: FaultDeclaration.fromJson(json['fault_declaration']),
@@ -474,6 +485,12 @@ class Vehicle extends Equatable {
   bool get isEquipment => assetKind == 'equipment';
   bool get isImported => !isEquipment && registrationStatus == 'unregistered';
   bool get isRegistered => !isEquipment && registrationStatus == 'registered';
+
+  /// Un véhicule routier est dédouané, ou non. Sans dossier d'import et
+  /// sans champ, il est considéré comme dédouané — y compris les anciennes
+  /// réponses qui n'exposaient le statut que dans le bloc `import`.
+  bool get customsCleared =>
+      declaredCustomsCleared ?? import_?.customsCleared ?? !isEquipment;
   bool get isUtility => !isEquipment && vehicleType == 'utility';
   bool get isHeavy => !isEquipment && vehicleType == 'heavy';
   bool get isPassenger => !isEquipment && vehicleType == 'passenger';
@@ -756,7 +773,7 @@ class VehicleImport extends Equatable {
   factory VehicleImport.fromJson(Map<String, dynamic> json) => VehicleImport(
     originCountry: json['origin_country'] as String?,
     originCountryIso2: json['origin_country_iso2'] as String?,
-    customsCleared: _asBool(json['customs_cleared']) ?? false,
+    customsCleared: _asBool(json['customs_cleared']) ?? true,
     portOfEntry: json['port_of_entry'] as String?,
     steeringside: json['steering_side'] as String?,
     odometerAtImportKm: parseMileageKm(json['odometer_at_import_km']),

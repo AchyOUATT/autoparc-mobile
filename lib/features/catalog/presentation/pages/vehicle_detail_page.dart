@@ -493,6 +493,15 @@ class _VehicleDetailView extends ConsumerWidget {
                         l10n.catalogFieldMileage,
                         l10n.commonMileageKm(formatEntier(vehicle.mileageKm!)),
                       ),
+                    // Tous les véhicules routiers : dédouané, ou non. Sans
+                    // dossier d'import, le statut est considéré comme dédouané.
+                    if (!vehicle.isEquipment)
+                      (
+                        l10n.catalogCustomsCleared,
+                        vehicle.customsCleared
+                            ? l10n.catalogCustomsYes
+                            : l10n.catalogCustomsNo,
+                      ),
                     if (vehicle.faultsCount > 0)
                       (l10n.catalogFieldFaults, '${vehicle.faultsCount}'),
                   ]),
@@ -872,12 +881,8 @@ class _ImportSection extends StatelessWidget {
         // immatriculé — la ligne « Kilométrage » plus haut le porte donc
         // déjà, et la répéter sous « Import » laissait croire à deux relevés
         // distincts.
-        _InfoRow(
-          l10n.catalogCustomsCleared,
-          import_.customsCleared
-              ? l10n.catalogCustomsYes
-              : l10n.catalogCustomsNo,
-        ),
+        // Le dédouanement non plus : il figure déjà dans « État », pour
+        // tous les véhicules routiers, y compris ceux sans dossier d'import.
         if (import_.isRightHandDrive)
           _InfoRow(l10n.catalogFieldHandedness, l10n.catalogRightHandDrive),
       ],

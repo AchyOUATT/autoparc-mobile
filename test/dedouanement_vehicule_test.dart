@@ -77,7 +77,7 @@ void main() {
       VehicleImport.fromJson({'customs_cleared': false}).customsCleared,
       isFalse,
     );
-    expect(VehicleImport.fromJson({}).customsCleared, isFalse);
+    expect(VehicleImport.fromJson({}).customsCleared, isTrue);
     expect(
       VehicleImport.fromJson({'customs_cleared': 1}).customsCleared,
       isTrue,
@@ -126,5 +126,67 @@ void main() {
     expect(find.text('✓ Oui'), findsOneWidget);
     expect(find.text(l10n.catalogCustomsNo), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('un immatriculé sans dossier d’import est affiché dédouané', (
+    tester,
+  ) async {
+    await _ouvrir(tester, _vehicule(immatricule: true));
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(VehicleDetailPage)),
+    );
+    expect(find.text(l10n.catalogCustomsCleared), findsOneWidget);
+    expect(find.text(l10n.catalogCustomsYes), findsOneWidget);
+    expect(find.text(l10n.catalogCustomsNo), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('un importé sans dossier d’import est affiché dédouané', (
+    tester,
+  ) async {
+    await _ouvrir(tester, _vehicule(immatricule: false));
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(VehicleDetailPage)),
+    );
+    expect(find.text(l10n.catalogCustomsCleared), findsOneWidget);
+    expect(find.text(l10n.catalogCustomsYes), findsOneWidget);
+    expect(find.text(l10n.catalogCustomsNo), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  test('le champ customs_cleared du premier niveau l’emporte', () {
+    expect(
+      _vehicule(immatricule: false, customsCleared: true).customsCleared,
+      isTrue,
+    );
+    expect(
+      _vehicule(immatricule: true, customsCleared: false).customsCleared,
+      isFalse,
+    );
+    expect(_vehicule(immatricule: true).customsCleared, isTrue);
+    expect(_importe().customsCleared, isFalse);
+    expect(_importe(customsCleared: true).customsCleared, isTrue);
+  });
+}
+
+Vehicle _vehicule({required bool immatricule, bool? customsCleared}) {
+  return Vehicle.fromJson({
+    'id': immatricule ? 21 : 22,
+    'reference': immatricule ? 'IMM-0021' : 'IMP-0022',
+    'designation': 'Toyota Corolla',
+    'registration_status': {
+      'value': immatricule ? 'registered' : 'unregistered',
+      'label': immatricule ? 'Deja immatricule' : 'Non immatricule',
+    },
+    'vehicle_type': 'passenger',
+    'identity': {'brand': 'Toyota', 'model': 'Corolla', 'year': 2016},
+    'technical': {'mileage_km': 85000},
+    'commercial': {
+      'condition': 'used',
+      'status': 'in_stock',
+      'availability': 'sale',
+      'sale_price': 6500000,
+    },
+    if (customsCleared != null) 'customs_cleared': customsCleared,
   });
 }
