@@ -3290,6 +3290,7 @@ class _Depot implements CatalogRepository {
 
   @override
   Future<PaginatedResponse<Part>> getParts({
+    bool forStaff = false,
     int page = 1,
     int perPage = 20,
     String? search,
@@ -3303,6 +3304,7 @@ class _Depot implements CatalogRepository {
     int? year,
     String? city,
     int? locationId,
+    bool inactiveOnly = false,
   }) async => PaginatedResponse<Part>(
     data: pieces,
     currentPage: 1,
@@ -3323,6 +3325,7 @@ class _Depot implements CatalogRepository {
     int? vehicleModelId,
     String? city,
     int? locationId,
+    bool inactiveOnly = false,
   }) async => PaginatedResponse<Accessory>(
     data: accessoires,
     currentPage: 1,

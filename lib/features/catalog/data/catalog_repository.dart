@@ -22,7 +22,7 @@ final catalogRepositoryProvider = Provider<CatalogRepository>(
 
 /// Accès aux données du catalogue public (pas d'auth requise).
 class CatalogRepository {
-  final ApiClient         _client;
+  final ApiClient _client;
   final CatalogLocalCache _cache;
 
   const CatalogRepository(this._client, this._cache);
@@ -240,9 +240,10 @@ class CatalogRepository {
     int? vehicleModelId, // filtre compatibilité
     String? city,
     int? locationId,
+    bool inactiveOnly = false,
   }) async {
     final params = <String, dynamic>{
-      'page':     page,
+      'page': page,
       'per_page': perPage,
       if (search != null && search.isNotEmpty) 'q': search,
       if (category != null) 'category': category,
@@ -251,6 +252,11 @@ class CatalogRepository {
       if (vehicleModelId != null) 'vehicle_model_id': vehicleModelId,
       if (city != null) 'city': city,
       if (locationId != null) 'location_id': locationId,
+      // `inactive_only` n'est honore que par la route du personnel.
+      // `active_only=0` evite qu'un serveur encore ancien ne les masque
+      // par defaut ; le filtre `isActive` cote liste reste une securite.
+      if (inactiveOnly) 'active_only': 0,
+      if (inactiveOnly) 'inactive_only': 1,
     };
 
     // Le catalogue public masque les indisponibles ; le personnel doit
@@ -272,8 +278,10 @@ class CatalogRepository {
     return Accessory.fromJson(json['data'] as Map<String, dynamic>);
   }
 
-  Future<Part> getPart(int id) async {
-    final json = await _client.get(Endpoints.partDetail(id));
+  Future<Part> getPart(int id, {bool forStaff = false}) async {
+    final json = await _client.get(
+      forStaff ? Endpoints.staffPartDetail(id) : Endpoints.partDetail(id),
+    );
     return Part.fromJson(json['data'] as Map<String, dynamic>);
   }
 
@@ -330,7 +338,9 @@ class CatalogRepository {
 
   Future<List<Manufacturer>> getManufacturers() async {
     final list = await _client.getList(Endpoints.catalogManufacturers);
-    return list.map((e) => Manufacturer.fromJson(e as Map<String, dynamic>)).toList();
+    return list
+        .map((e) => Manufacturer.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   // ── Création (staff) ─────────────────────────────────────────────
@@ -355,7 +365,10 @@ class CatalogRepository {
   }
 
   Future<Accessory> updateAccessory(int id, Map<String, dynamic> data) async {
-    final json = await _client.put(Endpoints.staffAccessoryDetail(id), data: data);
+    final json = await _client.put(
+      Endpoints.staffAccessoryDetail(id),
+      data: data,
+    );
     return Accessory.fromJson(json['data'] as Map<String, dynamic>);
   }
 
@@ -378,6 +391,7 @@ class CatalogRepository {
   // ── Pièces détachées ─────────────────────────────────────────────
 
   Future<PaginatedResponse<Part>> getParts({
+    bool forStaff = false,
     int page = 1,
     int perPage = 20,
     String? search,
@@ -390,11 +404,12 @@ class CatalogRepository {
     // Recherche par critères véhicule
     int? vehicleModelId,
     int? year,
-    String? city,       // filtre par ville
-    int? locationId,    // filtre par agence précise
+    String? city, // filtre par ville
+    int? locationId, // filtre par agence précise
+    bool inactiveOnly = false,
   }) async {
     final params = <String, dynamic>{
-      'page':     page,
+      'page': page,
       'per_page': perPage,
       if (search != null && search.isNotEmpty) 'q': search,
       if (oem != null) 'oem': oem,
@@ -407,12 +422,17 @@ class CatalogRepository {
       if (year != null) 'year': year,
       if (city != null) 'city': city,
       if (locationId != null) 'location_id': locationId,
+      // Voir getAccessories : inactive_only est reserve au personnel, et
+      // active_only=0 evite qu'un serveur encore ancien ne masque la fiche.
+      if (inactiveOnly) 'active_only': 0,
+      if (inactiveOnly) 'inactive_only': 1,
     };
 
-    // Si on cherche par critères véhicule, on utilise la route compatible-parts
+    // Si on cherche par critères véhicule, on utilise la route compatible-parts.
+    // Le personnel passe par /parts, authentifiee, pour voir les inactives.
     final path = vehicleModelId != null
         ? Endpoints.compatibleParts
-        : Endpoints.catalogParts;
+        : (forStaff ? Endpoints.staffParts : Endpoints.catalogParts);
 
     final json = await _client.get(path, params: params);
     return PaginatedResponse.fromJson(json, Part.fromJson);

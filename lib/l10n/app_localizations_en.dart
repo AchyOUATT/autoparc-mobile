@@ -334,6 +334,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogFilterTermInStock => 'in stock';
 
   @override
+  String get catalogFilterInactive => 'Inactive';
+
+  @override
+  String get catalogFilterTermInactive => 'inactive';
+
+  @override
+  String get catalogBadgeInactive => 'Inactive';
+
+  @override
   String get catalogPartAddCta => 'New part';
 
   @override

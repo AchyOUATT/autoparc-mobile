@@ -569,7 +569,7 @@ class _FauxDepot extends CatalogRepository {
   Map<String, dynamic>? dernierEnvoi;
 
   @override
-  Future<Part> getPart(int id) async {
+  Future<Part> getPart(int id, {bool forStaff = false}) async {
     pieceRelue = id;
     if (echoueRelecture) throw Exception('reseau indisponible');
     if (relecture != null) return relecture!();
