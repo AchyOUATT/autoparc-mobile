@@ -14,6 +14,8 @@ import '../widgets/engine_prompt.dart';
 import '../widgets/mileage_dialog.dart';
 import '../widgets/vehicle_card_header.dart';
 import '../widgets/garage_action_tiles.dart';
+import '../widgets/garage_vehicle_selector.dart';
+import '../../../home/presentation/providers/home_providers.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/client_account_sheet.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
@@ -132,11 +134,45 @@ class _VehicleList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-      itemCount: vehicles.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, i) => _VehicleCard(vehicle: vehicles[i]),
+    // Un seul véhicule : la fiche, rien d'autre — l'écran ne change pas.
+    if (vehicles.length == 1) {
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+        children: [_VehicleCard(vehicle: vehicles.single)],
+      );
+    }
+
+    // Plusieurs véhicules : un sélecteur, puis la fiche du véhicule choisi.
+    //
+    // Le choix est le MÊME que celui de l'accueil : choisir un véhicule ici
+    // le met en avant là-bas, et inversement. Sans choix, c'est aussi le même
+    // véhicule — le plus urgent —, pour que les deux écrans ne se contredisent
+    // jamais.
+    final choisi = ref.watch(homeSelectedVehicleIdProvider);
+    final selected =
+        vehicles.where((v) => v.id == choisi).firstOrNull ??
+        ([
+          ...vehicles,
+        ]..sort((a, b) => urgencyOf(a).compareTo(urgencyOf(b)))).first;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(0, 12, 0, 100),
+      children: [
+        GarageVehicleSelector(
+          vehicles: vehicles,
+          selectedId: selected.id,
+          onSelected: (v) =>
+              ref.read(homeSelectedVehicleIdProvider.notifier).state = v.id,
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _VehicleCard(
+            key: ValueKey('garage-vehicle-card-${selected.id}'),
+            vehicle: selected,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -145,7 +181,7 @@ class _VehicleList extends ConsumerWidget {
 
 class _VehicleCard extends ConsumerWidget {
   final OwnedVehicle vehicle;
-  const _VehicleCard({required this.vehicle});
+  const _VehicleCard({super.key, required this.vehicle});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -267,7 +303,7 @@ class _VehicleCard extends ConsumerWidget {
                   subtitle: next == null
                       ? l10n.garageTileDeadlinesSubtitle
                       : '${garageDeadlineLabel(l10n, next)} · '
-                            '${garageDeadlineSummary(l10n, next)}',
+                            '${keepTogether(garageDeadlineSummary(l10n, next))}',
                   statusIcon: nextStatus?.icon,
                   statusColor: nextStatus?.color,
                   onTap: () => _editDeadlines(context, ref, vehicle),
@@ -276,7 +312,9 @@ class _VehicleCard extends ConsumerWidget {
                   key: Key('garage-action-engine-${vehicle.id}'),
                   icon: Icons.build_outlined,
                   title: l10n.garageTileEngineTitle,
-                  subtitle: engineSummary ?? l10n.garageTileEngineSubtitle,
+                  subtitle: engineSummary == null
+                      ? l10n.garageTileEngineSubtitle
+                      : keepTogether(engineSummary),
                   onTap: () => showEngineDetailsDialog(context, vehicle),
                 ),
                 if (privateSalesEnabled)

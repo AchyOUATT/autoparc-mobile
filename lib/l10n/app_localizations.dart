@@ -12543,6 +12543,30 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Plus d\'actions'**
   String get garageVehicleMoreActions;
+
+  /// Texte du parcours garage : sélecteur de véhicule quand le garage en compte plusieurs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes véhicules · {count}'**
+  String garageMyVehiclesCount(String count);
+
+  /// Texte du parcours garage : sélecteur de véhicule quand le garage en compte plusieurs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Touchez un véhicule pour afficher sa fiche'**
+  String get garageVehicleSelectorHint;
+
+  /// Texte du parcours garage : sélecteur de véhicule quand le garage en compte plusieurs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échéance à surveiller'**
+  String get garageVehicleNeedsAttention;
+
+  /// Texte du parcours garage : sélecteur de véhicule quand le garage en compte plusieurs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Véhicule affiché'**
+  String get garageVehicleSelected;
 }
 
 class _AppLocalizationsDelegate

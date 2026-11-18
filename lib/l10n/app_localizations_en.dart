@@ -7095,4 +7095,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get garageVehicleMoreActions => 'More actions';
+
+  @override
+  String garageMyVehiclesCount(String count) {
+    return 'My vehicles · $count';
+  }
+
+  @override
+  String get garageVehicleSelectorHint => 'Tap a vehicle to show its details';
+
+  @override
+  String get garageVehicleNeedsAttention => 'Deadline to watch';
+
+  @override
+  String get garageVehicleSelected => 'Vehicle shown';
 }

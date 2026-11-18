@@ -7987,5 +7987,13 @@
   "garageDeadlinesEditAction": "Modifier",
   "@garageDeadlinesEditAction": {"description": "Texte du parcours garage : fiche véhicule en tuiles."},
   "garageVehicleMoreActions": "Plus d'actions",
-  "@garageVehicleMoreActions": {"description": "Texte du parcours garage : fiche véhicule en tuiles."}
+  "@garageVehicleMoreActions": {"description": "Texte du parcours garage : fiche véhicule en tuiles."},
+  "garageMyVehiclesCount": "Mes véhicules · {count}",
+  "@garageMyVehiclesCount": {"description": "Texte du parcours garage : sélecteur de véhicule quand le garage en compte plusieurs.", "placeholders": {"count": {"type": "String"}}},
+  "garageVehicleSelectorHint": "Touchez un véhicule pour afficher sa fiche",
+  "@garageVehicleSelectorHint": {"description": "Texte du parcours garage : sélecteur de véhicule quand le garage en compte plusieurs."},
+  "garageVehicleNeedsAttention": "Échéance à surveiller",
+  "@garageVehicleNeedsAttention": {"description": "Texte du parcours garage : sélecteur de véhicule quand le garage en compte plusieurs."},
+  "garageVehicleSelected": "Véhicule affiché",
+  "@garageVehicleSelected": {"description": "Texte du parcours garage : sélecteur de véhicule quand le garage en compte plusieurs."}
 }

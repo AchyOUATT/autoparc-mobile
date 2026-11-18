@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:auto/core/theme/app_theme.dart';
 import 'package:auto/features/auth/presentation/providers/auth_provider.dart';
 import 'package:auto/features/garage/data/models/fuel_fill.dart';
@@ -5,6 +7,8 @@ import 'package:auto/features/garage/data/models/owned_vehicle.dart';
 import 'package:auto/features/garage/data/models/vehicle_check.dart';
 import 'package:auto/features/garage/presentation/pages/garage_page.dart';
 import 'package:auto/features/garage/presentation/providers/garage_provider.dart';
+import 'package:auto/features/garage/presentation/widgets/garage_action_tiles.dart';
+import 'package:auto/features/home/presentation/providers/home_providers.dart';
 import 'package:auto/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:auto/features/private_sales/data/private_listing_repository.dart';
 import 'package:auto/l10n/app_localizations.dart';
@@ -269,7 +273,11 @@ void main() {
     await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
     final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
-    expect(find.text(l10n.garageEnginePowerValue(140)), findsOneWidget);
+    // Insécable : « 140 ch » ne se coupe plus avant « ch ».
+    expect(
+      find.text(l10n.garageEnginePowerValue(140).replaceAll(' ', '\u00A0')),
+      findsOneWidget,
+    );
     await tester.tap(_tuile('engine'));
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsOneWidget);
@@ -344,5 +352,181 @@ void main() {
     expect(check.flagsCollection.isButton, isTrue);
     expect(check.label, contains(l10n.garageRepeatCheckAction));
     handle.dispose();
+  });
+
+  // ── Plusieurs véhicules ─────────────────────────────────────────────────
+
+  OwnedVehicle autre(int id, String surnom, {bool enRetard = false}) =>
+      OwnedVehicle(
+        id: id,
+        designation: 'Hyundai Tucson',
+        nickname: surnom,
+        brandId: 2,
+        vehicleModelId: 2,
+        year: 2018,
+        plateNumber: '11 LP 0$id',
+        identity: const OwnedVehicleIdentity(brand: 'Hyundai', model: 'Tucson'),
+        compatibilityReady: false,
+        deadlines: [
+          if (enRetard)
+            const VehicleDeadline(
+              kind: 'insurance',
+              label: 'Assurance',
+              daysLeft: -12,
+              overdue: true,
+            ),
+        ],
+      );
+
+  testWidgets('un seul véhicule : pas de sélecteur, la fiche seule', (
+    tester,
+  ) async {
+    await _taille(tester, 390, 844);
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+    final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
+    expect(find.text(l10n.garageMyVehiclesCount('1')), findsNothing);
+    expect(find.byKey(const Key('garage-vehicle-choice-42')), findsNothing);
+    expect(find.text(l10n.garageAddVehicleAction), findsOneWidget);
+  });
+
+  for (final nombre in [2, 3]) {
+    for (final largeur in [320.0, 390.0]) {
+      for (final scale in [1.0, 1.3]) {
+        testWidgets(
+          '$nombre véhicules en $largeur x$scale : un sélecteur, une seule '
+          'fiche, et l’ajout toujours visible',
+          (tester) async {
+            final hauteur = largeur == 320 ? 640.0 : 844.0;
+            await _taille(tester, largeur, hauteur);
+            final vehicules = [
+              _vehicule,
+              autre(43, 'Le Tucson'),
+              if (nombre == 3) autre(44, 'La camionnette'),
+            ];
+            await tester.pumpWidget(_app(vehicules: vehicules, scale: scale));
+            await tester.pumpAndSettle();
+            final l10n = await AppLocalizations.delegate.load(
+              const Locale('fr'),
+            );
+
+            expect(
+              find.text(l10n.garageMyVehiclesCount('$nombre')),
+              findsOneWidget,
+            );
+            for (final v in vehicules) {
+              final choix = find.byKey(Key('garage-vehicle-choice-${v.id}'));
+              expect(choix, findsOneWidget);
+              expect(tester.getSize(choix).height, greaterThanOrEqualTo(48));
+            }
+            // Une seule fiche : celle du véhicule choisi.
+            expect(
+              find.byWidgetPredicate(
+                (w) =>
+                    w.key is ValueKey<String> &&
+                    (w.key! as ValueKey<String>).value.startsWith(
+                      'garage-action-check-',
+                    ),
+              ),
+              findsOneWidget,
+            );
+
+            // Le sélecteur et le haut de la fiche tiennent dans le premier
+            // écran : les autres véhicules se voient sans défiler la fiche.
+            final selecteur = tester.getRect(
+              find.byKey(const Key('garage-vehicle-choice-42')),
+            );
+            expect(selecteur.bottom, lessThan(hauteur / 3));
+
+            // L'ajout reste à portée.
+            expect(find.text(l10n.garageAddVehicleAction), findsOneWidget);
+            final fab = tester.getRect(find.byType(FloatingActionButton));
+            expect(fab.bottom, lessThanOrEqualTo(hauteur));
+
+            // Changer de véhicule change la fiche.
+            await tester.tap(find.byKey(const Key('garage-vehicle-choice-43')));
+            await tester.pumpAndSettle();
+            expect(
+              find.byKey(const Key('garage-action-check-43')),
+              findsOneWidget,
+            );
+            expect(
+              find.byKey(const Key('garage-action-check-42')),
+              findsNothing,
+            );
+
+            // Le véhicule choisi est visible dans la rangée.
+            final choisi = tester.getRect(
+              find.byKey(const Key('garage-vehicle-choice-43')),
+            );
+            expect(choisi.left, greaterThanOrEqualTo(0));
+            expect(choisi.right, lessThanOrEqualTo(largeur));
+            expect(tester.takeException(), isNull);
+          },
+        );
+      }
+    }
+  }
+
+  testWidgets('sans choix, le garage affiche le véhicule le plus urgent, '
+      'comme l’accueil, et le montre dans la rangée', (tester) async {
+    await _taille(tester, 320, 640);
+    await tester.pumpWidget(
+      _app(
+        vehicules: [
+          autre(43, 'Le Tucson'),
+          autre(44, 'La camionnette'),
+          autre(45, 'Le pick-up', enRetard: true),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('garage-action-check-45')), findsOneWidget);
+    final choisi = tester.getRect(
+      find.byKey(const Key('garage-vehicle-choice-45')),
+    );
+    expect(choisi.left, greaterThanOrEqualTo(0));
+    expect(choisi.right, lessThanOrEqualTo(320));
+  });
+
+  testWidgets('le choix fait dans le garage est celui de l’accueil', (
+    tester,
+  ) async {
+    await _taille(tester, 390, 844);
+    await tester.pumpWidget(
+      _app(vehicules: [_vehicule, autre(43, 'Le Tucson')]),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('garage-vehicle-choice-43')));
+    await tester.pumpAndSettle();
+    final conteneur = ProviderScope.containerOf(
+      tester.element(find.byType(GaragePage)),
+    );
+    expect(conteneur.read(homeSelectedVehicleIdProvider), 43);
+  });
+
+  testWidgets('chaque véhicule de la rangée est un bouton, l’affiché est '
+      'annoncé sélectionné, l’alerte est dite', (tester) async {
+    final handle = tester.ensureSemantics();
+    await _taille(tester, 390, 844);
+    await tester.pumpWidget(
+      _app(vehicules: [_vehicule, autre(43, 'Le Tucson', enRetard: true)]),
+    );
+    await tester.pumpAndSettle();
+    final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
+    final tucson = tester.getSemantics(
+      find.byKey(const Key('garage-vehicle-choice-43')),
+    );
+    expect(tucson.flagsCollection.isButton, isTrue);
+    expect(tucson.label, contains('Le Tucson'));
+    expect(tucson.label, contains(l10n.garageVehicleNeedsAttention));
+    // Le plus urgent est affiché par défaut : le Tucson en retard.
+    expect(tucson.flagsCollection.isSelected, Tristate.isTrue);
+    handle.dispose();
+  });
+
+  test('keepTogether ne garde que les « · » comme points de coupure', () {
+    expect(keepTogether('1,8 L · 140 ch'), '1,8\u00A0L · 140\u00A0ch');
+    expect(keepTogether('Dans 25 j'), 'Dans\u00A025\u00A0j');
   });
 }

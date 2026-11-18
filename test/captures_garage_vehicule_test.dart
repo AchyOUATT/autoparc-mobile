@@ -79,6 +79,56 @@ final vehiculeCapture = OwnedVehicle(
   ],
 );
 
+/// Deux autres véhicules, pour les captures d'un garage qui en compte
+/// plusieurs. Fictifs eux aussi.
+const vehiculeCapture2 = OwnedVehicle(
+  id: 900002,
+  designation: 'Hyundai Tucson',
+  nickname: 'Le Tucson',
+  brandId: 2,
+  vehicleModelId: 2,
+  year: 2018,
+  plateNumber: '11 LP 0937',
+  mileageKm: 154200,
+  identity: OwnedVehicleIdentity(
+    brand: 'Hyundai',
+    brandSlug: 'hyundai',
+    model: 'Tucson',
+    engineType: 'Diesel',
+    engineTypeCode: 'diesel',
+  ),
+  compatibilityReady: true,
+  engineDataProvided: true,
+  deadlines: [
+    VehicleDeadline(
+      kind: 'insurance',
+      label: 'Assurance',
+      daysLeft: -12,
+      overdue: true,
+    ),
+  ],
+);
+
+const vehiculeCapture3 = OwnedVehicle(
+  id: 900003,
+  designation: 'Yamaha Crypton',
+  brandId: 3,
+  vehicleModelId: 3,
+  vehicleType: 'two_wheeler',
+  year: 2022,
+  plateNumber: '11 AB 2210',
+  mileageKm: 8300,
+  identity: OwnedVehicleIdentity(
+    brand: 'Yamaha',
+    brandSlug: 'yamaha',
+    model: 'Crypton',
+    engineType: 'Essence',
+    engineTypeCode: 'petrol',
+  ),
+  compatibilityReady: false,
+  engineDataProvided: true,
+);
+
 class _Auth extends StateNotifier<AuthState> implements AuthNotifier {
   _Auth() : super(const AuthState(type: AuthType.client));
   @override
@@ -86,18 +136,25 @@ class _Auth extends StateNotifier<AuthState> implements AuthNotifier {
 }
 
 class _Garage extends GarageNotifier {
+  _Garage(this.nombre);
+  final int nombre;
   @override
-  Future<List<OwnedVehicle>> build() async => [vehiculeCapture];
+  Future<List<OwnedVehicle>> build() async => [
+    vehiculeCapture,
+    vehiculeCapture2,
+    vehiculeCapture3,
+  ].take(nombre).toList();
 }
 
 Widget ecranGarage({
   Brightness brightness = Brightness.light,
   String locale = 'fr',
   double scale = 1,
+  int vehicules = 1,
 }) => ProviderScope(
   overrides: [
     authProvider.overrideWith((_) => _Auth()),
-    garageProvider.overrideWith(_Garage.new),
+    garageProvider.overrideWith(() => _Garage(vehicules)),
     unreadCountProvider.overrideWith((ref) async => 0),
   ],
   child: MaterialApp(
@@ -142,6 +199,39 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(find.text('Ma Corolla familiale'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+
+          if (ecrire) {
+            await expectLater(
+              find.byType(MaterialApp),
+              matchesGoldenFile('../build/captures/$nom.png'),
+            );
+          }
+        });
+      }
+    }
+  }
+
+  // ── Plusieurs véhicules, sur un écran de téléphone réel ──────────────
+  //
+  // Hauteur d'écran vraie (844 et 640) : c'est ce que voit le propriétaire en
+  // ouvrant son garage, donc ce qui dit s'il retrouve ses autres véhicules.
+  for (final (largeur, hauteur) in [(390.0, 844.0), (320.0, 640.0)]) {
+    for (final nombre in [2, 3]) {
+      for (final scale in [1.0, 1.3]) {
+        final nom =
+            'garage-${nombre}vehicules-$suffixe-${largeur.toInt()}-light'
+            '${scale == 1 ? '' : '-x13'}';
+        testWidgets(nom, (tester) async {
+          tester.view.physicalSize = Size(largeur, hauteur);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+
+          await tester.pumpWidget(ecranGarage(scale: scale, vehicules: nombre));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Ma Corolla familiale'), findsWidgets);
           expect(tester.takeException(), isNull);
 
           if (ecrire) {

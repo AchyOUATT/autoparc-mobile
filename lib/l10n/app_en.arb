@@ -3074,5 +3074,9 @@
   "garageTileSellTitle": "Sell",
   "garageTileSellSubtitle": "Post a listing",
   "garageDeadlinesEditAction": "Edit",
-  "garageVehicleMoreActions": "More actions"
+  "garageVehicleMoreActions": "More actions",
+  "garageMyVehiclesCount": "My vehicles · {count}",
+  "garageVehicleSelectorHint": "Tap a vehicle to show its details",
+  "garageVehicleNeedsAttention": "Deadline to watch",
+  "garageVehicleSelected": "Vehicle shown"
 }

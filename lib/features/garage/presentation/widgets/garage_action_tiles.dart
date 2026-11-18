@@ -1,5 +1,16 @@
 import 'package:flutter/material.dart';
 
+/// Garde chaque fragment d'un sous-titre d'un seul tenant.
+///
+/// Les espaces À L'INTÉRIEUR d'un fragment deviennent insécables ; seuls les
+/// séparateurs « · » restent des points de coupure. Sans cela, « Dans 25 j »
+/// ou « 140 ch » se coupaient en laissant « j » ou « ch » seuls sur la ligne
+/// suivante.
+String keepTogether(String text) => text
+    .split(' · ')
+    .map((fragment) => fragment.replaceAll(' ', '\u00A0'))
+    .join(' · ');
+
 /// L'importance visuelle d'une action de la fiche véhicule.
 ///
 /// Deux actions seulement sont mises en avant — contrôler le véhicule et
