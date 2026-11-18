@@ -3,6 +3,7 @@ import '../garage_labels.dart';
 import '../../../../core/l10n/reference_labels.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -13,18 +14,28 @@ import '../widgets/consumption_tile.dart';
 import '../widgets/engine_prompt.dart';
 import '../widgets/mileage_dialog.dart';
 import '../widgets/vehicle_card_header.dart';
-import '../widgets/vehicle_card_actions.dart';
+import '../widgets/garage_action_tiles.dart';
+import '../widgets/garage_vehicle_selector.dart';
+import '../../../home/presentation/providers/home_providers.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/widgets/client_account_sheet.dart';
 import '../../../notifications/presentation/widgets/notification_icon_button.dart';
 import '../../../../core/api/api_exception.dart';
 import '../../../private_sales/data/private_listing_repository.dart';
 
-class GaragePage extends ConsumerWidget {
+class GaragePage extends ConsumerStatefulWidget {
   const GaragePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GaragePage> createState() => _GaragePageState();
+}
+
+class _GaragePageState extends ConsumerState<GaragePage> {
+  /// Le bouton d'ajout est déplié tant qu'on n'a pas commencé à descendre.
+  bool _deplie = true;
+
+  @override
+  Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
 
     // ── Staff → profil staff ─────────────────────────────────────────
@@ -102,12 +113,11 @@ class GaragePage extends ConsumerWidget {
         ],
       ),
 
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await context.push('/garage/add');
-        },
-        icon: const Icon(Icons.add),
-        label: Text(AppLocalizations.of(context).garageAddVehicleAction),
+      // Replié en « + » dès qu'on descend la fiche, déplié en haut ou dès
+      // qu'on remonte : l'ajout reste à portée sans masquer la fiche.
+      floatingActionButton: _AddVehicleFab(
+        extended: _deplie,
+        onPressed: () => context.push('/garage/add'),
       ),
 
       body: garageAsync.when(
@@ -118,12 +128,74 @@ class GaragePage extends ConsumerWidget {
         ),
         data: (vehicles) => vehicles.isEmpty
             ? _EmptyGarage(onAdd: () => context.push('/garage/add'))
-            : _VehicleList(vehicles: vehicles),
+            : NotificationListener<ScrollNotification>(
+                onNotification: _auDefilement,
+                child: _VehicleList(vehicles: vehicles),
+              ),
       ),
     );
   }
 
+  /// Replie le bouton quand le doigt descend la fiche, le déplie quand il
+  /// remonte ou quand la liste revient en haut.
+  ///
+  /// Seule la liste verticale compte : la rangée « Mes véhicules » défile
+  /// aussi, horizontalement, et ne doit pas faire changer le bouton.
+  bool _auDefilement(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical) return false;
+    bool? deplie;
+    if (notification is UserScrollNotification) {
+      if (notification.direction == ScrollDirection.reverse) deplie = false;
+      if (notification.direction == ScrollDirection.forward) deplie = true;
+    }
+    // Revenu en haut : déplié. Seulement à la FIN d'un défilement — au début
+    // d'un geste vers le bas, la liste est encore en haut, et ce test
+    // annulerait le repli à peine décidé.
+    if (notification is ScrollEndNotification &&
+        notification.metrics.pixels <= notification.metrics.minScrollExtent) {
+      deplie = true;
+    }
+    if (deplie != null && deplie != _deplie) {
+      setState(() => _deplie = deplie!);
+    }
+    return false;
+  }
 }
+
+/// Le bouton « Ajouter un véhicule ».
+///
+/// Replié, il garde son info-bulle et son libellé pour les lecteurs d'écran :
+/// seule l'apparence change, pas ce que le bouton annonce.
+class _AddVehicleFab extends StatelessWidget {
+  final bool extended;
+  final VoidCallback onPressed;
+
+  const _AddVehicleFab({required this.extended, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final libelle = AppLocalizations.of(context).garageAddVehicleAction;
+    return Semantics(
+      button: true,
+      label: libelle,
+      excludeSemantics: true,
+      child: FloatingActionButton.extended(
+        key: const Key('garage-add-vehicle-fab'),
+        onPressed: onPressed,
+        tooltip: extended ? null : libelle,
+        isExtended: extended,
+        icon: const Icon(Icons.add),
+        label: Text(libelle),
+      ),
+    );
+  }
+}
+
+/// La marge à laisser sous le dernier élément de la liste pour que le bouton
+/// flottant ne le recouvre jamais en fin de défilement : sa hauteur (56), sa
+/// marge au bord (16), 16 de respiration, et la zone sûre du bas de l'écran.
+double garageListBottomInset(BuildContext context) =>
+    56 + 16 + 16 + MediaQuery.viewPaddingOf(context).bottom;
 
 // ── Liste des véhicules ───────────────────────────────────────────────
 
@@ -133,11 +205,50 @@ class _VehicleList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-      itemCount: vehicles.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, i) => _VehicleCard(vehicle: vehicles[i]),
+    // Un seul véhicule : la fiche, rien d'autre — l'écran ne change pas.
+    if (vehicles.length == 1) {
+      return ListView(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          12,
+          16,
+          garageListBottomInset(context),
+        ),
+        children: [_VehicleCard(vehicle: vehicles.single)],
+      );
+    }
+
+    // Plusieurs véhicules : un sélecteur, puis la fiche du véhicule choisi.
+    //
+    // Le choix est le MÊME que celui de l'accueil : choisir un véhicule ici
+    // le met en avant là-bas, et inversement. Sans choix, c'est aussi le même
+    // véhicule — le plus urgent —, pour que les deux écrans ne se contredisent
+    // jamais.
+    final choisi = ref.watch(homeSelectedVehicleIdProvider);
+    final selected =
+        vehicles.where((v) => v.id == choisi).firstOrNull ??
+        ([
+          ...vehicles,
+        ]..sort((a, b) => urgencyOf(a).compareTo(urgencyOf(b)))).first;
+
+    return ListView(
+      padding: EdgeInsets.fromLTRB(0, 12, 0, garageListBottomInset(context)),
+      children: [
+        GarageVehicleSelector(
+          vehicles: vehicles,
+          selectedId: selected.id,
+          onSelected: (v) =>
+              ref.read(homeSelectedVehicleIdProvider.notifier).state = v.id,
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _VehicleCard(
+            key: ValueKey('garage-vehicle-card-${selected.id}'),
+            vehicle: selected,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -146,173 +257,207 @@ class _VehicleList extends ConsumerWidget {
 
 class _VehicleCard extends ConsumerWidget {
   final OwnedVehicle vehicle;
-  const _VehicleCard({required this.vehicle});
+  const _VehicleCard({super.key, required this.vehicle});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final id = vehicle.identity;
+    final l10n = AppLocalizations.of(context);
+    final cs = Theme.of(context).colorScheme;
+
+    // ── Contrôle : l'état du dernier passage, s'il y en a un ──────────
+    final lastCheck = vehicle.lastCheck;
+    final checkStatus = lastCheck == null
+        ? null
+        : _lastCheckStatus(context, lastCheck);
+
+    // ── Échéances : la plus proche, résumée dans la tuile ─────────────
+    final next = vehicle.nextDeadline;
+    final nextStatus = next == null ? null : _deadlineStatus(context, next);
+
+    final engineSummary = engineDetailsSummary(context, vehicle);
 
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // ── Identité ──────────────────────────────────────────────
           VehicleCardHeader(
             vehicle: vehicle,
             trailing: _MoreMenu(vehicle: vehicle),
+            tags: [
+              if (id.engineType != null)
+                _InfoChip(
+                  Icons.local_gas_station_outlined,
+                  referenceFuelLabel(id.engineTypeCode, id.engineType!, l10n),
+                ),
+              if (id.color != null)
+                _InfoChip(
+                  Icons.palette_outlined,
+                  referenceColourLabel(id.color!, l10n),
+                ),
+              if (vehicle.compatibilityReady)
+                _InfoChip(
+                  Icons.verified_outlined,
+                  l10n.garagePreciseCompatibility,
+                  highlighted: true,
+                ),
+            ],
           ),
 
-          // ── Détails ───────────────────────────────────────────────
+          // ── Motorisation manquante ────────────────────────────────
+          //
+          // Avant les actions qu'elle rend moins utiles : la liste des pièces
+          // compatibles s'ouvrirait vide, sans rien dire.
+          if (!vehicle.hasMotorisationData)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: MissingEngineBanner(vehicle: vehicle),
+            ),
+
+          // ── Actions principales ───────────────────────────────────
+          //
+          // Le contrôle en premier : c'est la seule action de cette fiche qui
+          // ait un déclencheur dans la vie réelle — on se la demande avant de
+          // prendre la route. Les pièces ensuite : c'est ce qu'on vient
+          // chercher dans une boutique de pièces.
+          GarageSectionTitle(title: l10n.garageSectionMainActions),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                if (id.engineType != null)
-                  _InfoChip(Icons.local_gas_station_outlined, referenceFuelLabel(id.engineTypeCode, id.engineType!, AppLocalizations.of(context))),
-                if (id.color != null)
-                  _InfoChip(Icons.palette_outlined, referenceColourLabel(id.color!, AppLocalizations.of(context))),
-                if (vehicle.compatibilityReady)
-                  Chip(
-                    avatar: const Icon(
-                      Icons.check_circle,
-                      size: 14,
-                      color: Colors.green,
-                    ),
-                    label: Text(
-                      AppLocalizations.of(context).garagePreciseCompatibility,
-                      style: TextStyle(fontSize: 11),
-                    ),
-                    padding: EdgeInsets.zero,
-                    visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: GaragePrimaryActions(
+              actions: [
+                GarageAction(
+                  key: Key('garage-action-check-${vehicle.id}'),
+                  icon: Icons.checklist_rtl,
+                  emphasis: GarageActionEmphasis.primary,
+                  // Un libellé neutre, et non « Contrôle avant voyage » :
+                  // l'écran propose aussi le contrôle de saison.
+                  title: lastCheck == null
+                      ? l10n.garageCheckVehicleAction
+                      : l10n.garageRepeatCheckAction,
+                  subtitle: checkStatus?.text ?? l10n.garageTileCheckSubtitle,
+                  statusIcon: checkStatus?.icon,
+                  statusColor: checkStatus?.color,
+                  onTap: () => context.push(
+                    '/garage/${vehicle.id}/check',
+                    extra: vehicle,
                   ),
+                ),
+                GarageAction(
+                  key: Key('garage-action-parts-${vehicle.id}'),
+                  icon: Icons.settings_outlined,
+                  emphasis: GarageActionEmphasis.secondary,
+                  title: l10n.garageMatchingPartsTitle,
+                  subtitle: l10n.garageTilePartsSubtitle,
+                  onTap: () => context.push(
+                    '/garage/${vehicle.id}/parts',
+                    extra: vehicle,
+                  ),
+                ),
               ],
             ),
           ),
 
-          EngineDetailsTile(vehicle: vehicle),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Divider(height: 1),
+          // ── Gérer le véhicule ─────────────────────────────────────
+          GarageSectionTitle(title: l10n.garageSectionManage),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: GarageActionGrid(
+              actions: [
+                GarageAction(
+                  key: Key('garage-action-mileage-${vehicle.id}'),
+                  icon: Icons.speed,
+                  title: l10n.garageTileMileageTitle,
+                  subtitle: l10n.garageTileMileageSubtitle,
+                  onTap: () => showMileageDialog(context, ref, vehicle),
+                ),
+                GarageAction(
+                  key: Key('garage-action-deadlines-${vehicle.id}'),
+                  icon: Icons.notifications_none,
+                  title: l10n.garageTileDeadlinesTitle,
+                  subtitle: next == null
+                      ? l10n.garageTileDeadlinesSubtitle
+                      : '${garageDeadlineLabel(l10n, next)} · '
+                            '${keepTogether(garageDeadlineSummary(l10n, next))}',
+                  statusIcon: nextStatus?.icon,
+                  statusColor: nextStatus?.color,
+                  onTap: () => _editDeadlines(context, ref, vehicle),
+                ),
+                GarageAction(
+                  key: Key('garage-action-engine-${vehicle.id}'),
+                  icon: Icons.build_outlined,
+                  title: l10n.garageTileEngineTitle,
+                  subtitle: engineSummary == null
+                      ? l10n.garageTileEngineSubtitle
+                      : keepTogether(engineSummary),
+                  onTap: () => showEngineDetailsDialog(context, vehicle),
+                ),
+                if (privateSalesEnabled)
+                  GarageAction(
+                    key: Key('garage-action-sell-${vehicle.id}'),
+                    icon: Icons.sell_outlined,
+                    title: l10n.garageTileSellTitle,
+                    subtitle: l10n.garageTileSellSubtitle,
+                    onTap: () => context.push('/sell', extra: vehicle),
+                  ),
+              ],
+            ),
           ),
 
           // ── Échéances d'entretien ─────────────────────────────────
           //
           // Le bloc entier ouvre l'édition : c'est là que l'œil se pose quand
-          // on veut corriger une date, plutôt que dans un menu contextuel.
-          // Quand rien n'est suivi, l'état vide propose lui-même l'action.
-          if (vehicle.deadlines.isNotEmpty)
-            InkWell(
-              onTap: () => _editDeadlines(context, ref, vehicle),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (final d in vehicle.deadlines)
-                      _DeadlineRow(deadline: d),
-                  ],
-                ),
+          // on veut corriger une date. Sans échéance suivie, la tuile
+          // « Échéances » ci-dessus propose elle-même l'action.
+          if (vehicle.deadlines.isNotEmpty) ...[
+            GarageSectionTitle(
+              title: l10n.garageMaintenanceTitle,
+              trailing: TextButton(
+                onPressed: () => _editDeadlines(context, ref, vehicle),
+                child: Text(l10n.garageDeadlinesEditAction),
               ),
-            )
-          else
+            ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 0, 16, 0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () => _editDeadlines(context, ref, vehicle),
-                  icon: const Icon(Icons.notifications_none, size: 18),
-                  label: Text(
-                    AppLocalizations.of(context).garageTrackDeadlinesAction,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Material(
+                color: cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(16),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => _editDeadlines(context, ref, vehicle),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (final d in vehicle.deadlines)
+                          _DeadlineRow(deadline: d),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
+          ],
 
           // ── Consommation ──────────────────────────────────────────
           //
           // La cote officielle du moteur choisi, ou l'invitation à le
-          // choisir. Elle se lit avec les échéances : c'est la même
-          // question — ce que cette voiture coûte à faire rouler.
+          // choisir, et le suivi des passages à la pompe.
+          GarageSectionTitle(title: l10n.garageSectionConsumption),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
-            child: ConsumptionTile(vehicle: vehicle),
-          ),
-
-          // ── Motorisation manquante ────────────────────────────────
-          //
-          // Juste au-dessus du bouton qu'elle rend inopérant : la liste des
-          // pièces compatibles s'ouvrirait vide, sans rien dire.
-          if (!vehicle.hasMotorisationData)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-              child: MissingEngineBanner(vehicle: vehicle),
-            ),
-
-          // ── Contrôle avant voyage ─────────────────────────────────
-          //
-          // En premier, et en bouton plein : c'est la seule action de cette
-          // fiche qui ait un déclencheur dans la vie réelle. Les autres
-          // attendent qu'on y pense ; celle-ci, on se la demande avant de
-          // prendre la route.
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (vehicle.lastCheck != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _DernierControle(lastCheck: vehicle.lastCheck!),
-                  ),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.tonalIcon(
-                    onPressed: () => context.push(
-                      '/garage/${vehicle.id}/check',
-                      extra: vehicle,
-                    ),
-                    icon: const Icon(Icons.checklist_rtl, size: 18),
-                    // Un libellé neutre, et non « Contrôle avant voyage » :
-                    // l'écran propose désormais aussi le contrôle de saison, et
-                    // un bouton qui annonce l'un de ses contenus donne à croire
-                    // que l'autre n'est pas là.
-                    label: Text(
-                      vehicle.lastCheck == null
-                          ? AppLocalizations.of(
-                              context,
-                            ).garageCheckVehicleAction
-                          : AppLocalizations.of(
-                              context,
-                            ).garageRepeatCheckAction,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Bouton pièces compatibles ─────────────────────────────
-          if (privateSalesEnabled)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: OutlinedButton.icon(
-                onPressed: () => context.push('/sell', extra: vehicle),
-                icon: const Icon(Icons.sell_outlined),
-                label: Text(
-                  AppLocalizations.of(context).privateSalesSellThisVehicle,
-                ),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: cs.outlineVariant),
               ),
-            ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: VehicleCardActions(
-              onParts: () => context.push(
-                '/garage/${vehicle.id}/parts',
-                extra: vehicle,
-              ),
-              onMileage: () => showMileageDialog(context, ref, vehicle),
+              child: ConsumptionTile(vehicle: vehicle),
             ),
           ),
         ],
@@ -676,79 +821,70 @@ class _DeadlineRow extends StatelessWidget {
   }
 }
 
-/// Le dernier contrôle avant voyage, sur une ligne.
+/// Un état à afficher devant un sous-titre : texte, icône et couleur.
+typedef _Status = ({String text, IconData icon, Color color});
+
+/// Le dernier contrôle, résumé pour la tuile « Contrôler » : ce qui reste à
+/// reprendre, puis quand.
 ///
-/// La même grammaire visuelle que les échéances — icône, libellé, chiffre à
-/// droite, rouge quand c'est bloquant — parce que c'est la même question posée
-/// autrement : qu'est-ce qui reste à faire sur cette voiture. Un troisième
-/// dialecte visuel pour la même donnée n'apprendrait rien de plus au lecteur.
-class _DernierControle extends StatelessWidget {
-  final LastCheck lastCheck;
-  const _DernierControle({required this.lastCheck});
+/// La même grammaire que les échéances — rouge quand c'est bloquant, orange
+/// quand quelque chose reste à reprendre — parce que c'est la même question
+/// posée autrement : qu'est-ce qui reste à faire sur ce véhicule.
+_Status _lastCheckStatus(BuildContext context, LastCheck lastCheck) {
+  final l10n = AppLocalizations.of(context);
+  final cs = Theme.of(context).colorScheme;
+  final aReprendre = lastCheck.aReprendre;
 
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
+  final (Color couleur, IconData icone) = lastCheck.bloque
+      ? (cs.error, Icons.report_outlined)
+      : aReprendre > 0
+      ? (const Color(0xFFB26A00), Icons.schedule)
+      : (cs.primary, Icons.check_circle_outline);
 
-    final aReprendre = lastCheck.aReprendre;
+  final resultat = aReprendre == 0
+      ? l10n.garageCheckNothingToFix
+      : aReprendre == 1
+      ? l10n.garageCheckOnePointToFix
+      : l10n.garageCheckPointsToFix(aReprendre.toString());
 
-    final (Color couleur, IconData icone) = lastCheck.bloque
-        ? (cs.error, Icons.report_outlined)
-        : aReprendre > 0
-        ? (const Color(0xFFB26A00), Icons.schedule)
-        : (cs.onSurfaceVariant, Icons.check_circle_outline);
+  return (
+    text: l10n.garageTileCheckLastSubtitle(
+      resultat,
+      _quand(context, lastCheck.performedAt),
+    ),
+    icon: icone,
+    color: couleur,
+  );
+}
 
-    return Row(
-      children: [
-        Icon(icone, size: 15, color: couleur),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            AppLocalizations.of(context).garageLastCheckTitle(
-              (_quand(context, lastCheck.performedAt)).toString(),
-            ),
-            style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-          ),
-        ),
-        Text(
-          aReprendre == 0
-              ? AppLocalizations.of(context).garageCheckNothingToFix
-              : aReprendre == 1
-              ? AppLocalizations.of(context).garageCheckOnePointToFix
-              : AppLocalizations.of(
-                  context,
-                ).garageCheckPointsToFix((aReprendre).toString()),
-          style: tt.bodySmall?.copyWith(
-            color: couleur,
-            fontWeight: lastCheck.bloque ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-      ],
-    );
-  }
+/// L'échéance la plus proche, avec la couleur de son délai.
+_Status _deadlineStatus(BuildContext context, VehicleDeadline deadline) {
+  final cs = Theme.of(context).colorScheme;
+  final soon =
+      deadline.daysLeft != null && deadline.daysLeft! <= _DeadlineRow._soonDays;
+  final (color, icon) = deadline.overdue
+      ? (cs.error, Icons.error_outline)
+      : soon
+      ? (const Color(0xFFB26A00), Icons.schedule)
+      : (cs.primary, Icons.check_circle_outline);
+  return (text: '', icon: icon, color: color);
+}
 
-  /// Une date relative : « hier » se situe sans calculer, « 14/09 » non.
-  String _quand(BuildContext context, DateTime? date) {
-    if (date == null) return AppLocalizations.of(context).garageRecentlyLower;
+/// Une date relative : « hier » se situe sans calculer, « 14/09 » non.
+String _quand(BuildContext context, DateTime? date) {
+  final l10n = AppLocalizations.of(context);
+  if (date == null) return l10n.garageRecentlyLower;
 
-    final jours = DateTime.now().difference(date).inDays;
+  final jours = DateTime.now().difference(date).inDays;
 
-    return switch (jours) {
-      <= 0 => AppLocalizations.of(context).garageTodayLower,
-      1 => AppLocalizations.of(context).garageYesterdayLower,
-      < 7 => AppLocalizations.of(
-        context,
-      ).garageDaysAgoLower((jours).toString()),
-      < 14 => AppLocalizations.of(context).garageLastWeekLower,
-      < 60 => AppLocalizations.of(
-        context,
-      ).garageWeeksAgoLower(((jours / 7).round()).toString()),
-      _ => AppLocalizations.of(
-        context,
-      ).garageMonthsAgoLower(((jours / 30).round()).toString()),
-    };
-  }
+  return switch (jours) {
+    <= 0 => l10n.garageTodayLower,
+    1 => l10n.garageYesterdayLower,
+    < 7 => l10n.garageDaysAgoLower(jours.toString()),
+    < 14 => l10n.garageLastWeekLower,
+    < 60 => l10n.garageWeeksAgoLower((jours / 7).round().toString()),
+    _ => l10n.garageMonthsAgoLower((jours / 30).round().toString()),
+  };
 }
 
 class _MoreMenu extends ConsumerWidget {
@@ -758,6 +894,7 @@ class _MoreMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return PopupMenuButton<String>(
+      tooltip: AppLocalizations.of(context).garageVehicleMoreActions,
       onSelected: (action) async {
         if (action == 'edit') {
           if (context.mounted) {
@@ -835,15 +972,37 @@ class _MoreMenu extends ConsumerWidget {
 class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _InfoChip(this.icon, this.label);
+  final bool highlighted;
+  const _InfoChip(this.icon, this.label, {this.highlighted = false});
 
   @override
-  Widget build(BuildContext context) => Chip(
-    avatar: Icon(icon, size: 14),
-    label: Text(label, style: const TextStyle(fontSize: 12)),
-    padding: EdgeInsets.zero,
-    visualDensity: VisualDensity.compact,
-  );
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final couleur = highlighted ? cs.onTertiaryContainer : cs.onSurfaceVariant;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: highlighted ? cs.tertiaryContainer : null,
+        borderRadius: BorderRadius.circular(8),
+        border: highlighted ? null : Border.all(color: cs.outlineVariant),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: couleur),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(color: couleur),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ── États vide / erreur ───────────────────────────────────────────────

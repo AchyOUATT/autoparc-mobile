@@ -12447,6 +12447,126 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Lieu'**
   String get catalogFieldPlace;
+
+  /// Texte du parcours garage : fiche véhicule en tuiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actions principales'**
+  String get garageSectionMainActions;
+
+  /// Texte du parcours garage : fiche véhicule en tuiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gérer le véhicule'**
+  String get garageSectionManage;
+
+  /// Texte du parcours garage : fiche véhicule en tuiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Consommation'**
+  String get garageSectionConsumption;
+
+  /// Texte du parcours garage : fiche véhicule en tuiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avant un voyage ou une saison'**
+  String get garageTileCheckSubtitle;
+
+  /// Texte du parcours garage : fiche véhicule en tuiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'{result} · {when}'**
+  String garageTileCheckLastSubtitle(String result, String when);
+
+  /// Texte du parcours garage : fiche véhicule en tuiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Filtres, freins, entretien…'**
+  String get garageTilePartsSubtitle;
+
+  /// Texte du parcours garage : fiche véhicule en tuiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Kilométrage'**
+  String get garageTileMileageTitle;
+
+  /// Texte du parcours garage : fiche véhicule en tuiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Relever le compteur'**
+  String get garageTileMileageSubtitle;
+
+  /// Texte du parcours garage : fiche véhicule en tuiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échéances'**
+  String get garageTileDeadlinesTitle;
+
+  /// Texte du parcours garage : fiche véhicule en tuiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Assurance, visite, vidange'**
+  String get garageTileDeadlinesSubtitle;
+
+  /// Texte du parcours garage : fiche véhicule en tuiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Moteur'**
+  String get garageTileEngineTitle;
+
+  /// Texte du parcours garage : fiche véhicule en tuiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compléter les détails'**
+  String get garageTileEngineSubtitle;
+
+  /// Texte du parcours garage : fiche véhicule en tuiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vendre'**
+  String get garageTileSellTitle;
+
+  /// Texte du parcours garage : fiche véhicule en tuiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Publier une annonce'**
+  String get garageTileSellSubtitle;
+
+  /// Texte du parcours garage : fiche véhicule en tuiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier'**
+  String get garageDeadlinesEditAction;
+
+  /// Texte du parcours garage : fiche véhicule en tuiles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus d\'actions'**
+  String get garageVehicleMoreActions;
+
+  /// Texte du parcours garage : sélecteur de véhicule quand le garage en compte plusieurs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes véhicules · {count}'**
+  String garageMyVehiclesCount(String count);
+
+  /// Texte du parcours garage : sélecteur de véhicule quand le garage en compte plusieurs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Touchez un véhicule pour afficher sa fiche'**
+  String get garageVehicleSelectorHint;
+
+  /// Texte du parcours garage : sélecteur de véhicule quand le garage en compte plusieurs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échéance à surveiller'**
+  String get garageVehicleNeedsAttention;
+
+  /// Texte du parcours garage : sélecteur de véhicule quand le garage en compte plusieurs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Véhicule affiché'**
+  String get garageVehicleSelected;
 }
 
 class _AppLocalizationsDelegate

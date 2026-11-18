@@ -1,6 +1,6 @@
 import 'package:auto/core/theme/app_theme.dart';
 import 'package:auto/features/garage/data/models/owned_vehicle.dart';
-import 'package:auto/features/garage/presentation/widgets/vehicle_card_actions.dart';
+import 'package:auto/features/garage/presentation/widgets/garage_action_tiles.dart';
 import 'package:auto/features/garage/presentation/widgets/vehicle_card_header.dart';
 import 'package:auto/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -91,62 +91,115 @@ void main() {
       }
     }
 
-    for (final width in [268.0, 600.0]) {
-      testWidgets('actions $locale at $width retain both callbacks', (
+    for (final width in [264.0, 334.0, 600.0]) {
+      testWidgets('action grid $locale at $width keeps every callback', (
         tester,
       ) async {
-        var parts = 0;
-        var mileage = 0;
+        final taps = <String, int>{};
+        GarageAction action(String id) => GarageAction(
+          key: Key(id),
+          icon: Icons.speed,
+          title: 'Titre $id',
+          subtitle: 'Sous-titre $id',
+          onTap: () => taps[id] = (taps[id] ?? 0) + 1,
+        );
         await tester.pumpWidget(
           _app(
-            SizedBox(
-              width: width,
-              child: VehicleCardActions(
-                onParts: () => parts++,
-                onMileage: () => mileage++,
+            Center(
+              child: SizedBox(
+                width: width,
+                child: GarageActionGrid(
+                  actions: [action('a'), action('b'), action('c')],
+                ),
               ),
             ),
             locale: locale,
           ),
         );
         await tester.pumpAndSettle();
-        final buttons = find.byType(OutlinedButton);
-        expect(buttons, findsNWidgets(2));
-        final first = tester.getRect(buttons.at(0));
-        final second = tester.getRect(buttons.at(1));
-        if (width < 380) {
-          expect(second.top, greaterThanOrEqualTo(first.bottom + 8));
-          expect(second.width, first.width);
-        } else {
-          expect(second.top, first.top);
+        final a = tester.getRect(find.byKey(const Key('a')));
+        final b = tester.getRect(find.byKey(const Key('b')));
+        final c = tester.getRect(find.byKey(const Key('c')));
+        // Two columns: a and b side by side, same height; c on the next row.
+        expect(b.top, a.top);
+        expect(b.height, a.height);
+        expect(c.top, greaterThan(a.bottom));
+        for (final r in [a, b, c]) {
+          expect(r.height, greaterThanOrEqualTo(48));
+          expect(r.width, greaterThanOrEqualTo(48));
         }
-        await tester.tap(buttons.at(0));
-        await tester.tap(buttons.at(1));
-        expect(parts, 1);
-        expect(mileage, 1);
+        for (final id in ['a', 'b', 'c']) {
+          await tester.tap(find.byKey(Key(id)));
+        }
+        expect(taps, {'a': 1, 'b': 1, 'c': 1});
         expect(tester.takeException(), isNull);
       });
     }
 
-    testWidgets('large text stacks actions even on wide screens ($locale)', (
-      tester,
-    ) async {
+    testWidgets('narrow column with large text falls back to one column '
+        '($locale)', (tester) async {
       await tester.pumpWidget(
         _app(
-          VehicleCardActions(onParts: () {}, onMileage: () {}),
+          SizedBox(
+            width: 264,
+            child: GarageActionGrid(
+              actions: [
+                for (final id in ['a', 'b'])
+                  GarageAction(
+                    key: Key(id),
+                    icon: Icons.speed,
+                    title: 'Kilométrage',
+                    subtitle: 'Relever le compteur',
+                    onTap: () {},
+                  ),
+              ],
+            ),
+          ),
           locale: locale,
-          scale: 2,
+          scale: 1.3,
         ),
       );
       await tester.pumpAndSettle();
-      final buttons = find.byType(OutlinedButton);
-      expect(
-        tester.getTopLeft(buttons.at(1)).dy,
-        greaterThan(tester.getBottomLeft(buttons.at(0)).dy),
-      );
+      final a = tester.getRect(find.byKey(const Key('a')));
+      final b = tester.getRect(find.byKey(const Key('b')));
+      expect(b.top, greaterThan(a.bottom));
+      expect(b.width, a.width);
       expect(tester.takeException(), isNull);
     });
   }
+
+  test('grid layout follows the column width and the text scale', () {
+    expect(GarageActionGrid.layoutFor(334, 1), GarageTileLayout.compact);
+    expect(GarageActionGrid.layoutFor(264, 1), GarageTileLayout.stacked);
+    expect(GarageActionGrid.layoutFor(334, 1.3), GarageTileLayout.stacked);
+    expect(GarageActionGrid.layoutFor(264, 1.3), isNull);
+  });
+
+  testWidgets('a tile is announced as one button with its title and subtitle', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      _app(
+        GarageActionTile(
+          action: GarageAction(
+            key: const Key('t'),
+            icon: Icons.checklist_rtl,
+            title: 'Contrôler mon véhicule',
+            subtitle: 'Avant un voyage ou une saison',
+            emphasis: GarageActionEmphasis.primary,
+            onTap: () {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final node = tester.getSemantics(find.byKey(const Key('t')));
+    expect(node.label, contains('Contrôler mon véhicule'));
+    expect(node.label, contains('Avant un voyage ou une saison'));
+    expect(node.flagsCollection.isButton, isTrue);
+    handle.dispose();
+  });
 
   testWidgets('optional facts are omitted rather than fabricated', (
     tester,

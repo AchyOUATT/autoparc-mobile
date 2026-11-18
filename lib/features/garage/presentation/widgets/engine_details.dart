@@ -170,6 +170,29 @@ Future<bool> showEngineDetailsDialog(
     ) ??
     false;
 
+/// Les détails du moteur renseignés, sur une ligne, ou `null` s'il n'y en a
+/// aucun. Partagé par la tuile historique et la tuile « Moteur » du garage.
+String? engineDetailsSummary(BuildContext context, OwnedVehicle vehicle) {
+  final l10n = AppLocalizations.of(context);
+  final number = NumberFormat(
+    '0.###',
+    Localizations.localeOf(context).toString(),
+  );
+  final details = [
+    if (vehicle.engineDisplacementL != null)
+      '${number.format(vehicle.engineDisplacementL)} L',
+    if (vehicle.engineDisplacementCc != null)
+      '${vehicle.engineDisplacementCc} cm³',
+    if (vehicle.cylinders != null)
+      l10n.garageEngineCylindersValue(vehicle.cylinders!),
+    if (vehicle.engineLayout != null)
+      engineLayoutLabel(vehicle.engineLayout!, l10n),
+    if (vehicle.engineCode?.trim().isNotEmpty == true) vehicle.engineCode!,
+    if (vehicle.powerHp != null) l10n.garageEnginePowerValue(vehicle.powerHp!),
+  ];
+  return details.isEmpty ? null : details.join(' · ');
+}
+
 class EngineDetailsTile extends StatelessWidget {
   const EngineDetailsTile({super.key, required this.vehicle});
   final OwnedVehicle vehicle;
@@ -177,28 +200,11 @@ class EngineDetailsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final number = NumberFormat(
-      '0.###',
-      Localizations.localeOf(context).toString(),
-    );
-    final details = [
-      if (vehicle.engineDisplacementL != null)
-        '${number.format(vehicle.engineDisplacementL)} L',
-      if (vehicle.engineDisplacementCc != null)
-        '${vehicle.engineDisplacementCc} cm³',
-      if (vehicle.cylinders != null)
-        l10n.garageEngineCylindersValue(vehicle.cylinders!),
-      if (vehicle.engineLayout != null)
-        engineLayoutLabel(vehicle.engineLayout!, l10n),
-      if (vehicle.engineCode?.trim().isNotEmpty == true) vehicle.engineCode!,
-      if (vehicle.powerHp != null)
-        l10n.garageEnginePowerValue(vehicle.powerHp!),
-    ];
     return ListTile(
       leading: const Icon(Icons.settings_outlined),
       title: Text(l10n.garageEngineDetailsTitle),
       subtitle: Text(
-        details.isEmpty ? l10n.garageEngineAddDetails : details.join(' · '),
+        engineDetailsSummary(context, vehicle) ?? l10n.garageEngineAddDetails,
       ),
       trailing: const Icon(Icons.edit_outlined),
       onTap: () => showEngineDetailsDialog(context, vehicle),

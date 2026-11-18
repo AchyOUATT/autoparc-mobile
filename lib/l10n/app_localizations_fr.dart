@@ -7075,4 +7075,69 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get catalogFieldPlace => 'Lieu';
+
+  @override
+  String get garageSectionMainActions => 'Actions principales';
+
+  @override
+  String get garageSectionManage => 'Gérer le véhicule';
+
+  @override
+  String get garageSectionConsumption => 'Consommation';
+
+  @override
+  String get garageTileCheckSubtitle => 'Avant un voyage ou une saison';
+
+  @override
+  String garageTileCheckLastSubtitle(String result, String when) {
+    return '$result · $when';
+  }
+
+  @override
+  String get garageTilePartsSubtitle => 'Filtres, freins, entretien…';
+
+  @override
+  String get garageTileMileageTitle => 'Kilométrage';
+
+  @override
+  String get garageTileMileageSubtitle => 'Relever le compteur';
+
+  @override
+  String get garageTileDeadlinesTitle => 'Échéances';
+
+  @override
+  String get garageTileDeadlinesSubtitle => 'Assurance, visite, vidange';
+
+  @override
+  String get garageTileEngineTitle => 'Moteur';
+
+  @override
+  String get garageTileEngineSubtitle => 'Compléter les détails';
+
+  @override
+  String get garageTileSellTitle => 'Vendre';
+
+  @override
+  String get garageTileSellSubtitle => 'Publier une annonce';
+
+  @override
+  String get garageDeadlinesEditAction => 'Modifier';
+
+  @override
+  String get garageVehicleMoreActions => 'Plus d\'actions';
+
+  @override
+  String garageMyVehiclesCount(String count) {
+    return 'Mes véhicules · $count';
+  }
+
+  @override
+  String get garageVehicleSelectorHint =>
+      'Touchez un véhicule pour afficher sa fiche';
+
+  @override
+  String get garageVehicleNeedsAttention => 'Échéance à surveiller';
+
+  @override
+  String get garageVehicleSelected => 'Véhicule affiché';
 }
