@@ -7045,4 +7045,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get catalogFieldPlace => 'Place';
+
+  @override
+  String get garageSectionMainActions => 'Main actions';
+
+  @override
+  String get garageSectionManage => 'Manage the vehicle';
+
+  @override
+  String get garageSectionConsumption => 'Fuel consumption';
+
+  @override
+  String get garageTileCheckSubtitle => 'Before a trip or a new season';
+
+  @override
+  String garageTileCheckLastSubtitle(String result, String when) {
+    return '$result · $when';
+  }
+
+  @override
+  String get garageTilePartsSubtitle => 'Filters, brakes, servicing…';
+
+  @override
+  String get garageTileMileageTitle => 'Mileage';
+
+  @override
+  String get garageTileMileageSubtitle => 'Log the odometer';
+
+  @override
+  String get garageTileDeadlinesTitle => 'Deadlines';
+
+  @override
+  String get garageTileDeadlinesSubtitle => 'Insurance, inspection, service';
+
+  @override
+  String get garageTileEngineTitle => 'Engine';
+
+  @override
+  String get garageTileEngineSubtitle => 'Add the details';
+
+  @override
+  String get garageTileSellTitle => 'Sell';
+
+  @override
+  String get garageTileSellSubtitle => 'Post a listing';
+
+  @override
+  String get garageDeadlinesEditAction => 'Edit';
+
+  @override
+  String get garageVehicleMoreActions => 'More actions';
 }

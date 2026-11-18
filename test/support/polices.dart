@@ -94,8 +94,17 @@ Future<void> chargerPolices({bool exigerRoboto = true}) async {
     // perdu les icônes.
     for (final nom in entree.value) {
       for (final d in dossiers) {
-        final fichier = File('${d.path}/$nom');
-        if (!fichier.existsSync()) continue;
+        // Le SDK Linux nomme le fichier « MaterialIcons-Regular.otf » : la
+        // recherche ignore donc la casse, sans quoi les icônes ne se
+        // chargeaient pas et les captures montraient des carrés.
+        final fichier = d
+            .listSync()
+            .whereType<File>()
+            .where(
+              (f) => f.uri.pathSegments.last.toLowerCase() == nom.toLowerCase(),
+            )
+            .firstOrNull;
+        if (fichier == null) continue;
         chargeur.addFont(
           Future.value(fichier.readAsBytesSync().buffer.asByteData()),
         );
