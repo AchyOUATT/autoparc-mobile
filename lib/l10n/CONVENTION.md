@@ -1,6 +1,6 @@
 # Convention des traductions
 
-Les deux catalogues contiennent **1731 clés chacun** au 7 novembre 2026, avec les mêmes identifiants et les mêmes paramètres. Le français reste la langue par défaut. Le choix français/anglais est mémorisé par l’application. La parité des clés et des paramètres est tenue par `test/l10n_parite_test.dart`, qui imprime aussi ce relevé.
+Les deux catalogues contiennent **1738 clés chacun** au 7 novembre 2026, avec les mêmes identifiants et les mêmes paramètres. Le français reste la langue par défaut. Le choix français/anglais est mémorisé par l’application. La parité des clés et des paramètres est tenue par `test/l10n_parite_test.dart`, qui imprime aussi ce relevé.
 
 ## Nommage
 
@@ -12,7 +12,7 @@ Les textes de l’interface sont dans `app_fr.arb` et `app_en.arb`. Ajouter les 
 
 | Zone | Clés |
 |---|---:|
-| catalog | 420 |
+| catalog | 427 |
 | garage | 317 |
 | vehicles | 257 |
 | partnerAccounts | 186 |
@@ -34,7 +34,7 @@ Les textes de l’interface sont dans `app_fr.arb` et `app_en.arb`. Ajouter les 
 | settings | 10 |
 | update | 3 |
 | partage | 1 |
-| **Total** | **1731** |
+| **Total** | **1738** |
 
 ## Références et données du serveur
 

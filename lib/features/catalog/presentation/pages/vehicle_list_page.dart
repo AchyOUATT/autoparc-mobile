@@ -35,6 +35,8 @@ import '../../../private_sales/data/private_listing_repository.dart';
 import '../../../private_sales/presentation/private_listing_detail.dart';
 import '../../../private_sales/presentation/private_listing_labels.dart';
 import '../../../inspections/presentation/staff_inspection_widgets.dart';
+import '../../../needs/presentation/need_draft.dart';
+import '../../../needs/presentation/widgets/catalog_need_cta.dart';
 
 class VehicleListPage extends ConsumerStatefulWidget {
   const VehicleListPage({super.key});
@@ -150,7 +152,10 @@ class _VehicleListPageState extends ConsumerState<VehicleListPage> {
             IconButton(
               icon: const Icon(Icons.inbox_outlined),
               tooltip: AppLocalizations.of(context).catalogNeedTooltip,
-              onPressed: () => context.push('/needs/new?type=vehicle'),
+              onPressed: () => openNeedForm(
+                context,
+                NeedDraft.fromVehicleFilter(filter, l10n),
+              ),
             ),
         ],
         bottom: PreferredSize(
@@ -246,6 +251,15 @@ class _Body extends ConsumerWidget {
         hasMore: paged.hasMore,
         isLoadingMore: paged.isLoadingMore,
         scrollCtrl: scrollCtrl,
+        endOfList: CatalogNeedEndOfListCard(
+          onEmit: () => openNeedForm(
+            context,
+            NeedDraft.fromVehicleFilter(
+              ref.read(vehicleFilterProvider),
+              AppLocalizations.of(context),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -841,6 +855,7 @@ class VehicleGrid extends StatelessWidget {
   final bool hasMore;
   final bool isLoadingMore;
   final ScrollController scrollCtrl;
+  final Widget? endOfList;
   const VehicleGrid({
     super.key,
     required this.vehicles,
@@ -848,6 +863,7 @@ class VehicleGrid extends StatelessWidget {
     required this.hasMore,
     required this.isLoadingMore,
     required this.scrollCtrl,
+    this.endOfList,
   }) : catalogItems = null;
 
   /// Public cards preserve their source; stock identifiers remain numeric.
@@ -858,6 +874,7 @@ class VehicleGrid extends StatelessWidget {
     required this.hasMore,
     required this.isLoadingMore,
     required this.scrollCtrl,
+    this.endOfList,
   }) : catalogItems = items,
        vehicles = const [];
 
@@ -929,13 +946,14 @@ class VehicleGrid extends StatelessWidget {
               child: Center(
                 child: Text(
                   AppLocalizations.of(context).catalogResultTotal(total),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: Theme.of(context).colorScheme.outline),
                 ),
               ),
             ),
           ),
+        if (!hasMore && _cardCount > 0 && endOfList != null)
+          SliverToBoxAdapter(child: endOfList),
         // Dégage la dernière rangée de la barre de navigation et du FAB.
         const SliverToBoxAdapter(child: SizedBox(height: 88)),
       ],
@@ -1496,9 +1514,8 @@ class _VehicleCardState extends State<VehicleCard> {
     // la carte suit son contenu.
     final titre = Text(
       id.fullName,
-      style: Theme.of(
-        context,
-      ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+      style: Theme.of(context).textTheme.titleSmall
+          ?.copyWith(fontWeight: FontWeight.bold),
       maxLines: _lignesDeLaCarte,
       overflow: TextOverflow.ellipsis,
     );
@@ -1507,9 +1524,8 @@ class _VehicleCardState extends State<VehicleCard> {
         ? null
         : Text(
             specs,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: cs.onSurfaceVariant),
             maxLines: _lignesDeLaCarte,
             overflow: TextOverflow.ellipsis,
           );
@@ -1950,10 +1966,8 @@ class _PriceRow extends StatelessWidget {
     // calculer sa réduction, et `titleSmall` est posé par le thème Material —
     // s'il manquait, c'est le thème qui serait cassé, et le dire tout de suite
     // vaut mieux qu'un prix peint à une taille par défaut silencieuse.
-    final style = Theme.of(context).textTheme.titleSmall!.copyWith(
-      fontWeight: FontWeight.w700,
-      color: cs.primary,
-    );
+    final style = Theme.of(context).textTheme.titleSmall!
+        .copyWith(fontWeight: FontWeight.w700, color: cs.primary);
 
     final Widget prix;
     final displayedPrice = vehicleHeadlinePrice(
@@ -2028,10 +2042,8 @@ class _PriceRow extends StatelessWidget {
         if (affaire != null)
           Text(
             affaire,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: cs.tertiary,
-              fontWeight: FontWeight.w600,
-            ),
+            style: Theme.of(context).textTheme.labelSmall
+                ?.copyWith(color: cs.tertiary, fontWeight: FontWeight.w600),
             // DEUX LIGNES, ET C'EST LA DERNIÈRE TRONCATURE QUE LE BANC AIT
             // TROUVÉE DANS CE LOT. Elle était à `maxLines: 1` depuis l'origine,
             // ce qui tenait quand la carte était large ; à 119,0 points
@@ -2134,9 +2146,8 @@ class _EmptyView extends ConsumerWidget {
                             actifs.join(l10n.catalogFilterListSeparator),
                           ),
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
+                    style: Theme.of(context).textTheme.bodyMedium
+                        ?.copyWith(color: cs.onSurfaceVariant),
                   ),
                   if (actifs.isNotEmpty) ...[
                     const SizedBox(height: 20),
@@ -2148,10 +2159,11 @@ class _EmptyView extends ConsumerWidget {
                       label: Text(l10n.catalogClearFilters),
                     ),
                   ],
-                  TextButton.icon(
-                    onPressed: () => context.push('/needs/new?type=vehicle'),
-                    icon: const Icon(Icons.inbox_outlined, size: 18),
-                    label: Text(l10n.catalogNeedCta),
+                  CatalogNeedEmptyPrompt(
+                    onEmit: () => openNeedForm(
+                      context,
+                      NeedDraft.fromVehicleFilter(f, l10n),
+                    ),
                   ),
                 ],
               ),

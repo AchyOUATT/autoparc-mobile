@@ -1,18 +1,22 @@
 import '../../../catalog/presentation/catalog_reference_labels.dart';
 import '../../../../l10n/app_localizations.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/needs_repository.dart';
+import '../need_draft.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/api/api_exception.dart';
 
 // ── Page ─────────────────────────────────────────────────────────────────
 
 class SubmitNeedPage extends ConsumerStatefulWidget {
-  const SubmitNeedPage({super.key});
+  final NeedDraft? draft;
+
+  const SubmitNeedPage({super.key, this.draft});
 
   @override
   ConsumerState<SubmitNeedPage> createState() => _SubmitNeedPageState();
@@ -70,6 +74,32 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
   final _telephones = <TextEditingController>[TextEditingController()];
 
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final draft = widget.draft;
+    if (draft == null) return;
+    final type = NeedDraft.types.contains(draft.type) ? draft.type : 'vehicle';
+    _needType = type;
+    _brandId = draft.brandId;
+    _vehicleModelId = draft.vehicleModelId;
+    _bodyStyle = draft.bodyStyle;
+    _partCategoryId = draft.partCategoryId;
+    _accessoryCategory = draft.accessoryCategory;
+    _needManufacturerId = draft.needManufacturerId;
+    if (draft.yearMin != null) _yearMinCtrl.text = '${draft.yearMin}';
+    if (draft.yearMax != null) _yearMaxCtrl.text = '${draft.yearMax}';
+    if (draft.oemNumber != null && draft.oemNumber!.trim().isNotEmpty) {
+      _oemCtrl.text = draft.oemNumber!.trim();
+    }
+    if (draft.description != null && draft.description!.trim().isNotEmpty) {
+      _descCtrl.text = draft.description!.trim();
+    }
+    if (draft.budgetMax != null) {
+      _budgetCtrl.text = draft.budgetMax!.round().toString();
+    }
+  }
 
   @override
   void dispose() {
@@ -260,9 +290,8 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primaryContainer.withAlpha(100),
+                    color: Theme.of(context).colorScheme.primaryContainer
+                        .withAlpha(100),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -342,14 +371,12 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
                   decoration: InputDecoration(
                     border: const OutlineInputBorder(),
                     hintText: _needType == 'vehicle'
-                        ? AppLocalizations.of(
-                            context,
-                          ).needsVehicleDescriptionHint
+                        ? AppLocalizations.of(context)
+                              .needsVehicleDescriptionHint
                         : _needType == 'part'
                         ? AppLocalizations.of(context).needsPartDescriptionHint
-                        : AppLocalizations.of(
-                            context,
-                          ).needsAccessoryDescriptionHint,
+                        : AppLocalizations.of(context)
+                              .needsAccessoryDescriptionHint,
                   ),
                   validator: (v) => (v == null || v.trim().length < 10)
                       ? AppLocalizations.of(context).needsDescriptionRequired
@@ -407,12 +434,10 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
                             hintText: '+226 70 00 00 00',
                             prefixIcon: const Icon(Icons.phone_outlined),
                             labelText: index == 0
-                                ? AppLocalizations.of(
-                                    context,
-                                  ).needsPrimaryPhoneLabel
-                                : AppLocalizations.of(
-                                    context,
-                                  ).needsSecondaryPhoneLabel,
+                                ? AppLocalizations.of(context)
+                                      .needsPrimaryPhoneLabel
+                                : AppLocalizations.of(context)
+                                      .needsSecondaryPhoneLabel,
                           ),
                           // Seul le premier est exige : les suivants sont des
                           // ajouts que l'on peut laisser vides sans bloquer
@@ -421,25 +446,22 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
                             final numero = valeur?.trim() ?? '';
                             if (numero.isEmpty) {
                               return index == 0
-                                  ? AppLocalizations.of(
-                                      context,
-                                    ).needsPhoneRequired
+                                  ? AppLocalizations.of(context)
+                                        .needsPhoneRequired
                                   : null;
                             }
 
                             return numero.length < 6
-                                ? AppLocalizations.of(
-                                    context,
-                                  ).needsPhoneTooShort
+                                ? AppLocalizations.of(context)
+                                      .needsPhoneTooShort
                                 : null;
                           },
                         ),
                       ),
                       if (index > 0)
                         IconButton(
-                          tooltip: AppLocalizations.of(
-                            context,
-                          ).needsRemovePhoneAction,
+                          tooltip: AppLocalizations.of(context)
+                              .needsRemovePhoneAction,
                           icon: const Icon(Icons.remove_circle_outline),
                           onPressed: _saving
                               ? null
@@ -477,9 +499,8 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.secondaryContainer.withAlpha(120),
+                    color: Theme.of(context).colorScheme.secondaryContainer
+                        .withAlpha(120),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
@@ -508,16 +529,14 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
                       Expanded(
                         child: Text(
                           auth.isClient
-                              ? AppLocalizations.of(
-                                  context,
-                                ).needsCustomerAccountNotice(
-                                  (auth.displayName).toString(),
-                                )
-                              : AppLocalizations.of(
-                                  context,
-                                ).needsStaffAccountNotice(
-                                  (auth.displayName).toString(),
-                                ),
+                              ? AppLocalizations.of(context)
+                                    .needsCustomerAccountNotice(
+                                      (auth.displayName).toString(),
+                                    )
+                              : AppLocalizations.of(context)
+                                    .needsStaffAccountNotice(
+                                      (auth.displayName).toString(),
+                                    ),
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ),
@@ -560,9 +579,8 @@ class _SubmitNeedPageState extends ConsumerState<SubmitNeedPage> {
 
   Widget _label(BuildContext context, String text) => Text(
     text,
-    style: Theme.of(
-      context,
-    ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+    style: Theme.of(context).textTheme.titleSmall
+        ?.copyWith(fontWeight: FontWeight.bold),
   );
 }
 
@@ -610,9 +628,9 @@ class _TypeSelector extends StatelessWidget {
       onSelectionChanged: (s) => onChanged(s.first),
       style: SegmentedButton.styleFrom(
         selectedBackgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        selectedForegroundColor: Theme.of(
-          context,
-        ).colorScheme.onPrimaryContainer,
+        selectedForegroundColor: Theme.of(context)
+            .colorScheme
+            .onPrimaryContainer,
       ),
     );
   }
@@ -841,9 +859,8 @@ class _VehicleCriteriaSection extends ConsumerWidget {
                     if (minText.isNotEmpty) {
                       final minY = int.tryParse(minText);
                       if (minY != null && y < minY)
-                        return AppLocalizations.of(
-                          context,
-                        ).needsYearEndBeforeStart;
+                        return AppLocalizations.of(context)
+                            .needsYearEndBeforeStart;
                     }
                     return null;
                   },
@@ -911,7 +928,15 @@ class _PartCriteriaSection extends ConsumerWidget {
                   child: Text(AppLocalizations.of(context).needsAnyCategory),
                 ),
                 ...cats.map(
-                  (c) => DropdownMenuItem(value: c.id, child: Text(catalogPartCategoryLabel(c.name, AppLocalizations.of(context)))),
+                  (c) => DropdownMenuItem(
+                    value: c.id,
+                    child: Text(
+                      catalogPartCategoryLabel(
+                        c.name,
+                        AppLocalizations.of(context),
+                      ),
+                    ),
+                  ),
                 ),
               ],
               onChanged: onCategoryChanged,
@@ -1020,33 +1045,28 @@ class _AccessoryCriteriaSection extends ConsumerWidget {
               (value: null, label: AppLocalizations.of(context).needsAnyOption),
               (
                 value: 'esthetique',
-                label: AppLocalizations.of(
-                  context,
-                ).catalogAccessoryCategoryStyling,
+                label: AppLocalizations.of(context)
+                    .catalogAccessoryCategoryStyling,
               ),
               (
                 value: 'confort',
-                label: AppLocalizations.of(
-                  context,
-                ).catalogFeatureCategoryComfort,
+                label: AppLocalizations.of(context)
+                    .catalogFeatureCategoryComfort,
               ),
               (
                 value: 'securite',
-                label: AppLocalizations.of(
-                  context,
-                ).catalogFeatureCategorySafety,
+                label: AppLocalizations.of(context)
+                    .catalogFeatureCategorySafety,
               ),
               (
                 value: 'multimedia',
-                label: AppLocalizations.of(
-                  context,
-                ).catalogFeatureCategoryMultimedia,
+                label: AppLocalizations.of(context)
+                    .catalogFeatureCategoryMultimedia,
               ),
               (
                 value: 'utilitaire',
-                label: AppLocalizations.of(
-                  context,
-                ).catalogAccessoryCategoryUtility,
+                label: AppLocalizations.of(context)
+                    .catalogAccessoryCategoryUtility,
               ),
             ],
             selected: accessoryCategory,
@@ -1122,9 +1142,8 @@ class _CriteriaCard extends StatelessWidget {
             Flexible(
               child: Text(
                 title,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(width: 8),
@@ -1146,9 +1165,8 @@ class _CriteriaCard extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           AppLocalizations.of(context).needsCriteriaExplanation,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+          style: Theme.of(context).textTheme.bodySmall
+              ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
         const Divider(height: 20),
         child,

@@ -45,6 +45,7 @@ import 'features/catalog/presentation/pages/add_part_page.dart';
 import 'features/catalog/presentation/pages/add_accessory_page.dart';
 import 'features/vehicles/presentation/pages/vehicle_registration_page.dart';
 import 'features/needs/presentation/pages/submit_need_page.dart';
+import 'features/needs/presentation/need_draft.dart';
 import 'features/needs/presentation/pages/needs_list_page.dart';
 import 'features/needs/presentation/pages/client_needs_page.dart';
 import 'features/notifications/presentation/pages/notifications_page.dart';
@@ -297,7 +298,14 @@ GoRouter routeurAutoParc({required bool onboardingDone}) => GoRouter(
     ),
 
     // ── Besoins clients ────────────────────────────────────────────
-    GoRoute(path: '/needs/new', builder: (_, state) => const SubmitNeedPage()),
+    GoRoute(
+      path: '/needs/new',
+      builder: (_, state) => SubmitNeedPage(
+        draft: state.extra is NeedDraft
+            ? state.extra as NeedDraft
+            : NeedDraft.fromQuery(state.uri.queryParameters),
+      ),
+    ),
     // Route statique AVANT /needs/:id ou /needs (catch-all)
     GoRoute(path: '/needs/mine', builder: (_, __) => const ClientNeedsPage()),
     GoRoute(path: '/needs', builder: (_, __) => const NeedsListPage()),

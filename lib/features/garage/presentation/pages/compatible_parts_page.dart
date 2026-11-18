@@ -8,6 +8,8 @@ import '../../../../features/catalog/data/models/part.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/api/api_exception.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../needs/presentation/need_draft.dart';
+import '../../../needs/presentation/widgets/catalog_need_cta.dart';
 
 // ── Provider family ──────────────────────────────────────────────────
 
@@ -58,9 +60,8 @@ class CompatiblePartsPage extends ConsumerWidget {
     final title = categoryLabel != null
         ? '$categoryLabel — ${vehicle?.displayName ?? AppLocalizations.of(context).garageMyVehicle}'
         : vehicle != null
-        ? AppLocalizations.of(
-            context,
-          ).garageMatchingPartsForVehicle((vehicle!.displayName).toString())
+        ? AppLocalizations.of(context)
+              .garageMatchingPartsForVehicle((vehicle!.displayName).toString())
         : AppLocalizations.of(context).garageMatchingPartsTitle;
 
     return Scaffold(
@@ -83,9 +84,8 @@ class CompatiblePartsPage extends ConsumerWidget {
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          AppLocalizations.of(
-                            context,
-                          ).garageMatchingPartsLimited,
+                          AppLocalizations.of(context)
+                              .garageMatchingPartsLimited,
                           style: TextStyle(color: Colors.white, fontSize: 12),
                         ),
                       ),
@@ -121,8 +121,12 @@ class CompatiblePartsPage extends ConsumerWidget {
           ),
         ),
         data: (parts) => parts.isEmpty
-            ? _EmptyParts(vehicle: vehicle)
-            : _PartsList(parts: parts),
+            ? _EmptyParts(vehicle: vehicle, categoryId: categoryId)
+            : _PartsList(
+                parts: parts,
+                vehicle: vehicle,
+                categoryId: categoryId,
+              ),
       ),
     );
   }
@@ -132,19 +136,20 @@ class CompatiblePartsPage extends ConsumerWidget {
 
 class _PartsList extends StatelessWidget {
   final List<Part> parts;
-  const _PartsList({required this.parts});
+  final OwnedVehicle? vehicle;
+  final int? categoryId;
+  const _PartsList({required this.parts, this.vehicle, this.categoryId});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return CustomScrollView(
       slivers: [
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
           sliver: SliverToBoxAdapter(
             child: Text(
-              AppLocalizations.of(
-                context,
-              ).garageMatchingPartsCount(parts.length),
+              l10n.garageMatchingPartsCount(parts.length),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -154,6 +159,19 @@ class _PartsList extends StatelessWidget {
           separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
           itemBuilder: (_, i) => _PartTile(part: parts[i]),
         ),
+        SliverToBoxAdapter(
+          child: CatalogNeedEndOfListCard(
+            onEmit: () => openNeedForm(
+              context,
+              NeedDraft.fromCompatibleParts(
+                l10n,
+                vehicle: vehicle,
+                categoryId: categoryId,
+              ),
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ],
     );
   }
@@ -189,10 +207,8 @@ class _PartTile extends StatelessWidget {
       subtitle: part.sku != null
           ? Text(
               part.sku!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontFamily: 'monospace',
-                color: cs.outline,
-              ),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(fontFamily: 'monospace', color: cs.outline),
             )
           : null,
       trailing: Column(
@@ -243,7 +259,8 @@ class _PartTile extends StatelessWidget {
 /// puisque chaque besoin notifie le personnel.
 class _EmptyParts extends StatelessWidget {
   final OwnedVehicle? vehicle;
-  const _EmptyParts({this.vehicle});
+  final int? categoryId;
+  const _EmptyParts({this.vehicle, this.categoryId});
 
   bool get _motorisationManquante => vehicle?.hasMotorisationData == false;
 
@@ -260,9 +277,8 @@ class _EmptyParts extends StatelessWidget {
 
     return modele == null
         ? AppLocalizations.of(context).garageNoVehiclePartsBody
-        : AppLocalizations.of(
-            context,
-          ).garageNoModelPartsBody((modele).toString());
+        : AppLocalizations.of(context)
+              .garageNoModelPartsBody((modele).toString());
   }
 
   @override
@@ -292,9 +308,8 @@ class _EmptyParts extends StatelessWidget {
             Text(
               _explication(context),
               textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(color: cs.onSurfaceVariant),
             ),
             const SizedBox(height: 24),
 
@@ -309,10 +324,15 @@ class _EmptyParts extends StatelessWidget {
 
             // Le besoin n'est pas un lot de consolation : c'est le seul canal
             // qui prévienne l'équipe qu'une demande existe sans réponse.
-            TextButton.icon(
-              onPressed: () => context.push('/needs/new?type=part'),
-              icon: const Icon(Icons.inbox_outlined, size: 18),
-              label: Text(AppLocalizations.of(context).catalogNeedCta),
+            CatalogNeedEmptyPrompt(
+              onEmit: () => openNeedForm(
+                context,
+                NeedDraft.fromCompatibleParts(
+                  AppLocalizations.of(context),
+                  vehicle: vehicle,
+                  categoryId: categoryId,
+                ),
+              ),
             ),
             TextButton(
               onPressed: () => context.go('/parts'),

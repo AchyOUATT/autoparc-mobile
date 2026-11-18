@@ -356,11 +356,53 @@ abstract class AppLocalizations {
   /// **'Exprimer un besoin'**
   String get catalogNeedTooltip;
 
-  /// Lien au bas de l'écran vide des trois listes, vers le dépôt d'un besoin. Même geste que homeNeedPrompt, et même fin de phrase en anglais, mais pas la même chaîne : l'accueil l'introduit par une question (« Vous ne trouvez pas ? ») que l'écran vide n'a pas à poser — « Aucun véhicule trouvé » vient d'être écrit juste au-dessus.
+  /// Ancien lien au bas de l'écran vide des trois listes, vers le dépôt d'un besoin. Conservé pour l'accueil et les intitulés existants. L'écran vide et la carte de fin de liste utilisent désormais catalogNeedNotFoundPrompt et catalogNeedEmitAction.
   ///
   /// In fr, this message translates to:
   /// **'Dites-nous ce que vous cherchez'**
   String get catalogNeedCta;
+
+  /// Question posée sur l'écran vide des listes du catalogue et en fin de liste, au-dessus du bouton pour déposer un besoin. Visible seulement pour les clients et les visiteurs, pas pour le personnel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vous ne trouvez pas ce que vous cherchez ?'**
+  String get catalogNeedNotFoundPrompt;
+
+  /// Bouton de l'écran vide des listes du catalogue, et de la carte en fin de liste, qui ouvre le formulaire de besoin. Visible seulement pour les clients et les visiteurs.
+  ///
+  /// In fr, this message translates to:
+  /// **'Émettre un besoin'**
+  String get catalogNeedEmitAction;
+
+  /// Ligne de préremplissage de la description d'un besoin, reprise du texte saisi dans la barre de recherche du catalogue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recherche : {query}'**
+  String catalogNeedDraftSearch(String query);
+
+  /// Ligne de préremplissage de la description d'un besoin, reprise du filtre ville. Le nom de la ville vient du référentiel et reste tel quel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ville : {city}'**
+  String catalogNeedDraftCity(String city);
+
+  /// Ligne de préremplissage quand le catalogue est filtré sur la location. Le formulaire de besoin n'a pas de type « location » côté serveur : le besoin reste de type véhicule, et cette ligne le précise dans la description.
+  ///
+  /// In fr, this message translates to:
+  /// **'Véhicule à louer'**
+  String get catalogNeedDraftRent;
+
+  /// Ligne de préremplissage quand le catalogue est filtré sur les engins. Même contrainte que catalogNeedDraftRent : le serveur n'a pas de type « engin », le besoin reste de type véhicule.
+  ///
+  /// In fr, this message translates to:
+  /// **'Engin'**
+  String get catalogNeedDraftEquipment;
+
+  /// Ligne de préremplissage quand la recherche de pièces est limitée à un véhicule du garage, ou depuis la liste des pièces compatibles.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour mon véhicule : {vehicle}'**
+  String catalogNeedDraftGarageVehicle(String vehicle);
 
   /// Bouton de l'écran vide qui remet les filtres à zéro. Trois sites d'appel, tous dans catalog.
   ///
