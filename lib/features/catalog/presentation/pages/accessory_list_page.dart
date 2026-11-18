@@ -25,6 +25,8 @@ import '../../../../features/vehicles/presentation/providers/vehicle_refs_provid
 import '../../../../core/providers/shell_scaffold_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../widgets/ligne_compatibilite.dart';
+import '../../../needs/presentation/need_draft.dart';
+import '../../../needs/presentation/widgets/catalog_need_cta.dart';
 
 /// LE LIBELLÉ A QUITTÉ CE TABLEAU : une liste `const` est construite avant
 /// qu'aucun `BuildContext` n'existe, donc avant que la langue active soit
@@ -141,7 +143,13 @@ class _AccessoryListPageState extends ConsumerState<AccessoryListPage> {
             IconButton(
               icon: const Icon(Icons.inbox_outlined),
               tooltip: AppLocalizations.of(context).catalogNeedTooltip,
-              onPressed: () => context.push('/needs/new?type=accessory'),
+              onPressed: () => openNeedForm(
+                context,
+                NeedDraft.fromAccessoryFilter(
+                  filter,
+                  AppLocalizations.of(context),
+                ),
+              ),
             ),
             const CartIconButton(),
           ],
@@ -223,6 +231,15 @@ class _Body extends ConsumerWidget {
         hasMore: paged.hasMore,
         isLoadingMore: paged.isLoadingMore,
         scrollCtrl: scrollCtrl,
+        endOfList: CatalogNeedEndOfListCard(
+          onEmit: () => openNeedForm(
+            context,
+            NeedDraft.fromAccessoryFilter(
+              ref.read(accessoryFilterProvider),
+              AppLocalizations.of(context),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -374,12 +391,14 @@ class _AccessoryList extends StatelessWidget {
   final bool hasMore;
   final bool isLoadingMore;
   final ScrollController scrollCtrl;
+  final Widget? endOfList;
   const _AccessoryList({
     required this.accessories,
     required this.total,
     required this.hasMore,
     required this.isLoadingMore,
     required this.scrollCtrl,
+    this.endOfList,
   });
 
   @override
@@ -419,6 +438,8 @@ class _AccessoryList extends StatelessWidget {
               ),
             ),
           ),
+        if (!hasMore && accessories.isNotEmpty && endOfList != null)
+          SliverToBoxAdapter(child: endOfList),
         // Dégage la dernière rangée du bouton flottant — voir la note
         // détaillée sur la liste des pièces. Il manquait sur les deux.
         const SliverToBoxAdapter(child: SizedBox(height: 88)),
@@ -795,10 +816,11 @@ class _EmptyView extends ConsumerWidget {
                     label: Text(l10n.catalogClearFilters),
                   ),
                 ],
-                TextButton.icon(
-                  onPressed: () => context.push('/needs/new?type=accessory'),
-                  icon: const Icon(Icons.inbox_outlined, size: 18),
-                  label: Text(l10n.catalogNeedCta),
+                CatalogNeedEmptyPrompt(
+                  onEmit: () => openNeedForm(
+                    context,
+                    NeedDraft.fromAccessoryFilter(f, l10n),
+                  ),
                 ),
               ],
             ),

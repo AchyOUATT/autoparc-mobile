@@ -202,7 +202,53 @@
   },
   "catalogNeedCta": "Dites-nous ce que vous cherchez",
   "@catalogNeedCta": {
-    "description": "Lien au bas de l'écran vide des trois listes, vers le dépôt d'un besoin. Même geste que homeNeedPrompt, et même fin de phrase en anglais, mais pas la même chaîne : l'accueil l'introduit par une question (« Vous ne trouvez pas ? ») que l'écran vide n'a pas à poser — « Aucun véhicule trouvé » vient d'être écrit juste au-dessus."
+    "description": "Ancien lien au bas de l'écran vide des trois listes, vers le dépôt d'un besoin. Conservé pour l'accueil et les intitulés existants. L'écran vide et la carte de fin de liste utilisent désormais catalogNeedNotFoundPrompt et catalogNeedEmitAction."
+  },
+  "catalogNeedNotFoundPrompt": "Vous ne trouvez pas ce que vous cherchez ?",
+  "@catalogNeedNotFoundPrompt": {
+    "description": "Question posée sur l'écran vide des listes du catalogue et en fin de liste, au-dessus du bouton pour déposer un besoin. Visible seulement pour les clients et les visiteurs, pas pour le personnel."
+  },
+  "catalogNeedEmitAction": "Émettre un besoin",
+  "@catalogNeedEmitAction": {
+    "description": "Bouton de l'écran vide des listes du catalogue, et de la carte en fin de liste, qui ouvre le formulaire de besoin. Visible seulement pour les clients et les visiteurs."
+  },
+  "catalogNeedDraftSearch": "Recherche : {query}",
+  "@catalogNeedDraftSearch": {
+    "description": "Ligne de préremplissage de la description d'un besoin, reprise du texte saisi dans la barre de recherche du catalogue.",
+    "placeholders": {
+      "query": {
+        "type": "String",
+        "example": "Mazda 3"
+      }
+    }
+  },
+  "catalogNeedDraftCity": "Ville : {city}",
+  "@catalogNeedDraftCity": {
+    "description": "Ligne de préremplissage de la description d'un besoin, reprise du filtre ville. Le nom de la ville vient du référentiel et reste tel quel.",
+    "placeholders": {
+      "city": {
+        "type": "String",
+        "example": "Ouagadougou"
+      }
+    }
+  },
+  "catalogNeedDraftRent": "Véhicule à louer",
+  "@catalogNeedDraftRent": {
+    "description": "Ligne de préremplissage quand le catalogue est filtré sur la location. Le formulaire de besoin n'a pas de type « location » côté serveur : le besoin reste de type véhicule, et cette ligne le précise dans la description."
+  },
+  "catalogNeedDraftEquipment": "Engin",
+  "@catalogNeedDraftEquipment": {
+    "description": "Ligne de préremplissage quand le catalogue est filtré sur les engins. Même contrainte que catalogNeedDraftRent : le serveur n'a pas de type « engin », le besoin reste de type véhicule."
+  },
+  "catalogNeedDraftGarageVehicle": "Pour mon véhicule : {vehicle}",
+  "@catalogNeedDraftGarageVehicle": {
+    "description": "Ligne de préremplissage quand la recherche de pièces est limitée à un véhicule du garage, ou depuis la liste des pièces compatibles.",
+    "placeholders": {
+      "vehicle": {
+        "type": "String",
+        "example": "Toyota Corolla"
+      }
+    }
   },
   "catalogClearFilters": "Tout effacer",
   "@catalogClearFilters": {

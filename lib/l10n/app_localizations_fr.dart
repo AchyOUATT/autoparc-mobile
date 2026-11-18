@@ -150,6 +150,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get catalogNeedCta => 'Dites-nous ce que vous cherchez';
 
   @override
+  String get catalogNeedNotFoundPrompt =>
+      'Vous ne trouvez pas ce que vous cherchez ?';
+
+  @override
+  String get catalogNeedEmitAction => 'Émettre un besoin';
+
+  @override
+  String catalogNeedDraftSearch(String query) {
+    return 'Recherche : $query';
+  }
+
+  @override
+  String catalogNeedDraftCity(String city) {
+    return 'Ville : $city';
+  }
+
+  @override
+  String get catalogNeedDraftRent => 'Véhicule à louer';
+
+  @override
+  String get catalogNeedDraftEquipment => 'Engin';
+
+  @override
+  String catalogNeedDraftGarageVehicle(String vehicle) {
+    return 'Pour mon véhicule : $vehicle';
+  }
+
+  @override
   String get catalogClearFilters => 'Tout effacer';
 
   @override

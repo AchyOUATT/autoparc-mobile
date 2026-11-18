@@ -29,6 +29,8 @@ import '../../../../features/garage/presentation/providers/garage_provider.dart'
 import '../../../../core/providers/shell_scaffold_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../widgets/ligne_compatibilite.dart';
+import '../../../needs/presentation/need_draft.dart';
+import '../../../needs/presentation/widgets/catalog_need_cta.dart';
 
 // ── Labels des types/conditions ─────────────────────────────────────
 
@@ -143,7 +145,14 @@ class _PartListPageState extends ConsumerState<PartListPage> {
             IconButton(
               icon: const Icon(Icons.inbox_outlined),
               tooltip: AppLocalizations.of(context).catalogNeedTooltip,
-              onPressed: () => context.push('/needs/new?type=part'),
+              onPressed: () => openNeedForm(
+                context,
+                NeedDraft.fromPartFilter(
+                  filter,
+                  AppLocalizations.of(context),
+                  garageVehicle: ref.read(selectedGarageVehicleProvider),
+                ),
+              ),
             ),
             const CartIconButton(),
           ],
@@ -228,6 +237,16 @@ class _Body extends ConsumerWidget {
         hasMore: paged.hasMore,
         isLoadingMore: paged.isLoadingMore,
         scrollCtrl: scrollCtrl,
+        endOfList: CatalogNeedEndOfListCard(
+          onEmit: () => openNeedForm(
+            context,
+            NeedDraft.fromPartFilter(
+              ref.read(partFilterProvider),
+              AppLocalizations.of(context),
+              garageVehicle: ref.read(selectedGarageVehicleProvider),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -361,12 +380,14 @@ class _PartList extends StatelessWidget {
   final bool hasMore;
   final bool isLoadingMore;
   final ScrollController scrollCtrl;
+  final Widget? endOfList;
   const _PartList({
     required this.parts,
     required this.total,
     required this.hasMore,
     required this.isLoadingMore,
     required this.scrollCtrl,
+    this.endOfList,
   });
 
   @override
@@ -404,6 +425,8 @@ class _PartList extends StatelessWidget {
               ),
             ),
           ),
+        if (!hasMore && parts.isNotEmpty && endOfList != null)
+          SliverToBoxAdapter(child: endOfList),
         // Dégage la dernière rangée du bouton flottant.
         //
         // IL MANQUAIT ICI, et la liste des véhicules l'avait : le bouton
@@ -1090,10 +1113,15 @@ class _EmptyView extends ConsumerWidget {
                           ?.copyWith(color: cs.onSurfaceVariant),
                     ),
                   ],
-                  TextButton.icon(
-                    onPressed: () => context.push('/needs/new?type=part'),
-                    icon: const Icon(Icons.inbox_outlined, size: 18),
-                    label: Text(l10n.catalogNeedCta),
+                  CatalogNeedEmptyPrompt(
+                    onEmit: () => openNeedForm(
+                      context,
+                      NeedDraft.fromPartFilter(
+                        filtre,
+                        l10n,
+                        garageVehicle: ref.read(selectedGarageVehicleProvider),
+                      ),
+                    ),
                   ),
                 ],
               ),
