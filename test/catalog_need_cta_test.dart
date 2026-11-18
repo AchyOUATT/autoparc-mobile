@@ -65,16 +65,16 @@ const _garage = OwnedVehicle(
 );
 
 Part _unePiece() {
-  final json = jsonDecode(
-    File('test/fixtures/parts_list.json').readAsStringSync(),
-  ) as Map<String, dynamic>;
+  final json =
+      jsonDecode(File('test/fixtures/parts_list.json').readAsStringSync())
+          as Map<String, dynamic>;
   return Part.fromJson((json['data'] as List).first as Map<String, dynamic>);
 }
 
 Accessory _unAccessoire() {
-  final json = jsonDecode(
-    File('test/fixtures/accessories_list.json').readAsStringSync(),
-  ) as Map<String, dynamic>;
+  final json =
+      jsonDecode(File('test/fixtures/accessories_list.json').readAsStringSync())
+          as Map<String, dynamic>;
   return Accessory.fromJson(
     (json['data'] as List).first as Map<String, dynamic>,
   );
@@ -252,8 +252,9 @@ Future<GoRouter> monter(
         supportedLocales: AppLocalizations.supportedLocales,
         routerConfig: router,
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context)
-              .copyWith(size: ecran, textScaler: TextScaler.linear(echelle)),
+          data: MediaQuery.of(
+            context,
+          ).copyWith(size: ecran, textScaler: TextScaler.linear(echelle)),
           child: child!,
         ),
       ),
@@ -573,6 +574,129 @@ void main() {
               ?.text,
           contains('Toyota Corolla'),
         );
+      },
+    );
+
+    testWidgets(
+      'depuis la liste vide des pièces, ouvre un besoin de type pièce',
+      (tester) async {
+        await monter(tester, page: const PartListPage(), auth: _client);
+        final conteneur = ProviderScope.containerOf(
+          tester.element(find.byType(MaterialApp)),
+        );
+        conteneur.read(partFilterProvider.notifier).state = const PartFilter(
+          search: 'filtre à huile',
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(find.text('Émettre un besoin'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SubmitNeedPage), findsOneWidget);
+        final type = tester.widget<SegmentedButton<String>>(
+          find.byType(SegmentedButton<String>),
+        );
+        expect(type.selected, {'part'});
+        expect(
+          tester
+              .widget<TextFormField>(
+                find.byKey(const Key('besoin-description')),
+              )
+              .controller
+              ?.text,
+          contains('filtre à huile'),
+        );
+      },
+    );
+
+    testWidgets(
+      'depuis la liste vide des accessoires, ouvre un besoin de type accessoire',
+      (tester) async {
+        await monter(tester, page: const AccessoryListPage(), auth: _client);
+        final conteneur = ProviderScope.containerOf(
+          tester.element(find.byType(MaterialApp)),
+        );
+        conteneur.read(accessoryFilterProvider.notifier).state =
+            const AccessoryFilter(search: 'camera');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(find.text('Émettre un besoin'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SubmitNeedPage), findsOneWidget);
+        final type = tester.widget<SegmentedButton<String>>(
+          find.byType(SegmentedButton<String>),
+        );
+        expect(type.selected, {'accessory'});
+        expect(
+          tester
+              .widget<TextFormField>(
+                find.byKey(const Key('besoin-description')),
+              )
+              .controller
+              ?.text,
+          contains('camera'),
+        );
+      },
+    );
+
+    testWidgets(
+      'depuis la fin de liste des pièces, ouvre un besoin de type pièce',
+      (tester) async {
+        await monter(
+          tester,
+          page: const PartListPage(),
+          auth: _client,
+          pieces: _pageComplete([_unePiece()]),
+        );
+        await tester.scrollUntilVisible(
+          _carteFin,
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(
+          find.descendant(
+            of: _carteFin,
+            matching: find.text('Émettre un besoin'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SubmitNeedPage), findsOneWidget);
+        final type = tester.widget<SegmentedButton<String>>(
+          find.byType(SegmentedButton<String>),
+        );
+        expect(type.selected, {'part'});
+      },
+    );
+
+    testWidgets(
+      'depuis la fin de liste des accessoires, ouvre un besoin de type accessoire',
+      (tester) async {
+        await monter(
+          tester,
+          page: const AccessoryListPage(),
+          auth: _client,
+          accessoires: _pageComplete([_unAccessoire()]),
+        );
+        await tester.scrollUntilVisible(
+          _carteFin,
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(
+          find.descendant(
+            of: _carteFin,
+            matching: find.text('Émettre un besoin'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SubmitNeedPage), findsOneWidget);
+        final type = tester.widget<SegmentedButton<String>>(
+          find.byType(SegmentedButton<String>),
+        );
+        expect(type.selected, {'accessory'});
       },
     );
   });
