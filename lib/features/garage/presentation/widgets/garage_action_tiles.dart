@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 
-/// Garde chaque fragment d'un sous-titre d'un seul tenant.
+/// Colle un nombre à son unité courte par une espace insécable.
 ///
-/// Les espaces À L'INTÉRIEUR d'un fragment deviennent insécables ; seuls les
-/// séparateurs « · » restent des points de coupure. Sans cela, « Dans 25 j »
-/// ou « 140 ch » se coupaient en laissant « j » ou « ch » seuls sur la ligne
-/// suivante.
-String keepTogether(String text) => text
-    .split(' · ')
-    .map((fragment) => fragment.replaceAll(' ', '\u00A0'))
-    .join(' · ');
+/// « Dans 25 j », « 140 ch », « 1,8 L » se coupaient en laissant « j » ou
+/// « ch » seuls sur la ligne suivante. Seule l'espace entre le chiffre et une
+/// unité de trois lettres au plus devient insécable : coller toute la phrase
+/// (« Dépassée de 12 j ») la rendait trop longue pour une colonne de 320
+/// points, et elle finissait tronquée.
+String keepTogether(String text) => text.replaceAllMapped(
+  RegExp(r'(\d) (?=[^\s·]{1,3}(\s|$))'),
+  (m) => '${m[1]}\u00A0',
+);
 
 /// L'importance visuelle d'une action de la fiche véhicule.
 ///
@@ -140,7 +141,9 @@ class GarageActionTile extends StatelessWidget {
         Flexible(
           child: Text(
             action.subtitle,
-            maxLines: 2,
+            // Trois lignes en colonne étroite : « Assurance · Dépassée de 12 j »
+            // y tient sans être tronqué.
+            maxLines: layout == GarageTileLayout.stacked ? 3 : 2,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(color: texte),
           ),

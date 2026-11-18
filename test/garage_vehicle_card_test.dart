@@ -275,7 +275,7 @@ void main() {
     final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
     // Insécable : « 140 ch » ne se coupe plus avant « ch ».
     expect(
-      find.text(l10n.garageEnginePowerValue(140).replaceAll(' ', '\u00A0')),
+      find.text(keepTogether(l10n.garageEnginePowerValue(140))),
       findsOneWidget,
     );
     await tester.tap(_tuile('engine'));
@@ -525,8 +525,161 @@ void main() {
     handle.dispose();
   });
 
-  test('keepTogether ne garde que les « · » comme points de coupure', () {
+  test('keepTogether colle le nombre à son unité, et rien d’autre', () {
     expect(keepTogether('1,8 L · 140 ch'), '1,8\u00A0L · 140\u00A0ch');
-    expect(keepTogether('Dans 25 j'), 'Dans\u00A025\u00A0j');
+    expect(keepTogether('Dans 25 j'), 'Dans 25\u00A0j');
+    expect(keepTogether('Dépassée de 12 j'), 'Dépassée de 12\u00A0j');
+    expect(keepTogether('4 cylindres'), '4 cylindres');
+  });
+
+  // ── Le bouton « Ajouter un véhicule » ne cache rien ─────────────────────
+
+  Finder fab() => find.byKey(const Key('garage-add-vehicle-fab'));
+
+  for (final nombre in [1, 3]) {
+    for (final largeur in [320.0, 390.0]) {
+      for (final zoneSure in [0.0, 34.0]) {
+        testWidgets(
+          '$nombre véhicule(s) en $largeur x1,3, zone sûre $zoneSure : en bas '
+          'de défilement, aucun élément interactif sous le bouton d’ajout',
+          (tester) async {
+            final hauteur = largeur == 320 ? 640.0 : 844.0;
+            await _taille(tester, largeur, hauteur);
+            tester.view.padding = FakeViewPadding(bottom: zoneSure);
+            addTearDown(tester.view.resetPadding);
+            await tester.pumpWidget(
+              _app(
+                scale: 1.3,
+                vehicules: [
+                  _vehicule,
+                  if (nombre == 3) ...[
+                    autre(43, 'Le Tucson'),
+                    autre(44, 'La camionnette'),
+                  ],
+                ],
+              ),
+            );
+            await tester.pumpAndSettle();
+
+            // Fin de liste par `jumpTo` : sans geste, le bouton reste DÉPLIÉ,
+            // c'est-à-dire dans sa forme la plus large — le pire cas.
+            final liste = find.byType(ListView).first;
+            final position = tester
+                .state<ScrollableState>(
+                  find
+                      .descendant(of: liste, matching: find.byType(Scrollable))
+                      .first,
+                )
+                .position;
+            expect(position.maxScrollExtent, greaterThan(0));
+            position.jumpTo(position.maxScrollExtent);
+            await tester.pumpAndSettle();
+
+            final bouton = tester.getRect(fab());
+            final interactifs = find.descendant(
+              of: liste,
+              matching: find.byWidgetPredicate(
+                (w) => w is InkWell || w is ButtonStyleButton,
+              ),
+            );
+            expect(interactifs, findsWidgets);
+
+            // Le dernier élément interactif, celui qu'un bouton mal placé
+            // masquerait : « Passage à la pompe ».
+            final l10n = await AppLocalizations.delegate.load(
+              const Locale('fr'),
+            );
+            final dernier = tester.getRect(
+              find.ancestor(
+                of: find.text(l10n.garageRecordRefillTitle),
+                matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+              ),
+            );
+            expect(dernier.overlaps(bouton), isFalse);
+            expect(dernier.bottom + 16, lessThanOrEqualTo(bouton.top));
+
+            for (final element in interactifs.evaluate()) {
+              final rect = tester.getRect(find.byWidget(element.widget));
+              if (rect.bottom <= 0 || rect.top >= hauteur) continue;
+              expect(
+                rect.overlaps(bouton),
+                isFalse,
+                reason:
+                    '${element.widget.runtimeType} à $rect recouvert par '
+                    'le bouton à $bouton',
+              );
+            }
+            expect(tester.takeException(), isNull);
+          },
+        );
+      }
+    }
+  }
+
+  testWidgets('le bouton se replie en « + » en descendant et se déplie en '
+      'remontant ; la rangée horizontale ne le replie pas', (tester) async {
+    await _taille(tester, 390, 844);
+    await tester.pumpWidget(
+      _app(vehicules: [_vehicule, autre(43, 'Le Tucson'), autre(44, 'Le 3e')]),
+    );
+    await tester.pumpAndSettle();
+    final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
+    final libelle = find.descendant(
+      of: fab(),
+      matching: find.text(l10n.garageAddVehicleAction),
+    );
+    expect(libelle, findsOneWidget);
+    final large = tester.getSize(fab()).width;
+
+    // La rangée défile à l'horizontale : le bouton ne bouge pas.
+    await tester.drag(
+      find.byKey(const Key('garage-vehicle-choice-43')),
+      const Offset(-200, 0),
+    );
+    await tester.pumpAndSettle();
+    expect(libelle, findsOneWidget);
+
+    // On descend la fiche : le bouton se replie, et reste annoncé.
+    await tester.drag(find.byType(ListView).first, const Offset(0, -300));
+    await tester.pumpAndSettle();
+    expect(libelle, findsNothing);
+    expect(tester.getSize(fab()).width, lessThan(large));
+    expect(find.byTooltip(l10n.garageAddVehicleAction), findsOneWidget);
+    final handle = tester.ensureSemantics();
+    expect(
+      tester.getSemantics(fab()).label,
+      contains(l10n.garageAddVehicleAction),
+    );
+    handle.dispose();
+
+    // Replié, il ouvre toujours l'ajout.
+    await tester.tap(fab());
+    await tester.pumpAndSettle();
+    expect(find.text('route:add'), findsOneWidget);
+    GoRouter.of(tester.element(find.text('route:add'))).pop();
+    await tester.pumpAndSettle();
+
+    // On remonte : il se déplie.
+    await tester.drag(find.byType(ListView).first, const Offset(0, 600));
+    await tester.pumpAndSettle();
+    expect(libelle, findsOneWidget);
+  });
+
+  testWidgets('garage vide : l’ajout reste évident', (tester) async {
+    await _taille(tester, 320, 640);
+    await tester.pumpWidget(_app(vehicules: const []));
+    await tester.pumpAndSettle();
+    final l10n = await AppLocalizations.delegate.load(const Locale('fr'));
+    expect(find.text(l10n.garageEmptyTitle), findsOneWidget);
+    expect(
+      find.widgetWithText(FilledButton, l10n.garageAddVehicleAction),
+      findsOneWidget,
+    );
+    expect(fab(), findsOneWidget);
+    await tester.tap(
+      find.widgetWithText(FilledButton, l10n.garageAddVehicleAction),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('route:add'), findsOneWidget);
   });
 }

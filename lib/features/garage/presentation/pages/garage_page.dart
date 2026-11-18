@@ -3,6 +3,7 @@ import '../garage_labels.dart';
 import '../../../../core/l10n/reference_labels.dart';
 import '../../../../l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -22,11 +23,19 @@ import '../../../notifications/presentation/widgets/notification_icon_button.dar
 import '../../../../core/api/api_exception.dart';
 import '../../../private_sales/data/private_listing_repository.dart';
 
-class GaragePage extends ConsumerWidget {
+class GaragePage extends ConsumerStatefulWidget {
   const GaragePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GaragePage> createState() => _GaragePageState();
+}
+
+class _GaragePageState extends ConsumerState<GaragePage> {
+  /// Le bouton d'ajout est déplié tant qu'on n'a pas commencé à descendre.
+  bool _deplie = true;
+
+  @override
+  Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
 
     // ── Staff → profil staff ─────────────────────────────────────────
@@ -104,12 +113,11 @@ class GaragePage extends ConsumerWidget {
         ],
       ),
 
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await context.push('/garage/add');
-        },
-        icon: const Icon(Icons.add),
-        label: Text(AppLocalizations.of(context).garageAddVehicleAction),
+      // Replié en « + » dès qu'on descend la fiche, déplié en haut ou dès
+      // qu'on remonte : l'ajout reste à portée sans masquer la fiche.
+      floatingActionButton: _AddVehicleFab(
+        extended: _deplie,
+        onPressed: () => context.push('/garage/add'),
       ),
 
       body: garageAsync.when(
@@ -120,11 +128,74 @@ class GaragePage extends ConsumerWidget {
         ),
         data: (vehicles) => vehicles.isEmpty
             ? _EmptyGarage(onAdd: () => context.push('/garage/add'))
-            : _VehicleList(vehicles: vehicles),
+            : NotificationListener<ScrollNotification>(
+                onNotification: _auDefilement,
+                child: _VehicleList(vehicles: vehicles),
+              ),
+      ),
+    );
+  }
+
+  /// Replie le bouton quand le doigt descend la fiche, le déplie quand il
+  /// remonte ou quand la liste revient en haut.
+  ///
+  /// Seule la liste verticale compte : la rangée « Mes véhicules » défile
+  /// aussi, horizontalement, et ne doit pas faire changer le bouton.
+  bool _auDefilement(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical) return false;
+    bool? deplie;
+    if (notification is UserScrollNotification) {
+      if (notification.direction == ScrollDirection.reverse) deplie = false;
+      if (notification.direction == ScrollDirection.forward) deplie = true;
+    }
+    // Revenu en haut : déplié. Seulement à la FIN d'un défilement — au début
+    // d'un geste vers le bas, la liste est encore en haut, et ce test
+    // annulerait le repli à peine décidé.
+    if (notification is ScrollEndNotification &&
+        notification.metrics.pixels <= notification.metrics.minScrollExtent) {
+      deplie = true;
+    }
+    if (deplie != null && deplie != _deplie) {
+      setState(() => _deplie = deplie!);
+    }
+    return false;
+  }
+}
+
+/// Le bouton « Ajouter un véhicule ».
+///
+/// Replié, il garde son info-bulle et son libellé pour les lecteurs d'écran :
+/// seule l'apparence change, pas ce que le bouton annonce.
+class _AddVehicleFab extends StatelessWidget {
+  final bool extended;
+  final VoidCallback onPressed;
+
+  const _AddVehicleFab({required this.extended, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final libelle = AppLocalizations.of(context).garageAddVehicleAction;
+    return Semantics(
+      button: true,
+      label: libelle,
+      excludeSemantics: true,
+      child: FloatingActionButton.extended(
+        key: const Key('garage-add-vehicle-fab'),
+        onPressed: onPressed,
+        tooltip: extended ? null : libelle,
+        isExtended: extended,
+        icon: const Icon(Icons.add),
+        label: Text(libelle),
       ),
     );
   }
 }
+
+/// La marge à laisser sous le dernier élément de la liste pour que le bouton
+/// flottant ne le recouvre jamais en fin de défilement : sa hauteur (56), sa
+/// marge au bord (16), 16 de respiration, et la zone sûre du bas de l'écran.
+double garageListBottomInset(BuildContext context) =>
+    56 + 16 + 16 + MediaQuery.viewPaddingOf(context).bottom;
 
 // ── Liste des véhicules ───────────────────────────────────────────────
 
@@ -137,7 +208,12 @@ class _VehicleList extends ConsumerWidget {
     // Un seul véhicule : la fiche, rien d'autre — l'écran ne change pas.
     if (vehicles.length == 1) {
       return ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          12,
+          16,
+          garageListBottomInset(context),
+        ),
         children: [_VehicleCard(vehicle: vehicles.single)],
       );
     }
@@ -156,7 +232,7 @@ class _VehicleList extends ConsumerWidget {
         ]..sort((a, b) => urgencyOf(a).compareTo(urgencyOf(b)))).first;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(0, 12, 0, 100),
+      padding: EdgeInsets.fromLTRB(0, 12, 0, garageListBottomInset(context)),
       children: [
         GarageVehicleSelector(
           vehicles: vehicles,

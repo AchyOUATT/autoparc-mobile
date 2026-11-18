@@ -244,4 +244,31 @@ void main() {
       }
     }
   }
+
+  // ── Le bas de la fiche, après un vrai geste de défilement ────────────
+  //
+  // Le geste replie le bouton d'ajout en « + » ; la capture montre que la
+  // dernière action de la fiche reste dégagée au-dessus.
+  for (final (largeur, hauteur) in [(390.0, 844.0), (320.0, 640.0)]) {
+    final nom = 'garage-3vehicules-bas-$suffixe-${largeur.toInt()}-light';
+    testWidgets(nom, (tester) async {
+      tester.view.physicalSize = Size(largeur, hauteur);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(ecranGarage(vehicules: 3));
+      await tester.pumpAndSettle();
+      await tester.drag(find.byType(ListView).first, const Offset(0, -4000));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      if (ecrire) {
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile('../build/captures/$nom.png'),
+        );
+      }
+    });
+  }
 }
