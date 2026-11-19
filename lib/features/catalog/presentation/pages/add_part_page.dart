@@ -48,6 +48,15 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
   // Classification
   PartCategory? _category;
   Manufacturer? _manufacturer;
+
+  /// Le code moteur est surtout utile pour un filtre à huile : deux références
+  /// peuvent aller sur le même modèle selon le moteur. On le recommande alors,
+  /// sans le rendre obligatoire.
+  bool get _estFiltreAHuile {
+    final nom = _category?.name.toLowerCase() ?? '';
+    return nom.contains('filtre') && nom.contains('huile');
+  }
+
   bool _dropdownsInitialized =
       false; // pré-remplissage dropdowns (mode édition)
 
@@ -531,6 +540,7 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
                 data: (refs) => FitmentsSection(
                   refs: refs,
                   showPosition: true,
+                  recommanderCodeMoteur: _estFiltreAHuile,
                   initiales: _fitments!,
                   onChanged: (list) => setState(() => _fitments = list),
                 ),

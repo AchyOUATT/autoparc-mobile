@@ -214,6 +214,12 @@ class Part extends Equatable {
   /// `Accessory`.
   bool get aUnePagePublique => isActive;
 
+  /// Vrai quand on sait que la pièce n'a aucune compatibilité à afficher.
+  bool get compatibiliteARenseigner => CompatibilitySummary.aRenseigner(
+    resume: compatibility,
+    fitments: fitments,
+  );
+
   bool get isOem => type == 'oem';
   bool get isAftermarket => type == 'aftermarket';
   bool get isNew => condition == 'new';

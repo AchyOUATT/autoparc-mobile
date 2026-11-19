@@ -371,6 +371,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get catalogBadgeInactive => 'Inactive';
 
   @override
+  String get catalogFilterNeedsFitment => 'À renseigner';
+
+  @override
+  String get catalogFilterTermNeedsFitment => 'compatibilité à renseigner';
+
+  @override
+  String get catalogBadgeNeedsFitment => 'À renseigner';
+
+  @override
   String get catalogPartAddCta => 'Nouvelle pièce';
 
   @override
@@ -4574,6 +4583,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get catalogFitmentPositionHint => 'Ex. Avant gauche, Côté moteur…';
+
+  @override
+  String get catalogFitmentEngineCodeField => 'Code moteur';
+
+  @override
+  String get catalogFitmentEngineCodeHint => '1ZZ-FE, 1VD-FTV…';
+
+  @override
+  String get catalogFitmentEngineCodeOilHint =>
+      'Pour un filtre à huile, le code moteur permet de distinguer deux références sur un même modèle.';
+
+  @override
+  String get catalogFitmentEngineTypeField => 'Motorisation';
+
+  @override
+  String get catalogFitmentAllEngineTypes => 'Toutes les motorisations';
+
+  @override
+  String get catalogFitmentDrivetrainField => 'Transmission';
+
+  @override
+  String get catalogFitmentAllDrivetrains => 'Toutes les transmissions';
 
   @override
   String get catalogFitmentConfirmAction => 'Ajouter cette compatibilité';

@@ -327,6 +327,17 @@ class _FilterBar extends ConsumerWidget {
               onSelected: (on) => update((f) => f.copyWith(inactiveOnly: on)),
             ),
           ),
+        if (peutGerer)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              avatar: const Icon(Icons.edit_note_outlined, size: 14),
+              label: Text(l10n.catalogFilterNeedsFitment),
+              selected: filter.withoutFitments,
+              onSelected: (on) =>
+                  update((f) => f.copyWith(withoutFitments: on)),
+            ),
+          ),
         for (final c in categories)
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -419,8 +430,9 @@ class _PartList extends StatelessWidget {
               child: Center(
                 child: Text(
                   AppLocalizations.of(context).catalogResultTotal(total),
-                  style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: Theme.of(context).colorScheme.outline),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                 ),
               ),
             ),
@@ -618,6 +630,29 @@ class _PartCardState extends ConsumerState<_PartCard> {
                       ),
                     ),
                   ),
+                if (auth.canManageCatalog && part.compatibiliteARenseigner)
+                  Positioned(
+                    bottom: 6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFB45309).withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context).catalogBadgeNeedsFitment,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
 
@@ -647,8 +682,9 @@ class _PartCardState extends ConsumerState<_PartCard> {
                   // il passerait pour une mention secondaire.
                   Text(
                     part.name,
-                    style: Theme.of(context).textTheme.labelSmall
-                        ?.copyWith(color: cs.onSurface),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: cs.onSurface),
                   ),
                   // LES MODÈLES COMPATIBLES, SOUS LE NOM ET AU-DESSUS DU PRIX.
                   //
@@ -1010,8 +1046,9 @@ class _GarageFilterBannerState extends ConsumerState<_GarageFilterBanner> {
             // effet — un bouton qui ne fait rien se lit comme une panne.
             Tooltip(
               message: _selected!.modeleHorsCatalogue
-                  ? AppLocalizations.of(context)
-                        .catalogGarageFitmentUnknownModel
+                  ? AppLocalizations.of(
+                      context,
+                    ).catalogGarageFitmentUnknownModel
                   : AppLocalizations.of(context).catalogGarageFitmentTooltip,
               child: FilterChip(
                 label: Text(
@@ -1063,6 +1100,7 @@ class _EmptyView extends ConsumerWidget {
       if (filtre.city != null) filtre.city!,
       if (filtre.inStockOnly) l10n.catalogFilterTermInStock,
       if (filtre.inactiveOnly) l10n.catalogFilterTermInactive,
+      if (filtre.withoutFitments) l10n.catalogFilterTermNeedsFitment,
     ];
 
     // Il défile, pour la raison mesurée et écrite dans `_EmptyView` de
@@ -1093,8 +1131,9 @@ class _EmptyView extends ConsumerWidget {
                         actifs.join(l10n.catalogFilterListSeparator),
                       ),
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium
-                          ?.copyWith(color: cs.onSurfaceVariant),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
                     ),
                     const SizedBox(height: 20),
                     FilledButton.tonalIcon(
@@ -1109,8 +1148,9 @@ class _EmptyView extends ConsumerWidget {
                     Text(
                       l10n.catalogPartCatalogEmpty,
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium
-                          ?.copyWith(color: cs.onSurfaceVariant),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
                     ),
                   ],
                   CatalogNeedEmptyPrompt(

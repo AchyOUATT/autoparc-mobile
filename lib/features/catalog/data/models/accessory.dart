@@ -166,6 +166,12 @@ class Accessory extends Equatable {
   /// 404 pendant que son bouton restait là.
   bool get aUnePagePublique => isActive && stock.isAvailable;
 
+  /// Vrai quand on sait que l'accessoire n'a aucune compatibilité à afficher.
+  bool get compatibiliteARenseigner => CompatibilitySummary.aRenseigner(
+    resume: compatibility,
+    fitments: fitments,
+  );
+
   bool get isAvailableForSale => seller != null
       ? stock.isAvailable && (!stock.hasQuantity || stock.quantity > 0)
       : stock.quantity > 0;

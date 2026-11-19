@@ -371,6 +371,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get catalogBadgeInactive => 'Inactive';
 
   @override
+  String get catalogFilterNeedsFitment => 'Needs fitment';
+
+  @override
+  String get catalogFilterTermNeedsFitment => 'missing fitment';
+
+  @override
+  String get catalogBadgeNeedsFitment => 'Needs fitment';
+
+  @override
   String get catalogPartAddCta => 'New part';
 
   @override
@@ -4568,6 +4577,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get catalogFitmentPositionHint => 'e.g. Front left, engine side…';
+
+  @override
+  String get catalogFitmentEngineCodeField => 'Engine code';
+
+  @override
+  String get catalogFitmentEngineCodeHint => '1ZZ-FE, 1VD-FTV…';
+
+  @override
+  String get catalogFitmentEngineCodeOilHint =>
+      'For an oil filter, the engine code is what distinguishes two references on the same model.';
+
+  @override
+  String get catalogFitmentEngineTypeField => 'Engine type';
+
+  @override
+  String get catalogFitmentAllEngineTypes => 'All engine types';
+
+  @override
+  String get catalogFitmentDrivetrainField => 'Drivetrain';
+
+  @override
+  String get catalogFitmentAllDrivetrains => 'All drivetrains';
 
   @override
   String get catalogFitmentConfirmAction => 'Add this fitment';

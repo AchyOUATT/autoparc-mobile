@@ -234,13 +234,15 @@ class CatalogRepository {
     int page = 1,
     int perPage = 20,
     String? search,
-    String? category, // 'esthetique' | 'confort' | 'securite' | 'multimedia' | 'utilitaire'
+    String?
+    category, // 'esthetique' | 'confort' | 'securite' | 'multimedia' | 'utilitaire'
     String? manufacturerId,
     double? priceMax,
     int? vehicleModelId, // filtre compatibilité
     String? city,
     int? locationId,
     bool inactiveOnly = false,
+    bool withoutFitments = false,
   }) async {
     final params = <String, dynamic>{
       'page': page,
@@ -257,6 +259,7 @@ class CatalogRepository {
       // par defaut ; le filtre `isActive` cote liste reste une securite.
       if (inactiveOnly) 'active_only': 0,
       if (inactiveOnly) 'inactive_only': 1,
+      if (forStaff && withoutFitments) 'without_fitments': 1,
     };
 
     // Le catalogue public masque les indisponibles ; le personnel doit
@@ -407,6 +410,7 @@ class CatalogRepository {
     String? city, // filtre par ville
     int? locationId, // filtre par agence précise
     bool inactiveOnly = false,
+    bool withoutFitments = false,
   }) async {
     final params = <String, dynamic>{
       'page': page,
@@ -426,6 +430,7 @@ class CatalogRepository {
       // active_only=0 evite qu'un serveur encore ancien ne masque la fiche.
       if (inactiveOnly) 'active_only': 0,
       if (inactiveOnly) 'inactive_only': 1,
+      if (forStaff && withoutFitments) 'without_fitments': 1,
     };
 
     // Si on cherche par critères véhicule, on utilise la route compatible-parts.

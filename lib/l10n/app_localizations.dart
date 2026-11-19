@@ -740,6 +740,24 @@ abstract class AppLocalizations {
   /// **'Inactive'**
   String get catalogBadgeInactive;
 
+  /// Pastille de filtre de la liste des pièces et des accessoires, visible seulement pour le personnel qui gère le catalogue. Elle n'affiche que les fiches sans aucune compatibilité véhicule.
+  ///
+  /// In fr, this message translates to:
+  /// **'À renseigner'**
+  String get catalogFilterNeedsFitment;
+
+  /// Terme listé par catalogActiveFilters quand le filtre À renseigner est posé. Voir catalogFilterTermInactive.
+  ///
+  /// In fr, this message translates to:
+  /// **'compatibilité à renseigner'**
+  String get catalogFilterTermNeedsFitment;
+
+  /// Badge posé sur la carte d'une pièce ou d'un accessoire sans aucune compatibilité, dans la liste du personnel.
+  ///
+  /// In fr, this message translates to:
+  /// **'À renseigner'**
+  String get catalogBadgeNeedsFitment;
+
   /// Bouton flottant de la liste des pièces, visible pour le seul personnel habilité. Il mène à un écran de saisie du personnel, qui n'est PAS traduit par cette vague ; le bouton l'est, parce qu'il s'affiche sur une page cliente.
   ///
   /// In fr, this message translates to:
@@ -7978,6 +7996,48 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Ex. Avant gauche, Côté moteur…'**
   String get catalogFitmentPositionHint;
+
+  /// Champ du formulaire de compatibilité. Optionnel, sauf recommandation forte pour un filtre à huile.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code moteur'**
+  String get catalogFitmentEngineCodeField;
+
+  /// Exemple affiché dans le champ code moteur.
+  ///
+  /// In fr, this message translates to:
+  /// **'1ZZ-FE, 1VD-FTV…'**
+  String get catalogFitmentEngineCodeHint;
+
+  /// Aide sous le champ code moteur quand la pièce est un filtre à huile. Le champ reste facultatif.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour un filtre à huile, le code moteur permet de distinguer deux références sur un même modèle.'**
+  String get catalogFitmentEngineCodeOilHint;
+
+  /// Liste des types de moteur du référentiel, dans le formulaire de compatibilité. Facultatif.
+  ///
+  /// In fr, this message translates to:
+  /// **'Motorisation'**
+  String get catalogFitmentEngineTypeField;
+
+  /// Option vide de la liste motorisation : la compatibilité ne précise pas le type de moteur.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les motorisations'**
+  String get catalogFitmentAllEngineTypes;
+
+  /// Liste des transmissions du référentiel, dans le formulaire de compatibilité. Facultatif.
+  ///
+  /// In fr, this message translates to:
+  /// **'Transmission'**
+  String get catalogFitmentDrivetrainField;
+
+  /// Option vide de la liste transmission.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes les transmissions'**
+  String get catalogFitmentAllDrivetrains;
 
   /// Texte de fitments_section.dart (build).
   ///

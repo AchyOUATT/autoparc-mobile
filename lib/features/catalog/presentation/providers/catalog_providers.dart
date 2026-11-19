@@ -131,6 +131,7 @@ class AccessoryFilter {
   final String? city;
   final int?    locationId;
   final bool inactiveOnly;
+  final bool withoutFitments;
 
   const AccessoryFilter({
     this.search,
@@ -139,6 +140,7 @@ class AccessoryFilter {
     this.city,
     this.locationId,
     this.inactiveOnly = false,
+    this.withoutFitments = false,
   });
 
   AccessoryFilter copyWith({
@@ -148,6 +150,7 @@ class AccessoryFilter {
     String? city,
     int?    locationId,
     bool? inactiveOnly,
+    bool? withoutFitments,
     bool clearSearch   = false,
     bool clearCategory = false,
     bool clearCity     = false,
@@ -160,6 +163,7 @@ class AccessoryFilter {
         city:       clearCity     ? null : (city       ?? this.city),
         locationId: clearLocation ? null : (locationId ?? this.locationId),
         inactiveOnly: inactiveOnly ?? this.inactiveOnly,
+        withoutFitments: withoutFitments ?? this.withoutFitments,
       );
 }
 
@@ -177,6 +181,7 @@ class PartFilter {
   final String? city;
   final int? locationId;
   final bool inactiveOnly;
+  final bool withoutFitments;
 
   const PartFilter({
     this.search,
@@ -187,6 +192,7 @@ class PartFilter {
     this.city,
     this.locationId,
     this.inactiveOnly = false,
+    this.withoutFitments = false,
   });
 
   PartFilter copyWith({
@@ -198,6 +204,7 @@ class PartFilter {
     String? city,
     int? locationId,
     bool? inactiveOnly,
+    bool? withoutFitments,
     bool clearCity = false,
     bool clearLocation = false,
     bool clearVehicleModel = false,
@@ -223,6 +230,7 @@ class PartFilter {
         city:          clearCity     ? null : (city       ?? this.city),
         locationId:    clearLocation ? null : (locationId ?? this.locationId),
         inactiveOnly:  inactiveOnly  ?? this.inactiveOnly,
+        withoutFitments: withoutFitments ?? this.withoutFitments,
       );
 }
 
@@ -384,14 +392,21 @@ class AccessoryListNotifier extends AutoDisposeNotifier<PagedState<Accessory>> {
             city: filter.city,
             locationId: filter.locationId,
             inactiveOnly: filter.inactiveOnly,
+            withoutFitments: filter.withoutFitments,
           );
       // Une déconnexion, un filtre ou un rafraîchissement a pu remplacer
       // cette liste pendant l’appel : sa réponse ne doit plus être affichée.
       if (generation != _generation) return;
       _page = nextPage;
-      final articles = filter.inactiveOnly
+      var articles = filter.inactiveOnly
           ? resp.data.where((article) => !article.isActive).toList()
           : resp.data;
+      // Repli si un serveur encore ancien ignore without_fitments=1.
+      if (filter.withoutFitments) {
+        articles = articles
+            .where((article) => article.compatibiliteARenseigner)
+            .toList();
+      }
       state = state.copyWith(
         items: isFirst ? articles : [...state.items, ...articles],
         total: resp.total,
@@ -477,14 +492,19 @@ class PartListNotifier extends AutoDisposeNotifier<PagedState<Part>> {
         city:          filter.city,
         locationId:    filter.locationId,
         inactiveOnly:  filter.inactiveOnly,
+        withoutFitments: filter.withoutFitments,
       );
       // Une déconnexion, un filtre ou un rafraîchissement a pu remplacer
       // cette liste pendant l'appel : sa réponse ne doit plus être affichée.
       if (generation != _generation) return;
       _page = nextPage;
-      final pieces = filter.inactiveOnly
+      var pieces = filter.inactiveOnly
           ? resp.data.where((piece) => !piece.isActive).toList()
           : resp.data;
+      // Repli si un serveur encore ancien ignore without_fitments=1.
+      if (filter.withoutFitments) {
+        pieces = pieces.where((piece) => piece.compatibiliteARenseigner).toList();
+      }
       state = state.copyWith(
         items:         isFirst ? pieces : [...state.items, ...pieces],
         total:         resp.total,
