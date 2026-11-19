@@ -8015,6 +8015,18 @@ abstract class AppLocalizations {
   /// **'Pour un filtre à huile, le code moteur permet de distinguer deux références sur un même modèle.'**
   String get catalogFitmentEngineCodeOilHint;
 
+  /// Champ facultatif du formulaire de compatibilité. Distingue deux références d'un même moteur selon le châssis, par exemple ZZE122 ou NCP91.
+  ///
+  /// In fr, this message translates to:
+  /// **'Code châssis'**
+  String get catalogFitmentChassisCodeField;
+
+  /// Exemple affiché dans le champ code châssis.
+  ///
+  /// In fr, this message translates to:
+  /// **'ZZE122, NCP91…'**
+  String get catalogFitmentChassisCodeHint;
+
   /// Liste des types de moteur du référentiel, dans le formulaire de compatibilité. Facultatif.
   ///
   /// In fr, this message translates to:

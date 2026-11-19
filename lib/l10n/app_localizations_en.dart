@@ -4589,6 +4589,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'For an oil filter, the engine code is what distinguishes two references on the same model.';
 
   @override
+  String get catalogFitmentChassisCodeField => 'Chassis code';
+
+  @override
+  String get catalogFitmentChassisCodeHint => 'ZZE122, NCP91…';
+
+  @override
   String get catalogFitmentEngineTypeField => 'Engine type';
 
   @override

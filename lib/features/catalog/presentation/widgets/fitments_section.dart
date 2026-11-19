@@ -47,6 +47,7 @@ class FitmentEntry {
   final int? engineTypeId;
   final int? drivetrainId;
   final String? engineCode;
+  final String? chassisCode;
   final int? yearFrom;
   final int? yearTo;
   final String? position; // pour les pièces uniquement
@@ -64,6 +65,7 @@ class FitmentEntry {
     this.engineTypeId,
     this.drivetrainId,
     this.engineCode,
+    this.chassisCode,
     this.yearFrom,
     this.yearTo,
     this.position,
@@ -79,6 +81,7 @@ class FitmentEntry {
     int? engineTypeId,
     int? drivetrainId,
     String? engineCode,
+    String? chassisCode,
     int? yearFrom,
     int? yearTo,
     String? position,
@@ -93,6 +96,7 @@ class FitmentEntry {
     engineTypeId: engineTypeId,
     drivetrainId: drivetrainId,
     engineCode: engineCode,
+    chassisCode: chassisCode,
     yearFrom: yearFrom,
     yearTo: yearTo,
     position: position,
@@ -131,6 +135,7 @@ class FitmentEntry {
       engineTypeId: json['engine_type_id'] as int?,
       drivetrainId: json['drivetrain_id'] as int?,
       engineCode: json['engine_code'] as String?,
+      chassisCode: json['chassis_code'] as String?,
       yearFrom: json['year_from'] as int?,
       yearTo: json['year_to'] as int?,
       position: json['position'] as String?,
@@ -173,6 +178,9 @@ class FitmentEntry {
     if (engineCode != null && engineCode!.isNotEmpty) {
       buf.write('${l10n.catalogFitmentSeparator}$engineCode');
     }
+    if (chassisCode != null && chassisCode!.isNotEmpty) {
+      buf.write('${l10n.catalogFitmentSeparator}$chassisCode');
+    }
     if (yearFrom != null && yearTo != null) {
       buf.write(l10n.catalogFitmentYearRange(yearFrom!, yearTo!));
     } else if (yearFrom != null) {
@@ -204,6 +212,8 @@ class FitmentEntry {
     if (engineTypeId != null) 'engine_type_id': engineTypeId,
     if (drivetrainId != null) 'drivetrain_id': drivetrainId,
     if (engineCode != null && engineCode!.isNotEmpty) 'engine_code': engineCode,
+    if (chassisCode != null && chassisCode!.isNotEmpty)
+      'chassis_code': chassisCode,
     if (yearFrom != null) 'year_from': yearFrom,
     if (yearTo != null) 'year_to': yearTo,
     if (position != null && position!.isNotEmpty) 'position': position,
@@ -385,7 +395,7 @@ class _FitmentsSectionState extends State<FitmentsSection> {
         OutlinedButton.icon(
           onPressed: _openAddSheet,
           icon: const Icon(Icons.add, size: 18),
-          label:  Text(AppLocalizations.of(context).catalogFitmentAdd),
+          label: Text(AppLocalizations.of(context).catalogFitmentAdd),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size.fromHeight(44),
           ),
@@ -424,6 +434,7 @@ class _FitmentSheetState extends State<_FitmentSheet> {
   final _yearToCtrl = TextEditingController();
   final _posCtrl = TextEditingController();
   final _engineCodeCtrl = TextEditingController();
+  final _chassisCodeCtrl = TextEditingController();
 
   @override
   void dispose() {
@@ -431,6 +442,7 @@ class _FitmentSheetState extends State<_FitmentSheet> {
     _yearToCtrl.dispose();
     _posCtrl.dispose();
     _engineCodeCtrl.dispose();
+    _chassisCodeCtrl.dispose();
     super.dispose();
   }
 
@@ -443,12 +455,17 @@ class _FitmentSheetState extends State<_FitmentSheet> {
   void _confirm() {
     if (_model == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text(AppLocalizations.of(context).catalogFitmentModelRequired)),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).catalogFitmentModelRequired,
+          ),
+        ),
       );
       return;
     }
 
     final code = _engineCodeCtrl.text.trim();
+    final chassis = _chassisCodeCtrl.text.trim();
     final entry = FitmentEntry.saisie(
       brand: _brand!,
       model: _model!,
@@ -456,6 +473,7 @@ class _FitmentSheetState extends State<_FitmentSheet> {
       engineTypeId: _engineType?.id,
       drivetrainId: _drivetrain?.id,
       engineCode: code.isEmpty ? null : code,
+      chassisCode: chassis.isEmpty ? null : chassis,
       yearFrom: int.tryParse(_yearFromCtrl.text),
       yearTo: int.tryParse(_yearToCtrl.text),
       position: widget.showPosition ? _posCtrl.text.trim() : null,
@@ -479,231 +497,271 @@ class _FitmentSheetState extends State<_FitmentSheet> {
       ),
       child: SingleChildScrollView(
         child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Handle
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            AppLocalizations.of(context).catalogFitmentDialogTitle,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
-          // ── Marque ───────────────────────────────────────────────
-          DropdownButtonFormField<BrandRef>(
-            value: _brand,
-            decoration:  InputDecoration(
-              labelText: AppLocalizations.of(context).catalogFitmentBrandRequired,
-              prefixIcon: Icon(Icons.directions_car_outlined),
-              border: OutlineInputBorder(),
-              isDense: true,
+            const SizedBox(height: 16),
+            Text(
+              AppLocalizations.of(context).catalogFitmentDialogTitle,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
-            isExpanded: true,
-            hint:  Text(AppLocalizations.of(context).catalogFitmentSelect),
-            items: brands
-                .map((b) => DropdownMenuItem(value: b, child: Text(b.name)))
-                .toList(),
-            onChanged: (b) => setState(() {
-              _brand = b;
-              _model = null;
-              _trim = null;
-            }),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
-          // ── Modèle ───────────────────────────────────────────────
-          DropdownButtonFormField<ModelRef>(
-            value: _model,
-            decoration: InputDecoration(
-              labelText: AppLocalizations.of(context).catalogFitmentModelField,
-              prefixIcon: const Icon(Icons.car_repair),
-              border: const OutlineInputBorder(),
-              isDense: true,
-              helperText: _brand == null ? AppLocalizations.of(context).catalogFitmentChooseBrand : null,
-            ),
-            isExpanded: true,
-            hint:  Text(AppLocalizations.of(context).catalogFitmentSelect),
-            items: _models
-                .map(
-                  (m) => DropdownMenuItem(value: m, child: Text(referenceModelDisplayName(m, AppLocalizations.of(context)))),
-                )
-                .toList(),
-            onChanged: _brand == null
-                ? null
-                : (m) => setState(() {
-                    _model = m;
-                    _trim = null;
-                  }),
-          ),
-          const SizedBox(height: 12),
-
-          // ── Finition (optionnel) ─────────────────────────────────
-          if (_trims.isNotEmpty) ...[
-            DropdownButtonFormField<TrimRef>(
-              value: _trim,
-              decoration:  InputDecoration(
-                labelText: AppLocalizations.of(context).catalogFitmentTrimOptional,
-                prefixIcon: Icon(Icons.tune),
+            // ── Marque ───────────────────────────────────────────────
+            DropdownButtonFormField<BrandRef>(
+              value: _brand,
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(
+                  context,
+                ).catalogFitmentBrandRequired,
+                prefixIcon: Icon(Icons.directions_car_outlined),
                 border: OutlineInputBorder(),
                 isDense: true,
               ),
               isExpanded: true,
-              hint:  Text(AppLocalizations.of(context).catalogFitmentAllTrims),
-              items: [
-                 DropdownMenuItem(
-                  value: null,
-                  child: Text(AppLocalizations.of(context).catalogFitmentAllTrimsOption),
-                ),
-                ..._trims.map(
-                  (t) => DropdownMenuItem(value: t, child: Text(t.name)),
-                ),
-              ],
-              onChanged: (t) => setState(() => _trim = t),
+              hint: Text(AppLocalizations.of(context).catalogFitmentSelect),
+              items: brands
+                  .map((b) => DropdownMenuItem(value: b, child: Text(b.name)))
+                  .toList(),
+              onChanged: (b) => setState(() {
+                _brand = b;
+                _model = null;
+                _trim = null;
+              }),
             ),
             const SizedBox(height: 12),
-          ],
 
-          // ── Années ───────────────────────────────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _yearFromCtrl,
-                  decoration:  InputDecoration(
-                    labelText: AppLocalizations.of(context).catalogFitmentYearFromField,
-                    prefixIcon: Icon(Icons.calendar_today),
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(4),
-                  ],
-                ),
+            // ── Modèle ───────────────────────────────────────────────
+            DropdownButtonFormField<ModelRef>(
+              value: _model,
+              decoration: InputDecoration(
+                labelText: AppLocalizations.of(
+                  context,
+                ).catalogFitmentModelField,
+                prefixIcon: const Icon(Icons.car_repair),
+                border: const OutlineInputBorder(),
+                isDense: true,
+                helperText: _brand == null
+                    ? AppLocalizations.of(context).catalogFitmentChooseBrand
+                    : null,
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextFormField(
-                  controller: _yearToCtrl,
-                  decoration:  InputDecoration(
-                    labelText: AppLocalizations.of(context).catalogFitmentYearToField,
-                    prefixIcon: Icon(Icons.calendar_today),
-                    border: OutlineInputBorder(),
-                    isDense: true,
+              isExpanded: true,
+              hint: Text(AppLocalizations.of(context).catalogFitmentSelect),
+              items: _models
+                  .map(
+                    (m) => DropdownMenuItem(
+                      value: m,
+                      child: Text(
+                        referenceModelDisplayName(
+                          m,
+                          AppLocalizations.of(context),
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: _brand == null
+                  ? null
+                  : (m) => setState(() {
+                      _model = m;
+                      _trim = null;
+                    }),
+            ),
+            const SizedBox(height: 12),
+
+            // ── Finition (optionnel) ─────────────────────────────────
+            if (_trims.isNotEmpty) ...[
+              DropdownButtonFormField<TrimRef>(
+                value: _trim,
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(
+                    context,
+                  ).catalogFitmentTrimOptional,
+                  prefixIcon: Icon(Icons.tune),
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                isExpanded: true,
+                hint: Text(AppLocalizations.of(context).catalogFitmentAllTrims),
+                items: [
+                  DropdownMenuItem(
+                    value: null,
+                    child: Text(
+                      AppLocalizations.of(context).catalogFitmentAllTrimsOption,
+                    ),
                   ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(4),
-                  ],
+                  ..._trims.map(
+                    (t) => DropdownMenuItem(value: t, child: Text(t.name)),
+                  ),
+                ],
+                onChanged: (t) => setState(() => _trim = t),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // ── Années ───────────────────────────────────────────────
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _yearFromCtrl,
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(
+                        context,
+                      ).catalogFitmentYearFromField,
+                      prefixIcon: Icon(Icons.calendar_today),
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(4),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextFormField(
+                    controller: _yearToCtrl,
+                    decoration: InputDecoration(
+                      labelText: AppLocalizations.of(
+                        context,
+                      ).catalogFitmentYearToField,
+                      prefixIcon: Icon(Icons.calendar_today),
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(4),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            // ── Code moteur, motorisation, transmission ──────────────
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _engineCodeCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.catalogFitmentEngineCodeField,
+                hintText: l10n.catalogFitmentEngineCodeHint,
+                helperText: widget.recommanderCodeMoteur
+                    ? l10n.catalogFitmentEngineCodeOilHint
+                    : null,
+                helperMaxLines: 3,
+                prefixIcon: const Icon(Icons.memory_outlined),
+                border: const OutlineInputBorder(),
+                isDense: true,
+              ),
+              textCapitalization: TextCapitalization.characters,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _chassisCodeCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.catalogFitmentChassisCodeField,
+                hintText: l10n.catalogFitmentChassisCodeHint,
+                prefixIcon: const Icon(Icons.pin_outlined),
+                border: const OutlineInputBorder(),
+                isDense: true,
+              ),
+              textCapitalization: TextCapitalization.characters,
+            ),
+            if (widget.refs.engineTypes.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              DropdownButtonFormField<EngineTypeRef>(
+                value: _engineType,
+                decoration: InputDecoration(
+                  labelText: l10n.catalogFitmentEngineTypeField,
+                  prefixIcon: const Icon(Icons.local_gas_station_outlined),
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                isExpanded: true,
+                hint: Text(l10n.catalogFitmentAllEngineTypes),
+                items: [
+                  DropdownMenuItem(
+                    value: null,
+                    child: Text(l10n.catalogFitmentAllEngineTypes),
+                  ),
+                  ...widget.refs.engineTypes.map(
+                    (t) => DropdownMenuItem(value: t, child: Text(t.label)),
+                  ),
+                ],
+                onChanged: (t) => setState(() => _engineType = t),
+              ),
+            ],
+            if (widget.refs.drivetrains.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              DropdownButtonFormField<DrivetrainRef>(
+                value: _drivetrain,
+                decoration: InputDecoration(
+                  labelText: l10n.catalogFitmentDrivetrainField,
+                  prefixIcon: const Icon(Icons.alt_route_outlined),
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                isExpanded: true,
+                hint: Text(l10n.catalogFitmentAllDrivetrains),
+                items: [
+                  DropdownMenuItem(
+                    value: null,
+                    child: Text(l10n.catalogFitmentAllDrivetrains),
+                  ),
+                  ...widget.refs.drivetrains.map(
+                    (d) => DropdownMenuItem(value: d, child: Text(d.label)),
+                  ),
+                ],
+                onChanged: (d) => setState(() => _drivetrain = d),
+              ),
+            ],
+
+            // ── Position (pièces seulement) ──────────────────────────
+            if (widget.showPosition) ...[
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _posCtrl,
+                decoration: InputDecoration(
+                  labelText: AppLocalizations.of(
+                    context,
+                  ).catalogFitmentPositionField,
+                  prefixIcon: Icon(Icons.location_searching),
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                  hintText: AppLocalizations.of(
+                    context,
+                  ).catalogFitmentPositionHint,
                 ),
               ),
             ],
-          ),
 
-          // ── Code moteur, motorisation, transmission ──────────────
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: _engineCodeCtrl,
-            decoration: InputDecoration(
-              labelText: l10n.catalogFitmentEngineCodeField,
-              hintText: l10n.catalogFitmentEngineCodeHint,
-              helperText: widget.recommanderCodeMoteur
-                  ? l10n.catalogFitmentEngineCodeOilHint
-                  : null,
-              helperMaxLines: 3,
-              prefixIcon: const Icon(Icons.memory_outlined),
-              border: const OutlineInputBorder(),
-              isDense: true,
-            ),
-            textCapitalization: TextCapitalization.characters,
-          ),
-          if (widget.refs.engineTypes.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            DropdownButtonFormField<EngineTypeRef>(
-              value: _engineType,
-              decoration: InputDecoration(
-                labelText: l10n.catalogFitmentEngineTypeField,
-                prefixIcon: const Icon(Icons.local_gas_station_outlined),
-                border: const OutlineInputBorder(),
-                isDense: true,
-              ),
-              isExpanded: true,
-              hint: Text(l10n.catalogFitmentAllEngineTypes),
-              items: [
-                DropdownMenuItem(
-                  value: null,
-                  child: Text(l10n.catalogFitmentAllEngineTypes),
-                ),
-                ...widget.refs.engineTypes.map(
-                  (t) => DropdownMenuItem(value: t, child: Text(t.label)),
-                ),
-              ],
-              onChanged: (t) => setState(() => _engineType = t),
-            ),
-          ],
-          if (widget.refs.drivetrains.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            DropdownButtonFormField<DrivetrainRef>(
-              value: _drivetrain,
-              decoration: InputDecoration(
-                labelText: l10n.catalogFitmentDrivetrainField,
-                prefixIcon: const Icon(Icons.alt_route_outlined),
-                border: const OutlineInputBorder(),
-                isDense: true,
-              ),
-              isExpanded: true,
-              hint: Text(l10n.catalogFitmentAllDrivetrains),
-              items: [
-                DropdownMenuItem(
-                  value: null,
-                  child: Text(l10n.catalogFitmentAllDrivetrains),
-                ),
-                ...widget.refs.drivetrains.map(
-                  (d) => DropdownMenuItem(value: d, child: Text(d.label)),
-                ),
-              ],
-              onChanged: (d) => setState(() => _drivetrain = d),
-            ),
-          ],
+            const SizedBox(height: 20),
 
-          // ── Position (pièces seulement) ──────────────────────────
-          if (widget.showPosition) ...[
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _posCtrl,
-              decoration:  InputDecoration(
-                labelText: AppLocalizations.of(context).catalogFitmentPositionField,
-                prefixIcon: Icon(Icons.location_searching),
-                border: OutlineInputBorder(),
-                isDense: true,
-                hintText: AppLocalizations.of(context).catalogFitmentPositionHint,
+            FilledButton.icon(
+              onPressed: _confirm,
+              icon: const Icon(Icons.add),
+              label: Text(
+                AppLocalizations.of(context).catalogFitmentConfirmAction,
               ),
             ),
           ],
-
-          const SizedBox(height: 20),
-
-          FilledButton.icon(
-            onPressed: _confirm,
-            icon: const Icon(Icons.add),
-            label:  Text(AppLocalizations.of(context).catalogFitmentConfirmAction),
-          ),
-        ],
         ),
       ),
     );

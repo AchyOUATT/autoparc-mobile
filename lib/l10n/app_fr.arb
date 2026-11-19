@@ -6145,6 +6145,14 @@
   "@catalogFitmentEngineCodeOilHint": {
     "description": "Aide sous le champ code moteur quand la pièce est un filtre à huile. Le champ reste facultatif."
   },
+  "catalogFitmentChassisCodeField": "Code châssis",
+  "@catalogFitmentChassisCodeField": {
+    "description": "Champ facultatif du formulaire de compatibilité. Distingue deux références d'un même moteur selon le châssis, par exemple ZZE122 ou NCP91."
+  },
+  "catalogFitmentChassisCodeHint": "ZZE122, NCP91…",
+  "@catalogFitmentChassisCodeHint": {
+    "description": "Exemple affiché dans le champ code châssis."
+  },
   "catalogFitmentEngineTypeField": "Motorisation",
   "@catalogFitmentEngineTypeField": {
     "description": "Liste des types de moteur du référentiel, dans le formulaire de compatibilité. Facultatif."

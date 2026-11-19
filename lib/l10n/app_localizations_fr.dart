@@ -4595,6 +4595,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Pour un filtre à huile, le code moteur permet de distinguer deux références sur un même modèle.';
 
   @override
+  String get catalogFitmentChassisCodeField => 'Code châssis';
+
+  @override
+  String get catalogFitmentChassisCodeHint => 'ZZE122, NCP91…';
+
+  @override
   String get catalogFitmentEngineTypeField => 'Motorisation';
 
   @override
