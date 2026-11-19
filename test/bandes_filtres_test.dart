@@ -3305,6 +3305,7 @@ class _Depot implements CatalogRepository {
     String? city,
     int? locationId,
     bool inactiveOnly = false,
+    bool withoutFitments = false,
   }) async => PaginatedResponse<Part>(
     data: pieces,
     currentPage: 1,
@@ -3326,6 +3327,7 @@ class _Depot implements CatalogRepository {
     String? city,
     int? locationId,
     bool inactiveOnly = false,
+    bool withoutFitments = false,
   }) async => PaginatedResponse<Accessory>(
     data: accessoires,
     currentPage: 1,
