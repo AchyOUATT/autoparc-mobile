@@ -76,6 +76,9 @@ class FitmentEntry {
     required BrandRef brand,
     required ModelRef model,
     TrimRef? trim,
+    int? engineTypeId,
+    int? drivetrainId,
+    String? engineCode,
     int? yearFrom,
     int? yearTo,
     String? position,
@@ -87,6 +90,9 @@ class FitmentEntry {
     referenceModel: model,
     trimId: trim?.id,
     trimName: trim?.name,
+    engineTypeId: engineTypeId,
+    drivetrainId: drivetrainId,
+    engineCode: engineCode,
     yearFrom: yearFrom,
     yearTo: yearTo,
     position: position,
@@ -164,6 +170,9 @@ class FitmentEntry {
     if (trimName != null) {
       buf.write('${l10n.catalogFitmentSeparator}$trimName');
     }
+    if (engineCode != null && engineCode!.isNotEmpty) {
+      buf.write('${l10n.catalogFitmentSeparator}$engineCode');
+    }
     if (yearFrom != null && yearTo != null) {
       buf.write(l10n.catalogFitmentYearRange(yearFrom!, yearTo!));
     } else if (yearFrom != null) {
@@ -211,6 +220,11 @@ class FitmentEntry {
 class FitmentsSection extends StatefulWidget {
   final CatalogRefs refs;
   final bool showPosition; // true pour les pièces, false pour les accessoires
+  /// Aide renforcée sous le code moteur, typiquement pour un filtre à huile.
+  ///
+  /// Le champ reste facultatif : cette option n'empêche pas l'enregistrement
+  /// sans code. Elle dit seulement pourquoi il compte pour cette catégorie.
+  final bool recommanderCodeMoteur;
   final void Function(List<FitmentEntry>) onChanged;
 
   /// Les compatibilités déjà enregistrées, en modification.
@@ -226,6 +240,7 @@ class FitmentsSection extends StatefulWidget {
     required this.refs,
     required this.onChanged,
     this.showPosition = false,
+    this.recommanderCodeMoteur = false,
     this.initiales = const [],
   });
 
@@ -251,8 +266,11 @@ class _FitmentsSectionState extends State<FitmentsSection> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) =>
-          _FitmentSheet(refs: widget.refs, showPosition: widget.showPosition),
+      builder: (_) => _FitmentSheet(
+        refs: widget.refs,
+        showPosition: widget.showPosition,
+        recommanderCodeMoteur: widget.recommanderCodeMoteur,
+      ),
     );
     if (entry != null) _add(entry);
   }
@@ -384,8 +402,13 @@ class _FitmentsSectionState extends State<FitmentsSection> {
 class _FitmentSheet extends StatefulWidget {
   final CatalogRefs refs;
   final bool showPosition;
+  final bool recommanderCodeMoteur;
 
-  const _FitmentSheet({required this.refs, required this.showPosition});
+  const _FitmentSheet({
+    required this.refs,
+    required this.showPosition,
+    this.recommanderCodeMoteur = false,
+  });
 
   @override
   State<_FitmentSheet> createState() => _FitmentSheetState();
@@ -395,15 +418,19 @@ class _FitmentSheetState extends State<_FitmentSheet> {
   BrandRef? _brand;
   ModelRef? _model;
   TrimRef? _trim;
+  EngineTypeRef? _engineType;
+  DrivetrainRef? _drivetrain;
   final _yearFromCtrl = TextEditingController();
   final _yearToCtrl = TextEditingController();
   final _posCtrl = TextEditingController();
+  final _engineCodeCtrl = TextEditingController();
 
   @override
   void dispose() {
     _yearFromCtrl.dispose();
     _yearToCtrl.dispose();
     _posCtrl.dispose();
+    _engineCodeCtrl.dispose();
     super.dispose();
   }
 
@@ -421,10 +448,14 @@ class _FitmentSheetState extends State<_FitmentSheet> {
       return;
     }
 
+    final code = _engineCodeCtrl.text.trim();
     final entry = FitmentEntry.saisie(
       brand: _brand!,
       model: _model!,
       trim: _trim,
+      engineTypeId: _engineType?.id,
+      drivetrainId: _drivetrain?.id,
+      engineCode: code.isEmpty ? null : code,
       yearFrom: int.tryParse(_yearFromCtrl.text),
       yearTo: int.tryParse(_yearToCtrl.text),
       position: widget.showPosition ? _posCtrl.text.trim() : null,
@@ -437,6 +468,8 @@ class _FitmentSheetState extends State<_FitmentSheet> {
   Widget build(BuildContext context) {
     final brands = widget.refs.brands.where((b) => b.isActive).toList();
 
+    final l10n = AppLocalizations.of(context);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -444,7 +477,8 @@ class _FitmentSheetState extends State<_FitmentSheet> {
         16,
         MediaQuery.of(context).viewInsets.bottom + 24,
       ),
-      child: Column(
+      child: SingleChildScrollView(
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -581,6 +615,72 @@ class _FitmentSheetState extends State<_FitmentSheet> {
             ],
           ),
 
+          // ── Code moteur, motorisation, transmission ──────────────
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _engineCodeCtrl,
+            decoration: InputDecoration(
+              labelText: l10n.catalogFitmentEngineCodeField,
+              hintText: l10n.catalogFitmentEngineCodeHint,
+              helperText: widget.recommanderCodeMoteur
+                  ? l10n.catalogFitmentEngineCodeOilHint
+                  : null,
+              helperMaxLines: 3,
+              prefixIcon: const Icon(Icons.memory_outlined),
+              border: const OutlineInputBorder(),
+              isDense: true,
+            ),
+            textCapitalization: TextCapitalization.characters,
+          ),
+          if (widget.refs.engineTypes.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            DropdownButtonFormField<EngineTypeRef>(
+              value: _engineType,
+              decoration: InputDecoration(
+                labelText: l10n.catalogFitmentEngineTypeField,
+                prefixIcon: const Icon(Icons.local_gas_station_outlined),
+                border: const OutlineInputBorder(),
+                isDense: true,
+              ),
+              isExpanded: true,
+              hint: Text(l10n.catalogFitmentAllEngineTypes),
+              items: [
+                DropdownMenuItem(
+                  value: null,
+                  child: Text(l10n.catalogFitmentAllEngineTypes),
+                ),
+                ...widget.refs.engineTypes.map(
+                  (t) => DropdownMenuItem(value: t, child: Text(t.label)),
+                ),
+              ],
+              onChanged: (t) => setState(() => _engineType = t),
+            ),
+          ],
+          if (widget.refs.drivetrains.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            DropdownButtonFormField<DrivetrainRef>(
+              value: _drivetrain,
+              decoration: InputDecoration(
+                labelText: l10n.catalogFitmentDrivetrainField,
+                prefixIcon: const Icon(Icons.alt_route_outlined),
+                border: const OutlineInputBorder(),
+                isDense: true,
+              ),
+              isExpanded: true,
+              hint: Text(l10n.catalogFitmentAllDrivetrains),
+              items: [
+                DropdownMenuItem(
+                  value: null,
+                  child: Text(l10n.catalogFitmentAllDrivetrains),
+                ),
+                ...widget.refs.drivetrains.map(
+                  (d) => DropdownMenuItem(value: d, child: Text(d.label)),
+                ),
+              ],
+              onChanged: (d) => setState(() => _drivetrain = d),
+            ),
+          ],
+
           // ── Position (pièces seulement) ──────────────────────────
           if (widget.showPosition) ...[
             const SizedBox(height: 12),
@@ -604,6 +704,7 @@ class _FitmentSheetState extends State<_FitmentSheet> {
             label:  Text(AppLocalizations.of(context).catalogFitmentConfirmAction),
           ),
         ],
+        ),
       ),
     );
   }

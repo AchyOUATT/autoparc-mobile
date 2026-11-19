@@ -2193,7 +2193,17 @@ void main() {
               // avec la même largeur reçue et le même état de troncature. Les
               // paragraphes nouveaux — les deux de la ligne — sont mesurés par
               // les tests ci-dessus.
+              //
+              // Sauf le badge « À renseigner » du personnel : il n'apparaît
+              // que sur une fiche sans compatibilité, et il DOIT disparaître
+              // une fois la ligne posée. Le garder dans la comparaison
+              // transformerait ce comportement voulu en échec.
+              final textes = await chargerTextes(localeFr);
+              final badgesPersonnel = {textes.catalogBadgeNeedsFitment};
               for (final entree in avant.entries) {
+                if (badgesPersonnel.contains(entree.key)) {
+                  continue;
+                }
                 final apresLui = apres[entree.key];
                 expect(
                   apresLui,
@@ -3305,6 +3315,7 @@ class _Depot implements CatalogRepository {
     String? city,
     int? locationId,
     bool inactiveOnly = false,
+    bool withoutFitments = false,
   }) async => PaginatedResponse<Part>(
     data: pieces,
     currentPage: 1,
@@ -3326,6 +3337,7 @@ class _Depot implements CatalogRepository {
     String? city,
     int? locationId,
     bool inactiveOnly = false,
+    bool withoutFitments = false,
   }) async => PaginatedResponse<Accessory>(
     data: accessoires,
     currentPage: 1,

@@ -314,6 +314,17 @@ class _FilterBar extends ConsumerWidget {
               onSelected: (on) => update((f) => f.copyWith(inactiveOnly: on)),
             ),
           ),
+        if (peutGerer)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              avatar: const Icon(Icons.edit_note_outlined, size: 14),
+              label: Text(l10n.catalogFilterNeedsFitment),
+              selected: filter.withoutFitments,
+              onSelected: (on) =>
+                  update((f) => f.copyWith(withoutFitments: on)),
+            ),
+          ),
         // Chips de catégorie
         ...categories.map((cat) {
           final selected = filter.category == cat.value;
@@ -432,8 +443,9 @@ class _AccessoryList extends StatelessWidget {
               child: Center(
                 child: Text(
                   AppLocalizations.of(context).catalogResultTotal(total),
-                  style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: Theme.of(context).colorScheme.outline),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
                 ),
               ),
             ),
@@ -578,6 +590,29 @@ class _AccessoryCardState extends ConsumerState<_AccessoryCard> {
                       ),
                     ),
                   ),
+                if (auth.canManageCatalog && accessory.compatibiliteARenseigner)
+                  Positioned(
+                    bottom: 6,
+                    right: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFB45309).withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context).catalogBadgeNeedsFitment,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
 
@@ -598,8 +633,9 @@ class _AccessoryCardState extends ConsumerState<_AccessoryCard> {
                   // principal de la carte.
                   Text(
                     accessory.name,
-                    style: Theme.of(context).textTheme.labelSmall
-                        ?.copyWith(color: cs.onSurface),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: cs.onSurface),
                   ),
                   // LES MODÈLES AUXQUELS L'ACCESSOIRE SE DESTINE, à la même
                   // place et avec le même widget que sur la carte des pièces.
@@ -771,6 +807,7 @@ class _EmptyView extends ConsumerWidget {
       // français jusqu'à la vague serveur : pas de clé.
       if (f.city != null) f.city!,
       if (f.inactiveOnly) l10n.catalogFilterTermInactive,
+      if (f.withoutFitments) l10n.catalogFilterTermNeedsFitment,
     ];
 
     // Il défile, pour la raison mesurée et écrite dans `_EmptyView` de
@@ -802,8 +839,9 @@ class _EmptyView extends ConsumerWidget {
                             actifs.join(l10n.catalogFilterListSeparator),
                           ),
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium
-                        ?.copyWith(color: cs.onSurfaceVariant),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
                 ),
                 if (actifs.isNotEmpty) ...[

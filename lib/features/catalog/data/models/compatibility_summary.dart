@@ -71,6 +71,23 @@ class CompatibilitySummary extends Equatable {
   /// orphelin ni un « +0 ».
   bool get estVide => vehicles.isEmpty || count == 0;
 
+  /// L'article doit-il porter le badge « compatibilité à renseigner » ?
+  ///
+  /// Si le résumé est présent, c'est lui qui décide : il compte aussi les
+  /// applications arrivées par un numéro OEM, que la seule liste
+  /// `fitments` de la pièce ne mentionne pas. Si seul `fitments` est
+  /// fourni, une liste vide veut dire « aucune ». Si ni l'un ni l'autre
+  /// n'est fourni, on ne le suppose pas : un badge sur une fiche dont on
+  /// ignore les applications serait un faux positif.
+  static bool aRenseigner({
+    CompatibilitySummary? resume,
+    List<dynamic>? fitments,
+  }) {
+    if (resume != null) return resume.estVide;
+    if (fitments != null) return fitments.isEmpty;
+    return false;
+  }
+
   @override
   List<Object?> get props => [count, vehicles];
 }

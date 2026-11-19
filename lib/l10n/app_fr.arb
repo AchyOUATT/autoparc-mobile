@@ -511,6 +511,18 @@
   "@catalogBadgeInactive": {
     "description": "Badge posé sur la carte d'une pièce ou d'un accessoire inactif, dans la liste du personnel."
   },
+  "catalogFilterNeedsFitment": "À renseigner",
+  "@catalogFilterNeedsFitment": {
+    "description": "Pastille de filtre de la liste des pièces et des accessoires, visible seulement pour le personnel qui gère le catalogue. Elle n'affiche que les fiches sans aucune compatibilité véhicule."
+  },
+  "catalogFilterTermNeedsFitment": "compatibilité à renseigner",
+  "@catalogFilterTermNeedsFitment": {
+    "description": "Terme listé par catalogActiveFilters quand le filtre À renseigner est posé. Voir catalogFilterTermInactive."
+  },
+  "catalogBadgeNeedsFitment": "À renseigner",
+  "@catalogBadgeNeedsFitment": {
+    "description": "Badge posé sur la carte d'une pièce ou d'un accessoire sans aucune compatibilité, dans la liste du personnel."
+  },
   "catalogPartAddCta": "Nouvelle pièce",
   "@catalogPartAddCta": {
     "description": "Bouton flottant de la liste des pièces, visible pour le seul personnel habilité. Il mène à un écran de saisie du personnel, qui n'est PAS traduit par cette vague ; le bouton l'est, parce qu'il s'affiche sur une page cliente."
@@ -6120,6 +6132,34 @@
   "catalogFitmentPositionHint": "Ex. Avant gauche, Côté moteur…",
   "@catalogFitmentPositionHint": {
     "description": "Texte de fitments_section.dart (build)."
+  },
+  "catalogFitmentEngineCodeField": "Code moteur",
+  "@catalogFitmentEngineCodeField": {
+    "description": "Champ du formulaire de compatibilité. Optionnel, sauf recommandation forte pour un filtre à huile."
+  },
+  "catalogFitmentEngineCodeHint": "1ZZ-FE, 1VD-FTV…",
+  "@catalogFitmentEngineCodeHint": {
+    "description": "Exemple affiché dans le champ code moteur."
+  },
+  "catalogFitmentEngineCodeOilHint": "Pour un filtre à huile, le code moteur permet de distinguer deux références sur un même modèle.",
+  "@catalogFitmentEngineCodeOilHint": {
+    "description": "Aide sous le champ code moteur quand la pièce est un filtre à huile. Le champ reste facultatif."
+  },
+  "catalogFitmentEngineTypeField": "Motorisation",
+  "@catalogFitmentEngineTypeField": {
+    "description": "Liste des types de moteur du référentiel, dans le formulaire de compatibilité. Facultatif."
+  },
+  "catalogFitmentAllEngineTypes": "Toutes les motorisations",
+  "@catalogFitmentAllEngineTypes": {
+    "description": "Option vide de la liste motorisation : la compatibilité ne précise pas le type de moteur."
+  },
+  "catalogFitmentDrivetrainField": "Transmission",
+  "@catalogFitmentDrivetrainField": {
+    "description": "Liste des transmissions du référentiel, dans le formulaire de compatibilité. Facultatif."
+  },
+  "catalogFitmentAllDrivetrains": "Toutes les transmissions",
+  "@catalogFitmentAllDrivetrains": {
+    "description": "Option vide de la liste transmission."
   },
   "catalogFitmentConfirmAction": "Ajouter cette compatibilité",
   "@catalogFitmentConfirmAction": {
