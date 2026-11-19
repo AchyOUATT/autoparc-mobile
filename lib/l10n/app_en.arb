@@ -2018,6 +2018,8 @@
   "catalogFitmentEngineCodeField": "Engine code",
   "catalogFitmentEngineCodeHint": "1ZZ-FE, 1VD-FTV…",
   "catalogFitmentEngineCodeOilHint": "For an oil filter, the engine code is what distinguishes two references on the same model.",
+  "catalogFitmentChassisCodeField": "Chassis code",
+  "catalogFitmentChassisCodeHint": "ZZE122, NCP91…",
   "catalogFitmentEngineTypeField": "Engine type",
   "catalogFitmentAllEngineTypes": "All engine types",
   "catalogFitmentDrivetrainField": "Drivetrain",

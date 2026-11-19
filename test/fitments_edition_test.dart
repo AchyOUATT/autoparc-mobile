@@ -149,6 +149,16 @@ void main() {
       expect(renvoi.containsKey('source'), isFalse);
     });
 
+    test('le code châssis revient dans le renvoi et le libellé', () {
+      final entree = FitmentEntry.depuisJson({
+        ...ligneApi(),
+        'chassis_code': 'ZZE122/ZZE124',
+      }, refs: refs);
+
+      expect(entree.toJson()['chassis_code'], 'ZZE122/ZZE124');
+      expect(entree.labelDans(textesFr), contains('ZZE122/ZZE124'));
+    });
+
     test('une ligne proposée est reconnue comme telle', () {
       expect(
         FitmentEntry.depuisJson(
