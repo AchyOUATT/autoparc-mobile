@@ -31,9 +31,11 @@ class StaffInspectionBadge extends StatelessWidget {
     final l = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final badgeColor = theme.brightness == Brightness.dark
+        ? Colors.green.shade300
+        : Colors.green.shade800;
     return Material(
-      color: colors.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(8),
+      type: MaterialType.transparency,
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap:
@@ -43,31 +45,34 @@ class StaffInspectionBadge extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 44),
           child: Padding(
-            padding: EdgeInsets.all(compact ? 8 : 12),
+            padding: EdgeInsets.symmetric(vertical: compact ? 2 : 4),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  spacing: 5,
-                  runSpacing: 3,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.verified_user_outlined,
-                      size: compact ? 18 : 22,
-                      color: colors.primary,
+                      size: compact ? 14 : 16,
+                      color: badgeColor,
                     ),
-                    Text(
-                      l.inspectionBadgeLabel,
-                      style:
-                          (compact
-                                  ? theme.textTheme.labelSmall
-                                  : theme.textTheme.labelLarge)
-                              ?.copyWith(
-                                color: colors.onSurface,
-                                fontWeight: FontWeight.w600,
-                              ),
+                    const SizedBox(width: 3),
+                    Flexible(
+                      child: Text(
+                        l.inspectionBadgeLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            (compact
+                                    ? theme.textTheme.labelSmall
+                                    : theme.textTheme.labelLarge)
+                                ?.copyWith(
+                                  color: badgeColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                      ),
                     ),
                   ],
                 ),
