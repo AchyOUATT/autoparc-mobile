@@ -43,6 +43,7 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
   // Identification
   final _nameCtrl = TextEditingController();
   final _skuCtrl = TextEditingController();
+  final _descriptionCtrl = TextEditingController();
   String _condition = 'new';
 
   // Classification
@@ -70,8 +71,6 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
   final _locationCtrl =
       TextEditingController(); // emplacement physique (étagère, tiroir)
   int? _selectedLocationId; // agence / showroom (FK)
-
-  // (description et garantie supprimées — gérées après création si besoin)
 
   // Compatibilités véhicules.
   //
@@ -101,6 +100,7 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
 
     _nameCtrl.text = e.name;
     _skuCtrl.text = e.sku ?? '';
+    _descriptionCtrl.text = e.description ?? '';
     _condition = e.condition;
     _priceCtrl.text = e.pricing.sellingPrice.toStringAsFixed(0);
     if (e.stock.quantity > 0) _stockCtrl.text = e.stock.quantity.toString();
@@ -144,6 +144,7 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
     for (final c in [
       _nameCtrl,
       _skuCtrl,
+      _descriptionCtrl,
       _priceCtrl,
       _costCtrl,
       _stockCtrl,
@@ -175,9 +176,13 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
 
     setState(() => _saving = true);
 
+    final description = _descriptionCtrl.text.trim();
     final payload = <String, dynamic>{
       'name': _nameCtrl.text.trim(),
       if (_skuCtrl.text.isNotEmpty) 'sku': _skuCtrl.text.trim(),
+      // Toujours envoyée, y compris nulle : l'omettre conserverait une
+      // ancienne valeur, et vider le champ doit pouvoir l'effacer.
+      'description': description.isEmpty ? null : description,
       'condition': _condition,
       'part_category_id': _category!.id,
       if (_manufacturer != null) 'manufacturer_id': _manufacturer!.id,
@@ -321,6 +326,13 @@ class _AddPartPageState extends ConsumerState<AddPartPage> {
               label: l10n.catalogAdminSkuLabel,
               icon: Icons.qr_code,
               hint: l10n.catalogAdminPartSkuHint,
+            ),
+            _Field(
+              ctrl: _descriptionCtrl,
+              label: l10n.catalogSectionDescription,
+              icon: Icons.notes_outlined,
+              keyboard: TextInputType.multiline,
+              maxLines: 4,
             ),
 
             // L'origine (OEM, OES…) n'est plus saisie : seul l'état compte.
